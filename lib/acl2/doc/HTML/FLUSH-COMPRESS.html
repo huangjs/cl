@@ -1,0 +1,140 @@
+<html>
+<head><title>FLUSH-COMPRESS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>FLUSH-COMPRESS</h3>flush the under-the-hood array for the given name
+<pre>Major Section:  <a href="ARRAYS.html">ARRAYS</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(flush-compress 'my-array)
+<p>
+General Form:
+(flush-compress name)
+</pre>
+
+where <code>name</code> is a symbol.<p>
+
+Recall that <code>(compress1 nm alist)</code> associates an under-the-hood raw Lisp
+one-dimensional array of name <code>nm</code> with the given association list,
+<code>alist</code>, while <code>(compress2 nm alist)</code> is the analogous function for
+two-dimensional arrays; see <a href="COMPRESS1.html">compress1</a> and see <a href="COMPRESS2.html">compress2</a>.  The only purpose
+of <code>flush-compress</code>, which always returns <code>nil</code>, is to remove the
+association of any under-the-hood array with the given name, thus eliminating
+slow array accesses (see <a href="SLOW-ARRAY-WARNING.html">slow-array-warning</a>).  It is not necessary if the
+return values of <code><a href="COMPRESS1.html">compress1</a></code> and <code><a href="COMPRESS2.html">compress2</a></code> are always used as the
+``current'' copy of the named array, and thus <code>flush-compress</code> should
+rarely, if ever, be needed in user applications.<p>
+
+Nevertheless, we provide the following contrived example to show how
+<code>flush-compress</code> can be used to good effect.  Comments have been added to
+this log to provide explanation.
+
+<pre>
+ACL2 !&gt;(assign a (compress1 'demo 
+                            '((:header :dimensions (5)
+                                       :maximum-length 15
+                                       :default uninitialized
+                                       :name demo)
+                              (0 . zero)
+                              (1 . one))))
+ ((:HEADER :DIMENSIONS (5)
+           :MAXIMUM-LENGTH
+           15 :DEFAULT UNINITIALIZED :NAME DEMO)
+  (0 . ZERO)
+  (1 . ONE))
+ACL2 !&gt;(aref1 'demo (@ a) 0)
+ZERO
+; As expected, the above evaluation did not cause a slow array warning.  Now
+; we associate a different under-the-hood array with the name 'demo.
+ACL2 !&gt;(compress1 'demo 
+                  '((:header :dimensions (5)
+                             :maximum-length 15
+                             :default uninitialized
+                             :name demo)
+                    (0 . zero)))
+((:HEADER :DIMENSIONS (5)
+          :MAXIMUM-LENGTH
+          15 :DEFAULT UNINITIALIZED :NAME DEMO)
+ (0 . ZERO))
+; The following array access produces a slow array warning because (@ a) is
+; no longer associated under-the-hood with the array name 'demo.
+ACL2 !&gt;(aref1 'demo (@ a) 0)<p>
+
+
+**********************************************************
+Slow Array Access!  A call of AREF1 on an array named
+DEMO is being executed slowly.  See :DOC slow-array-warning
+**********************************************************<p>
+
+ZERO
+; Now we associate under-the-hood, with array name 'demo, an alist equal to
+; (@ a).
+ACL2 !&gt;(compress1 'demo 
+                  '((:header :dimensions (5)
+                             :maximum-length 15
+                             :default uninitialized
+                             :name demo)
+                    (0 . zero)
+                    (1 . one)))
+((:HEADER :DIMENSIONS (5)
+          :MAXIMUM-LENGTH
+          15 :DEFAULT UNINITIALIZED :NAME DEMO)
+ (0 . ZERO)
+ (1 . ONE))
+; The following array access is still slow, because the under-the-hood array
+; is merely associated with a copy of (@ a), not with the actual object
+; (@ a).
+ACL2 !&gt;(aref1 'demo (@ a) 0)<p>
+
+
+**********************************************************
+Slow Array Access!  A call of AREF1 on an array named
+DEMO is being executed slowly.  See :DOC slow-array-warning
+**********************************************************<p>
+
+ZERO
+; So we might try to fix the problem by recompressing. But this doesn't
+; work.  It would work, by the way, if we re-assign a:
+; (assign a (compress1 'demo (@ a))).  That is why we usually will not need
+; flush-compress.
+ACL2 !&gt;(compress1 'demo (@ a))
+((:HEADER :DIMENSIONS (5)
+          :MAXIMUM-LENGTH
+          15 :DEFAULT UNINITIALIZED :NAME DEMO)
+ (0 . ZERO)
+ (1 . ONE))
+ACL2 !&gt;(aref1 'demo (@ a) 0)<p>
+
+
+**********************************************************
+Slow Array Access!  A call of AREF1 on an array named
+DEMO is being executed slowly.  See :DOC slow-array-warning
+**********************************************************<p>
+
+ZERO
+; Finally, we eliminate the warning by calling flush-compress before we call
+; compress1.  The call of flush-compress removes any under-the-hood
+; association of an array with the name 'demo.  Then the subsequent call of
+; compress1 associates the object (@ a) with that name.  (Technical point:
+; compress1 always associates the indicated name with the value that it
+; returns.  in this case, what compress1 returns is (@ a), because (@ a) is
+; already, logically speaking, a compressed array1p (starts with a :header
+; and the natural number keys are ordered).
+ACL2 !&gt;(flush-compress 'demo)
+NIL
+ACL2 !&gt;(compress1 'demo (@ a))
+((:HEADER :DIMENSIONS (5)
+          :MAXIMUM-LENGTH
+          15 :DEFAULT UNINITIALIZED :NAME DEMO)
+ (0 . ZERO)
+ (1 . ONE))
+ACL2 !&gt;(aref1 'demo (@ a) 0)
+ZERO
+ACL2 !&gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

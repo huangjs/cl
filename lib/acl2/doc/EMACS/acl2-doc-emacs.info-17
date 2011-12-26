@@ -1,0 +1,969 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: BACKCHAIN-LIMIT,  Next: BIBLIOGRAPHY,  Prev: ARRAYS,  Up: MISCELLANEOUS
+
+BACKCHAIN-LIMIT    limiting the effort expended on relieving hypotheses
+
+Before ACL2 can apply a rule with hypotheses, it must establish that
+the hypotheses are true.  (We ignore the relaxing of this requirement
+afforded by case-splits and forced hypotheses.)  ACL2 typically
+establishes each hypothesis by backchaining -- instantiating the
+hypothesis and then rewriting it recursively.  Here we describe how
+ACL2 allows the user to limit backchaining.
+
+Each hypothesis of a rewrite or linear rule is assigned a
+backchain-limit when the rule is stored.  By default, this limit is
+nil, denoting infinity (no limit).  However, the value used for the
+default may be set to a non-negative integer (or to nil) by the user;
+see *note SET-DEFAULT-BACKCHAIN-LIMIT::.  The default is overridden
+when a :backchain-limit-lst is supplied explicitly with the rule; see
+*note RULE-CLASSES::.  The number of recursive applications of
+backchaining starting with the hypothesis of a rule is limited to the
+backchain-limit associated with that hypothesis.
+
+Moreover, the user may set a global backchain-limit that limits the
+total backchaining depth.  See *Note SET-BACKCHAIN-LIMIT::.  Below we
+lay out the precise sense in which this global backchain-limit interacts
+with the backchain-limits of individual rules in order to limit
+backchaining.  But first we note that when further backchaining is
+disallowed, ACL2 can still prove a hypothesis in a given context by
+using that contextual information.  This process is sometimes called
+"type-set reasoning," an appropriate term since rules of class
+:type-prescription may be used.  So, for example, the relieving of
+hypotheses may be limited to the use of contextual information (without
+backchaining, i.e., without recursively rewriting hypotheses) by
+executing :set-backchain-limit 0.
+
+Recall that there are two sorts of backchain limits:  those applied to
+hypotheses of individual rules, as assigned by their :rule-classes or
+else taken from the default (see *note SET-DEFAULT-BACKCHAIN-LIMIT::);
+and the global limit, initially nil (no limit) but settable with
+:set-backchain-limit.  Here is how these two types of limits interact
+to limit backchaining, i.e., recursive rewriting of hypotheses.  ACL2
+maintains a current backchain limit, which is the limit on the depth of
+recursive calls to the rewriter, as well as a current backchain depth,
+which is initially 0 and is incremented each time ACL2 backchains (and
+is decremented when a backchain completes).  When ACL2 begins to
+rewrite a literal (crudely, one of the "top-level" terms of the goal
+currently being worked on), it sets the current backchain-limit to the
+global value, which is initially nil but can be set using
+:set-backchain-limit.  When ACL2 is preparing to relieve a hypothesis
+by backchaining (hence, after it has already tried type-set reasoning),
+it first makes sure that the current backchain limit is greater than
+the current backchain depth.  If not, then it refuses to relieve that
+hypothesis.  Otherwise, it increments the current backchain depth and
+calculates a new current backchain-limit by taking the minimum of two
+values: the existing current backchain-limit, and the sum of the
+current backchain depth and the the backchain-limit associated with the
+hypothesis.  Thus, ACL2 only modifies the current backchain-limit if it
+is necessary to decrease that limit in order to respect the backchain
+limit associated with the hypothesis.
+
+We illustrate with the following examples.
+
+     ; We stub out some functions so that we can reason about them.
+     
+     (defstub p0 (x) t)
+     (defstub p1 (x) t)
+     (defstub p2 (x) t)
+     (defstub p3 (x) t)
+     
+     ; Initially, the default-backchain-limit is nil, or infinite.
+     
+     (defaxiom p2-implies-p1-limitless
+       (implies (p2 x)
+                (p1 x)))
+     
+     ; The following rule will have a backchain-limit of 0.
+     
+     (defaxiom p1-implies-p0-limit-0
+       (implies (p1 x)
+                (p0 x))
+       :rule-classes ((:rewrite :backchain-limit-lst 0)))
+     
+     ; We have (p2 x) ==> (p1 x) ==> (p0 x).  We wish to establish that
+     ; (p2 x) ==> (p0 x).  Normally, this would be no problem, but here
+     ; we fail because ACL2 cannot establish (p0 x) by type-set reasoning
+     ; alone.
+     
+     (thm
+       (implies (p2 x)
+                (p0 x)))
+     
+     ; We set the default-backchain-limit to 1.
+     
+     :set-default-backchain-limit 1
+     
+     ; The following is more powerful than p1-implies-p0-limit-0
+     ; because it can use rewrite rules to establish (p1 x).
+     
+     (defaxiom p1-implies-p0-limit-1
+       (implies (p1 x)
+                (p0 x)))
+     
+     ; This theorem will succeed:
+     
+     (thm
+       (implies (p2 x)
+                (p0 x)))
+     
+     ; We return the default-backchain-limit to its initial value.
+     
+     :set-default-backchain-limit nil
+     
+     ; Here is our last axiom.
+     
+     (defaxiom p3-implies-p2-limitless
+       (implies (p3 x)
+                (p2 x)))
+     
+     ; We now have (p3 x) ==> (p2 x) ==> (p1 x) ==> (p0 x).  However the
+     ; rule p1-implies-p0-limit-1 has a backchain-limit of 1; hence we
+     ; are not allowed to backchain far enough back to use
+     ; p3-implies-p2-limitless.  We therefore lose.
+     
+     (defthm will-fail
+       (implies (p3 x)
+                (p0 x)))
+
+
+File: acl2-doc-emacs.info,  Node: BIBLIOGRAPHY,  Next: BIND-FREE,  Prev: BACKCHAIN-LIMIT,  Up: MISCELLANEOUS
+
+BIBLIOGRAPHY    reports about ACL2
+
+For a list of notes and reports about ACL2, see
+
+http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html.
+
+Below is a list of notes and reports pertaining to ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: BIND-FREE,  Next: BREAKS,  Prev: BIBLIOGRAPHY,  Up: MISCELLANEOUS
+
+BIND-FREE    to bind free variables of a rewrite or linear rule
+
+     Examples:
+     (IMPLIES (AND (RATIONALP LHS)
+                   (RATIONALP RHS)
+                   (BIND-FREE (FIND-MATCH-IN-PLUS-NESTS LHS RHS) (X)))
+              (EQUAL (EQUAL LHS RHS)
+                     (EQUAL (+ (- X) LHS) (+ (- X) RHS))))
+     
+     (IMPLIES (AND (BIND-FREE
+                     (FIND-RATIONAL-MATCH-IN-TIMES-NESTS LHS RHS MFC STATE)
+                     (X))
+                   (RATIONALP X)
+                   (CASE-SPLIT (NOT (EQUAL X 0))))
+              (EQUAL (< LHS RHS)
+                     (IF (< 0 X)
+                         (< (* (/ X) LHS) (* (/ X) RHS))
+                        (< (* (/ X) RHS) (* (/ X) LHS)))))
+
+* Menu:
+
+* BIND-FREE-EXAMPLES:: examples pertaining to bind-free hypotheses
+
+General Forms:
+
+     (BIND-FREE term var-list)
+     (BIND-FREE term t)
+     (BIND-FREE term)
+
+A rule which uses a bind-free hypothesis has similarities to both a
+rule which uses a syntaxp hypothesis and to a :meta rule.  Bind-free is
+like syntaxp, in that it logically always returns t but may affect the
+application of a :rewrite or :linear rule when it is called at the
+top-level of a hypothesis.  It is like a :meta rule, in that it allows
+the user to perform transformations of terms under progammatic control.
+
+Note that a bind-free hypothesis does not, in general, deal with the
+meaning or semantics or values of the terms, but rather with their
+syntactic forms.  Before attempting to write a rule which uses
+bind-free, the user should be familiar with syntaxp and the internal
+form that ACL2 uses for terms.  This internal form is similar to what
+the user sees, but there are subtle and important differences.  Trans
+can be used to view this internal form.
+
+Just as for a syntaxp hypothesis, there are two types of bind-free
+hypotheses.  The simpler type of bind-free hypothesis may be used as
+the nth hypothesis in a :rewrite or :linear rule whose :corollary is
+(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs)) provided term is
+a term, term contains at least one variable, and every variable
+occuring freely in term occurs freely in lhs or in some hypi, i<n.  In
+addition, term must not use any stobjs.  (Later below we will describe
+the second type, an _extended_ bind-free hypothesis, which may use
+state.)
+
+We begin our description of bind-free by examining the first example
+above in some detail.
+
+We wish to write a rule which will cancel "like" addends from both
+sides of an equality.  Clearly, one could write a series of rules such
+as
+
+     (DEFTHM THE-HARD-WAY-2-1
+        (EQUAL (EQUAL (+ A X B)
+                      (+ X C))
+               (EQUAL (+ A B)
+                      (FIX C))))
+
+with one rule for each combination of positions the matching addends
+might be found in (if one knew before-hand the maximum number of
+addends that would appear in a sum).  But there is a better way.  (In
+what follows, we assume the presence of an appropriate set of rules for
+simplifying sums.)
+
+Consider the following definitions and theorem:
+
+     (DEFUN INTERSECTION-EQUAL (X Y)
+       (COND ((ENDP X)
+              NIL)
+             ((MEMBER-EQUAL (CAR X) Y)
+              (CONS (CAR X) (INTERSECTION-EQUAL (CDR X) Y)))
+             (T
+              (INTERSECTION-EQUAL (CDR X) Y))))
+     
+     (DEFUN PLUS-LEAVES (TERM)
+       (IF (EQ (FN-SYMB TERM) 'BINARY-+)
+           (CONS (FARGN TERM 1)
+                 (PLUS-LEAVES (FARGN TERM 2)))
+         (LIST TERM)))
+     
+     (DEFUN FIND-MATCH-IN-PLUS-NESTS (LHS RHS)
+       (IF (AND (EQ (FN-SYMB LHS) 'BINARY-+)
+                (EQ (FN-SYMB RHS) 'BINARY-+))
+           (LET ((COMMON-ADDENDS (INTERSECTION-EQUAL (PLUS-LEAVES LHS)
+                                                     (PLUS-LEAVES RHS))))
+             (IF COMMON-ADDENDS
+                 (LIST (CONS 'X (CAR COMMON-ADDENDS)))
+               NIL))
+         NIL))
+     
+     (DEFTHM CANCEL-MATCHING-ADDENDS-EQUAL
+       (IMPLIES (AND (RATIONALP LHS)
+                     (RATIONALP RHS)
+                     (BIND-FREE (FIND-MATCH-IN-PLUS-NESTS LHS RHS) (X)))
+                (EQUAL (EQUAL LHS RHS)
+                       (EQUAL (+ (- X) LHS) (+ (- X) RHS)))))
+
+How is this rule applied to the following term?
+
+     (equal (+ 3 (expt a n) (foo a c))
+            (+ (bar b) (expt a n)))
+
+As mentioned above, the internal form of an ACL2 term is not always
+what one sees printed out by ACL2.  In this case, by using :trans one
+can see that the term is stored internally as
+
+     (equal (binary-+ '3
+                      (binary-+ (expt a n) (foo a c)))
+            (binary-+ (bar b) (expt a n))).
+
+When ACL2 attempts to apply cancel-matching-addends-equal to the term
+under discussion, it first forms a substitution that instantiates the
+left-hand side of the conclusion so that it is identical to the target
+term.  This substitution is kept track of by the substitution alist:
+
+     ((LHS . (binary-+ '3
+                        (binary-+ (expt a n) (foo a c))))
+      (RHS . (binary-+ (bar b) (expt a n)))).
+
+ACL2 then attempts to relieve the hypotheses in the order they were
+given. Ordinarily this means that we instantiate each hypothesis with
+our substitution and then attempt to rewrite the resulting instance to
+true.  Thus, in order to relieve the first hypothesis, we rewrite:
+
+     (RATIONALP (binary-+ '3
+                           (binary-+ (expt a n) (foo a c)))).
+
+Let us assume that the first two hypotheses rewrite to t.  How do we
+relieve the bind-free hypothesis?  Just as for a syntaxp hypothesis,
+ACL2 evaluates (find-match-in-plus-nests lhs rhs) in an environment
+where lhs and rhs are instantiated as determined by the substitution.
+In this case we evaluate
+
+     (FIND-MATCH-IN-PLUS-NESTS '(binary-+ '3
+                                           (binary-+ (expt a n) (foo a c)))
+                               '(binary-+ (bar b) (expt a n))).
+
+Observe that, just as in the case of a syntaxp hypothesis, we
+substitute the quotation of the variables bindings into the term to be
+evaluated.  See *Note SYNTAXP:: for the reasons for this.  The result
+of this evaluation, ((X . (EXPT A N))), is then used to extend the
+substitution alist:
+
+     ((X . (EXPT A N))
+      (LHS . (binary-+ '3
+                        (binary-+ (expt a n) (foo a c))))
+      (RHS . (binary-+ (bar b) (expt a n)))),
+
+and this extended substitution determines
+cancel-matching-addends-equal's result:
+
+     (EQUAL (+ (- X) LHS) (+ (- X) RHS))
+     ==>
+     (EQUAL (+ (- (EXPT A N)) 3 (EXPT A N) (FOO A C))
+            (+ (- (EXPT A N)) (BAR B) (EXPT A N))).
+
+Question: What is the internal form of this result?
+Hint: Use :trans.
+
+When this rule fires, it adds the negation of a common term to both
+sides of the equality by selecting a binding for the otherwise-free
+variable x, under programmatic control.  Note that other mechanisms
+such as the binding of free-variables may also extend the substitution
+alist.
+
+Just as for a syntaxp test, a bind-free form signals failure by
+returning nil.  However, while a syntaxp test signals success by
+returning true, a bind-free form signals success by returning an alist
+which is used to extend the current substitution alist.  Because of
+this use of the alist, there are several restrictions on it -- in
+particular the alist must only bind variables, these variables must not
+be already bound by the substitution alist, and the variables must be
+bound to ACL2 terms.  If term returns an alist and the alist meets
+these restrictions, we append the alist to the substitution alist and
+use the result as the new current substitution alist.  This new current
+substitution alist is then used when we attempt to relieve the next
+hypothesis or, if there are no more, instantiate the right hand side of
+the rule.
+
+There is also a second, optional, var-list argument to a bind-free
+hypothesis.  If provided, it must be either t or a list of variables.
+If it is not provided, it defaults to t.  If it is a list of variables,
+this second argument is used to place a further restriction on the
+possible values of the alist to be returned by term: any variables
+bound in the alist must be present in the list of variables.  We
+strongly recommend the use of this list of variables, as it allows some
+consistency checks to be performed at the time of the rule's admittance
+which are not possible otherwise.
+
+An extended bind-free hypothesis is similar to the simple type
+described above, but it uses two additional variables, mfc and state,
+which must not be bound by the left hand side or an earlier hypothesis
+of the rule.  They must be the last two variables mentioned by term:
+first mfc, then state.  These two variables give access to the
+functions mfc-xxx; see *note EXTENDED-METAFUNCTIONS::.  As described
+there, mfc is bound to the so-called metafunction-context and state to
+ACL2's state.  See *Note BIND-FREE-EXAMPLES:: for examples of the use
+of these extended bind-free hypotheses.
+
+
+File: acl2-doc-emacs.info,  Node: BIND-FREE-EXAMPLES,  Prev: BIND-FREE,  Up: BIND-FREE
+
+BIND-FREE-EXAMPLES    examples pertaining to bind-free hypotheses
+
+See *Note BIND-FREE:: for a basic discussion of the use of bind-free to
+control rewriting.
+
+We give examples of the use of bind-free hypotheses from the
+perspective of a user interested in reasoning about arithmetic, but it
+should be clear that bind-free can be used for many other purposes also.
+
+EXAMPLE 1:  Cancel a common factor.
+
+     (defun bind-divisor (a b)
+     
+     ; If a and b are polynomials with a common factor c, we return a
+     ; binding for x.  We could imagine writing get-factor to compute the
+     ; gcd, or simply to return a single non-invertible factor.
+     
+       (let ((c (get-factor a b)))
+         (and c (list (cons 'x c)))))
+     
+     (defthm cancel-factor
+       ;; We use case-split here to ensure that, once we have selected
+       ;; a binding for x, the rest of the hypotheses will be relieved.
+       (implies (and (acl2-numberp a)
+                     (acl2-numberp b)
+                     (bind-free (bind-divisor a b) (x))
+                     (case-split (not (equal x 0)))
+                     (case-split (acl2-numberp x)))
+                (iff (equal a b)
+                     (equal (/ a x) (/ b x)))))
+
+EXAMPLE 2:  Pull integer summand out of floor.  Note:  This example has
+an _extended_ bind-free hypothesis, which uses the term
+(find-int-in-sum sum mfc state).
+
+     (defun fl (x)
+       ;; This function is defined, and used, in the IHS books.
+       (floor x 1))
+     
+     (defun int-binding (term mfc state)
+       ;; The call to mfc-ts returns the encoded type of term.
+       ;; Thus, we are asking if term is known by type reasoning to
+       ;; be an integer.
+       (declare (xargs :stobjs (state) :mode :program))
+       (if (ts-subsetp (mfc-ts term mfc state)
+                       *ts-integer*)
+             (list (cons 'int term))
+       nil))
+     
+     (defun find-int-in-sum (sum mfc state)
+       (declare (xargs :stobjs (state) :mode :program))
+       (if (and (nvariablep sum)
+                (not (fquotep sum))
+                (eq (ffn-symb sum) 'binary-+))
+           (or (int-binding (fargn sum 1) mfc state)
+               (find-int-in-sum (fargn sum 2) mfc state))
+         (int-binding sum mfc state)))
+     
+     ; Some additional work is required to prove the following.  So for
+     ; purposes of illustration, we wrap skip-proofs around the defthm.
+     
+     (skip-proofs
+      (defthm cancel-fl-int
+       ;; The use of case-split is probably not needed, since we should
+       ;; know that int is an integer by the way we selected it.  But this
+       ;; is safer.
+        (implies (and (acl2-numberp sum)
+                      (bind-free (find-int-in-sum sum mfc state) (int))
+                      (case-split (integerp int)))
+                 (equal (fl sum)
+                        (+ int (fl (- sum int)))))
+        :rule-classes ((:rewrite :match-free :all)))
+     )
+     
+     ; Arithmetic libraries will have this sort of lemma.
+     (defthm hack (equal (+ (- x) x y) (fix y)))
+     
+     (in-theory (disable fl))
+     
+     (thm (implies (and (integerp x) (acl2-numberp y))
+                   (equal (fl (+ x y)) (+ x (fl y)))))
+
+EXAMPLE 3:  Simplify terms such as (equal (+ a (* a b)) 0)
+
+     (defun factors (product)
+       ;; We return a list of all the factors of product.  We do not
+       ;; require that product actually be a product.
+       (if (eq (fn-symb product) 'BINARY-*)
+           (cons (fargn product 1)
+                 (factors (fargn product 2)))
+         (list product)))
+     
+     (defun make-product (factors)
+       ;; Factors is assumed to be a list of ACL2 terms.  We return an
+       ;; ACL2 term which is the product of all the ellements of the
+       ;; list factors.
+       (cond ((atom factors)
+              ''1)
+             ((null (cdr factors))
+              (car factors))
+             ((null (cddr factors))
+              (list 'BINARY-* (car factors) (cadr factors)))
+             (t
+              (list 'BINARY-* (car factors) (make-product (cdr factors))))))
+     
+     (defun quotient (common-factors sum)
+       ;; Common-factors is a list of ACL2 terms.   Sum is an ACL2 term each
+       ;; of whose addends have common-factors as factors.  We return
+       ;; (/ sum (make-product common-factors)).
+       (if (eq (fn-symb sum) 'BINARY-+)
+           (let ((first (make-product (set-difference-equal (factors (fargn sum 1))
+                                                            common-factors))))
+             (list 'BINARY-+ first (quotient common-factors (fargn sum 2))))
+         (make-product (set-difference-equal (factors sum)
+                                             common-factors))))
+     
+     (defun intersection-equal (x y)
+       (cond ((endp x)
+              nil)
+             ((member-equal (car x) y)
+              (cons (car x) (intersection-equal (cdr x) y)))
+             (t
+              (intersection-equal (cdr x) y))))
+     
+     (defun common-factors (factors sum)
+       ;; Factors is a list of the factors common to all of the addends
+       ;; examined so far.  On entry, factors is a list of the factors in
+       ;; the first addend of the original sum, and sum is the rest of the
+       ;; addends.  We sweep through sum, trying to find a set of factors
+       ;; common to all the addends of sum.
+       (declare (xargs :measure (acl2-count sum)))
+       (cond ((null factors)
+              nil)
+             ((eq (fn-symb sum) 'BINARY-+)
+              (common-factors (intersection-equal factors (factors (fargn sum 1)))
+                              (fargn sum 2)))
+             (t
+              (intersection-equal factors (factors sum)))))
+     
+     (defun simplify-terms-such-as-a+ab-rel-0-fn (sum)
+       ;; If we can find a set of factors common to all the addends of sum,
+       ;; we return an alist binding common to the product of these common
+       ;; factors and binding quotient to (/ sum common).
+       (if (eq (fn-symb sum) 'BINARY-+)
+           (let ((common-factors (common-factors (factors (fargn sum 1))
+                                                 (fargn sum 2))))
+             (if common-factors
+                 (let ((common (make-product common-factors))
+                       (quotient (quotient common-factors sum)))
+                   (list (cons 'common common)
+                         (cons 'quotient quotient)))
+               nil))
+         nil))
+     
+     (defthm simplify-terms-such-as-a+ab-=-0
+       (implies (and (bind-free
+                      (simplify-terms-such-as-a+ab-rel-0-fn sum)
+                      (common quotient))
+                     (case-split (acl2-numberp common))
+                     (case-split (acl2-numberp quotient))
+                     (case-split (equal sum
+                                        (* common quotient))))
+                (equal (equal sum 0)
+                       (or (equal common 0)
+                           (equal quotient 0)))))
+     
+     (thm (equal (equal (+ u (* u v)) 0)
+           (or (equal u 0) (equal v -1))))
+
+
+File: acl2-doc-emacs.info,  Node: BREAKS,  Next: BY,  Prev: BIND-FREE,  Up: MISCELLANEOUS
+
+BREAKS    Common Lisp breaks
+
+     Example:
+     Broken at PROVE.  Type :H for Help.
+     >>:Q
+     
+     ACL2 !>
+
+You may interrupt the system by typing various control character
+sequences.  The precise sequences are determined by the host Lisp and
+operating system environment.  For example, in GCL and Allegro Common
+Lisp, a console interrupt is caused by typing "ctrl-c".  If, however,
+the GCL or Allegro is running in an Emacs shell buffer, one must type
+"ctrl-c ctrl-c".
+
+If a break occurs, for example because of a bug in ACL2 or a user
+interrupt, the break will run a Common Lisp read-eval-print loop, not
+an ACL2 read-eval-print loop.  This may not be obvious if the prompts
+in the two loops are similar.  Because you are typing to a Common Lisp
+evaluator, you must be careful.  It is possible to damage your ACL2
+state in irreparable ways by executing non-ACL2 Common Lisp.  It is
+even possible to disrupt and render inaccurate the interrupted
+evaluation of a simple ACL2 expression.
+
+For ACL2 built on most host Common Lisps, you will see the string [RAW
+LISP] in the prompt at a break, to emphasize that one is inside a break
+and hence should quit from the break.  For some host Common Lisps, the
+top-level prompt also contains the string [RAW LISP].  See *Note
+PROMPT:: for how to control printing of that string.
+
+The most reliable way to return to the ACL2 top level is by executing
+the following command: (abort!).  Appropriate cleanup will then be
+done, which should leave you in an appropriate state.
+
+However, you may be able to quit from the break in the normal Lisp
+manner (as with :q in GCL, :reset in Allegro CL, and q in CMU CL).  If
+this attempt to quit is successful, it will return you to the innermost
+ACL2 read-eval-print loop, with appropriate cleanup performed first.
+Note that if you are within a brr environment when the break occurs,
+quitting from the break will only return you to that environment, not
+to the top of ACL2's read-eval-print loop.
+
+
+File: acl2-doc-emacs.info,  Node: BY,  Next: CASE-SPLIT,  Prev: BREAKS,  Up: MISCELLANEOUS
+
+BY    hints keyword :BY
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: CASE-SPLIT,  Next: CASE-SPLIT-LIMITATIONS,  Prev: BY,  Up: MISCELLANEOUS
+
+CASE-SPLIT    like force but immediately splits the top-level goal on the hypothesis
+
+When a hypothesis of a conditional rule has the form (case-split hyp)
+it is logically equivalent to hyp.  However it affects the application
+of the rule generated as follows:  if ACL2 attempts to apply the rule
+but cannot establish that the required instance of hyp holds in the
+current context, it considers the hypothesis true anyhow, but (assuming
+all hypotheses are seen to be true and the rule is applied) creates a
+subgoal in which that instance of hyp is assumed false.  (There are
+exceptions, noted below.)
+
+For example, given the rule
+
+     (defthm p1->p2
+       (implies (case-split (p1 x))
+                (p2 x)))
+
+then an attempt to prove
+
+     (implies (p3 x) (p2 (car x)))
+
+can give rise to a single subgoal:
+
+     (IMPLIES (AND (NOT (P1 (CAR X))) (P3 X))
+              (P2 (CAR X))).
+
+Unlike force, case-split does not delay the "false case" to a forcing
+round but tackles it more or less immediately.
+
+The special "split" treatment of case-split can be disabled by
+disabling forcing:  see *note FORCE:: for a discussion of disabling
+forcing, and also see *note DISABLE-FORCING::.  Finally, we should
+mention that the rewriter is never willing to split when there is an if
+term present in the goal being simplified.  Since and terms and or
+terms are merely abbreviations for if terms, they also prevent
+splitting.  Note that if terms are ultimately eliminated using the
+ordinary flow of the proof (but see *note
+SET-CASE-SPLIT-LIMITATIONS::), so case-split will ultimately function
+as intended.
+
+When in the proof checker, case-split behaves like force.
+
+
+File: acl2-doc-emacs.info,  Node: CASE-SPLIT-LIMITATIONS,  Next: CASES,  Prev: CASE-SPLIT,  Up: MISCELLANEOUS
+
+CASE-SPLIT-LIMITATIONS    a list of two ``numbers'' limiting the number of cases produced at once
+
+     Examples:
+     ACL2 !>(case-split-limitations (w state))
+     (500 100)
+
+With the setting above, clausify will not try subsumption/replacement
+if more than 500 clauses are involved.  Furthermore, the simplifier, as
+it sweeps over a clause, will inhibit further case splits when it has
+accumulated 100 subgoals.  This inhibition is implemented by continuing
+to rewrite subsequent literals but not splitting out their cases.  This
+can produce literals containing IFs.
+
+See *Note SET-CASE-SPLIT-LIMITATIONS:: for a more general discussion.
+
+
+File: acl2-doc-emacs.info,  Node: CASES,  Next: CHECK-SUM,  Prev: CASE-SPLIT-LIMITATIONS,  Up: MISCELLANEOUS
+
+CASES    hints keyword :CASES
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: CHECK-SUM,  Next: CLAUSE-IDENTIFIER,  Prev: CASES,  Up: MISCELLANEOUS
+
+CHECK-SUM    assigning ``often unique'' integers to files and objects
+
+A "check sum" is an integer in some fixed range computed from the
+printed representation of an object, e.g., the sum, modulo 2**32, of
+the ascii codes of all the characters in the printed representation.
+
+Ideally, you would like the check sum of an object to be uniquely
+associated with that object, like a fingerprint.  It could then be used
+as a convenient way to recognize the object in the future: you could
+remember the check sum (which is relatively small) and when an object
+is presented to you and alleged to be the special one you could compute
+its check sum and see if indeed it was.  Alas, there are many more
+objects than check sums (after all, each check sum is an object, and
+then there's t).  So you try to design a check sum algorithm that maps
+similar looking objects far apart, in the hopes that corruptions and
+counterfeits -- which appear to be similar to the object -- have
+different check sums.  Nevertheless, the best you can do is a
+many-to-one map.  If an object with a different check sum is presented,
+you can be positive it is not the special object.  But if an object
+with the same check sum is presented, you have no grounds for positive
+identification.
+
+The basic check sum algorithm in ACL2 is called check-sum-obj, which
+computes the check sum of an ACL2 object.  Roughly speaking, we scan
+the print representation of the object and, for each character
+encountered, we multiply the ascii code of the character times its
+position in the stream (modulo a certain prime) and then add (modulo a
+certain prime) that into the running sum.  This is inaccurate in many
+senses (for example, we don't always use the ascii code and we see
+numbers as though they were printed in base 127) but indicates the
+basic idea.
+
+ACL2 uses check sums to increase security in the books mechanism; see
+*note CERTIFICATE::.
+
+
+File: acl2-doc-emacs.info,  Node: CLAUSE-IDENTIFIER,  Next: COMMAND,  Prev: CHECK-SUM,  Up: MISCELLANEOUS
+
+CLAUSE-IDENTIFIER    the internal form of a goal-spec
+
+To each goal-spec, str, there corresponds a clause-identifier produced
+by (parse-clause-id str).  For example,
+
+     (parse-clause-id "[2]Subgoal *4.5.6/7.8.9'''")
+
+returns ((2 4 5 6) (7 8 9) . 3).
+
+The function string-for-tilde-@-clause-id-phrase inverts
+parse-clause-id in the sense that given a clause identifier it returns
+the corresponding goal-spec.
+
+As noted in the documentation for goal-spec, each clause printed in the
+theorem prover's proof attempt is identified by a name.  When these
+names are represented as strings they are called "goal specs."  Such
+strings are used to specify where in the proof attempt a given hint is
+to be applied.  The function parse-clause-id converts goal-specs into
+clause identifiers, which are cons-trees containing natural numbers.
+
+Examples of goal-specs and their corresponding clause identifiers are
+shown below.
+
+                  parse-clause-id
+                        -->
+     
+     "Goal"                       ((0) NIL . 0)
+     "Subgoal 3.2.1'"             ((0) (3 2 1) . 1)
+     "[2]Subgoal *4.5.6/7.8.9'''" ((2 4 5 6) (7 8 9) . 3)
+     
+                        <--
+           string-for-tilde-@-clause-id-phrase
+
+The caar of a clause id specifies the forcing round, the cdar specifies
+the goal being proved by induction, the cadr specifies the particular
+subgoal, and the cddr is the number of primes in that subgoal.
+
+Internally, the system maintains clause ids, not goal-specs.  The
+system prints clause ids in the form shown by goal-specs.  When a
+goal-spec is used in a hint, it is parsed (before the proof attempt
+begins) into a clause id.  During the proof attempt, the system watches
+for the clause id and uses the corresponding hint when the id arises.
+(Because of the expense of creating and garbage collecting a lot of
+strings, this design is more efficient than the alternative.)
+
+
+File: acl2-doc-emacs.info,  Node: COMMAND,  Next: COMMAND-DESCRIPTOR,  Prev: CLAUSE-IDENTIFIER,  Up: MISCELLANEOUS
+
+COMMAND    forms you type at the top-level, but...
+
+...the word "command" usually refers to a top-level form whose
+evaluation produces a new logical world.
+
+     Typical commands are:
+     (defun foo (x) (cons x x))
+     (defthm consp-foo (consp (foo x)))
+     (defrec pair (hd . tl) nil)
+
+The first two forms are examples of commands that are in fact primitive
+events.  See *Note EVENTS::.  Defrec, on the other hand, is a macro
+that expands into a progn of several primitive events.  In general, a
+world extending command generates one or more events.
+
+Both events and commands leave landmarks on the world that enable us to
+determine how the given world was created from the previous one.  Most
+of your interactions will occur at the command level, i.e., you type
+commands, you print previous commands, and you undo back through
+commands.  Commands are denoted by command descriptors.  See *Note
+COMMAND-DESCRIPTOR::.
+
+
+File: acl2-doc-emacs.info,  Node: COMMAND-DESCRIPTOR,  Next: COMPUTED-HINTS,  Prev: COMMAND,  Up: MISCELLANEOUS
+
+COMMAND-DESCRIPTOR    an object describing a particular command typed by the user
+
+     Examples:
+     
+     :max      ; the command most recently typed by the user
+     :x        ; synonymous with :max
+     (:x -1)   ; the command before the most recent one
+     (:x -2)   ; the command before that
+     :x-2      ; synonymous with (:x -2)
+     5         ; the fifth command typed by the user
+     1         ; the first command typed by the user
+     0         ; the last command of the system initialization
+     -1        ; the next-to-last initialization command
+     :min      ; the first command of the initialization
+     :start    ; the last command of the initial ACL2 logical world
+     fn        ; the command that introduced the logical name fn
+     (:search (defmacro foo-bar))
+               ; the first command encountered in a search from :max to
+               ; 0 that either contains defmacro and foo-bar in the
+               ; command form or contains defmacro and foo-bar in some
+               ; event within its block.
+
+The recorded history of your interactions with the top-level ACL2
+command loop is marked by the commands you typed that changed the
+logical world.  Each such command generated one or more events, since
+the only way for you to change the logical world is to execute an event
+function.  See *Note COMMAND:: and see *note EVENTS::.  We divide
+history into "command blocks," grouping together each world changing
+command and its events.  A "command descriptor" is an object that can
+be used to describe a particular command in the history of the ongoing
+session.
+
+Each command is assigned a unique integer called its "command number"
+which indicates the command's position in the chronological ordering of
+all of the commands ever executed in this session (including those
+executed to initialize the system).  We assign the number 1 to the
+first command you type to ACL2.  We assign 2 to the second and so on.
+The non-positive integers are assigned to "prehistoric" commands, i.e.,
+the commands used to initialize the ACL2 system: 0 is the last command
+of the initialization, -1 is the one before that, etc.
+
+The legal command descriptors are described below.  We use n to denote
+any integer, sym to denote any logical name (see *note LOGICAL-NAME::),
+and cd to denote, recursively, any command descriptor.
+
+      command                   command
+     descriptor                described
+     
+     :max   -- the most recently executed command (i.e., the one with
+               the largest command number)
+     :x     -- synonymous with :max
+     :x-k   -- synonymous with (:x -k), if k is an integer and k>0
+     :min   -- the earliest command (i.e., the one with the smallest
+               command number and hence the first command of the system
+               initialization)
+     :start -- the last command when ACL2 starts up
+     n      -- command number n  (If n is not in the
+               range :min<=n<=:max, n is replaced by the nearest of :min
+               and :max.)
+     sym    -- the command that introduced the logical name sym
+     (cd n) -- the command whose number is n plus the command number of
+               the command described by cd
+     (:search pat cd1 cd2)
+               In this command descriptor, pat must be either an atom or
+               a true list of atoms and cd1 and cd2 must be command
+               descriptors.  We search the interval from cd1 through cd2
+               for the first command that matches pat.  Note that if cd1
+               occurs chronologically after cd2, the search is
+               ``backwards'' through history while if cd1 occurs
+               chronologically before cd2, the search is ``forwards''.  A
+               backwards search will find the most recent match; a
+               forward search will find the chronologically earliest
+               match.  A command matches pat if either the command form
+               itself or one of the events in the block contains pat (or
+               all of the atoms in pat if pat is a list).
+     (:search pat)
+               the command found by (:search pat :max 0), i.e., the most
+               recent command matching pat that was part of the user's
+               session, not part of the system initialization.
+
+
+File: acl2-doc-emacs.info,  Node: COMPUTED-HINTS,  Next: CONSTRAINT,  Prev: COMMAND-DESCRIPTOR,  Up: MISCELLANEOUS
+
+COMPUTED-HINTS    computing advice to the theorem proving process
+
+     General Form of :hints:
+     (hint1 hint2 ... hintk)
+
+Each element, hinti, must be either a common hint or a computed hint.
+
+A common hint is of the form
+
+     (goal-spec :key1 val1 ... :keyn valn)
+
+where goal-spec is as specified in goal-spec and each :keyi and vali is
+as specified in hints.
+
+A computed hint is either a function symbol, fn, of three, four or
+seven arguments or is any term whose only free variables are among ID,
+CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, and CTX.  The
+function symbol case is treated as an abbreviation of the term (fn ID
+CLAUSE WORLD), (fn ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP), or
+(fn ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP HIST PSPV CTX) as
+appropriate for the arity of fn.  (Note that this tells you which
+argument of fn is which.)  In the discussion below we assume all
+computed hints are of the term form.  Indeed, we almost assume all
+computed hints are of the 3 and 4 argument forms.  We only comment
+briefly on the 7 argument form in using-computed-hints-8.
+
+The evaluation of the term (in a context in which its variables are
+bound as described below) should be either nil, indicating that the
+hint is not applicable to the clause in question, or else the value is
+an alternating list of :keyi vali "pairs."  Except possibly for the
+first keyword, the :keyi vali pairs should be as specified in hints.
+That is, those elements of the result should be hint settings as you
+might have typed in a common hint.  The first keyword is allowed to be
+:COMPUTED-HINT-REPLACEMENT.  Its value should be nil, t, or a list of
+terms.  If this keyword is not present, the default value of nil is
+provided.
+
+The evaluation of a hint term is done with guard checking turned off
+(see *note SET-GUARD-CHECKING::); e.g., the form (car 23) in a computed
+hint returns nil as per the axioms.
+
+When a non-nil value is returned, the keyword/value pairs (other than
+the optional :COMPUTED-HINT-REPLACEMENT) are used as the hint for the
+subgoal in question.  Thus, your job as the programmer of computed
+hints is to generate the list of keys and values you would have typed
+had you supplied a common hint for the subgoal. (In particular, any
+theory expressions in it are evaluated with respect to the global
+current-theory, not whatever theory is active at the subgoal in
+question.)  If the generated list of keywords and values is illegal, an
+error will be signaled and the proof attempt will be aborted.
+
+The purpose of the :COMPUTED-HINT-REPLACEMENT keyword and its value,
+chr, is to change the list of hints.  If chr is nil, then the hint
+which was applied is removed from the list of hints that is passed down
+to the children of the subgoal in question.  This is the default.  If
+chr is t, then the hint is left in list of hints.  This means that the
+same hint may act on the children of the subgoal.  Otherwise, chr must
+be a list of terms, each of which is treated as a computed hint.  The
+hint which was applied is deleted from the list of hints and the hints
+in chr are added to the list of hints passed to the children of the
+subgoal.  The ability to compute new hints and pass them down allows
+strange and wonderful behavior.
+
+For these purposes, the goals produced by induction and the top-level
+goals of forcing rounds are not considered children; all original hints
+are available to them.
+
+After a computed hint is applied to a goal and before the goal is
+processed, the remaining applicable computed hints are applied.  For
+hint settings, such as :USE, that modify the goal, the effect of more
+than one applicable hint just compounds.  But for hint settings, such
+as :IN-THEORY that determine the context of the subsequent goal
+processing, only the last applicable hint is effective.
+
+It remains only to describe the bindings of the four variables.
+
+Suppose the theorem prover is working on some clause, clause, named by
+some goal-spec, e.g., "Subgoal *1/2"'" in some logical world, world.
+Corresponding to the printed goal-spec is an internal data structure
+called a "clause identifier" id.  See *Note CLAUSE-IDENTIFIER::.
+
+In the case of a common hint, the hint applies if the goal-spec of the
+hint is the same as the goal-spec of the clause in question.
+
+In the case of a computed hint, the variable ID is bound to the clause
+id, the variable CLAUSE is bound to the (translated form of the)
+clause, and the variable WORLD is bound to the current ACL2 world.  The
+variable STABLE-UNDER-SIMPLIFICATIONP is bound to t or nil.  It is
+bound to t only if the clause is known to be stable under
+simplification.  That is, the simplifier has been applied to the clause
+and did not change it.  Such a clause is sometimes known as a
+"simplification checkpoint."  It is frequently useful to inject hints
+(e.g., to enable a rule or provide a :use hint) only when the goal in
+question has stabilized.  If a hint is provided, the processing of the
+clause starts over with simplification.
+
+For some instruction about how to use computed hints, see *note
+USING-COMPUTED-HINTS::.
+

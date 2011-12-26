@@ -1,0 +1,60 @@
+<html>
+<head><title>CLAUSE-IDENTIFIER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CLAUSE-IDENTIFIER</h2>the internal form of a <a href="GOAL-SPEC.html">goal-spec</a>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+To each goal-spec, <code>str</code>, there corresponds a clause-identifier
+produced by <code>(parse-clause-id str)</code>.  For example,
+
+<pre>
+(parse-clause-id "[2]Subgoal *4.5.6/7.8.9'''")
+</pre>
+
+returns <code>((2 4 5 6) (7 8 9) . 3)</code>.<p>
+
+The function <code>string-for-tilde-@-clause-id-phrase</code> inverts
+<code>parse-clause-id</code> in the sense that given a clause identifier it
+returns the corresponding goal-spec.
+<p>
+As noted in the documentation for <a href="GOAL-SPEC.html">goal-spec</a>, each clause
+printed in the theorem prover's proof attempt is identified by a
+name.  When these names are represented as strings they are called
+``goal specs.''  Such strings are used to specify where in the proof
+attempt a given hint is to be applied.  The function
+<code>parse-clause-id</code> converts goal-specs into clause identifiers,
+which are cons-trees containing natural numbers.<p>
+
+Examples of goal-specs and their corresponding clause identifiers
+are shown below.
+
+<pre>
+             parse-clause-id
+                   --&gt;<p>
+
+"Goal"                       ((0) NIL . 0)
+"Subgoal 3.2.1'"             ((0) (3 2 1) . 1)
+"[2]Subgoal *4.5.6/7.8.9'''" ((2 4 5 6) (7 8 9) . 3)<p>
+
+                   &lt;--
+      string-for-tilde-@-clause-id-phrase
+</pre>
+<p>
+
+The caar of a clause id specifies the forcing round, the cdar
+specifies the goal being proved by induction, the cadr specifies the
+particular subgoal, and the cddr is the number of primes in that
+subgoal.<p>
+
+Internally, the system maintains clause ids, not goal-specs.  The
+system prints clause ids in the form shown by goal-specs.  When a
+goal-spec is used in a hint, it is parsed (before the proof attempt
+begins) into a clause id.  During the proof attempt, the system
+watches for the clause id and uses the corresponding hint when the
+id arises.  (Because of the expense of creating and garbage
+collecting a lot of strings, this design is more efficient than the
+alternative.)
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

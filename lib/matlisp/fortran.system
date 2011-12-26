@@ -1,0 +1,45 @@
+;; -*- Mode: lisp -*-
+
+;; Select the compiler and compile options you want to use
+
+(defparameter *fortran-compiler* "g77")
+(defparameter *fortran-options* '("-O"))
+
+(defun fortran-compile-file (filename &key output-file error-file)
+  (declare (ignore error-file))
+  (let ((arg-list
+	 (append *fortran-options*
+		 `("-c" ,filename ,@(if output-file `("-o" ,output-file))))))
+    ;;(format t "args = ~A~%" arg-list)
+    (mk::run-unix-program *fortran-compiler* arg-list)))
+
+;; How to create a library (archive) of object files
+(defun build-lib (libname directory)
+  (let ((args (list "rv" (namestring (translate-logical-pathname libname)))))
+    ;;(format t "args = ~A~%" (append args (directory directory)))
+    (format t ";; Building archive ~A~%" libname)
+    (ext:run-program "ar"
+		     (append args (mapcar #'namestring (directory directory))))))
+
+;; Set up some additional translations
+
+(eval-when (load compile eval)
+  (setf (logical-pathname-translations "matlisp")
+	(append (logical-pathname-translations "matlisp")
+		'(("matlisp:blas;*.*.*" "matlisp:lapack;blas;src;*.*.*")))))
+
+(mk:define-language :fortran
+    :compiler #'fortran-compile-file
+    :loader #'identity
+    :source-extension "f"
+    :binary-extension "o")
+
+(mk:defsystem fortran
+    :source-pathname "matlisp:"
+    :source-extension "f"
+    :binary-extension "o"
+    :language :fortran
+    :depends-on
+    ("dfftpack" "blas" "lapack"))
+
+

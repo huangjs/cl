@@ -1,0 +1,46 @@
+<html>
+<head><title>ACL2-PC_colon__colon_SPLIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::SPLIT</h3>(atomic macro)
+<code>   </code>split the current goal into cases
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+split
+</pre>
+
+For example, if the current goal has one hypothesis <code>(or x y)</code> and a
+conclusion of <code>(and a b)</code>, then <code>split</code> will create four new goals:
+
+<pre>
+one with hypothesis X and conclusion A
+one with hypothesis X and conclusion B
+one with hypothesis Y and conclusion A
+one with hypothesis Y and conclusion B.
+<p>
+General Form:
+SPLIT
+</pre>
+
+Replace the current goal by subgoals whose conjunction is equivalent
+(primarily by propositional reasoning) to the original goal, where
+each such goal cannot be similarly split.<p>
+
+<strong>Note:</strong>  The new goals will all have their hypotheses promoted; in
+particular, no conclusion will have a top function symbol of
+<code>implies</code>.  Also note that <code>split</code> will fail if there is exactly one new
+goal created and it is the same as the existing current goal.<p>
+
+The way <code>split</code> really works is to call the ACL2 theorem prover with only
+simplification (and preprocessing) turned on, and with only a few built-in
+functions (especially, propositional ones) enabled, namely, the ones in the
+list <code>(theory 'minimal-theory)</code>.  However, because the prover is called,
+type-set reasoning can be used to eliminate some cases.  For example, if
+<code>(true-listp x)</code> is in the hypotheses, then probably
+<code>(true-listp (cdr x))</code> will be reduced to <code>t</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

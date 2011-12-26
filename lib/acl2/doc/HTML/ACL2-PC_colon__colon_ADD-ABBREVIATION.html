@@ -1,0 +1,58 @@
+<html>
+<head><title>ACL2-PC_colon__colon_ADD-ABBREVIATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::ADD-ABBREVIATION</h3>(primitive)
+<code>   </code>add an abbreviation
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+Example:  <code>(add-abbreviation v (* x y))</code> causes future occurrences of
+<code>(* x y)</code> to be printed as <code>(? v)</code>, until (unless) a corresponding
+invocation of <code>remove-abbreviations</code> occurs.  In this case we say that
+<code>v</code> ``abbreviates'' <code>(* x y)</code>.
+<p>
+
+<pre>
+General Form:
+(add-abbreviation var &amp;optional raw-term)
+</pre>
+
+Let <code>var</code> be an abbreviation for <code>raw-term</code>, if <code>raw-term</code> is supplied,
+else for the current subterm.  Note that <code>var</code> must be a variable that
+does not already abbreviate some term.<p>
+
+A way to think of abbreviations is as follows.  Imagine that
+whenever an abbreviation is added, say <code>v</code> abbreviates <code>expr</code>, an entry
+associating <code>v</code> to <code>expr</code> is made in an association list, which we will
+call ``<code>*abbreviations-alist*</code>''.  Then simply imagine that <code>?</code> is a
+function defined by something like:
+
+<pre>
+(defun ? (v)
+  (let ((pair (assoc v *abbreviations-alist*)))
+    (if pair (cdr pair)
+      (error ...))))
+</pre>
+
+Of course the implementation isn't exactly like that, since the
+``constant'' <code>*abbreviations-alist*</code> actually changes each time an
+<code>add-abbreviation</code> instruction is successfully invoked.  Nevertheless,
+if one imagines an appropriate redefinition of the ``constant''
+<code>*abbreviations-alist*</code> each time an <code>add-abbreviation</code> is invoked, then
+one will have a clear model of the meaning of such an instruction.<p>
+
+The effect of abbreviations on output is that before printing a
+term, each subterm that is abbreviated by a variable <code>v</code> is first
+replaced by <code>(? v)</code>.<p>
+
+The effect of abbreviations on input is that every built-in
+proof-checker command accepts abbreviations wherever a term is
+expected as an argument, i.e., accepts the syntax <code>(? v)</code> whenever <code>v</code>
+abbreviates a term.  For example, the second argument of
+<code>add-abbreviation</code> may itself use abbreviations that have been defined
+by previous <code>add-abbreviation</code> instructions.<p>
+
+See also <code>remove-abbreviations</code> and <code>show-abbreviations</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

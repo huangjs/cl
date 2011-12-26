@@ -1,0 +1,1028 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL3-PHONEBOOK-EXAMPLE,  Next: TUTORIAL4-DEFUN-SK-EXAMPLE,  Prev: TUTORIAL2-EIGHTS-PROBLEM,  Up: TUTORIAL-EXAMPLES
+
+TUTORIAL3-PHONEBOOK-EXAMPLE    A Phonebook Specification
+
+The other tutorial examples are rather small and entirely self
+contained.  The present example is rather more elaborate, and makes use
+of a feature that really adds great power and versatility to ACL2,
+namely:  the use of previously defined collections of lemmas, in the
+form of "books."
+
+This example was written almost entirely by Bill Young of Computational
+Logic, Inc.
+
+This example is based on one developed by Ricky Butler and Sally
+Johnson of NASA Langley for the PVS system, and subsequently revised by
+Judy Crow, et al, at SRI.  It is a simple phone book specification.  We
+will not bother to follow their versions closely, but will instead
+present a style of specification natural for ACL2.
+
+The idea is to model an electronic phone book with the following
+properties.
+
+     Our phone book will store the phone numbers of a city.
+
+     It must be possible to retrieve a phone number, given a name.
+
+     It must be possible to add and delete entries.
+
+
+Of course, there are numerous ways to construct such a model.  A
+natural approach within the Lisp/ACL2 context is to use "association
+lists" or "alists."  Briefly, an alist is a list of pairs (key .
+value) associating a value with a key.  A phone book could be an alist
+of pairs (name . pnum).  To find the phone number associated with a
+given name, we merely search the alist until we find the appropriate
+pair.  For a large city, such a linear list would not be efficient, but
+at this point we are interested only in *modeling* the problem, not in
+deriving an efficient implementation.  We could address that question
+later by proving our alist model equivalent, in some desired sense, to
+a more efficient data structure.
+
+We could build a theory of alists from scratch, or we can use a
+previously constructed theory (book) of alist definitions and facts.
+By using an existing book, we build upon the work of others, start our
+specification and proof effort from a much richer foundation, and
+hopefully devote more of our time to the problem at hand.
+Unfortunately, it is not completely simple for the new user to know
+what books are available and what they contain.  We hope later to
+improve the documentation of the growing collection of books available
+with the ACL2 distribution; for now, the reader is encouraged to look
+in the README file in the books subdirectory.  For present purposes,
+the beginning user can simply take our word that a book exists
+containing useful alist definitions and facts.  On our local machine,
+these definitions and lemmas can be introduced into the current theory
+using the command:
+
+
+       (include-book "/slocal/src/acl2/v1-9/books/public/alist-defthms")
+
+This book has been "certified," which means that the definitions and
+lemmas have been mechanically checked and stored in a safe manner.
+(See *Note BOOKS:: and see *note INCLUDE-BOOK:: for details.)
+
+Including this book makes available a collection of functions including
+the following:
+
+
+     (ALISTP A)    ; is A an alist (actually a primitive ACL2 function)
+     
+     (BIND X V A)  ; associate the key X with value V in alist A
+     
+     (BINDING X A) ; return the value associated with key X in alist A
+     
+     (BOUND? X A)  ; is key X associated with any value in alist A
+     
+     (DOMAIN A)    ; return the list of keys bound in alist A
+     
+     (RANGE A)     ; return the list of values bound to keys in alist A
+     
+     (REMBIND X A) ; remove the binding of key X in alist A
+
+Along with these function definitions, the book also provides a number
+of proved lemmas that aid in simplifying expressions involving these
+functions.  (See *Note RULE-CLASSES:: for the way in which lemmas are
+used in simplification and rewriting.)  For example,
+
+
+       (defthm bound?-bind
+         (equal (bound? x (bind y v a))
+                (or (equal x y)
+                    (bound? x a))))
+
+asserts that x will be bound in (bind y v a) if and only if: either x =
+y or x was already bound in a.  Also,
+
+
+       (defthm binding-bind
+         (equal (binding x (bind y v a))
+                (if (equal x y)
+                    v
+                  (binding x a))))
+
+asserts that the resulting binding will be v, if x = y, or the binding
+that x had in a already, if not.
+
+Thus, the inclusion of this book essentially extends our specification
+and reasoning capabilities by the addition of new operations and facts
+about these operations that allow us to build further specifications on
+a richer and possibly more intuitive foundation.
+
+However, it must be admitted that the use of a book such as this has
+two potential limitations:
+
+     the definitions available in a book may not be ideal for your
+     particular problem;
+
+     it is (extremely) likely that some useful facts (especially,
+     rewrite rules) are not available in the book and will have to be
+     proved.
+
+
+For example, what is the value of binding when given a key that is not
+bound in the alist?  We can find out by examining the function
+definition.  Look at the definition of the binding function (or any
+other defined function), using the :pe command:
+
+
+       ACL2 !>:pe binding
+          d     33  (INCLUDE-BOOK
+                         "/slocal/src/acl2/v1-9/books/public/alist-defthms")
+     
+       >V d          (DEFUN BINDING (X A)
+                            "The value bound to X in alist A."
+                            (DECLARE (XARGS :GUARD (ALISTP A)))
+                            (CDR (ASSOC-EQUAL X A)))
+
+This tells us that binding was introduced by the given include-book
+form, is currently disabled in the current theory, and has the
+definition given by the displayed defun form.  We see that binding is
+actually defined in terms of the primitive assoc-equal function.  If we
+look at the definition of assoc-equal:
+
+
+       ACL2 !>:pe assoc-equal
+        V     -489  (DEFUN ASSOC-EQUAL (X ALIST)
+                           (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+                           (COND ((ENDP ALIST) NIL)
+                                 ((EQUAL X (CAR (CAR ALIST)))
+                                  (CAR ALIST))
+                                 (T (ASSOC-EQUAL X (CDR ALIST)))))
+
+we can see that assoc-equal returns nil upon reaching the end of an
+unsuccessful search down the alist.  So binding returns (cdr nil) in
+that case, which is nil.  Notice that we could also have investigated
+this question by trying some simple examples.
+
+
+       ACL2 !>(binding 'a nil)
+       NIL
+     
+       ACL2 !>(binding 'a (list (cons 'b 2)))
+       NIL
+
+These definitions aren't ideal for all purposes. For one thing, there's
+nothing that keeps us from having nil as a value bound to some key in
+the alist.  Thus, if binding returns nil we don't always know if that
+is the value associated with the key in the alist, or if that key is
+not bound.  We'll have to keep that ambiguity in mind whenever we use
+binding in our specification.  Suppose instead that we wanted binding
+to return some error string on unbound keys.  Well, then we'd just have
+to write our own version of binding.  But then we'd lose much of the
+value of using a previously defined book.  As with any specification
+technique, certain tradeoffs are necessary.
+
+Why not take a look at the definitions of other alist functions and see
+how they work together to provide the ability to construct and search
+alists?  We'll be using them rather heavily in what follows so it will
+be good if you understand basically how they work.  Simply start up
+ACL2 and execute the form shown earlier, but substituting our directory
+name for the top-level ACL2 directory with yours.  Alternatively, the
+following should work if you start up ACL2 in the directory of the ACL2
+sources:
+
+
+       (include-book "books/public/alist-defthms")
+
+Then, you can use :pe to look at function definitions.  You'll soon
+discover that almost all of the definitions are built on definitions of
+other, more primitive functions, as binding is built on assoc-equal.
+You can look at those as well, of course, or in many cases visit their
+documentation.
+
+The other problem with using a predefined book is that it will seldom
+be "sufficiently complete," in the sense that the collection of rewrite
+rules supplied won't be adequate to prove everything we'd like to know
+about the interactions of the various functions.  If it were, there'd
+be no real reason to know that binding is built on top of assoc-equal,
+because everything we'd need to know about binding would be nicely
+expressed in the collection of theorems supplied with the book.
+However, that's very seldom the case.  Developing such a collection of
+rules is currently more art than science and requires considerable
+experience.  We'll encounter examples later of "missing" facts about
+binding and our other alist functions.  So, let's get on with the
+example.
+
+Notice that alists are mappings of keys to values; but, there is no
+notion of a "type" associated with the keys or with the values.  Our
+phone book example, however, does have such a notion of types; we map
+names to phone numbers.  We can introduce these "types" by explicitly
+defining them, e.g., names are strings and phone numbers are integers.
+Alternatively, we can *partially define* or axiomatize a recognizer for
+names without giving a full definition.  A way to safely introduce such
+"constrained" function symbols in ACL2 is with the encapsulate form.
+For example, consider the following form.
+
+
+       (encapsulate
+         ;; Introduce a recognizer for names and give a ``type'' lemma.
+         (((namep *) => *))
+         ;;
+         (local (defun namep (x)
+                  ;; This declare is needed to tell
+                  ;; ACL2 that we're aware that the
+                  ;; argument x is not used in the body
+                  ;; of the function.
+                  (declare (ignore x))
+                  t))
+         ;;
+         (defthm namep-booleanp
+           (booleanp (namep x))))
+
+This encapsulate form introduces the new function namep of one argument
+and one result and constrains (namep x) to be Boolean, for all inputs
+x.  More generally, an encapsulation establishes an environment in
+which functions can be defined and theorems and rules added without
+necessarily introducing those functions, theorems, and rules into the
+environment outside the encapsulation.  To be admissible, all the
+events in the body of an encapsulate must be admissible.  But the
+effect of an encapsulate is to assume only the non-local events.
+
+The first "argument" to encapsulate, ((namep (x) t)) above, declares
+the intended signatures of new function symbols that will be "exported"
+from the encapsulation without definition.  The local defun of name
+defines name within the encapsulation always to return t.  The defthm
+event establishes that namep is Boolean.  By making the defun local but
+the defthm non-local this encapsulate constrains the undefined function
+namep to be Boolean; the admissibility of the encapsulation establishes
+that there exists a Boolean function (namely the constant function
+returning t).
+
+We can subsequently use namep as we use any other Boolean function,
+with the proviso that we know nothing about it except that it always
+returns either t or nil.  We use namep to "recognize" legal keys for
+our phonebook alist.
+
+We wish to do something similar to define what it means to be a legal
+phone number.  We submit the following form to ACL2:
+
+
+       (encapsulate
+         ;; Introduce a recognizer for phone numbers.
+         (((pnump *) => *))
+         ;;
+         (local (defun pnump (x)
+                  (not (equal x nil))))
+         ;;
+         (defthm pnump-booleanp
+           (booleanp (pnump x)))
+         ;;
+         (defthm nil-not-pnump
+           (not (pnump nil)))).
+
+This introduces a Boolean-valued recognizer pnump, with the additional
+proviso that the constant nil is not a pnump.  We impose this
+restriction to guarantee that we'll never bind a name to nil in our
+phone book and thereby introduce the kind of ambiguity described above
+regarding the use of binding.
+
+Now a legal phone book is an alist mapping from nameps to pnumps.  We
+can define this as follows:
+
+
+       (defun name-phonenum-pairp (x)
+         ;; Recognizes a pair of (name . pnum).
+         (and (consp x)
+              (namep (car x))
+              (pnump (cdr x))))
+     
+       (defun phonebookp (l)
+         ;; Recognizes a list of such pairs.
+         (if (not (consp l))
+             (null l)
+           (and (name-phonenum-pairp (car l))
+                (phonebookp (cdr l)))))
+
+Thus, a phone book is really a list of pairs (name . pnum).  Notice
+that we have not assumed that the keys of the phone book are distinct.
+We'll worry about that question later.  (It is not always desirable to
+insist that the keys of an alist be distinct.  But it may be a useful
+requirement for our specific example.)
+
+Now we are ready to define some of the functions necessary for our
+phonebook example.  The functions we need are:
+
+
+     (IN-BOOK? NM BK)          ; does NM have a phone number in BK
+     
+     (FIND-PHONE NM BK)        ; find NM's phone number in phonebook BK
+     
+     (ADD-PHONE NM PNUM BK)    ; give NM the phone number PNUM in BK
+     
+     (CHANGE-PHONE NM PNUM BK) ; change NM's phone number to PNUM in BK
+     
+     (DEL-PHONE NM PNUM)       ; remove NM's phone number from BK
+
+Given our underlying theory of alists, it is easy to write these
+functions.  But we must take care to specify appropriate "boundary"
+behavior.  Thus, what behavior do we want when, say, we try to change
+the phone number of a client who is not currently in the book?  As
+usual, there are numerous possibilities; here we'll assume that we
+return the phone book unchanged if we try anything "illegal."
+
+Possible definitions of our phone book functions are as follows.
+(Remember, an include-book form such as the ones shown earlier must be
+executed in order to provide definitions for functions such as bound?.)
+
+
+       (defun in-book? (nm bk)
+         (bound? nm bk))
+     
+       (defun find-phone (nm bk)
+         (binding nm bk))
+     
+       (defun add-phone (nm pnum bk)
+         ;; If nm already in-book?, make no change.
+         (if (in-book? nm bk)
+             bk
+           (bind nm pnum bk)))
+     
+       (defun change-phone (nm pnum bk)
+         ;; Make a change only if nm already has a phone number.
+         (if (in-book? nm bk)
+             (bind nm pnum bk)
+           bk))
+     
+       (defun del-phone (nm bk)
+         ;; Remove the binding from bk, if there is one.
+         (rembind nm bk))
+
+Notice that we don't have to check whether a name is in the book before
+deleting, because rembind is essentially a no-op if nm is not bound in
+bk.
+
+In some sense, this completes our specification.  But we can't have any
+real confidence in its correctness without validating our specification
+in some way.  One way to do so is by proving some properties of our
+specification.  Some candidate properties are:
+
+     1. A name will be in the book after we add it.
+
+     2. We will find the most recently added phone number for a client.
+
+     3. If we change a number, we'll find the change.
+
+     4. Changing and then deleting a number is the same as just
+     deleting.
+
+     5. A name will not be in the book after we delete it.
+
+
+Let's formulate some of these properties.  The first one, for example,
+is:
+
+
+       (defthm add-in-book
+         (in-book? nm (add-phone nm pnum bk))).
+
+You may wonder why we didn't need any hypotheses about the "types" of
+the arguments.  In fact, add-in-book is really expressing a property
+that is true of alists in general, not just of the particular variety
+of alists we are dealing with.  Of course, we could have added some
+extraneous hypotheses and proved:
+
+
+       (defthm add-in-book
+         (implies (and (namep nm)
+                       (pnump pnum)
+                       (phonebookp bk))
+                  (in-book? nm (add-phone nm pnum bk)))),
+
+but that would have yielded a weaker and less useful lemma because it
+would apply to fewer situations.  In general, it is best to state
+lemmas in the most general form possible and to eliminate unnecessary
+hypotheses whenever possible.  The reason for that is simple: lemmas
+are usually stored as rules and used in later proofs.  For a lemma to
+be used, its hypotheses must be relieved (proved to hold in that
+instance); extra hypotheses require extra work.  So we avoid them
+whenever possible.
+
+There is another, more important observation to make about our lemma.
+Even in its simpler form (without the extraneous hypotheses), the lemma
+add-in-book may be useless as a rewrite rule.  Notice that it is stated
+in terms of the non-recursive functions in-book? and add-phone.  If such
+functions appear in the left hand side of the conclusion of a lemma,
+the lemma may not ever be used.  Suppose in a later proof, the theorem
+prover encountered a term of the form:
+
+
+       (in-book? nm (add-phone nm pnum bk)).
+
+Since we've already proved add-in-book, you'd expect that this would be
+immediately reduced to true.  However, the theorem prover will often
+"expand" the non-recursive definitions of in-book?  and add-phone using
+their definitions *before* it attempts rewriting with lemmas.  After
+this expansion, lemma add-in-book won't "match" the term and so won't
+be applied.  Look back at the proof script for add-in-proof and you'll
+notice that at the very end the prover warned you of this potential
+difficulty when it printed:
+
+
+       Warnings:  Non-rec
+       Time:  0.18 seconds (prove: 0.05, print: 0.00, other: 0.13)
+       ADD-IN-BOOK
+
+The "Warnings" line notifies you that there are non-recursive function
+calls in the left hand side of the conclusion and that this problem
+might arise.  Of course, it may be that you don't ever plan to use the
+lemma for rewriting or that your intention is to disable these
+functions.  Disabled functions are not expanded and the lemma should
+apply.  However, you should always take note of such warnings and
+consider an appropriate response.  By the way, we noted above that
+binding is disabled.  If it were not, none of the lemmas about binding
+in the book we included would likely be of much use for exactly the
+reason we just gave.
+
+For our current example, let's assume that we're just investigating the
+properties of our specifications and not concerned about using our
+lemmas for rewriting.  So let's go on.  If we really want to avoid the
+warnings, we can add :rule-classes nil to each defthm event; see *note
+RULE-CLASSES::.
+
+Property 2 is:  we always find the most recently added phone number for
+a client.  Try the following formalization:
+
+
+       (defthm find-add-first-cut
+         (equal (find-phone nm (add-phone nm pnum bk))
+                pnum))
+
+and you'll find that the proof attempt fails.  Examining the proof
+attempt and our function definitions, we see that the lemma is false if
+nm is already in the book.  We can remedy this situation by
+reformulating our lemma in at least two different ways:
+
+
+       (defthm find-add1
+         (implies (not (in-book? nm bk))
+                  (equal (find-phone nm (add-phone nm pnum bk))
+                         pnum)))
+     
+       (defthm find-add2
+         (equal (find-phone nm (add-phone nm pnum bk))
+                (if (in-book? nm bk)
+                    (find-phone nm bk)
+                    pnum)))
+
+For technical reasons, lemmas such as find-add2, i.e., which do not
+have hypotheses, are usually slightly preferable.  This lemma is stored
+as an "unconditional" rewrite rule (i.e., has no hypotheses) and,
+therefore, will apply more often than find-add1.  However, for our
+current purposes either version is all right.
+
+Property 3 says: If we change a number, we'll find the change.  This is
+very similar to the previous example.  The formalization is as follows.
+
+
+       (defthm find-change
+         (equal (find-phone nm (change-phone nm pnum bk))
+                (if (in-book? nm bk)
+                    pnum
+                  (find-phone nm bk))))
+
+Property 4 says: changing and then deleting a number is the same as
+just deleting.  We can model this as follows.
+
+
+       (defthm del-change
+         (equal (del-phone nm (change-phone nm pnum bk))
+                (del-phone nm bk)))
+
+Unfortunately, when we try to prove this, we encounter subgoals that
+seem to be true, but for which the prover is stumped.  For example,
+consider the following goal.  (Note:  endp holds of lists that are
+empty.)
+
+
+       Subgoal *1/4
+       (IMPLIES (AND (NOT (ENDP BK))
+                     (NOT (EQUAL NM (CAAR BK)))
+                     (NOT (BOUND? NM (CDR BK)))
+                     (BOUND? NM BK))
+                (EQUAL (REMBIND NM (BIND NM PNUM BK))
+                       (REMBIND NM BK))).
+
+Our intuition about rembind and bind tells us that this goal should be
+true even without the hypotheses.  We attempt to prove the following
+lemma.
+
+
+       (defthm rembind-bind
+         (equal (rembind nm (bind nm pnum bk))
+                (rembind nm bk)))
+
+The prover proves this by induction, and stores it as a rewrite rule.
+After that, the prover has no difficulty in proving del-change.
+
+The need to prove lemma rembind-bind illustrates a point we made early
+in this example:  the collection of rewrite rules supplied by a
+previously certified book will almost never be everything you'll need.
+It would be nice if we could operate purely in the realm of names,
+phone numbers, and phone books without ever having to prove any new
+facts about alists.  Unfortunately, we needed a fact about the relation
+between rembind and bind that wasn't supplied with the alists theory.
+Hopefully, such omissions will be rare.
+
+Finally, let's consider our property 5 above:  a name will not be in
+the book after we delete it.  We formalize this as follows:
+
+
+       (defthm in-book-del
+         (not (in-book? nm (del-phone nm bk))))
+
+This proves easily.  But notice that it's only true because del-phone
+(actually rembind) removes *all* occurrences of a name from the phone
+book.  If it only removed, say, the first one it encountered, we'd need
+a hypothesis that said that nm occurs at most once in bk.  Ah, maybe
+that's a property you hadn't considered.  Maybe you want to ensure that
+*any* name occurs at most once in any valid phonebook.
+
+To complete this example, let's consider adding an *invariant* to our
+specification.  In particular, suppose we want to assure that no client
+has more than one associated phone number.  One way to ensure this is
+to require that the domain of the alist is a "set" (has no duplicates).
+
+
+       (defun setp (l)
+         (if (atom l)
+             (null l)
+           (and (not (member-equal (car l) (cdr l)))
+                (setp (cdr l)))))
+     
+       (defun valid-phonebookp (bk)
+         (and (phonebookp bk)
+              (setp (domain bk))))
+
+Now, we want to show under what conditions our operations preserve the
+property of being a valid-phonebookp.  The operations in-book?  and
+find-phone don't return a phone book, so we don't really need to worry
+about them.  Since we're really interested in the "types" of values
+preserved by our phonebook functions, let's look at the types of those
+operations as well.
+
+
+       (defthm in-book-booleanp
+         (booleanp (in-book? nm bk)))
+     
+       (defthm in-book-namep
+         (implies (and (phonebookp bk)
+                       (in-book? nm bk))
+                  (namep nm))
+         :hints (("Goal" :in-theory (enable bound?))))
+     
+       (defthm find-phone-pnump
+         (implies (and (phonebookp bk)
+                       (in-book? nm bk))
+                  (pnump (find-phone nm bk)))
+         :hints (("Goal" :in-theory (enable bound? binding))))
+
+Note the ":hints" on the last two lemmas.  Neither of these would prove
+without these hints, because once again there are some facts about
+bound? and binding not available in our current context.  Now, we could
+figure out what those facts are and try to prove them.  Alternatively,
+we can enable bound? and binding and hope that by opening up these
+functions, the conjectures will reduce to versions that the prover does
+know enough about or can prove by induction.  In this case, this
+strategy works.  The hints tell the prover to enable the functions in
+question when considering the designated goal.
+
+Below we develop the theorems showing that add-phone, change-phone, and
+del-phone preserve our proposed invariant.  Notice that along the way
+we have to prove some subsidiary facts, some of which are pretty ugly.
+It would be a good idea for you to try, say,
+add-phone-preserves-invariant without introducing the following four
+lemmas first.  See if you can develop the proof and only add these
+lemmas as you need assistance.  Then try
+change-phone-preserves-invariant and del-phone-preserves-invariant.
+They will be easier.  It is illuminating to think about why
+del-phone-preserves-invariant does not need any "type" hypotheses.
+
+
+       (defthm bind-preserves-phonebookp
+         (implies (and (phonebookp bk)
+                       (namep nm)
+                       (pnump num))
+                  (phonebookp (bind nm num bk))))
+     
+       (defthm member-equal-strip-cars-bind
+         (implies (and (not (equal x y))
+                       (not (member-equal x (strip-cars a))))
+                  (not (member-equal x (strip-cars (bind y z a))))))
+     
+       (defthm bind-preserves-domain-setp
+         (implies (and (alistp bk)
+                       (setp (domain bk)))
+                  (setp (domain (bind nm num bk))))
+         :hints (("Goal" :in-theory (enable domain))))
+     
+       (defthm phonebookp-alistp
+         (implies (phonebookp bk)
+                  (alistp bk)))
+     
+       (defthm ADD-PHONE-PRESERVES-INVARIANT
+         (implies (and (valid-phonebookp bk)
+                       (namep nm)
+                       (pnump num))
+                  (valid-phonebookp (add-phone nm num bk)))
+         :hints (("Goal" :in-theory (disable domain-bind))))
+     
+       (defthm CHANGE-PHONE-PRESERVES-INVARIANT
+         (implies (and (valid-phonebookp bk)
+                       (namep nm)
+                       (pnump num))
+                  (valid-phonebookp (change-phone nm num bk)))
+         :hints (("Goal" :in-theory (disable domain-bind))))
+     
+       (defthm remove-equal-preserves-setp
+         (implies (setp l)
+                  (setp (remove-equal x l))))
+     
+       (defthm rembind-preserves-phonebookp
+         (implies (phonebookp bk)
+                  (phonebookp (rembind nm bk))))
+     
+       (defthm DEL-PHONE-PRESERVES-INVARIANT
+         (implies (valid-phonebookp bk)
+                  (valid-phonebookp (del-phone nm bk))))
+
+As a final test of your understanding, try to formulate and prove an
+invariant that says that no phone number is assigned to more than one
+name.  The following hints may help.
+
+     1. Define the appropriate invariant.  (Hint: remember the function
+     range.)
+
+     2. Do our current definitions of add-phone and change-phone
+     necessarily preserve this property?  If not, consider what
+     hypotheses are necessary in order to guarantee that they do
+     preserve this property.
+
+     3. Study the definition of the function range and notice that it
+     is defined in terms of the function strip-cdrs.  Understand how
+     this defines the range of an alist.
+
+     4. Formulate the correctness theorems and attempt to prove them.
+     You'll probably benefit from studying the invariant proof above.
+     In particular, you may need some fact about the function strip-cdrs
+     analogous to the lemma member-equal-strip-cars-bind above.
+
+
+Below is one solution to this exercise.  Don't look at the solution,
+however, until you've struggled a bit with it.  Notice that we didn't
+actually change the definitions of add-phone and change-phone, but
+added a hypothesis saying that the number is "new."  We could have
+changed the definitions to check this and return the phonebook
+unchanged if the number was already in use.
+
+
+       (defun pnums-in-use (bk)
+         (range bk))
+     
+       (defun phonenums-unique (bk)
+         (setp (pnums-in-use bk)))
+     
+       (defun new-pnump (pnum bk)
+         (not (member-equal pnum (pnums-in-use bk))))
+     
+       (defthm member-equal-strip-cdrs-rembind
+         (implies (not (member-equal x (strip-cdrs y)))
+                  (not (member-equal x (strip-cdrs (rembind z y))))))
+     
+       (defthm DEL-PHONE-PRESERVES-PHONENUMS-UNIQUE
+         (implies (phonenums-unique bk)
+                  (phonenums-unique (del-phone nm bk)))
+         :hints (("Goal" :in-theory (enable range))))
+     
+       (defthm strip-cdrs-bind-non-member
+         (implies (and (not (bound? x a))
+                       (alistp a))
+                  (equal (strip-cdrs (bind x y a))
+                         (append (strip-cdrs a) (list y))))
+         :hints (("Goal" :in-theory (enable bound?))))
+     
+       (defthm setp-append-list
+         (implies (setp l)
+                  (equal (setp (append l (list x)))
+                         (not (member-equal x l)))))
+     
+       (defthm ADD-PHONE-PRESERVES-PHONENUMS-UNIQUE
+         (implies (and (phonenums-unique bk)
+                       (new-pnump pnum bk)
+                       (alistp bk))
+                  (phonenums-unique (add-phone nm pnum bk)))
+         :hints (("Goal" :in-theory (enable range))))
+     
+       (defthm member-equal-strip-cdrs-bind
+         (implies (and (not (member-equal z (strip-cdrs a)))
+                       (not (equal z y)))
+                  (not (member-equal z (strip-cdrs (bind x y a))))))
+     
+       (defthm CHANGE-PHONE-PRESERVES-PHONENUMS-UNIQUE
+         (implies (and (phonenums-unique bk)
+                       (new-pnump pnum bk)
+                       (alistp bk))
+                  (phonenums-unique (change-phone nm pnum bk)))
+         :hints (("Goal" :in-theory (enable range))))
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL4-DEFUN-SK-EXAMPLE,  Next: TUTORIAL5-MISCELLANEOUS-EXAMPLES,  Prev: TUTORIAL3-PHONEBOOK-EXAMPLE,  Up: TUTORIAL-EXAMPLES
+
+TUTORIAL4-DEFUN-SK-EXAMPLE    example of quantified notions
+
+This example illustrates the use of defun-sk and defthm events to
+reason about quantifiers.  See *Note DEFUN-SK::.
+
+Many users prefer to avoid the use of quantifiers, since ACL2 provides
+only very limited support for reasoning about quantifiers.
+
+Here is a list of events that proves that if there are arbitrarily
+large numbers satisfying the disjunction (OR P R), then either there
+are arbitrarily large numbers satisfying P or there are arbitrarily
+large numbers satisfying R.
+
+
+     ; Introduce undefined predicates p and r.
+     (defstub p (x) t)
+     (defstub r (x) t)
+     
+     ; Define the notion that something bigger than x satisfies p.
+     (defun-sk some-bigger-p (x)
+       (exists y (and (< x y) (p y))))
+     
+     ; Define the notion that something bigger than x satisfies r.
+     (defun-sk some-bigger-r (x)
+       (exists y (and (< x y) (r y))))
+     
+     ; Define the notion that arbitrarily large x satisfy p.
+     (defun-sk arb-lg-p ()
+       (forall x (some-bigger-p x)))
+     
+     ; Define the notion that arbitrarily large x satisfy r.
+     (defun-sk arb-lg-r ()
+       (forall x (some-bigger-r x)))
+     
+     ; Define the notion that something bigger than x satisfies p or r.
+     (defun-sk some-bigger-p-or-r (x)
+       (exists y (and (< x y) (or (p y) (r y)))))
+     
+     ; Define the notion that arbitrarily large x satisfy p or r.
+     (defun-sk arb-lg-p-or-r ()
+       (forall x (some-bigger-p-or-r x)))
+     
+     ; Prove the theorem promised above.  Notice that the functions open
+     ; automatically, but that we have to provide help for some rewrite
+     ; rules because they have free variables in the hypotheses.  The
+     ; ``witness functions'' mentioned below were introduced by DEFUN-SK.
+     
+     (thm
+      (implies (arb-lg-p-or-r)
+               (or (arb-lg-p)
+                   (arb-lg-r)))
+      :hints (("Goal"
+               :use
+               ((:instance some-bigger-p-suff
+                           (x (arb-lg-p-witness))
+                           (y (some-bigger-p-or-r-witness
+                               (max (arb-lg-p-witness)
+                                    (arb-lg-r-witness)))))
+                (:instance some-bigger-r-suff
+                           (x (arb-lg-r-witness))
+                           (y (some-bigger-p-or-r-witness
+                               (max (arb-lg-p-witness)
+                                    (arb-lg-r-witness)))))
+                (:instance arb-lg-p-or-r-necc
+                           (x (max (arb-lg-p-witness)
+                                   (arb-lg-r-witness))))))))
+     
+     ; And finally, here's a cute little example.  We have already
+     ; defined above the notion (some-bigger-p x), which says that
+     ; something bigger than x satisfies p.  Let us introduce a notion
+     ; that asserts that there exists both y and z bigger than x which
+     ; satisfy p.  On first glance this new notion may appear to be
+     ; stronger than the old one, but careful inspection shows that y and
+     ; z do not have to be distinct.  In fact ACL2 realizes this, and
+     ; proves the theorem below automatically.
+     
+     (defun-sk two-bigger-p (x)
+       (exists (y z) (and (< x y) (p y) (< x z) (p z))))
+     
+     (thm (implies (some-bigger-p x) (two-bigger-p x)))
+     
+     ; A technical point:  ACL2 fails to prove the theorem above
+     ; automatically if we take its contrapositive, unless we disable
+     ; two-bigger-p as shown below.  That is because ACL2 needs to expand
+     ; some-bigger-p before applying the rewrite rule introduced for
+     ; two-bigger-p, which contains free variables.  The moral of the
+     ; story is:  Don't expect too much automatic support from ACL2 for
+     ; reasoning about quantified notions.
+     
+     (thm (implies (not (two-bigger-p x)) (not (some-bigger-p x)))
+          :hints (("Goal" :in-theory (disable two-bigger-p))))
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL5-MISCELLANEOUS-EXAMPLES,  Prev: TUTORIAL4-DEFUN-SK-EXAMPLE,  Up: TUTORIAL-EXAMPLES
+
+TUTORIAL5-MISCELLANEOUS-EXAMPLES    miscellaneous ACL2 examples
+
+The following examples are more advanced examples of usage of ACL2.
+They are included largely for reference, in case someone finds them
+useful.
+
+* Menu:
+
+* FILE-READING-EXAMPLE:: example of reading files in ACL2
+
+* FUNCTIONAL-INSTANTIATION-EXAMPLE:: a small proof demonstrating functional instantiation
+
+* GUARD-EXAMPLE:: a brief transcript illustrating guards in ACL2
+
+* MUTUAL-RECURSION-PROOF-EXAMPLE:: a small proof about mutually recursive functions
+
+
+File: acl2-doc-emacs.info,  Node: FILE-READING-EXAMPLE,  Next: FUNCTIONAL-INSTANTIATION-EXAMPLE,  Prev: TUTORIAL5-MISCELLANEOUS-EXAMPLES,  Up: TUTORIAL5-MISCELLANEOUS-EXAMPLES
+
+FILE-READING-EXAMPLE    example of reading files in ACL2
+
+This example illustrates the use of ACL2's IO primitives to read the
+forms in a file.  See *Note IO::.
+
+This example provides a solution to the following problem.  Let's say
+that you have a file that contains s-expressions.  Suppose that you
+want to build a list by starting with nil, and updating it
+"appropriately" upon encountering each successive s-expression in the
+file.  That is, suppose that you have written a function update-list
+such that (update-list obj current-list) returns the list obtained by
+"updating" current-list with the next object, obj, encountered in the
+file.  The top-level function for processing such a file, returning the
+final list, could be defined as follows.  Notice that because it opens
+a channel to the given file, this function modifies state and hence
+must return state.  Thus it actually returns two values:  the final
+list and the new state.
+
+
+       (defun process-file (filename state)
+         (mv-let
+          (channel state)
+          (open-input-channel filename :object state)
+          (mv-let (result state)
+                  (process-file1 nil channel state) ;see below
+                  (let ((state (close-input-channel channel state)))
+                    (mv result state)))))
+
+The function process-file1 referred to above takes the currently
+constructed list (initially, nil), together with a channel to the file
+being read and the state, and returns the final updated list.  Notice
+that this function is tail recursive.  This is important because many
+Lisp compilers will remove tail recursion, thus avoiding the potential
+for stack overflows when the file contains a large number of forms.
+
+
+       (defun process-file1 (current-list channel state)
+         (mv-let (eofp obj state)
+                 (read-object channel state)
+                 (cond
+                  (eofp (mv current-list state))
+                  (t (process-file1 (update-list obj current-list)
+                                    channel state)))))
+
+
+File: acl2-doc-emacs.info,  Node: FUNCTIONAL-INSTANTIATION-EXAMPLE,  Next: GUARD-EXAMPLE,  Prev: FILE-READING-EXAMPLE,  Up: TUTORIAL5-MISCELLANEOUS-EXAMPLES
+
+FUNCTIONAL-INSTANTIATION-EXAMPLE    a small proof demonstrating functional instantiation
+
+The example below demonstrates the use of functional instantiation,
+that is, the use of a generic result in proving a result about specific
+functions.  In this example we constrain a function to be associative
+and commutative, with an identity or "root," on a given domain.  Next,
+we define a corresponding function that applies the constrained
+associative-commutative function to successive elements of a list.  We
+then prove that the latter function gives the same value when we first
+reverse the elements of the list.  Finally, we use functional
+instantiation to derive the corresponding result for the function that
+multiplies successive elements of a list.
+
+Also see *note CONSTRAINT:: for more about :functional-instance and see
+*note LEMMA-INSTANCE:: for general information about the use of
+previously-proved lemmas.
+
+     (in-package "ACL2")
+     
+     (encapsulate
+      (((ac-fn * *) => *)
+       ((ac-fn-domain *) => *)
+       ((ac-fn-root) => *))
+      (local (defun ac-fn (x y) (+ x y)))
+      (local (defun ac-fn-root () 0))
+      (local (defun ac-fn-domain (x) (acl2-numberp x)))
+      (defthm ac-fn-comm
+        (equal (ac-fn x y)
+               (ac-fn y x)))
+      (defthm ac-fn-assoc
+        (equal (ac-fn (ac-fn x y) z)
+               (ac-fn x (ac-fn y z))))
+      (defthm ac-fn-id
+        (implies (ac-fn-domain x)
+                 (equal (ac-fn (ac-fn-root) x)
+                        x)))
+      (defthm ac-fn-closed
+        (and (ac-fn-domain (ac-fn x y))
+             (ac-fn-domain (ac-fn-root)))))
+     
+     (defun ac-fn-list (x)
+       (if (atom x)
+           (ac-fn-root)
+         (ac-fn (car x)
+                (ac-fn-list (cdr x)))))
+     
+     (in-theory (disable (ac-fn-list)))
+     
+     (defun ac-fn-domain-list (x)
+       (if (atom x)
+           t
+         (and (ac-fn-domain (car x))
+              (ac-fn-domain-list (cdr x)))))
+     
+     (defun rev (x)
+       (if (atom x)
+           nil
+         (append (rev (cdr x))
+                 (list (car x)))))
+     
+     (defthm ac-fn-list-closed
+        (ac-fn-domain (ac-fn-list x)))
+     
+     (defthm ac-fn-list-append
+       (implies (and (ac-fn-domain-list x)
+                     (ac-fn-domain-list y))
+                (equal (ac-fn-list (append x y))
+                       (ac-fn (ac-fn-list x)
+                              (ac-fn-list y)))))
+     
+     (defthm ac-fn-domain-list-rev
+       (equal (ac-fn-domain-list (rev x))
+              (ac-fn-domain-list x)))
+     
+     (defthm ac-fn-list-rev
+       (implies (ac-fn-domain-list x)
+                (equal (ac-fn-list (rev x))
+                       (ac-fn-list x))))
+     
+     (defun times-list (x)
+       (if (atom x)
+           1
+         (* (car x)
+            (times-list (cdr x)))))
+     
+     (defun acl2-number-listp (x)
+       (if (atom x)
+           t
+         (and (acl2-numberp (car x))
+              (acl2-number-listp (cdr x)))))
+     
+     (defthm times-list-rev
+       (implies (acl2-number-listp x)
+                (equal (times-list (rev x))
+                       (times-list x)))
+       :hints (("Goal"
+                :use
+                ((:functional-instance
+                  ac-fn-list-rev
+                  ;; Instantiate the generic functions:
+                  (ac-fn (lambda (x y) (* x y)))
+                  (ac-fn-root (lambda () 1))
+                  (ac-fn-domain acl2-numberp)
+                  ;; Instantiate the other relevant functions:
+                  (ac-fn-list times-list)
+                  (ac-fn-domain-list acl2-number-listp))))))
+

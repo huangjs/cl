@@ -1,0 +1,125 @@
+<html>
+<head><title>ACCUMULATED-PERSISTENCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ACCUMULATED-PERSISTENCE</h2>to get statistics on which <a href="RUNE.html">rune</a>s are being tried
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Useful Forms:
+(accumulated-persistence t)             ; activate statistics gathering<p>
+
+(show-accumulated-persistence :frames)  ; display statistics ordered by
+(show-accumulated-persistence :tries)   ; frames built, times tried,
+(show-accumulated-persistence :ratio)   ; or their ratio<p>
+
+(accumulated-persistence nil)           ; deactivate
+</pre>
+
+<p>
+Generally speaking, the more ACL2 knows, the slower it runs.  That
+is because the search space grows with the number of alternative
+rules.  Often, the system tries to apply rules that you have
+forgotten were even there, if you knew about them in the first
+place!  ``Accumulated-persistence'' is a statistic (originally
+developed for Nqthm) that helps you identify the rules that are
+causing ACL2's search space to explode.<p>
+
+Accumulated persistence tracking can be turned on or off.  It is
+generally off.  When on, the system runs about two times slower than
+otherwise!  But some useful numbers are collected.  When it is
+turned on, by
+
+<pre>
+ACL2 !&gt;(accumulated-persistence t)
+</pre>
+
+an accumulation site is initialized and henceforth data about
+which rules are being tried is accumulated into that site.  That
+accumulated data can be displayed with <code>show-accumulated-persistence</code>,
+as described in detail below.  When accumulated persistence is
+turned off, with <code>(accumulated-persistence nil)</code>, the accumulation
+site is wiped out and the data in it is lost.<p>
+
+The ``accumulated persistence'' of a <a href="RUNE.html">rune</a> is the number of <a href="RUNE.html">rune</a>s the
+system has attempted to apply (since accumulated persistence was
+last activated) while the given <a href="RUNE.html">rune</a> was being tried.<p>
+
+Consider a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule named <code><a href="RUNE.html">rune</a></code>.  For simplicity, let us imagine
+that <code><a href="RUNE.html">rune</a></code> is tried only once in the period during which accumulated
+persistence is being <a href="MONITOR.html">monitor</a>ed.  Recall that to apply a rewrite rule
+we must match the left-hand side of the conclusion to some term we
+are trying to rewrite, establish the hypotheses of <code><a href="RUNE.html">rune</a></code> by
+rewriting, and, if successful, then rewrite the right-hand side of
+the conclusion.  We say <code><a href="RUNE.html">rune</a></code> is ``being tried'' from the time we
+have matched its left-hand side to the time we have either abandoned
+the attempt or finished rewriting its right-hand side.  (By
+``match'' we mean to include any loop-stopper requirement;
+see <a href="LOOP-STOPPER.html">loop-stopper</a>.)  During that period of time other rules
+might be tried, e.g., to establish the hypotheses.  The rules tried
+while <code><a href="RUNE.html">rune</a></code> is being tried are ``billed'' to <code><a href="RUNE.html">rune</a></code> in the sense
+that they are being considered here only because of the demands of
+<code><a href="RUNE.html">rune</a></code>.  Thus, if no other rules are tried during that period,
+the accumulated persistence of <code><a href="RUNE.html">rune</a></code> is <code>1</code> -- we ``bill'' <code><a href="RUNE.html">rune</a></code>
+once for its own application attempt.  If, on the other hand, we
+tried <code>10</code> rules on behalf of that application of <code><a href="RUNE.html">rune</a></code>, then
+<code><a href="RUNE.html">rune</a></code>'s accumulated persistence would be <code>11</code>.<p>
+
+One way to envision accumulated persistence is to imagine that every
+time a <a href="RUNE.html">rune</a> is tried it is pushed onto a stack.  The rules tried on
+behalf of a given application of a <a href="RUNE.html">rune</a> are thus pushed and popped
+on the stack above that <a href="RUNE.html">rune</a>.  A lot of work might be done on its
+behalf -- the stack above the <a href="RUNE.html">rune</a> grows and shrinks repeatedly as
+the search continues for a way to use the <a href="RUNE.html">rune</a>.  All the while, the
+<a href="RUNE.html">rune</a> itself ``persists'' in the stack, until we finish with the
+attempt to apply it, at which time we pop it off.  The accumulated
+persistence of a <a href="RUNE.html">rune</a> is thus the number of stack frames built while
+the given <a href="RUNE.html">rune</a> was on the stack.<p>
+
+Note that accumulated persistence is not concerned with whether the
+attempt to apply a <a href="RUNE.html">rune</a> is successful.  Each of the rules tried on
+its behalf might have failed and the attempt to apply the <a href="RUNE.html">rune</a> might
+have also failed.  The ACL2 proof script would make no mention of
+the <a href="RUNE.html">rune</a> or the rules tried on its behalf because they did not
+contribute to the proof.  But time was spent pursuing the possible
+application of the <a href="RUNE.html">rune</a> and accumulated persistence is a measure of
+that time.<p>
+
+A high accumulated persistence might come about in two extreme ways.
+One is that the rule causes a great deal of work every time it is
+tried.  The other is that the rule is ``cheap'' but is tried very
+often.  We therefore keep track of the number of times each rule is
+tried as well as its persistence.  The ratio between the two is the
+average amount of work done on behalf of the rule each time it is
+tried.<p>
+
+When the accumulated persistence totals are displayed by the
+function <code>show-accumulated-persistence</code> we sort them so that the most
+expensive <a href="RUNE.html">rune</a>s are shown first.  We can sort according to one of
+three keys:
+
+<pre>
+:frames - the number of frames built on behalf of the rune
+:tries  - the number of times the rune was tried
+:ratio  - frames built per try
+</pre>
+
+The key simply determines the order in which the information is
+presented.  If no argument is supplied to
+<code>show-accumulated-persistence</code>, <code>:frames</code> is used.<p>
+
+Note that a <a href="RUNE.html">rune</a> with high accumulated persistence may not actually
+be the ``culprit.''  For example, suppose <code>rune1</code> is reported to have
+a <code>:ratio</code> of <code>101</code>, meaning that on the average a hundred and one
+frames were built each time <code>rune1</code> was tried.  Suppose <code>rune2</code> has a
+<code>:ratio</code> of <code>100</code>.  It could be that the attempt to apply <code>rune1</code> resulted
+in the attempted application of <code>rune2</code> and no other <a href="RUNE.html">rune</a>.  Thus, in
+some sense, <code>rune1</code> is ``cheap'' and <code>rune2</code> is the ``culprit'' even
+though it costs less than <code>rune1</code>.<p>
+
+Users are encouraged to think about other meters we could install in
+ACL2 to help diagnose performance problems.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<html>
+<head><title>GENERALIZED-BOOLEANS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>GENERALIZED-BOOLEANS</h2>potential soundness issues related to ACL2 predicates
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+The discussion below outlines a potential source of unsoundness in
+ACL2.  Although to our knowledge there is no existing Lisp
+implementation in which this problem can arise, nevertheless we feel
+compelled to explain this situation.<p>
+
+Consider for example the question:  What is the value of
+<code>(equal 3 3)</code>?  According to the ACL2 axioms, it's <code>t</code>.  And as
+far as we know, based on considerable testing, the value is <code>t</code> in
+every Common Lisp implementation.  However, according the Common
+Lisp draft proposed ANSI standard, any non-<code>nil</code> value could result.
+Thus for example, <code>(equal 3 3)</code> is allowed by the standard to be <code>17</code>.
+<p>
+The Common Lisp standard specifies (or soon will) that a number of
+Common Lisp functions that one might expect to return Boolean values
+may, in fact, return arbitrary values.  Examples of such functions
+are <code><a href="EQUAL.html">equal</a></code>, <code><a href="RATIONALP.html">rationalp</a></code>, and <code><a href="_lt_.html">&lt;</a></code>; a much more complete list is
+given below.  Indeed, we dare to say that every Common Lisp function
+that one may believe returns only Booleans is, nevertheless, not
+specified by the standard to have that property, with the exceptions
+of the functions <code>not</code> and <code>null</code>.  The standard refers to such
+arbitrary values as ``generalized Booleans,'' but in fact this
+terminology makes no restriction on those values.  Rather, it merely
+specifies that they are to be viewed, in an informal sense, as being
+either <code>nil</code> or not <code>nil</code>.<p>
+
+This situation is problematic for ACL2, which axiomatizes these
+functions to return Booleans.  The problem is that because (for
+efficiency and simplicity) ACL2 makes very direct use of compiled
+Common Lisp functions to support the execution of its functions,
+there is in principle a potential for unsoundness due to these
+``generalized Booleans.''  For example, ACL2's <code><a href="EQUAL.html">equal</a></code> function is
+defined to be Common Lisp's <code>equal</code>.  Hence if in Common Lisp the
+form <code>(equal 3 3)</code> were to evaluate to 17, then in ACL2 we could
+prove (using the <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of <code><a href="EQUAL.html">equal</a></code>)
+<code>(equal (equal 3 3) 17)</code>.  However, ACL2 can also prove
+<code>(equal (equal x x) t)</code>, and these two terms together are
+contradictory, since they imply (instantiating <code>x</code> in the second
+term by <code>3</code>) that <code>(equal 3 3)</code> is both equal to <code>17</code> and to
+<code>t</code>.<p>
+
+To make matters worse, the standard allows <code>(equal 3 3)</code> to evaluate
+to <em>different</em> non-<code>nil</code> values every time.  That is:  <code>equal</code>
+need not even be a function!<p>
+
+Fortunately, no existing Lisp implementation takes advantage of the
+flexibility to have (most of) its predicates return generalized
+Booleans, as far as we know.  We may implement appropriate
+safeguards in future releases of ACL2, in analogy to (indeed,
+probably extending) the existing safeguards by way of guards
+(see <a href="GUARD.html">guard</a>).  For now, we'll sleep a bit better knowing that we
+have been up-front about this potential problem.<p>
+
+The following list of functions contains all those that are defined
+in Common Lisp to return generalized Booleans but are assumed by
+ACL2 to return Booleans.  In addition, the functions <code><a href="ACL2-NUMBERP.html">acl2-numberp</a></code>
+and <code><a href="COMPLEX-RATIONALP.html">complex-rationalp</a></code> are directly defined in terms of
+respective Common Lisp functions <code>numberp</code> and <code>complexp</code>.
+
+<pre>
+/=
+&lt;
+=
+alpha-char-p
+atom
+char-equal
+char&lt;
+char&lt;=
+char&gt;
+char&gt;=
+characterp
+consp
+digit-char-p
+endp
+eq
+eql
+equal
+evenp
+integerp
+keywordp
+listp
+logbitp
+logtest
+lower-case-p
+minusp
+oddp
+plusp
+rationalp
+standard-char-p
+string-equal
+string&lt;
+string&lt;=
+string&gt;
+string&gt;=
+stringp
+subsetp
+symbolp
+upper-case-p
+zerop
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

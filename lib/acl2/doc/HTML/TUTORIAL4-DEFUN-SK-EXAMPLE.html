@@ -1,0 +1,104 @@
+<html>
+<head><title>TUTORIAL4-DEFUN-SK-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>TUTORIAL4-DEFUN-SK-EXAMPLE</h3>example of quantified notions
+<pre>Major Section:  <a href="TUTORIAL-EXAMPLES.html">TUTORIAL-EXAMPLES</a>
+</pre><p>
+
+This example illustrates the use of <code><a href="DEFUN-SK.html">defun-sk</a></code> and <code><a href="DEFTHM.html">defthm</a></code>
+<a href="EVENTS.html">events</a> to reason about quantifiers.  See <a href="DEFUN-SK.html">defun-sk</a>.<p>
+
+Many users prefer to avoid the use of quantifiers, since ACL2
+provides only very limited support for reasoning about
+quantifiers.
+<p>
+Here is a list of <a href="EVENTS.html">events</a> that proves that if there are arbitrarily
+large numbers satisfying the disjunction <code>(OR P R)</code>, then either
+there are arbitrarily large numbers satisfying <code>P</code> or there are
+arbitrarily large numbers satisfying <code>R</code>.
+
+<pre><p>
+
+; Introduce undefined predicates p and r.
+(defstub p (x) t)
+(defstub r (x) t)<p>
+
+; Define the notion that something bigger than x satisfies p.
+(defun-sk some-bigger-p (x)
+  (exists y (and (&lt; x y) (p y))))<p>
+
+; Define the notion that something bigger than x satisfies r.
+(defun-sk some-bigger-r (x)
+  (exists y (and (&lt; x y) (r y))))<p>
+
+; Define the notion that arbitrarily large x satisfy p.
+(defun-sk arb-lg-p ()
+  (forall x (some-bigger-p x)))<p>
+
+; Define the notion that arbitrarily large x satisfy r.
+(defun-sk arb-lg-r ()
+  (forall x (some-bigger-r x)))<p>
+
+; Define the notion that something bigger than x satisfies p or r.
+(defun-sk some-bigger-p-or-r (x)
+  (exists y (and (&lt; x y) (or (p y) (r y)))))<p>
+
+; Define the notion that arbitrarily large x satisfy p or r.
+(defun-sk arb-lg-p-or-r ()
+  (forall x (some-bigger-p-or-r x)))<p>
+
+; Prove the theorem promised above.  Notice that the functions open
+; automatically, but that we have to provide help for some rewrite
+; rules because they have free variables in the hypotheses.  The
+; ``witness functions'' mentioned below were introduced by DEFUN-SK.<p>
+
+(thm
+ (implies (arb-lg-p-or-r)
+          (or (arb-lg-p)
+              (arb-lg-r)))
+ :hints (("Goal"
+          :use
+          ((:instance some-bigger-p-suff
+                      (x (arb-lg-p-witness))
+                      (y (some-bigger-p-or-r-witness 
+                          (max (arb-lg-p-witness)
+                               (arb-lg-r-witness)))))
+           (:instance some-bigger-r-suff
+                      (x (arb-lg-r-witness))
+                      (y (some-bigger-p-or-r-witness 
+                          (max (arb-lg-p-witness)
+                               (arb-lg-r-witness)))))
+           (:instance arb-lg-p-or-r-necc
+                      (x (max (arb-lg-p-witness)
+                              (arb-lg-r-witness))))))))<p>
+
+; And finally, here's a cute little example.  We have already
+; defined above the notion (some-bigger-p x), which says that
+; something bigger than x satisfies p.  Let us introduce a notion
+; that asserts that there exists both y and z bigger than x which
+; satisfy p.  On first glance this new notion may appear to be
+; stronger than the old one, but careful inspection shows that y and
+; z do not have to be distinct.  In fact ACL2 realizes this, and
+; proves the theorem below automatically.<p>
+
+(defun-sk two-bigger-p (x)
+  (exists (y z) (and (&lt; x y) (p y) (&lt; x z) (p z))))<p>
+
+(thm (implies (some-bigger-p x) (two-bigger-p x)))<p>
+
+; A technical point:  ACL2 fails to prove the theorem above
+; automatically if we take its contrapositive, unless we disable
+; two-bigger-p as shown below.  That is because ACL2 needs to expand
+; some-bigger-p before applying the rewrite rule introduced for
+; two-bigger-p, which contains free variables.  The moral of the
+; story is:  Don't expect too much automatic support from ACL2 for
+; reasoning about quantified notions.<p>
+
+(thm (implies (not (two-bigger-p x)) (not (some-bigger-p x)))
+     :hints (("Goal" :in-theory (disable two-bigger-p))))
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

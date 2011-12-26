@@ -1,0 +1,140 @@
+<html>
+<head><title>SET-RAW-MODE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-RAW-MODE</h2>enter or exit ``raw mode,'' a raw Lisp environment
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+ACL2 users often find its careful syntax checking to be helpful during code
+development.  Sometimes it is even useful to do code development in
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode, where ACL2 can be used to check termination of
+(mutually) recursive functions, verify guards, or even prove properties of
+the functions.<p>
+
+However, loading code using <code><a href="INCLUDE-BOOK.html">include-book</a></code> is much slower than using
+Common Lisp <code>load</code> in raw Lisp, and in this sense ACL2 can get in the way
+of efficient execution.  Unfortunately, it is error-prone to use ACL2 sources
+(or their compilations) in raw Lisp, primarily because a number of ACL2
+primitives will not let you do so.  Perhaps you have seen this error message
+when trying to do so:
+
+<pre>
+HARD ACL2 ERROR in ACL2-UNWIND-PROTECT:  Apparently you have tried
+to execute a form in raw Lisp that is only intended to be executed
+inside the ACL2 loop.
+</pre>
+
+Even without this problem it is important to enter the ACL2 loop (see <a href="LP.html">lp</a>),
+for example in order to set the <code><a href="CBD.html">cbd</a></code> and (to get more technical) the
+readtable.<p>
+
+ACL2 provides a ``raw mode'' for execution of raw Lisp forms.  In this mode,
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> reduces essentially to a Common Lisp <code>load</code>.  More
+generally, the ACL2 logical <code><a href="WORLD.html">world</a></code> is not routinely extended in raw mode
+(some sneaky tricks are probably required to make that happen).  To turn raw
+mode off or on:
+
+<pre>
+:set-raw-mode t   ; turn raw mode on
+:set-raw-mode nil ; turn raw mode off
+</pre>
+
+<p>
+<ul>
+<li><h3><a href="ADD-RAW-ARITY.html">ADD-RAW-ARITY</a> -- add arity information for raw mode
+</h3>
+</li>
+
+<li><h3><a href="REMOVE-RAW-ARITY.html">REMOVE-RAW-ARITY</a> -- remove arity information for raw mode
+</h3>
+</li>
+
+</ul>
+
+The way you can tell that you are in raw mode is by looking at the prompt
+(see <a href="DEFAULT-PRINT-PROMPT.html">default-print-prompt</a>), which uses a capital ``<code>P</code>'' (suggesting
+something like program mode, but more so).
+
+<pre>
+ACL2 P&gt;
+</pre>
+<p>
+
+Typical benefits of raw mode are fast loading of source and compiled files
+and the capability to hack arbitrary Common Lisp code in an environment with
+the ACL2 sources loaded (and hence with ACL2 primitives available).  In
+addition, ACL2 hard errors will put you into the Lisp debugger, rather than
+returning you to the ACL2 loop, and this may be helpful for debugging;
+see <a href="HARD-ERROR.html">hard-error</a> and see <a href="ILLEGAL.html">illegal</a>, but also see <a href="BREAK-ON-ERROR.html">break-on-error</a>.  However, it
+probably is generally best to avoid raw mode unless these advantages seem
+important.  We expect the main benefit of raw mode to be in deployment of
+applications, where load time is much faster than the time required for a
+full-blown <code><a href="INCLUDE-BOOK.html">include-book</a></code>, although in certain cases the fast loading of
+books and treatment of hard errors discussed above may be useful during
+development.<p>
+
+Raw mode is also useful for those who want to build extensions of ACL2.  For
+example, the following form can be put into a certifiable book to load an
+arbitrary Common Lisp source or compiled file.
+
+<pre>
+(progn! (defttag my-application)
+        (set-raw-mode t)
+        (load "some-file"))
+</pre>
+
+Also see <code>with-raw-mode</code> defined in <code>books/misc/hacker.lisp</code>,
+see <a href="DEFTTAG.html">defttag</a>, and see <a href="PROGN_bang_.html">progn!</a>.<p>
+
+Below are several disadvantages to raw mode.  These should discourage users
+from using it for general code development, as <code>:</code><code><a href="PROGRAM.html">program</a></code> mode is
+generally preferable.
+
+<pre>
+-- Forms are in essence executed in raw Lisp.  Hence:
+   -- Syntax checking is turned off; and
+   -- Guard checking is completely disabled.
+-- Table events, including <code><a href="LOGIC.html">logic</a></code>, are ignored, as are many
+   other <code><a href="EVENTS.html">events</a></code>, including <code><a href="DEFTHM.html">defthm</a></code> and <code><a href="COMP.html">comp</a></code>.
+-- Soundness claims are weakened for any ACL2 session in which raw
+   mode was ever entered; see <a href="DEFTTAG.html">defttag</a>.
+-- The normal undoing mechanism (see <a href="UBT.html">ubt</a>) is not supported.
+</pre>
+<p>
+
+We conclude with some details.<p>
+
+<em>Printing results</em>.  The rules for printing results are unchanged for raw
+mode, with one exception.  If the value to be printed would contain any Lisp
+object that is not a legal ACL2 object, then the <code>print</code> routine is used
+from the host Lisp, rather than the usual ACL2 printing routine.  The
+following example illustrates the printing used when an illegal ACL2 object
+needs to be printed.  Notice how that ``command conventions'' are observed
+(see <a href="LD-POST-EVAL-PRINT.html">ld-post-eval-print</a>); the ``<code>[Note</code>'' occurs one space over in the
+second example, and no result is printed in the third example.
+
+<pre>
+ACL2 P&gt;(find-package "ACL2")
+[Note:  Printing non-ACL2 result.]
+#&lt;The ACL2 package&gt; 
+ACL2 P&gt;(mv nil (find-package "ACL2") state)
+ [Note:  Printing non-ACL2 result.]
+#&lt;The ACL2 package&gt; 
+ACL2 P&gt;(mv t (find-package "ACL2") state)
+ACL2 P&gt;(mv 3 (find-package "ACL2"))
+[Note:  Printing non-ACL2 result.]
+(3 #&lt;The ACL2 package&gt;) 
+ACL2 P&gt;
+</pre>
+
+If you have trouble with large structures being printed out, you might want
+to execute appropriate Common Lisp forms in raw mode, for example,
+<code>(setq *print-length* 5)</code> and <code>(setq *print-level* 5)</code>.<p>
+
+<em>Packages</em>.  Raw mode disallows the use of <code><a href="DEFPKG.html">defpkg</a></code>.  If you want to
+create a new package, first exit raw mode with <code>:set-raw-mode nil</code>;
+you can subsequently re-enter raw mode with <code>:set-raw-mode t</code> if you
+wish.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<html>
+<head><title>LOOP-STOPPER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LOOP-STOPPER</h2>limit application of permutative rewrite rules
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a discussion of the syntax of the
+<code>:loop-stopper</code> field of <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule-classes.  Here we describe how
+that field is used, and also how that field is created when the user
+does not explicitly supply it.<p>
+
+For example, the built-in <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule <code>commutativity-of-+</code>,
+
+<pre>
+(implies (and (acl2-numberp x)
+              (acl2-numberp y))
+         (equal (+ x y) (+ y x))),
+</pre>
+
+creates a rewrite rule with a loop-stopper of <code>((x y binary-+))</code>.
+This means, very roughly, that the term corresponding to <code>y</code> must be
+``smaller'' than the term corresponding to <code>x</code> in order for this rule
+to apply.  However, the presence of <code><a href="BINARY-+.html">binary-+</a></code> in the list means that
+certain functions that are ``invisible'' with respect to <code><a href="BINARY-+.html">binary-+</a></code>
+(by default, <code><a href="UNARY--.html">unary--</a></code> is the only such function) are more or less
+ignored when making this ``smaller'' test.  We are much more precise
+below.
+<p>
+Our explanation of loop-stopping is in four parts.  First we discuss
+ACL2's notion of ``term order.''  Next, we bring in the notion of
+``invisibility'', and use it together with term order to define
+orderings on terms that are used in the loop-stopping algorithm.
+Third, we describe that algorithm.  These topics all assume that we
+have in hand the <code>:loop-stopper</code> field of a given rewrite rule; the
+fourth and final topic describes how that field is calculated when
+it is not supplied by the user.<p>
+
+ACL2 must sometimes decide which of two terms is syntactically
+simpler.  It uses a total ordering on terms, called the ``term
+order.''  Under this ordering constants such as <code>'(a b c)</code> are simpler
+than terms containing variables such as <code>x</code> and <code>(+ 1 x)</code>.  Terms
+containing variables are ordered according to how many occurrences
+of variables there are.  Thus <code>x</code> and <code>(+ 1 x)</code> are both simpler than
+<code>(cons x x)</code> and <code>(+ x y)</code>.  If variable counts do not decide the order,
+then the number of function applications are tried.  Thus <code>(cons x x)</code>
+is simpler than <code>(+ x (+ 1 y))</code> because the latter has one more
+function application.  Finally, if the number of function
+applications do not decide the order, a lexicographic ordering on
+Lisp objects is used.  See <a href="TERM-ORDER.html">term-order</a> for details.<p>
+
+When the loop-stopping algorithm is controlling the use of
+permutative <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules it allows <code>term1</code> to be moved leftward over
+<code>term2</code> only if <code>term1</code> is smaller, in a suitable sense.  Note: The
+sense used in loop-stopping is <strong>not</strong> the above explained term order
+but a more complicated ordering described below.  The use of a total
+ordering stops rules like commutativity from looping indefinitely
+because it allows <code>(+ b a)</code> to be permuted to <code>(+ a b)</code> but not vice
+versa, assuming <code>a</code> is smaller than <code>b</code> in the ordering.  Given a set of
+permutative rules that allows arbitrary permutations of the tips of
+a tree of function calls, this will normalize the tree so that the
+smallest argument is leftmost and the arguments ascend in the order
+toward the right.  Thus, for example, if the same argument appears
+twice in the tree, as <code>x</code> does in the <code><a href="BINARY-+.html">binary-+</a></code> tree denoted by the
+term <code>(+ a x b x)</code>, then when the allowed permutations are done, all
+occurrences of the duplicated argument in the tree will be adjacent,
+e.g., the tree above will be normalized to <code>(+ a b x x)</code>.<p>
+
+Suppose the loop-stopping algorithm used term order, as noted above,
+and consider the <code><a href="BINARY-+.html">binary-+</a></code> tree denoted by <code>(+ x y (- x))</code>.  The
+arguments here are in ascending term order already.  Thus, no
+permutative rules are applied.  But because we are inside a
+<code>+-expression</code> it is very convenient if <code>x</code> and <code>(- x)</code> could be given
+virtually the same position in the ordering so that <code>y</code> is not
+allowed to separate them.  This would allow such rules as
+<code>(+ i (- i) j) = j</code> to be applied.  In support of this, the
+ordering used in the control of permutative rules allows certain
+unary functions, e.g., the unary minus function above, to be
+``invisible'' with respect to certain ``surrounding'' functions,
+e.g., <code><a href="+.html">+</a></code> function above.<p>
+
+Briefly, a unary function symbol <code>fn1</code> is invisible with respect to a
+function symbol <code>fn2</code> if <code>fn2</code> belongs to the value of <code>fn1</code> in
+<code><a href="INVISIBLE-FNS-TABLE.html">invisible-fns-table</a></code>; also see <a href="SET-INVISIBLE-FNS-TABLE.html">set-invisible-fns-table</a>, which
+explains its format and how it can be set by the user.  Roughly
+speaking, ``invisible'' function symbols are ignored for the
+purposes of the term-order test.<p>
+
+Consider the example above, <code>(+ x y (- x))</code>.  The translated version
+of this term is <code>(binary-+ x (binary-+ y (unary-- x)))</code>.  The initial
+<code><a href="INVISIBLE-FNS-TABLE.html">invisible-fns-table</a></code> makes <code><a href="UNARY--.html">unary--</a></code> invisible with repect to <code><a href="BINARY-+.html">binary-+</a></code>.
+The commutativity rule for <code><a href="BINARY-+.html">binary-+</a></code> will attempt to swap <code>y</code> and
+<code>(unary-- x)</code> and the loop-stopping algorithm is called to approve or
+disapprove.  If term order is used, the swap will be disapproved.
+But term order is not used.  While the loop-stopping algorithm is
+permuting arguments inside a <code><a href="BINARY-+.html">binary-+</a></code> expression, <code><a href="UNARY--.html">unary--</a></code> is
+invisible.  Thus, insted of comparing <code>y</code> with <code>(unary-- x)</code>, the
+loop-stopping algorithm compares <code>y</code> with <code>x</code>, approving the swap
+because <code>x</code> comes before <code>y</code>.<p>
+
+Here is a more precise specification of the total order used for
+loop-stopping with respect to a list, <code>fns</code>, of functions that are to
+be considered invisible.  Let <code>x</code> and <code>y</code> be distinct terms; we specify
+when ``<code>x</code> is smaller than <code>y</code> with respect to <code>fns</code>.''  If <code>x</code> is the
+application of a unary function symbol that belongs to <code>fns</code>, replace
+<code>x</code> by its argument.  Repeat this process until the result is not the
+application of such a function; let us call the result <code>x-guts</code>.
+Similarly obtain <code>y-guts</code> from <code>y</code>.  Now if <code>x-guts</code> is the same term as
+<code>y-guts</code>, then <code>x</code> is smaller than <code>y</code> in this order iff <code>x</code> is smaller than
+<code>y</code> in the standard term order.  On the other hand, if <code>x-guts</code> is
+different than <code>y-guts</code>, then <code>x</code> is smaller than <code>y</code> in this order iff
+<code>x-guts</code> is smaller than <code>y-guts</code> in the standard term order.<p>
+
+Now we may describe the loop-stopping algorithm.  Consider a rewrite
+rule with conclusion <code>(equiv lhs rhs)</code> that applies to a term <code>x</code> in a
+given context; see <a href="REWRITE.html">rewrite</a>.  Suppose that this rewrite rule has
+a loop-stopper field (technically, the <code>:heuristic-info</code> field) of
+<code>((x1 y1 . fns-1) ... (xn yn . fns-n))</code>.  (Note that this field can be
+observed by using the command <code>:</code><code><a href="PR.html">pr</a></code> with the name of the rule;
+see <a href="PR.html">pr</a>.)  We describe when rewriting is permitted.  The
+simplest case is when the loop-stopper list is <code>nil</code> (i.e., <code>n</code> is <code>0</code>);
+in that case, rewriting is permitted.  Otherwise, for each <code>i</code> from 1
+to <code>n</code> let <code>xi'</code> be the actual term corresponding to the variable <code>xi</code>
+when <code>lhs</code> is matched against the term to be rewritten, and similarly
+correspond <code>yi'</code> with <code>y</code>.  If <code>xi'</code> and <code>yi'</code> are the same term for all <code>i</code>,
+then rewriting is not permitted.  Otherwise, let <code>k</code> be the least <code>i</code>
+such that <code>xi'</code> and <code>yi'</code> are distinct.  Let <code>fns</code> be the list of all
+functions that are invisible with respect to every function in
+<code>fns-k</code>, if <code>fns-k</code> is non-empty; otherwise, let <code>fns</code> be <code>nil</code>.  Then
+rewriting is permitted if and only if <code>yi'</code> is smaller than <code>xi'</code> with
+respect to <code>fns</code>, in the sense defined in the preceding paragraph.<p>
+
+It remains only to describe how the loop-stopper field is calculated
+for a rewrite rule when this field is not supplied by the user.  (On
+the other hand, to see how the user may specify the <code>:loop-stopper</code>,
+see <a href="RULE-CLASSES.html">rule-classes</a>.)  Suppose the conclusion of the rule is of
+the form <code>(equiv lhs rhs)</code>.  First of all, if <code>rhs</code> is not an instance
+of the left hand side by a substitution whose range is a list of
+distinct variables, then the loop-stopper field is <code>nil</code>.  Otherwise,
+consider all pairs <code>(u . v)</code> from this substitution with the property
+that the first occurrence of <code>v</code> appears in front of the first
+occurrence of <code>u</code> in the print representation of <code>rhs</code>.  For each such <code>u</code>
+and <code>v</code>, form a list <code>fns</code> of all functions <code>fn</code> in <code>lhs</code> with the property
+that <code>u</code> or <code>v</code> (or both) appears as a top-level argument of a subterm
+of <code>lhs</code> with function symbol <code>fn</code>.  Then the loop-stopper for this
+rewrite rule is a list of all lists <code>(u v . fns)</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Lisp Exercises</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Lisp Exercises</DIV>
+
+<P>These exercises are in addition to those in
+<A HREF="../admin/resources.html">Graham</A>. Several come
+from Wilensky's <a href="http://www.amazon.com/exec/obidos/tg/detail/-/0393955443">Common LispCraft</a>.</P>
+
+<HR>
+
+<H2><A NAME="has-number-p"></A>Lisp #1: HAS-NUMBER-P (Wilensky 8.7)</H2>
+
+<P>Define <TT>(has-number-p</TT> <I>s-exp</I><TT>)</TT> to return
+true if the s-expression is or contains a number.</P>
+
+<PRE>&gt; (has-number-p 1)
+T
+&gt; (has-number-p 'a)
+NIL
+&gt; (has-number-p '(a (b (c d) ((3)))))
+T
+&nbsp;
+&nbsp;</PRE>
+
+<P>Implement this using a simple conditional, recursion, and SOME.
+Letting SOME do some of the work is more efficient than a pure
+CAR-CDR recursive solution.</P>
+
+<HR>
+
+<H2><A NAME="key-if"></A>Lisp #2: KEY-IF (Wilensky 13.2)</H2>
+
+<P>Define the macro <TT>key-if</TT> to have the form</P>
+
+<PRE>(KEY-IF test
+  :THEN exp1 exp2 ...
+  :ELSE exp3 exp4 ...)
+&nbsp;
+&nbsp;</PRE>
+
+<P>This does about the same thing as:</P>
+
+<PRE>(COND (test exp exp ...)
+      (T else-exp else-exp ...))
+&nbsp;
+&nbsp;</PRE>
+
+<P>Almost everything is optional in <TT>key-if</TT> except the test.
+Here are some legal forms and their results:</P>
+
+<PRE>&gt; (key-if (&gt; 3 1) :then 'ok)
+OK
+&gt; (key-if (&lt; 5 3) :else 'ok)
+OK
+&gt; (key-if (&gt; 3 1) :else 'oops)
+NIL
+&gt; (key-if (&gt; 3 1) :then)
+NIL
+&gt; (key-if (&gt; 3 1) :else 'oops :then 'ok)
+OK
+&gt; (key-if (&gt; 3 1) :else 'oops :then (print 'hi) 'ok)
+HI
+OK
+&nbsp;</PRE>
+
+<HR>
+
+<H2><A NAME="make-balance"></A>Lisp #3: MAKE-BALANCE (Wilensky, 12)</H2>
+
+<P>Define <TT>(make-balance </TT><I>initial-balance</I><TT>)</TT> to
+return a function that takes 0 or 1 arguments. If that function is
+called with 0 arguments, it returns the current balance. If called
+with 1 argument, which should be a number, it adds that number to the
+current balance, and returns the new balance.</P>
+
+<PRE>&gt; (setq bal (make-balance 100))
+&lt;a closure object&gt;
+&gt; (funcall bal 10)
+110
+&gt; (funcall bal -50)
+60
+&gt; (funcall bal)
+60</PRE>
+
+<HR>
+
+<H2><A NAME="delete-car"></A>Lisp #4: DELETE-CAR (Wilensky, 15)</H2>
+
+<P>Define <TT>(delete-car</TT> <I>list</I><TT>)</TT> to modify and
+return <I>list</I> with the first element of list deleted.</P>
+
+<PRE>&gt; (setq l '(a b c))
+(A B C)
+&gt; (delete-car l)
+(B C)
+&gt; L
+(B C)
+&nbsp;
+&nbsp;</PRE>
+
+<P>Note: it's impossible to destructively delete the only item in a
+list and turn it into NIL, but <TT>delete-car</TT> should at least
+return NIL in that case.</P>
+
+<P>
+<HR>
+</P>
+
+<H2><A NAME="collect-numbers"></A>Lisp #5: COLLECT-NUMBERS (Wilensky, 15)</H2>
+
+<P>Define <TT>(collect-numbers</TT> <I>s-exp</I><TT>)</TT> to return
+a list of all the numbers in the s-expression <I>s-exp</I>.
+<I>s-exp</I> may be an atom, a list, or a list of s-expressions.</P>
+
+<PRE>&gt; (collect-numbers 1)
+(1)
+&gt; (collect-numbers 'a)
+NIL
+&gt; (collect-numbers '(1 (b (2 c) ((3)))))
+(1 2 3)
+&nbsp;
+&nbsp;</PRE>
+
+<P>Implement this using a simple conditional, recursion, and MAPCAN.
+Letting MAPCAN do some of the work is more efficient than a pure
+CAR-CDR recursive solution. Don't worry about duplicate numbers in
+the result.</P>
+
+<HR>
+
+<H2><A NAME="tconc"></A>Lisp #6: TCONC (Wilensky, 15.7)</H2>
+
+<P>Adding elements to the end of a list is usually inefficient in
+Lisp:</P>
+
+<UL>
+   <LI><TT>(append </TT><I>list</I> <TT>(list
+   </TT><I>item</I><TT>))</TT> is the worst possible approach,
+   because <I>list</I> gets copied every time a new item is added. If
+   you use this form to build a list N long, you'll have done N
+   squared <TT>cons</TT>'s. Imagine doing that for a simple
+   100-element list!
+   
+   <LI><TT>(nconc </TT><I>list</I> <TT>(list
+   </TT><I>item</I><TT>))</TT> doesn't <TT>cons</TT>, but still gets
+   very slow as the list gets long, because Lisp has to <TT>cdr</TT>
+   all the way to the end of the list in order to find the last
+   <TT>cons</TT> cell to modify.
+</UL>
+
+<P>A classic solution is to create a data structure called a
+<TT>tconc</TT> structure (for "tail concatenate"), which holds two
+pointers to the same list:</P>
+
+<UL>
+   <LI>a <I>head pointer</I> to the whole list, and
+   
+   <LI>a <I>tail pointer</I> to the last <TT>cons</TT> cell of that
+   list.
+</UL>
+
+<P>With this data structure, you can add new elements to the end of
+the list with just a few quick operations, no matter how long the
+list is, and you can still get the whole list whenever you need it.
+</P>
+
+<P>Therefore, your job is to:</P>
+
+<UL>
+   <LI>Define <TT>(make-tconc </TT>[ <I>list </I>]<TT>)</TT> to
+   return a <TT>tconc</TT> structure pointing to <I>list</I>. If no
+   list is given, a <TT>tconc</TT> structure for an empty list should
+   be returned.
+   
+   <LI>Define <TT>(tconc</TT> <I>tconc-structure </I>[<I>item item
+   ...</I>]<TT>)</TT> to add the items, if any, to the end of the
+   list pointed to by <I>tconc-structure</I>, update
+   <I>tconc-strcture</I> appropriately, and return the new value of
+   the internal list.
+   
+   <LI>Define <TT>(tconc-list</TT> <I>tconc-structure list
+   </I><TT>)</TT> to add the items in <I>list</I> to the end of the
+   internal list.
+</UL>
+
+<P>Note that you can get the internal list at any time with
+<TT>(tconc</TT> <I>tconc-structure</I><TT>)</TT>.</P>
+
+<PRE>&gt; (setq tc (make-tconc))
+&lt;tconc structure&gt;
+&gt; (tconc tc 1)
+(1)
+&gt; (tconc tc 2 3)
+(1 2 3)
+&gt; (tconc tc)
+(1 2 3)
+&nbsp;
+&nbsp;</PRE>
+
+<P>Each successive call to <TT>tconc</TT> should be efficient, no
+matter how long the internal list has grown. One test of your
+<TT>tconc</TT> structure is that it <I>always </I>obeys the following
+rule:</P>
+
+<BLOCKQUOTE><P><TT>(eq (last </TT><I>head-pointer</I><TT>)</TT><I>
+tail-pointer</I><TT>)</TT></P></BLOCKQUOTE>
+
+<HR>
+
+
+<H2><A NAME="list-of"></A>Lisp #7: LIST-OF</H2>
+
+<P>[ Inspired by Guy Lapalme's article in <I>Lisp Pointers</I>,
+Apr-Jun 91 ]</P>
+
+<P><TT>list-of</TT> is a macro that simplifies collecting lists of
+values of expressions. Though this description is long, and the macro
+is powerful, it's actually quite simple and can be implemented with
+relatively little code.</P>
+
+<P>The general syntax is</P>
+
+<BLOCKQUOTE><PRE><TT>(LIST-OF </TT><I>exp generator-or-filter generator-or-filter ..<TT>.</TT></I><TT>)</TT></PRE>
+</BLOCKQUOTE>
+
+<P>It's easiest to explain by starting with simple examples.</P>
+
+<BLOCKQUOTE><PRE>&gt; (list-of (1+ x) (x :in '(1 2 3)))
+(2 3 4)<I>
+&nbsp;</I></PRE></BLOCKQUOTE>
+
+<P><I>exp</I> is <TT>(1+ x)</TT> and <TT>(x :in '(1 2 3))</TT> is a
+generator. A generator is anything that has the form
+<TT>(</TT><I>variable </I><TT>:in</TT> <I>list</I><TT>)</TT>. This
+generator generates three values for <TT>x</TT>, namely <TT>1</TT>,
+<TT>2</TT>, and <TT>3</TT>. <TT>list-of</TT> returns a list of the
+value of <TT>(1+ x)</TT> for those three values of <TT>x</TT>.</P>
+
+<BLOCKQUOTE><PRE>&gt; (list-of (1+ x) (x :in '(1 2 3)) (oddp x))
+(2 4)</PRE></BLOCKQUOTE>
+
+<P>The <I>exp</I> and generator are
+as before, but now I've added the filter <TT>(oddp x)</TT>. A filter is any
+expression that doesn't look like a generator. The filter says "keep
+only those values of <TT>x</TT> that are odd." Hence,
+<TT>list-of</TT> only collects values for <TT>(1+ x)</TT> equal to
+<TT>1</TT> and <TT>3</TT>.</P>
+
+<P>That's it. Any number of generators and filters can be given. They
+are applied from left to right. If there are two generators, the
+second repeats itself for every value created by the first, e.g.,
+</P>
+
+<BLOCKQUOTE><PRE>&gt; (setq l '(a b))
+(A B)
+&gt; (list-of (list x y) (x :in l) (y :in ))
+((A A) (A B) (B A) (B B))
+&nbsp;</PRE></BLOCKQUOTE>
+
+<P>Likewise, the filters apply in order.</P>
+
+<BLOCKQUOTE><PRE>&gt; (setq l '(1 2 3 4))
+(1 2 3 4)
+&gt; (list-of (list x y) (x :in l) (oddp x) (y :in l) (evenp y))
+((1 2) (1 4) (3 2) (3 4))
+&nbsp;</PRE></BLOCKQUOTE>
+
+<P>This collects <TT>(list x y)</TT> for every <TT>x</TT> in
+<TT>l</TT> that is odd and every <TT>y</TT> in <TT>l</TT> that is
+even. Notice that</P>
+
+<BLOCKQUOTE><PRE>&gt; (list-of (list x y) (x :in l) (y :in l) (oddp x) (evenp y))
+((1 2) (1 4) (3 2) (3 4))
+&nbsp;</PRE></BLOCKQUOTE>
+
+<P>returns the same answer, but does more work. Trace <TT>oddp</TT>
+to see the difference.</P>
+
+<P>One special case that follows naturally:</P>
+
+<UL>
+   <LI><TT>(list-of</TT> <I>exp</I><TT>)</TT> simply returns a list
+   of <I>exp</I>.
+</UL>
+
+<P>Our final examples are primarily for hard-core computer science
+types. You can skip them if you wish. Neither are particularly
+efficient, but they show the power of <TT>list-of</TT>.</P>
+
+<P>To define a function that gets all the permutations of a list:
+</P>
+
+<BLOCKQUOTE><PRE>(defun perms (l)
+  (if (endp l)
+      (list '())
+      (list-of (cons a p)
+         (a :in l)
+         (p :in (perms (remove a l :count 1))))))
+&nbsp;</PRE></BLOCKQUOTE>
+
+<P>The <TT>list-of</TT> collects "<TT>(cons a p)</TT> for every
+<TT>a</TT> in <TT>l</TT> and every <TT>p</TT> in the permutations of
+<TT>l</TT> with <TT>a</TT> removed."</P>
+
+<P>To define a form of quicksort function:</P>
+
+<BLOCKQUOTE><PRE>(defun qsort (l)
+  (if (endp l)
+      '()
+      (let ((a (car l)) (x (cdr l)))
+        (append (qsort (list-of y (y :in x) (&lt; y a)))
+                (list a)
+                (qsort (list-of y (y :in x) (&gt;= y a)))))))
+&nbsp;</PRE></BLOCKQUOTE>
+
+<P>This splits <TT>l</TT> into those elements that are less than the
+<TT>car</TT> of <TT>l</TT>, and those that are greater, sorts each
+sublist recursively, and joins the results.</P>
+
+<P><b>Note</b>:
+It'd be simpler to write "the list of x in l that are odd" as
+
+<BLOCKQUOTE><PRE>(list-of (x :in l) (oddp x))</PRE></BLOCKQUOTE>
+
+<P>rather than</P>
+
+<BLOCKQUOTE><PRE>(list-of x (x :in l) (oddp x))</PRE></BLOCKQUOTE>
+
+<P>Define <code>list-of</code> so that
+if no initial expression to collect is given, it uses the variable
+of the first generator.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

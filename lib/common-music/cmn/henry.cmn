@@ -1,0 +1,55 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+;;; This example shows uses of invisible notes (a note with (scale 0 0)) 
+;;; to attach slurs to, and the dy message to an explicit beam.
+
+(cmn (size 16)
+     (automatic-ties nil)
+     (automatic-rests nil)
+     (system brace
+	     (setf stf1 (staff treble 
+			       (a3 (rq 1/16) (scale 0 0) (setf slur1 (begin-slur (dy0 -.5))))
+			       (cs4 (rq 1/16) (onset 1/16) (setf ib1 (beam- (dy .25))) (setf sl1 (tie-)))
+			       (e4 (rq 1/16) (-beam- ib1) (setf sl2 (tie-)))
+			       (b4 (rq 1/16) (-beam- ib1) (setf sl3 (tie- (tie-curvature .33))))
+			       (as4 (rq 1/16) (-beam- ib1) (setf sl4 (tie-)))
+			       (ds5 (rq 1/16) (-beam- ib1) (setf sl5 (tie- (tie-direction :down))))
+			       (g5 (rq 1/16) (-beam- ib1) (setf sl6 (tie- (tie-direction :down))))
+			       (as5 (rq 1/16) (-beam- ib1) (setf sl7 (tie-)))
+			       (d6 (onset .5) (scale 0 0) (end-slur slur1))
+			       (chord (notes (c4 (-tie sl1))
+					     (e4 (-tie sl2)) 
+					     (a4 (-tie sl3)) 
+					     (b4 (-tie sl4)) 
+					     (d5 (-tie sl5)) 
+					     (g5 (-tie sl6)) 
+					     (a5 (-tie sl7)))
+				      h (onset .5) stem-down (diminuendo (onset-offset .25) (duration 1.25)))
+			       (cs4 e (onset (+ 2.5 .25)) stem-down begin-beam)
+			       (cn4 s (onset (+ 2.5 .75)) stem-down end-beam (begin-tie (tie-direction :down)))
+			       (c4 q (pp (dy -.75)) stem-down end-tie)))
+
+	     (staff treble (tied-to stf1) 
+		    (eighth-rest (scale 0 0)) (d6 begin-beam stem-up s) 
+		    (cs6 s stem-up (begin-slur (slur-direction :up))) 
+		    (ef6 s stem-up) (cn6 end-beam s (begin-tie (tie-direction :up)) stem-up)
+		    (c6 q stem-up end-slur end-tie)
+		    (d4 s begin-beam (begin-slur (slur-direction :up))) (cs4 s) (ds4 s) (cn4 s end-beam end-slur)
+		    (fs4 s. begin-beam (begin-slur (slur-direction :up))) (dn4 (rq 1/8)) (d4 e end-beam end-slur))
+
+
+	     (setf stf2 (staff (dy -1.0) bass 
+			       (a3 e stem-down (begin-tie (tie-direction :down) (tie-curvature .25))) (a3 h end-tie)
+			       (sixteenth-rest (onset 1.5))
+			       (fs3 s (begin-beam (dy .25)) stem-up (onset 1.75) 
+				    (begin-slur (slur-direction :up)) (setf sl8 (tie- (tie-curvature .25))))
+			       (es3 s stem-up (onset 2.0) (setf sl9 (tie- (tie-direction :down))))
+			       (g3 s end-beam (onset 2.25) end-slur)
+			       (chord (onset 2.5) (notes g3 (f3 (-tie sl8)) (e3 (-tie sl9))) q. stem-down)))
+
+	     (staff bass (tied-to stf2) bar
+		    (a3 (rq 1/16) stem-up (-beam ib1))
+		    (fs3 e no-beam (onset 1.75) (begin-slur (dy -.25) (slur-direction :down)))
+		    (es3 e no-beam (onset 2.0))
+		    (g3 q stem-down (scale 0 0) end-slur))))
+			 

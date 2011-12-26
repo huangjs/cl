@@ -1,0 +1,68 @@
+<html>
+<head><title>GUARD-MISCELLANY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARD-MISCELLANY</h3>miscellaneous remarks about guards
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+The discussion of guards concludes here with a few miscellaneous
+remarks.  (Presumably you found this documentation by following a
+link; see <a href="GUARDS-FOR-SPECIFICATION.html">guards-for-specification</a>.)  For further information
+related to guards other than what you find under ``<a href="GUARD.html">guard</a>,'' see
+any of the following documentation topics:  <a href="GUARD-EXAMPLE.html">guard-example</a>,
+<code><a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a></code>, <code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code>, and
+<code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.
+<p>
+<code><a href="DEFUN.html">Defun</a></code> can be made to try to verify the guards on a function.
+This is controlled by the ``<a href="DEFUN-MODE.html">defun-mode</a>'' of the <code><a href="DEFUN.html">defun</a></code>;
+see <a href="DEFUN-MODE.html">defun-mode</a>.  The <a href="DEFUN-MODE.html">defun-mode</a> is either as specified with the
+<code>:mode</code> <code>xarg</code> of the <code><a href="DEFUN.html">defun</a></code> or else defaults to the default
+<a href="DEFUN-MODE.html">defun-mode</a>.  See <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>.  If the <a href="DEFUN-MODE.html">defun-mode</a> of the
+<code><a href="DEFUN.html">defun</a></code> is <code>:</code><code><a href="LOGIC.html">logic</a></code> and either a <code>:</code><code><a href="GUARD.html">guard</a></code> is specified or
+<code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> <code>t</code> is specified in the <code><a href="XARGS.html">xargs</a></code>, then we attempt to
+verify the guards of the function.  Otherwise we do not.<p>
+
+It is sometimes impossible for the system to verify the guards of a
+recursive function at definition time.  For example, the guard
+conjectures might require the invention and proof of some
+inductively derived property of the function (as often happens when
+the value of a recursive call is fed to a guarded subroutine).  So
+sometimes it is necessary to define the function using
+<code>:verify-guards nil</code> then to state and prove key theorems about the
+function, and only then have the system attempt guard verification.
+Post-<code><a href="DEFUN.html">defun</a></code> guard verification is achieved via the event
+<code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.  See <a href="VERIFY-GUARDS.html">verify-guards</a>.<p>
+
+It should be emphasized that guard verification affects only two
+things: how fast ACL2 can evaluate the function and whether the
+function is executed correctly by raw Common Lisp, without guard
+violations.  Since ACL2 does not use the raw Common Lisp definition
+of a function to evaluate its calls unless that function's guards
+have been verified, the latter effect is felt only if you run
+functions in raw Common Lisp rather than via ACL2's command loop.<p>
+
+Guard verification does not otherwise affect the theorem prover or
+the semantics of a definition.  If you are not planning on running
+your function on ``big'' inputs and you don't care if your function
+runs correctly in raw Common Lisp (e.g., you have formalized some
+abstract mathematical property and just happened to use ACL2 as your
+language), there is no need to suffer through guard verification.
+Often users start by not doing guard verification and address that
+problem later.  Sometimes you are driven to it, even in mathematical
+projects, because you find that you want to run your functions
+particularly fast or in raw Common Lisp.<p>
+
+If <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is used to compile a file, and the file contains
+functions with unverified guard conjectures, then you will be warned
+that the compiled file cannot be loaded into raw Common Lisp with
+the expectation that the functions will run correctly.  This is just
+the same point we have been making:  ACL2 and Common Lisp agree only
+on the restricted domains specified by our guards.  When guards are
+violated, Common Lisp can do anything.  When you call a compiled
+function on arguments violating its guards, the chances are only
+increased that Common Lisp will go berserk, because compiled
+functions generally check fewer things at runtime and tend to be
+more fragile than interpreted ones.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

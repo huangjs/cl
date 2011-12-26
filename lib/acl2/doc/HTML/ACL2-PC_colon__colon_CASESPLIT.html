@@ -1,0 +1,62 @@
+<html>
+<head><title>ACL2-PC_colon__colon_CASESPLIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::CASESPLIT</h3>(primitive)
+<code>   </code>split into two cases
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(casesplit (&lt; x y)) -- assuming that we are at the top of the
+                       conclusion, add (&lt; x y) as a new top-level
+                       hypothesis in the current goal, and create a
+                       subgoal identical to the current goal except
+                       that it has (not (&lt; x y)) as a new top-level
+                       hypothesis
+<p>
+General Form:
+(casesplit expr &amp;optional use-hyps-flag do-not-flatten-flag)
+</pre>
+
+When the current subterm is the entire conclusion, this instruction
+adds <code>expr</code> as a new top-level hypothesis, and create a subgoal
+identical to the existing current goal except that it has the
+negation of <code>expr</code> as a new top-level hypothesis.  See also <code>claim</code>.
+The optional arguments control the use of governors and the
+``flattening'' of new hypotheses, as we now explain.<p>
+
+The argument <code>use-hyps-flag</code> is only of interest when there are
+governors.  (To read about governors, see the documentation for the
+command <code>hyps</code>).  In that case, if <code>use-hyps-flag</code> is not supplied or is
+<code>nil</code>, then the description above is correct; but otherwise, it is not
+<code>expr</code> but rather it is <code>(implies govs expr)</code> that is added as a new
+top-level hypothesis (and whose negation is added as a top-level
+hypothesis for the new goal), where <code>govs</code> is the conjunction of the
+governors.<p>
+
+If <code>do-not-flatten-flag</code> is supplied and not <code>nil</code>, then that is
+all there is to this command.  Otherwise (thus this is the default),
+when the claimed term (first argument) is a conjunction (<code>and</code>) of
+terms and the <code>claim</code> instruction succeeds, then each (nested)
+conjunct of the claimed term is added as a separate new top-level
+hypothesis.  Consider the following example, assuming there are no
+governors.
+
+<pre>
+(casesplit (and (and (&lt; x y) (integerp a)) (equal r s)) t)
+</pre>
+
+Three new top-level hypotheses are added to the current goal, namely
+<code>(&lt; x y)</code>, <code>(integerp a)</code>, and <code>(equal r s)</code>.  In that case, only
+one hypothesis is added to create the new goal, namely the negation
+of <code>(and (&lt; x y) (integerp a) (equal r s))</code>.  If the negation of this
+term had been <code>claim</code>ed, then it would be the other way around:  the
+current goal would get a single new hypothesis while the new goal
+would be created by adding three hypotheses.<p>
+
+<strong>Note:</strong>  It is allowed to use abbreviations in the hints.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

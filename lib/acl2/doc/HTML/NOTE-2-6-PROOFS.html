@@ -1,0 +1,117 @@
+<html>
+<head><title>NOTE-2-6-PROOFS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-6-PROOFS</h3>ACL2 Version  2.6 Notes on Changes in Proof Engine
+<pre>Major Section:  <a href="NOTE-2-6.html">NOTE-2-6</a>
+</pre><p>
+
+Certain optimizations are performed when converting terms to clausal
+form.  For example, <code>(&lt; 0 1)</code> is known to be <code>t</code>, 
+<code>(HARD-ERROR ctx str alist)</code> is known to be <code>nil</code>, and
+<code>(INTEGERP n)</code> is known to imply <code>(RATIONALP n)</code>.
+
+In earlier versions of ACL2, the conversion of a term to clausal
+form expanded <code>LAMBDA</code> applications.  That may no longer occur.
+Some proofs may slow down (or fail) because your
+<code>LAMBDA</code>-expressions are not expanded away when you ``expected''
+them to be.<p>
+
+Robert Krug found a soundness bug in our linear arithmetic package.
+The bug was caused by the derivation of an equation from two
+inequalities without taking adequate precautions to ensure that both
+sides of the inequalities were numeric.  Robert also kindly provided
+a fix which we adopted.  Thanks Robert!<p>
+
+We fixed a bug that could prevent the application of a metatheorem.<p>
+
+A bug has been fixed that had caused bogus forcing rounds
+(see <a href="FORCING-ROUND.html">forcing-round</a>).  The bug could occur when the hypothesis of
+a rule was forced (see <a href="FORCE.html">force</a>) before the prover decided to start
+over and prove the original goal by induction.  Thanks to Rob
+Sumners for drawing our attention to this problem.<p>
+
+Some low-level fixes have been made that prevent certain infinite
+loops, based on reports by users.  We thank Yunja Choi, Matt
+Wilding, and Pete Manolios for reporting such problems.<p>
+
+An obscure potential soundness hole has been fixed by redoing the
+way evaluation takes place in the ACL2 loop and during theorem
+proving.  We expect that users will see no difference based on this
+change.  (Those interested in the details can see the long comment
+``Essay on Evaluation in ACL2'' in source file interface-raw.lisp.)<p>
+
+A small change was made in computation for a heuristic that controls
+backchaining.  This will speed up proofs dramatically in a very few
+cases but should have a very small impact in general.<p>
+
+The simplifier has been modified to avoid eliminating hypotheses of
+goals that can be established by contextual (specifically, type-set)
+reasoning alone.  We believe that this change will generally
+strengthen ACL2's reasoning engine, although on rare occasions a
+lemma that formerly was provable may require user assistance.
+Thanks to Robert Krug for suggesting this change and providing its
+implementation.<p>
+
+Case splits are now limited, by default.  This may allow some proof
+attempts to provide output where previously the prover would appear
+to ``go out to lunch.''  For a more complete discussion, including
+instructions for how users can control case splitting,
+see <a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a>.<p>
+
+A bug has been fixed in the handling of <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rules by
+the <a href="BDD.html">bdd</a> package.  Thanks to Rob Sumners for discovering this bug
+and supplying a helpful example.<p>
+
+ACL2 may now use the built-in induction scheme for a function symbol
+even if that function symbol is disabled.  Formerly, if a function
+symbol was disabled then its induction scheme was only considered if
+an explicit induction hint was supplied, other than <code>:induct t</code>.<p>
+
+We eliminated the rule-class <code>linear-alias</code>.  This rule class was seldom
+used and complicated the linear arithmetic decision procedure in ways that
+made it difficult to extend to handle some non-linear special cases.  
+The only use of the rule-class that we know of was in our own <code>nqthm</code>
+books, which were an attempt to provide an embedding of the Nqthm logic
+and theorem prover into ACL2.  But that facility was also practically
+never used, as far as we know.  So both <code>linear-alias</code> rules and the
+<code>nqthm</code> books have been eliminated.<p>
+
+In earlier versions of ACL2, when the <code>IF</code>-form of <code>(AND p q)</code> was
+assumed true -- as when rewriting the <code>alpha</code> expression in
+<code>(IF (AND p q) alpha beta)</code> -- the assumption mechanism did not deduce
+that <code>p</code> and <code>q</code> are true, only that their conjunction, in its
+<code>IF</code>-form, is true.  This has long been known as a deficiency in
+both ACL2 and the earlier Nqthm but it was tedious to do better when
+one considered the full range of <code>IF</code>-forms one might encounter in the
+test of another <code>IF</code>.  Rather than code all the cases, we just waited
+until clausification got rid of them.  Robert Krug developed a pretty
+nice treatment of the general case and we added it in this version.
+This also involved a surprising number of changes elsewhere in the system
+because the improved handling of assumptions caused the theorem prover
+often to ``erase'' hypotheses provided by <code>:use</code> hints because it could
+simplify them to <code>t</code>.  Thank you Robert!<p>
+
+In response to a suggestion from Robert Krug, we added <code>mfc-ap</code> so
+that extended metafunctions can take advantage of linear arithmetic.
+See <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.<p>
+
+There is less delay in printing goals.  In previous versions, a
+goal was not printed until its subgoals were created (or the goal
+was proved).  Now, the goal is printed essentially as soon as it is
+created.<p>
+
+A small technical change has been made in the function <code><a href="TERM-ORDER.html">term-order</a></code>,
+to give priority on the function symbol count over the weighting of
+constants.  So for example, while previously the term <code>(f)</code> preceded
+the constant 2, that is no longer the case.  If this change is noticed
+at all, it will probably be noticed in how so-called <em>permutative</em>
+rewrite rules are applied; see <a href="LOOP-STOPPER.html">loop-stopper</a>.  Thanks to Robert Krug
+for suggesting this improvement and providing part of the
+implemtation.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

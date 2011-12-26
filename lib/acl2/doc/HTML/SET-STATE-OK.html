@@ -1,0 +1,71 @@
+<html>
+<head><title>SET-STATE-OK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-STATE-OK</h2>allow the use of STATE as a formal parameter
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+Note: This is an event!  It does not print the usual event summary
+but nevertheless changes the ACL2 logical <a href="WORLD.html">world</a> and is so
+recorded.<p>
+
+In brief:  The variable symbol <code><a href="STATE.html">STATE</a></code> has an unusual status in ACL2.
+In order to use it, you either need to issue <code>:set-state-ok t</code>, as
+we explain below, or you need to declare it to be a <a href="STOBJ.html">stobj</a>, as
+explained elsewhere (see <a href="DECLARE-STOBJS.html">declare-stobjs</a>).  Now we explain in
+more detail.<p>
+
+Because the variable symbol <code><a href="STATE.html">STATE</a></code> denotes the ``current ACL2
+state,'' ACL2 treats the symbol very restrictively when it occurs as
+a formal parameter of a defined function.  The novice user, who is
+unlikely to be aware of the special status of that symbol, is
+likely to be confused when error messages about <code>STATE</code> are printed
+in response to the innocent choice of that symbol as a formal
+variable.  Therefore the top-level ACL2 loop can operate in a mode
+in which <code><a href="STATE.html">STATE</a></code> is simply disallowed as a formal parameter.
+<p>
+For a discussion of <code>STATE</code>, See <a href="STATE.html">state</a> and see <a href="STOBJ.html">stobj</a>.  Roughly speaking, at
+the top-level, the ``current ACL2 state'' is denoted by the variable
+symbol <code>STATE</code>.  Only the current state may be passed into a
+function expecting a state as an argument.  Furthermore, the name of
+the formal parameter into which the current state is passed must be
+<code>STATE</code> and nothing but the current state may be passed into a
+formal of that name.  Therefore, only certain access and change
+functions can use that formal -- namely with a <code>STATE</code> formal --
+and if any such function produces a new state it becomes the
+``current state'' and must be passed along in the <code>STATE</code> position
+thereafter.  Thus, ACL2 requires that the state be single-threaded.
+This, in turn, allows us to represent only one state at a time and
+to produce new states from it destructively in a von Neumaneque
+fashion.  The syntactic restrictions on the variable <code>STATE</code> are
+enforced by the translate mechanism (see <a href="TRANS.html">trans</a> and see <a href="TERM.html">term</a>) when
+terms are read.  <p>
+
+To prevent the novice user from seeing messages prohibiting certain
+uses of the variable symbol <code>STATE</code> ACL2 has a mode in which it
+simply disallows the use of that symbol as a formal parameter.  Use of
+the symbol causes a simple error message.  The system is initially
+in that mode.<p>
+
+To get out of that mode, execute:
+
+<pre>
+:set-state-ok t ;;; or, (set-state-ok t)
+</pre>
+
+It is not recommended that you do this until you have read the
+documentation of <code><a href="STATE.html">STATE</a></code>.<p>
+
+To enter the mode in which use of <code>state</code> is prohibited as a formal
+parameter, do:
+
+<pre>
+:set-state-ok nil
+</pre>
+<p>
+
+The mode is stored in the defaults table, See <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.
+Thus, the mode may be set <code><a href="LOCAL.html">local</a></code>ly in books.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

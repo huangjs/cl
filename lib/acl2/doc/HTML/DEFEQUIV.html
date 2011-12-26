@@ -1,0 +1,50 @@
+<html>
+<head><title>DEFEQUIV.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFEQUIV</h2>prove that a function is an <a href="EQUIVALENCE.html">equivalence</a> relation
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(defequiv set-equal)<p>
+
+is an abbreviation for
+(defthm set-equal-is-an-equivalence
+  (and (booleanp (set-equal x y))
+       (set-equal x x)
+       (implies (set-equal x y) (set-equal y x))
+       (implies (and (set-equal x y)
+                     (set-equal y z))
+                (set-equal x z)))
+  :rule-classes (:equivalence))
+</pre>
+
+See <a href="EQUIVALENCE.html">equivalence</a>.
+<p>
+
+<pre>
+General Form:
+(defequiv fn
+  :rule-classes rule-classes
+  :instructions instructions
+  :hints hints
+  :otf-flg otf-flg
+  :event-name event-name
+  :doc doc)
+</pre>
+
+where <code>fn</code> is a function symbol of arity 2, <code>event-name</code>, if supplied,
+is a symbol, and all other arguments are as specified in the
+documentation for <code><a href="DEFTHM.html">defthm</a></code>.  The <code>defequiv</code> macro expands into a call
+of <code>defthm</code>.  The name of the <code>defthm</code> is <code>fn-is-an-equivalence</code>, unless
+<code>event-name</code> is supplied, in which case <code>event-name</code> is the name used.
+The term generated for the <code>defthm</code> event states that <code>fn</code> is Boolean,
+reflexive, symmetric, and transitive.  The rule-class
+<code>:equivalence</code> is added to the <a href="RULE-CLASSES.html">rule-classes</a> specified, if it is not
+already there.  All other arguments to the generated <code>defthm</code> form
+are as specified by the other keyword arguments above.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

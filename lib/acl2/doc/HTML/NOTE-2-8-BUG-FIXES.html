@@ -1,0 +1,353 @@
+<html>
+<head><title>NOTE-2-8-BUG-FIXES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-8-BUG-FIXES</h3>ACL2 Version  2.8 Notes on Bug Fixes
+<pre>Major Section:  <a href="NOTE-2-8.html">NOTE-2-8</a>
+</pre><p>
+
+We have fixed a soundness bug in the tautology checker's handling of
+expressions of the form <code>(not (not x))</code>.  This bug has gone back at least
+as far as Version_2.4.  All of the regression tests passed after the fix,
+without modification.  So we hope that this bug has rarely bitten anyone.
+Thanks to Qiang Zhang for sending us a proof of <code>nil</code> that led us to this
+fix: <code>(thm (equal (and p q) (not (or (not p) (not q)))))</code>.  And thanks to
+Matyas Sustik for an observation that led to an improvement of our initial
+fix.<p>
+
+The preceding version (2.7) introduced a soundness bug in handling of ACL2
+<a href="ARRAYS.html">arrays</a>, in which functions <code><a href="COMPRESS1.html">compress1</a></code> and <code><a href="COMPRESS2.html">compress2</a></code> were
+returning the input alist rather than compressing it appropriately.  Here is
+a proof of <code>nil</code> that no longer succeeds, based on a bug report from Warren
+Hunt, who we thank for bringing this problem to our atttention.
+
+<pre>
+(defthm bad
+  (not (let* ((ar2 (aset1 'my-array ar1 3 10))
+              (ar3 (compress1 'my-array ar2))
+              (ar4 (reverse (reverse ar2)))
+              (ar5 (compress1 'my-array ar4)))
+         (and (equal ar2 ar4)
+              (not (equal ar3 ar5)))))
+  :rule-classes nil)
+(defthm contradiction
+  nil
+  :rule-classes nil
+  :hints (("Goal" :use
+           ((:instance bad
+                       (ar1 (compress1 'my-array
+                                       '((3 . 5)
+                                         (:HEADER :DIMENSIONS (5)
+                                                  :MAXIMUM-LENGTH 6
+                                                  :DEFAULT 0
+                                                  :NAME MY-ARRAY)))))))))
+</pre>
+
+On a related note, a new function <code><a href="FLUSH-COMPRESS.html">flush-compress</a></code> can be used for subtle
+control of under-the-hood raw Lisp support for fast array access, although we
+expect it to be very rare that users need this extra support.<p>
+
+Previous versions have had two soundness bugs that can occur when using the
+<a href="PROOF-CHECKER.html">proof-checker</a>:
+
+<blockquote>
+o The first bug pertains to the <code>expand</code> command, and hence <code>x</code> and
+<code>x-dumb</code> commands (which call <code>expand</code>); see <a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a>.
+The bug can occur when applying the above commands when the current term is a
+call of a constrained function symbol for which there is a
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> rule.  Now, the <code>expand</code> command will succeed only
+when the function symbol of the current term is a defined function symbol, in
+which case the original definition is always used, in analogy to how the
+<code>:expand</code> hint works in the prover; see <a href="HINTS.html">hints</a>.  Thanks to John Erickson
+for sending an example that led us to wonder if there might be a soundness
+problem.<p>
+
+o The second bug pertains to the <code>s</code> command (and commands that call it,
+e.g., <code>s-prop</code>).  The proof-checker forms a context out of the top-level
+hypotheses and the <code>if</code>-terms governing the current term.  If there is a
+contradiction in the top-level hypotheses, the proof-checker can
+appropriately consider the goal to be proved, and it does so.  But formerly,
+the criterion was weaker:  the contradiction could involve the combination of
+the top-level hypotheses and <code>if</code>-term governors.  Thanks to Rob Sumners
+for noticing this bug.</blockquote>
+<p>
+
+A soundness bug could be provoked in some Lisps by applying <code><a href="DEFPKG.html">defpkg</a></code> to
+the empty string.  This has been disallowed.<p>
+
+We fixed a soundness bug related to packages caused by a failure to track
+axioms introduced <code><a href="LOCAL.html">local</a></code>ly on behalf of <code><a href="DEFPKG.html">defpkg</a></code> events.
+See <a href="HIDDEN-DEATH-PACKAGE.html">hidden-death-package</a>.<p>
+
+We fixed a soundness bug caused by a failure to check that a
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule can be processed when proofs are skipped or
+under a <code><a href="DEFEQUIV.html">defequiv</a></code> event.  The former case can occur when processing an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code> event, where the rule could depend
+on a <code><a href="LOCAL.html">local</a></code> <code>:</code><code><a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a></code> rule preceding the proposed
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule under the same <code><a href="ENCAPSULATE.html">encapsulate</a></code> or
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> event.  See <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a> for such an example.<p>
+
+We fixed a potential soundness bug relating to reclassifying a
+<code>:program</code> mode function to <code>:logic</code> mode (as done by
+<code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> or the submission of an appropriate ``redundant''
+definition) without adequate checking that <code><a href="STOBJ.html">stobj</a></code> usage was identical.
+Allegedly redundant definitions must now preserve the <code>stobjs</code> declaration
+as well as the formals, body, guard and type declarations.  We thank
+Vernon Austel for pointing out this problem.<p>
+
+It was possible to get a raw Lisp error by introducing a <code><a href="LOCAL.html">local</a></code>ly defined
+function with <a href="GUARD.html">guard</a> verification inhibited and then subsequently
+introducing the same definition non-locally without that inhibition.  The
+following example will clarify.
+
+<pre>
+(encapsulate nil
+  (local
+    (defun foo (x) (declare (xargs :guard t :verify-guards nil)) (car x)))
+  (defun foo (x) (declare (xargs :guard t)) (car x)))
+; The following causes a raw lisp error because ACL2 runs the Common Lisp
+; definition of foo, because it thinks that foo's guard of t was verified.
+(thm (equal (foo 3) xxx))
+</pre>
+
+Thanks to Jared Davis for bringing this problem to our attention.  We are
+particularly grateful to Jared because his example exploited this bug by
+applying it to a function defined using <code><a href="MBE.html">mbe</a></code> (introduced in this same
+version, 2.8), in order to prove <code>nil</code>!<p>
+
+The sort of error message shown below can legitimately occur when certifying
+a book in a certification world where there was an <code><a href="INCLUDE-BOOK.html">include-book</a></code> command
+with a relative pathname (see <a href="PATHNAME.html">pathname</a>).  However, it was occurring more
+often than necessary.  This has been fixed.
+
+<blockquote>
+ACL2 Error in (CERTIFY-BOOK "foo" ...): The certification world has
+include-book commands for book "bar" that correspond to different full
+pathnames, namely "/u/dir1/bar" and "/u/dir2/bar".  ACL2 cannot currently
+certify a book in such a world.  To work around this problem, use an absolute
+pathname for at least one of these books (see :DOC pathname).</blockquote>
+<p>
+
+Bugs were fixed in <code><a href="WITH-OUTPUT.html">with-output</a></code>, in particular related to the use of
+values <code>:all</code>.  Also, documentation for <code>with-output</code> has been improved.
+Thanks to Vernon Austel for pointing out the bugs.<p>
+
+Fixed a lisp error occurring when <code>bash</code> proof-checker command was given
+illegal syntax, e.g., <code>(bash (("Goal" :in-theory (enable binary-append))))</code>
+instead of <code>(bash ("Goal" :in-theory (enable binary-append)))</code>.<p>
+
+We added an appropriate guard to <code><a href="FIND-RULES-OF-RUNE.html">find-rules-of-rune</a></code>, which will avoid
+hard lisp errors when this function is called on non-<a href="RUNE.html">rune</a> arguments.
+Thanks to Eric Smith for pointing out this issue.<p>
+
+It was possible for a redundant <code><a href="INCLUDE-BOOK.html">include-book</a></code> form
+(see <a href="REDUNDANT-EVENTS.html">redundant-events</a>) to leave a <a href="COMMAND.html">command</a> in the ACL2 logical
+<a href="WORLD.html">world</a> and to cause (re-)loading of a compiled file.  These behaviors
+have been fixed.  In particular, if <code>book1</code> has already been included in
+the current ACL2 <a href="WORLD.html">world</a> and <code>(include-book "book1")</code> occurs in
+<code>book2</code>, then the compiled file for <code>book1</code> will not be loaded again when
+<code>book2</code> is included.  Thanks to Dave Greve for bringing our attention to
+these problems, and to Eric Smith for bringing up a special case earlier
+(where "//" occurred in the book name).<p>
+
+The summary printed at the end of a proof had not listed <code>:</code><code><a href="INDUCTION.html">induction</a></code>
+rules used in a proof.  This has been corrected.<p>
+
+The use of proof trees in emacs redefined `<code>control-c control-c</code>' in such a
+way that in telnet mode, the telnet session was interrupted and perhaps could
+not be continued.  This has been fixed.<p>
+
+Source function <code>load-theory-into-enabled-structure</code> contained a
+guard-violating call of <code><a href="COMPRESS1.html">compress1</a></code>.  Thanks to Vernon Austel for
+bringing this problem to our attention; even though this bug was benign
+(as he pointed out), we like keeping the source code free of guard
+violations.<p>
+
+A number of proof-checker atomic macros caused a hard error when all goals
+have already been proved.  This has been fixed.  Thanks to John Erickson for
+sending an example of the issue.<p>
+
+A bug has been fixed in <code><a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a></code>.  Formerly, a
+<code><a href="TABLE.html">table</a></code> <a href="GUARD.html">guard</a> violation occurred when calling
+<code><a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a></code> more than once with first argument other than
+<code>:clear</code>.<p>
+
+Defininitions of functions involving large constants could cause stack
+overflows.  This has been fixed, at least in some of the most egregious
+cases (by making a source function <code>fn-count-evg</code> tail-recursive).  Thanks
+to Jared Davis for bringing this problem to our attention.<p>
+
+Evaluation of computed hints could cause stack overflows.  This has been
+fixed.  Thanks to Eric Smith for bringing this problem to our attention.<p>
+
+Evaluation of <code>:</code><code><a href="MONITOR.html">monitor</a></code> on <code>:</code><code><a href="DEFINITION.html">definition</a></code> <a href="RUNE.html">rune</a>s is now
+fast even if the specified function is part of a very large
+<code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nest.  Thanks to Eric Smith for sending an example
+showing that this wasn't always the case.<p>
+
+Fixed a bug in <code>books/bdd/cbf.lisp</code> that was causing certification of
+distributed bdd books to fail when the connected book directory (see <a href="CBD.html">cbd</a>)
+differs from the current working directory.  Thanks to Scott Guthery for
+bringing this bug to our attention and supplying a helpful log.<p>
+
+Duplicate rule names have been eliminated from warnings generated upon the
+use of enabled <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="DEFINITION.html">definition</a></code> rules.  Thanks to
+Eric Smith for pointing out this problem.<p>
+
+The trace utilities (see <a href="TRACE.html">trace</a>), as modified for GCL and Allegro Common
+Lisp, had failed to show more than the first return value for so-called
+``<code>*1*</code>'' functions (essentially, <a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a> functions)
+when they were returning multiple values (via <a href="MV.html">mv</a>).  This has been fixed.
+Thanks to Erik Reeber for pointing out this problem.
+Also, it is now possible to refer to <code>arglist</code> in <a href="TRACE$.html">trace$</a> forms when
+ACL2 is built on GCL, not just when ACL2 is built on Allegro Common Lisp.<p>
+
+Uses of <code><a href="HIDE.html">hide</a></code> introduced during proofs by failed attempts to evaluate
+constrained functions (see <a href="HIDE.html">hide</a>) are now tracked, so that the <a href="RUNE.html">rune</a>
+<code>(:DEFINITION HIDE)</code> will show up in the summary.<p>
+
+The following bug, introduced back in Version  2.7, has been fixed.  The bug
+applied only to GCL and may well not have affected anyone.  But the function
+proclamation computed by ACL2 for compilation usually had an output type of
+<code>nil</code> where it should have been <code>t</code>.<p>
+
+The macro <code><a href="GC$.html">gc$</a></code> had a bug exhibited when it was supplied one or more
+arguments.  This has been fixed.<p>
+
+The macro <code><a href="DEFABBREV.html">defabbrev</a></code> broke when supplied a string and no documentation,
+e.g., <code>(defabbrev foo () "")</code>.  Thanks to Rob Sumners for noticing this
+problem and providing a fix, which we have incorporated.<p>
+
+For ACL2 executables built on Allegro Common Lisp, a Lisp error occurred when
+<code><a href="TRACE$.html">trace$</a></code> was called on other than a defined function symbol.  Now ACL2
+prints a more useful error message.<p>
+
+The proof-checker no longer accepts a <code>(</code><code><a href="VERIFY.html">verify</a></code><code>)</code> command when
+some function symbol in the original goal no longer exists in the current
+ACL2 logical <a href="WORLD.html">world</a>.  Thanks to John Erickson for bringing this issue
+to our attention.<p>
+
+The function <code>ld-redefinition-action</code> may now be called by the user.
+Thanks to Vernon Austel for suggesting that we remove this symbol from
+the list of so-called untouchables.<p>
+
+The handling of free variables in hypotheses (see <a href="FREE-VARIABLES.html">free-variables</a>) of rewrite
+and linear rules had a bug that prevented some proofs from going through.
+Here is a simple example, essentially provided by Diana Moisuc, who we thank
+for bringing this issue to our attention.  The proof of the <code><a href="THM.html">thm</a></code> below
+had failed, but now will succeed.  This particular bug prevented, for
+example, the <code>:all</code> behavior from occurring when the first hypothesis of
+the rule does not have free variables.  NOTE:  Now that this bug has been
+fixed, you may find some proofs running much more slowly than before.  You
+can use <code><a href="ACCUMULATED-PERSISTENCE.html">accumulated-persistence</a></code> to locate rules that are slowing down
+your proofs because of excessive attention to free variables, and then
+execute <code><a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a></code> for those rules (or, just change the
+rules themselves to specify <code>:once</code> in the <code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code>).
+
+<pre>
+(defstub foo1 (* ) =&gt; *)
+(skip-proofs
+ (defthm aux-foo1
+   (implies (and (integerp a)
+                 (integerp i)
+                 (equal (foo1 0)  (list 0 i)))
+            (equal (foo1 a) (list 0 (+ a i))))
+   :rule-classes ((:rewrite :match-free :all))))
+(thm
+ (implies (and (integerp i) 
+               (integerp a) 
+               (equal (foo1 0) (list 0 i)))
+          (equal (foo1 a) (list 0 (+ a i)))))
+</pre>
+<p>
+
+Formerly, creation of large arrays could cause an error in the underlying
+Common Lisp implementation without helpful messages for the user.  Now, we
+check Common Lisp restrictions on arrays and print a helpful error message if
+they are violated, namely: each dimension must be less than the value of
+Common Lisp constant <code>array-dimension-limit</code>, and the product of the
+dimensions must be less than the value of Common Lisp constant
+<code>array-total-size-limit</code>.  Thanks to Warren Hunt for bringing this issue to
+our attention.  Note:  this change also removes a former restriction of
+<code><a href="STOBJ.html">stobj</a></code> array fields to size smaller than 2^28-1, provided the underlying
+Lisp can support larger arrays.<p>
+
+The <a href="DEFAULT-HINTS.html">default-hints</a> in the current logical <a href="WORLD.html">world</a> were ignored by
+<code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.  This has been fixed.  Thanks to Jared Davis for
+pointing out this bug and sending a helpful example.<p>
+
+The <code><a href="BRR.html">brr</a></code> mechanism has been cleaned up in order to avoid hard errors and
+infinite loops that can arrive when typing interrupts (<code>control-c</code>) or
+end-of-files (<code>control-d</code>) inside the <code><a href="BRR.html">brr</a></code> loop.  Thanks to Dave
+Greve, Olga Matlin, Eric Smith, and Serita Van Groningen for bringing this
+issue to our attention.  As a byproduct, if you type <code>control-d</code> (or if
+inside emacs, <code>control-c control-d</code>), you may now quit entirely out of ACL2
+and lisp (see <a href="GOOD-BYE.html">good-bye</a>) in some cases where you formerly would not have, for
+example when sitting at the ACL2 prompt (which formerly, in Allegro Common
+Lisp for example, would merely take you into raw Lisp rather than quitting
+everything).<p>
+
+We have eliminated structural flaws in the HTML documentation pages that
+could make them unreadable in some browsers.  Thanks to Bill Young for
+bringing this issue to our attention and to Joe Hendrix for diagnosing the
+problem.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> could run very slowly after many instructions in a
+given session.  This has been fixed; thanks to Art Flatau for bringing this
+problem to our attention.  (Implementation detail: We now keep tag-trees
+duplicate-free when we accumulate them into state.  This change could have
+minor speed advantages for some top-level proofs too, not just in the
+proof-checker.)<p>
+
+The printing of accesses to stobjs using nth or update-nth has been done
+using symbolic constants since ACL2 Version_2.6.  However, there was a bug
+that prevented this feature from working for <code><a href="UPDATE-NTH.html">update-nth</a></code> except at a
+top-level call.  This has been fixed.  Thanks to Julien Schmaltz for bringing
+this problem to our attention.  For example, consider these events:
+
+<pre>
+(defstobj st field0 field1)
+(thm (equal (nth 1 (update-nth 0 17 st)) (car (cons xxx yyy)))
+     :hints (("Goal" :in-theory (disable nth update-nth))))
+</pre>
+
+Before the fix, the proof attempt of the above silly thm printed the
+following.
+
+<pre>
+(NTH 1 (UPDATE-NTH *FIELD0* 17 ST))
+</pre>
+
+After the fix, we instead see the following.
+
+<pre>
+(NTH *FIELD1* (UPDATE-NTH *FIELD0* 17 ST))
+</pre>
+<p>
+
+It is now possible to certify and subsequently include <a href="BOOKS.html">books</a> that
+require guard-checking to be off.  For example, the book can contain the form
+<code>(defconst *silly* (car 3))</code> even though <code>3</code> fails to satisfy the guard
+of <code><a href="CAR.html">car</a></code>.  Formerly, it was necessary to execute
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> nil</code> before a <code><a href="CERTIFY-BOOK.html">certify-book</a></code> or
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> in order for such a form to be handled without error.
+Thanks to Hanbing Liu for bringing this problem to our attention.<p>
+
+Fixed a <a href="PROOF-CHECKER.html">proof-checker</a> bug that could cause probably cause strange error,
+``Attempt to access the plist field''.  Thanks to Bill Young for bringing this
+problem to our attention.<p>
+
+Fixed a <a href="PROOF-CHECKER.html">proof-checker</a> bug that was failing to record applications of
+rewrite rules using the proof-checker's <code>:rewrite</code> command, causing the
+proof summary to omit mention of that rule (for example, when using the
+proof-checker's <code>:exit</code> command to generate an <code>:instructions</code> hint).
+Thanks to Bill Young for pointing out this bug.<p>
+
+Modernized some of the proof-tree emacs and infix printing stuff, thanks to
+suggestions made by Camm Maguire.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

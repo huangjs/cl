@@ -1,0 +1,61 @@
+;;; To: tomroyall@lineone.net
+;;; Cc: cmdist@ccrma.stanford.edu
+;;; Subject: Re: (CM) tab
+;;; From: Anders Vinjar <anders.vinjar@notam.uio.no>
+;;; Date: 02 Oct 2001 10:56:16 +0200
+;;; 
+;;; >>> "t" == tomroyall  <tomroyall@lineone.net> writes:
+;;; 
+;;;     t> Can anyone tell me how to get numbers as note-heads in CMN
+;;;     t> (for guitar tablature)?
+;;; 
+;;; The following could possibly get you going somewhere.  
+
+(in-package :cmn)
+
+(defun nh-number (num &rest args) 
+  (apply #'text
+	 (format nil "~A" num)
+	 (font-name "Courier-Bold")
+	 (font-scaler 0.35)
+	 (y #'(lambda (mark note score &optional justifying)
+                (- (y0 note) 0.08)))
+	 args))
+
+(defmacro fret-chord (&rest frets)
+  `(chord no-stem ,@frets))
+
+(defmacro fret (num string)
+  (let ((note (case string
+                (1 'e4)
+                (2 'g4)
+                (3 'b4)
+                (4 'd5)
+                (5 'f5)
+                (6 'a5)
+                (t string))))
+    `(,note (note-head :none) no-stem (leger-line-width 0.0)
+            (nh-number ,num))))
+
+#|
+
+(cmn
+ (free-expansion-factor 2)
+ staff (staff-lines 6)
+ (fret-chord
+  (fret 1 1)
+  (fret 1 2)
+  (fret 1 3))
+ (fret-chord
+  (fret 0 3)
+  (fret 2 4)
+  (fret 3 5)
+  (fret 2 6)) 
+ (fret 3 4)
+ (fret "4h7" 6)
+ (fret 6 4)
+ (fret "3p0" 3)
+ (fret 4 5)
+ (fret "7b9" 6))
+
+|#

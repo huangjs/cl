@@ -1,0 +1,56 @@
+<html>
+<head><title>QUANTIFIERS-USING-DEFUN-SK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>QUANTIFIERS-USING-DEFUN-SK</h4>quantification example
+<pre>Major Section:  <a href="QUANTIFIERS.html">QUANTIFIERS</a>
+</pre><p>
+
+See <a href="QUANTIFIERS.html">quantifiers</a> for the context of this example.  It should be
+compared to a corresponding example in which a simpler proof is
+attained by using recursion in place of explicit quantification;
+see <a href="QUANTIFIERS-USING-RECURSION.html">quantifiers-using-recursion</a>.
+<p>
+
+<pre>
+(in-package "ACL2")<p>
+
+; We prove that if every member A of each of two lists satisfies the
+; predicate (P A), then this holds of their append; and, conversely.<p>
+
+; Here is a solution using explicit quantification.<p>
+
+(defstub p (x) t)<p>
+
+(defun-sk forall-p (x)
+  (forall a (implies (member a x)
+                     (p a))))<p>
+
+(defthm member-append
+  (iff (member a (append x1 x2))
+       (or (member a x1) (member a x2))))<p>
+
+(defthm forall-p-append
+  (equal (forall-p (append x1 x2))
+         (and (forall-p x1) (forall-p x2)))
+  :hints (("Goal" ; ``should'' disable forall-p-necc, but no need
+           :use
+           ((:instance forall-p-necc
+                       (x (append x1 x2))
+                       (a (forall-p-witness x1)))
+            (:instance forall-p-necc
+                       (x (append x1 x2))
+                       (a (forall-p-witness x2)))
+            (:instance forall-p-necc
+                       (x x1)
+                       (a (forall-p-witness (append x1 x2))))
+            (:instance forall-p-necc
+                       (x x2)
+                       (a (forall-p-witness (append x1 x2))))))))
+</pre>
+<p>
+
+Also see <a href="QUANTIFIERS-USING-DEFUN-SK-EXTENDED.html">quantifiers-using-defun-sk-extended</a> for an
+elaboration on this example.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<html>
+<head><title>COMPRESS1.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>COMPRESS1</h3>remove irrelevant pairs from a 1-dimensional array
+<pre>Major Section:  <a href="ARRAYS.html">ARRAYS</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(compress1 'delta1 a)
+<p>
+General Form:
+(compress1 name alist)
+</pre>
+
+where <code>name</code> is a symbol and <code>alist</code> is a 1-dimensional array named
+<code>name</code>.  See <a href="ARRAYS.html">arrays</a> for details.  Logically speaking, this
+function removes irrelevant pairs from <code>alist</code>, possibly shortening
+it.  The function returns a new array, <code>alist'</code>, of the same name and
+dimension as <code>alist</code>, that, under <code><a href="AREF1.html">aref1</a></code>, is everywhere equal to <code>alist</code>.
+That is, <code>(aref1 name alist' i)</code> is <code>(aref1 name alist i)</code>, for all
+legal indices <code>i</code>.  <code>Alist'</code> may be shorter than <code>alist</code> and the
+non-irrelevant pairs may occur in a different order than in <code>alist</code>.<p>
+
+Practically speaking, this function plays an important role in the
+efficient implementation of <code><a href="AREF1.html">aref1</a></code>.  In addition to creating the new
+array, <code>alist'</code>, <code>compress1</code> makes that array the ``semantic value'' of
+<code>name</code> and allocates a raw lisp array to <code>name</code>.  For each legal index,
+<code>i</code>, that raw lisp array contains <code>(aref1 name alist' i)</code> in slot <code>i</code>.
+Thus, subsequent <code><a href="AREF1.html">aref1</a></code> operations can be executed in virtually
+constant time provided they are given <code>name</code> and the <code>alist'</code> returned
+by the most recently executed <code>compress1</code> or <code><a href="ASET1.html">aset1</a></code> on <code>name</code>.
+See <a href="ARRAYS.html">arrays</a>.<p>
+
+In general, <code>compress1</code> returns an alist whose <code><a href="CDR.html">cdr</a></code> is an association
+list whose keys are nonnegative integers in ascending order.  However, if the
+<code><a href="HEADER.html">header</a></code> specifies an <code>:order</code> of <code>&gt;</code> then the keys will occur in
+descending order, and if the <code>:order</code> is <code>:none</code> then the keys will not
+be sorted, i.e., <code>compress1</code> is logically the identity function (though it
+still attaches an array under the hood).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

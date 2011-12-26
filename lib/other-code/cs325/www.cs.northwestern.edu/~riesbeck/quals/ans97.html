@@ -1,0 +1,551 @@
+<!--This file created 6/19/97 4:02 PM by Claris Home Page version 2.0-->
+<HTML>
+<HEAD>
+   <TITLE>Qual 97 Answer</TITLE>
+   <META NAME=GENERATOR CONTENT="Claris Home Page 2.0">
+   <X-SAS-WINDOW TOP=70 BOTTOM=624 LEFT=22 RIGHT=552>
+   <X-SAS-REMOTESAVE SERVER="godzilla.cs.nwu.edu" USER="riesbeck"
+   DIR="/home1/riesbeck/public_html/quals/" FILE="">
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<P ALIGN=CENTER>
+<HR>
+</P>
+
+<H1 ALIGN=CENTER>1997 Qual</H1>
+
+<H1 ALIGN=CENTER>Programming Question</H1>
+
+<H1 ALIGN=CENTER>Analysis</H1>
+
+<P>
+<HR>
+</P>
+
+<H2>How to Grade Your Answer</H2>
+
+<P>I graded on the following items:</P>
+
+<UL>
+   <LI>flexibility and open-ness of the design
+   
+   <LI>exploration of possible metrics and what makes a good one
+   
+   <LI>Lisp competence
+</UL>
+
+<P>These items and possible answers are discussed in detail below.
+The best possible score is 10 points. I graded the 5 answers
+submitted this year as follows:</P>
+
+<UL>
+   <LI>2 answers got 8 points.
+   
+   <P>They lost 2 points for clumsy recursion (note how simple
+   <A HREF="#metrics">the metric code</A> can be) and/or not
+   questioning the two obvious metrics, both of which are actually
+   useless</P>
+   
+   <LI>2 answers got 5 points.
+   
+   <P>The code let you change how important the two (useless) metrics
+   were, but didn't support things like " deprecate nesting more when
+   it occurs in the tests of cond's and if's and do's"</P>
+   
+   <LI>1 answer got 3 points.
+   
+   <P>The code had no flexibility and had numerous Lisp mistakes.
+   </P>
+</UL>
+
+<P>In other words, a recursive function that simply calculated
+maximum list length and nesting depth and scaled the results using
+user-adjustable weights for length and depth got 5 points out of 10,
+assuming the Lisp code was competent otherwise. There needed to be
+more flexibility than that.</P>
+
+<H2>Analysis Point 1: Flexibility</H2>
+
+<BLOCKQUOTE><P>Program for flexibility. It should be easy to change
+the scoring algorithm and for a Lisp programmer like me to specify
+context-specific rules, such as "deprecate nesting more when it
+occurs in the tests of cond's and if's and do's.</P></BLOCKQUOTE>
+
+<P>There were two techniques used to get flexibility:</P>
+
+<UL>
+   <LI>penalty weights to multiply depth and length by when
+   calculating a total score
+   
+   <LI>pattern-matching rules to invoke scoring functions or
+   specialized penalty weights
+</UL>
+
+<P>Another viable option would be</P>
+
+<UL>
+   <LI>data-driven code, using a table of scoring functions, indexed
+   by names of Lisp functions and special forms
+</UL>
+
+<P>
+<HR>
+</P>
+
+<H2>Analysis Point 2: Metrics</H2>
+
+<BLOCKQUOTE><P><TT>difference-one-do</TT> is significantly worse than
+<TT>replace-hex-escape</TT> even though it only has a few more atoms
+and doesn't nest as deeply.</P></BLOCKQUOTE>
+
+<P>There was several hours of empirical experience hidden in this one
+sentence. All but one qual-taker used the following obvious metrics:
+</P>
+
+<UL>
+   <LI>maximum nesting
+   
+   <LI>length of long list
+</UL>
+
+<P>Unfortunately, they're both terrible, as hinted at by "doesn't
+nest as deeply". If you look at the <A HREF="#table">table below</A>,
+you'll see that</P>
+
+<UL>
+   <LI>These metrics produce values in a very narrow range, making it
+   very difficult to specify a "threshold of badness."
+   
+   <LI>They're unreliable. <TT>stream-subst</TT> scores better than
+   <TT>replace-hex-escape</TT>but it's obviously longer.
+</UL>
+
+<P>Multiplying unreliable values with weights only makes things
+worse.</P>
+
+<P>Two other simple metrics do a lot better:</P>
+
+<UL>
+   <LI>total number of atoms
+   
+   <LI>sum of all list lengths
+</UL>
+
+<P>The first metric was hinted at by " has a few more atoms" and was
+mentioned by one qual-taker. The <A HREF="#table">table below</A>
+shows a pretty good correlation with reasonable spread for both of
+these. <TT>difference-one-do</TT> does indeed have fewer atoms than
+<TT>replace-hex-escape</TT>, but if you don't count the parameter
+list, which isn't really the function definition's fault, then
+<TT>difference-one-do</TT> has a few more atoms than
+<TT>replace-hex-escape</TT>.</P>
+
+<P>The second metric penalizes parentheses, e.g.,</P>
+
+<UL>
+   <LI><TT>(a b c)</TT> scores 3
+   
+   <LI><TT>((a b c))</TT> scores 4
+   
+   <LI><TT>((a) (b) (c))</TT> scores 6
+</UL>
+
+<P>These differences add up fast.</P>
+
+<P>
+<HR>
+</P>
+
+<H2><A NAME="table"></A>Baseline Metric Results</H2>
+
+<P>Here's a table showing how the above metrics score the example
+pieces of code.</P>
+
+<P ALIGN=CENTER><CENTER><TABLE BORDER=1>
+   <TR>
+      <TH WIDTH=127>
+         <P ALIGN=LEFT>
+      </TH><TH WIDTH=59>
+         <P>MAX-LENGTH
+      </TH><TH WIDTH=45>
+         <P>MAX-DEPTH
+      </TH><TH WIDTH=60>
+         <P>ATOM-COUNT
+      </TH><TH WIDTH=65>
+         <P>LIST-COUNT
+      </TH></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>REPLACE-HEX-ESC
+      </TD><TD WIDTH=59>
+         <P>5
+      </TD><TD WIDTH=45>
+         <P>10
+      </TD><TD WIDTH=60>
+         <P>36
+      </TD><TD WIDTH=65>
+         <P>58
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>DIFFERENCE-ONE-DO
+      </TD><TD WIDTH=59>
+         <P>4
+      </TD><TD WIDTH=45>
+         <P>8
+      </TD><TD WIDTH=60>
+         <P>42
+      </TD><TD WIDTH=65>
+         <P>71
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>RIEGER-SIMPLE
+      </TD><TD WIDTH=59>
+         <P>5
+      </TD><TD WIDTH=45>
+         <P>12
+      </TD><TD WIDTH=60>
+         <P>58
+      </TD><TD WIDTH=65>
+         <P>96
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>INTERSECTP
+      </TD><TD WIDTH=59>
+         <P>6
+      </TD><TD WIDTH=45>
+         <P>9
+      </TD><TD WIDTH=60>
+         <P>111
+      </TD><TD WIDTH=65>
+         <P>175
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>STREAM-SUBST
+      </TD><TD WIDTH=59>
+         <P>5
+      </TD><TD WIDTH=45>
+         <P>8
+      </TD><TD WIDTH=60>
+         <P>89
+      </TD><TD WIDTH=65>
+         <P>138
+      </TD></TR>
+</TABLE></CENTER></P>
+
+<P>As a further test, when I applied <TT>list-count</TT><B> </B>to
+several of my Lisp files that I use a "model" code in CS C25, most
+functions scored only 20 to 60. Since the scores for the example "too
+long" functions start at 70 and quickly pass 100, <TT>list-count</TT>
+seems like the very reasonable baseline metric.</P>
+
+<P>
+<HR>
+</P>
+
+<H2><A NAME="metrics"></A>Baseline Metric Code</H2>
+
+<P>Lisp code to do the above metrics is pretty simple. Most of the
+qual-takers wrote pretty clumsy recursive code.</P>
+
+<PRE>(defun max-length (form)
+  (cond ((atom form) 1)
+        (t (reduce #'max form
+                   :key #'max-length
+                   :initial-value (length form)))))
+&nbsp;
+&nbsp;
+(defun max-depth (form &amp;optional (depth 0))
+  (cond ((atom form) depth)
+        (t (max (max-depth (car form) (1+ depth))
+                (max-depth (cdr form) depth)))))
+&nbsp;
+(defun atom-count (form)
+  (cond ((atom form) 1)
+        (t (reduce #'+ form :key #'atom-count))))
+&nbsp;
+(defun list-count (form)
+  (cond ((atom form) 0)
+        (t (reduce #'+ form
+                   :key #'list-count
+                   :initial-value (length form)))))</PRE>
+
+<P>&nbsp;</P>
+
+<P>
+<HR>
+</P>
+
+<H2>Handling the special cases</H2>
+
+<H3>A Data-Driven Approach</H3>
+
+<P>My original answer for this question was data-driven. It had a
+table associating a scoring function with Lisp function names. For
+example, the following scoring function(s) for <TT>cond</TT> (one of
+the more complex cases), penalizes forms in the tests of each branch
+nested over a certain amount and penalizes long branches.</P>
+
+<PRE>(setf (score-fn 'cond)
+      #'(lambda (form)
+          (reduce #'max (rest form) :key 'score-branch)))
+&nbsp;
+(defun score-branch (branch)
+  (max (penalize (max-depth (first branch)) 1 2)
+       (penalize (length (rest branch)) 1 2)))
+&nbsp;
+(defun penalize (n &amp;optional (threshold 1) (factor 2))
+  (+ 1 (* (max 0 (- n threshold)) factor)))</PRE>
+
+<P>Implementing a data-driven solution was quite easy. Here was the
+top-level scoring function. Note that implemeting
+<TT>function-too-long-p</TT> simply means "<TT>max-score</TT> &gt;
+threshold."</P>
+
+<PRE>(defun max-score (defn)
+  (cond ((atom defn) 1)
+        (t (reduce #'max defn
+                   :initial-value (score-form defn)
+                   :key #'max-score))))
+&nbsp;
+(defun score-form (form)
+  (cond ((atom form) 1)
+        (t (funcall (get-scorer (car form)) form))))</PRE>
+
+<P>However, I liked the pattern-directed rules two qual-takers used,
+and especially liked the suggestion by one to use a syntax similar to
+Scheme's <TT>define-syntax</TT> special form. Patterns are certainly
+easier to maintain than Lisp code. Furthermore, I've never tried
+implementing <TT>define-syntax</TT> style of patterns, so that's what
+I've implemented <A HREF="qual97.lisp">here</A>. The approach is
+inspired by one of the qual answers, though the code is totally
+different.</P>
+
+<P>You can test my answer by calling <TT>score-file</TT> on a file of
+Lisp code. The examples in <A HREF="qual97.html">the original
+question</A> are <A HREF="data97.lisp">here</A>.</P>
+
+<H3>A Pattern-Driven Approach</H3>
+
+<P>A rule pattern is basically a template for a Lisp expression, with
+numbers for subexpressions. The numbers are penalty weights. Whatever
+score the matching code is given will be multiplied by the
+corresponding weight.</P>
+
+<P>The special symbol <TT>etc</TT> in a pattern means "repeat the
+previous pattern until the end of the list." (This is equivalent to
+<TT>...</TT> in <TT>define-syntax</TT> in Scheme, but Common Lisp
+doesn't allow <TT>...</TT> as a symbol name.) This kind of syntax is
+not as general as segment variables in a full pattern matcher, but
+it's simpler to use and implement, and provides all the generality we
+need here.</P>
+
+<P>Here's three rules, to show the format:</P>
+
+<PRE>(defparameter *score-pats* 
+  '((if 2 1 etc)
+    (cond (2 1 etc) etc) 
+    (let ((1 2) etc) 1 etc)
+    ))</PRE>
+
+<P>The first rule says that when scoring <TT>IF</TT> forms, double
+the score in the test position. The second rule says to double the
+score for the test in each branch of <TT>a COND</TT> form. The third
+rule says to double the score of the value forms in <TT>LET</TT>
+variable specifications.</P>
+
+<H3>Matching</H3>
+
+<P>The matcher for these patterns is similar to standard pattern
+matchers, where</P>
+
+<UL>
+   <LI>a number matches (and binds) to anything
+   
+   <LI>a number can be bound many times to different subexpressions
+   
+   <LI>any other atom matches only itself
+   
+   <LI>a list of the form <TT>(</TT><I><TT>pat</TT></I><TT> etc)</TT>
+   matches if <I><TT>pat</TT></I> matches every item in list of
+   expressions -- all the bindings are collected
+   
+   <LI>any other list matches if the <TT>car</TT> and<TT>cdr</TT>
+   match -- all the bindings are collected
+</UL>
+
+<P>Life is simpler in that we never need to check the bindings during
+the match, just save them for later. The only complexity is handling
+<TT>etc</TT> and this is still simpler than handling full-fledged
+segment variables.</P>
+
+<P>As usual, we need to make sure that we can distinguish a
+successful match with no bindings from a failed match. Here, we'll
+use a binding list of the form <TT>(</TT><I><TT>pat binding binding
+...</TT></I><TT>)</TT> where <I><TT>pat</TT></I> is the top-level
+pattern that matched. Each binding will be a pair whose <TT>car</TT>
+is some penalty weight from the pattern and whose <TT>cdr</TT> is the
+subexpression that the weight matched.</P>
+
+<P>Here's an example result:</P>
+
+<PRE>? (match-score-pat '(if 2 1 etc) '(if (null x) t (car x)))
+((IF 2 1 ETC) (1 . T) (1 CAR X) (2 NULL X))
+&nbsp;</PRE>
+
+<P>This says that</P>
+
+<UL>
+   <LI><TT>(IF 2 1 ETC)</TT> is the pattern
+   
+   <LI>the score for <TT>T</TT> should be multiplied by 1
+   
+   <LI>the score for <TT>(CAR X)</TT> should be multiplied by 1
+   
+   <LI>the score for <TT>(NULL X)</TT> should be multiplied by 2
+</UL>
+
+<P>Notice how the weight 1 was assigned to the two subexpressions
+following the test.</P>
+
+<H3>Adding Up the Scores</H3>
+
+<P>The algorithm for combining scores as implemented by the code is
+as follows.</P>
+
+<P>It assumes that there are two user-changeable scoring functions:
+</P>
+
+<UL>
+   <LI>a <B>baseline code metric</B> that takes an expression and
+   assigns a score non-recursively
+   
+   <UL>
+      <LI>the default is <TT>length</TT>
+      
+      <LI>another reasonable choice is <TT>count-top-atoms</TT>,
+      i.e., <TT>(count-if #'atom l)</TT>
+   </UL>
+   
+   <LI>a <B>binding penalizer</B> that scores for number of bindings
+   produced
+   
+   <UL>
+      <LI>the default is <TT>length</TT>
+   </UL>
+</UL>
+
+<P>The algorithm to score a piece of code, <TT>code</TT>, is:</P>
+
+<UL>
+   <LI>Match <TT>code</TT> against the stored rule patterns.
+   
+   <LI>Let <TT>bindings</TT> be the bindings returned by the first
+   match, if any, or <TT>NIL</TT>.
+   
+   <LI>Recursively score the subexpressions in <TT>bindings</TT>.
+   
+   <LI>Add
+   
+   <UL>
+      <LI>the subexpression scores multiplied by the corresponding
+      weights
+      
+      <LI>the result of applying the binding penalizer to
+      <TT>bindings</TT>
+      
+      <LI>the result of applying the baseline code metric to
+      <TT>code</TT>
+   </UL>
+</UL>
+
+<P>Notice that if no patterns apply to any part of the code, then the
+above algorithm does</P>
+
+<UL>
+   <LI><TT>list-count</TT> if the baseline code metric is
+   <TT>length</TT>
+   
+   <LI><TT>atom-count</TT> if the baseline code metric is
+   <TT>count-top-atoms</TT>
+</UL>
+
+<P>Notice that patterns with internalize parentheses don't penalize
+those parentheses, in this algorithm. This could be considered a bug
+or a feature. The binding penalizer partially compensates for this.
+</P>
+
+<P>Testing the Extensions</P>
+
+<P>So, how much better do those patterns make our Lisp scoring
+function? Here's what I get for the example functions, along side the
+original values returned by <TT>list-count</TT>:</P>
+
+<P ALIGN=CENTER><CENTER><TABLE BORDER=1>
+   <TR>
+      <TH WIDTH=127>
+         <P ALIGN=LEFT>
+      </TH><TH WIDTH=65>
+         <P>LIST-COUNT
+      </TH><TH WIDTH="72">
+         <P>SCORE-CODE
+      </TH></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>REPLACE-HEX-ESC
+      </TD><TD WIDTH=65>
+         <P>58
+      </TD><TD WIDTH="72">
+         <P>62
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>DIFFERENCE-ONE-DO
+      </TD><TD WIDTH=65>
+         <P>71
+      </TD><TD WIDTH="72">
+         <P>99
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>RIEGER-SIMPLE
+      </TD><TD WIDTH=65>
+         <P>96
+      </TD><TD WIDTH="72">
+         <P>115
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>INTERSECTP
+      </TD><TD WIDTH=65>
+         <P>175
+      </TD><TD WIDTH="72">
+         <P>192
+      </TD></TR>
+   <TR>
+      <TD WIDTH=127>
+         <P>STREAM-SUBST
+      </TD><TD WIDTH=65>
+         <P>138
+      </TD><TD WIDTH="72">
+         <P>160
+      </TD></TR>
+</TABLE></CENTER></P>
+
+<P>Are these better? They're spread out more but I leave it as an
+exercise for the reader to decide if anything substantial has been
+gained (beyond learning, of course).</P>
+
+<P>
+<HR>
+</P>
+
+<P>&nbsp;</P>
+
+<P>&nbsp;</P>
+</BODY>
+</HTML>

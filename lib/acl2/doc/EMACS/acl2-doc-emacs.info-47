@@ -1,0 +1,1095 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: NOTE7,  Next: NOTE8,  Prev: NOTE6,  Up: RELEASE-NOTES
+
+NOTE7    ACL2 Version 1.7 (released October 1994) Notes
+
+Include-book now takes (optionally) an additional keyword argument,
+indicating whether a compiled file is to be loaded.  The default
+behavior is unchanged, except that a warning is printed when a compiled
+file is not loaded.  See *Note INCLUDE-BOOK::.
+
+A markup language for documentation strings has been implemented, and
+many of the source files have been marked up using this language
+(thanks largely to the efforts of Laura Lawless).  See *Note MARKUP::.
+Moreover, there are translators that we have used to provide versions
+of the ACL2 documentation in info (for use in emacs), html (for
+Mosaic), and tex (for hardcopy) formats.
+
+A new event defdoc has been implemented.  It is like deflabel, but
+allows redefinition of doc strings and has other advantages.  See *Note
+DEFDOC::.
+
+We used to ignore corollaries when collecting up the axioms introduced
+about constrained functions.  That bug has been fixed.  We thank John
+Cowles for bringing this bug to our attention.
+
+The macro defstub now allows a :doc keyword argument, so that
+documentation may be attached to the name being introduced.
+
+A new command nqthm-to-acl2 has been added to help Nqthm users to make
+the transition to ACL2.  See *Note NQTHM-TO-ACL2::, which also includes
+a complete listing of the relevant tables.
+
+Many function names, especially of the form "foo-lst", have been
+changed in order to support the following convention, for any "foo":
+
+     (foo-listp lst) represents the notion (for x in lst always foop x).
+
+A complete list of these changes may be found at the end of this note.
+All of them except symbolp-listp and list-of-symbolp-listp have the
+string "-lst" in their names.  Note also that keyword-listp has been
+renamed keyword-value-listp.
+
+Accumulated persistence has been implemented.  It is not connected to
+:brr or rule monitoring.  See *Note ACCUMULATED-PERSISTENCE::.
+
+:Trigger-terms has been added for :linear rule classes, so you can hang
+a linear rule under any addend you want.  See *Note LINEAR::, which has
+been improved and expanded.
+
+ACL2 now accepts 256 characters and includes the Common Lisp functions
+code-char and char-code.  However, ACL2 controls the lisp reader so
+that #\c may only be used when c is a single standard character or one
+of Newline, Space, Page, Rubout, Tab.  If you want to enter other
+characters use code-char, e.g., (coerce (list (code-char 7) (code-char
+240) #a) 'string).  See *Note CHARACTERS::.  Note:  our current
+handling of characters makes the set of theorems different under
+Macintosh Common Lisp (MCL) than under other Common Lisps.  We hope to
+rectify this situation before the final release of ACL2.
+
+A new table, macro-aliases-table, has been implemented, that associates
+macro names with function names.  So for example, since append is
+associated with binary-append, the form (disable append) it is
+interpreted as though it were (disable binary-append).  See *Note
+MACRO-ALIASES-TABLE::, see *note ADD-MACRO-ALIAS:: and see *note
+REMOVE-MACRO-ALIAS::.
+
+The implementation of conditional metalemmas has been modified so that
+the metafunction is applied before the hypothesis metafunction is
+applied.  See *Note META::.
+
+The Common Lisp functions acons and endp have been defined in the ACL2
+logic.
+
+We have added the symbol declare to the list *acl2-exports*, and hence
+to the package "ACL2-USER".
+
+A new hint, :restrict, has been implemented.  See *Note HINTS::.
+
+It used to be that if :ubt were given a number that is greater than the
+largest current command number, it treated that number the same as
+:max.  Now, an error is caused.
+
+The table :force-table has been eliminated.
+
+A command :disabledp (and macro disabledp) has been added; see *note
+DISABLEDP::.
+
+Compilation via :set-compile-fns is now suppressed during include-book.
+In fact, whenever the state global variable ld-skip-proofsp has value
+'include-book.
+
+Here are some less important changes, additions, and so on.
+
+Unlike previous releases, we have not proved all the theorems in
+axioms.lisp; instead we have simply assumed them.  We have deferred
+such proofs because we anticipate a fairly major changed in Version 1.8
+in how we deal with guards.
+
+We used to (accidentally) prohibit the "redefinition" of a table as a
+function.  That is no longer the case.
+
+The check for whether a corollary follows tautologically has been sped
+up, at the cost of making the check less "smart" in the following
+sense:  no longer do we expand primitive functions such as implies
+before checking this propositional implication.
+
+The command ubt! has been modified so that it never causes or reports
+an error.  See *Note UBT!::.
+
+ACL2 now works in Harlequin Lispworks.
+
+The user can now specify the :trigger-terms for :linear rules.  See
+*Note LINEAR::.
+
+The name of the system is now "ACL2"; no longer is it "Acl2".
+
+The raw lisp counterpart of theory-invariant is now defined to be a
+no-op as is consistent with the idea that it is just a call of table.
+
+A bug was fixed that caused proof-checker instructions to be executed
+when ld-skip-proofsp was t.
+
+The function rassoc has been added, along with a corresponding function
+used in its guard, r-eqlable-alistp.
+
+The in-theory event and hint now print a warning not only when certain
+"primitive" :definition rules are disabled, but also when certain
+"primitive" :executable-counterpart rules are disabled.
+
+The modified version of trace provided by ACL2, for use in raw Lisp,
+has been modified so that the lisp special variable *trace-alist* is
+consulted.  This alist associates, using eq, values with their print
+representations.  For example, initially *trace-alist* is a one-element
+list containing the pair (cons state '|*the-live-state*|).
+
+The system now prints an observation when a form is skipped because the
+default color is :red or :pink.  (Technically:  when-cool has been
+modified.)
+
+Additional protection exists when you submit a form to raw Common Lisp
+that should only be submitted inside the ACL2 read-eval-print loop.
+
+Here is a complete list of the changes in function names described near
+the top of this note, roughly of the form
+
+     foo-lst --> foo-listp
+
+meaning:  the name "foo-lst" has been changed to "foo-listp."
+
+     symbolp-listp    --> symbol-listp
+     list-of-symbolp-listp  --> symbol-list-listp
+                            {for consistency with change to symbol-listp}
+     rational-lst     --> rational-listp
+                          {which in fact was already defined as well}
+     integer-lst      --> integer-listp
+     character-lst    --> character-listp
+     stringp-lst      --> string-listp
+     32-bit-integer-lst   --> 32-bit-integer-listp
+     typed-io-lst     --> typed-io-listp
+     open-channel-lst --> open-channel-listp
+     readable-files-lst   --> readable-files-listp
+     written-file-lst --> written-file-listp
+     read-file-lst    --> read-file-listp
+     writeable-file-lst   --> writable-file-listp
+                          {note change in spelling of ``writable''}
+     writeable-file-lst1  --> writable-file-listp1
+     pseudo-termp-lst     --> pseudo-term-listp
+     hot-termp-lst --> hot-term-listp {by analogy with pseudo-term-listp}
+     weak-termp-lst   --> weak-term-listp
+     weak-termp-lst-lst   --> weak-termp-list-listp
+     ts-builder-case-lstp -> ts-builder-case-listp
+     quotep-lst       --> quote-listp
+     termp-lst        --> term-listp
+     instr-lst        --> instr-listp
+     spliced-instr-lst    --> spliced-instr-listp
+     rewrite-fncallp-lst  --> rewrite-fncallp-listp
+     every-occurrence-equiv-hittablep1-lst -->
+                 every-occurrence-equiv-hittablep1-listp
+     some-occurrence-equiv-hittablep1-lst  -->
+                 some-occurrence-equiv-hittablep1-listp
+                 {by analogy with the preceding, even though it's a
+                  ``some'' instead of ``all'' predicate]
+     almost-quotep1-lst   --> almost-quotep1-listp
+     ffnnames-subsetp-lst --> ffnnames-subsetp-listp
+     boolean-lstp     --> boolean-listp
+     subst-expr1-lst-okp  --> subst-expr1-ok-listp
+
+
+File: acl2-doc-emacs.info,  Node: NOTE8,  Next: NOTE8-UPDATE,  Prev: NOTE7,  Up: RELEASE-NOTES
+
+NOTE8    ACL2 Version 1.8 (May, 1995) Notes
+
+See *Note NOTE8-UPDATE:: for yet more recent changes.
+
+Guards have been eliminated from the ACL2 logic.  A summary is
+contained in this brief note.  Also see *note DEFUN-MODE:: and see
+*note SET-GUARD-CHECKING::.
+
+Guards may be included in defuns as usual but are ignored from the
+perspective of admission to the logic: functions must terminate on all
+arguments.
+
+As in Nqthm, primitive functions, e.g., + and car, logically default
+unexpected arguments to convenient values.  Thus, (+ 'abc 3) is 3 and
+(car 'abc) is nil.  See *Note PROGRAMMING::, and see the documentation
+for the individual primitive functions.
+
+In contrast to earlier versions of ACL2, Version 1.8 logical functions
+are executed at Nqthm speeds even when guards have not been verified.
+In versions before 1.8, such functions were interpreted by ACL2.
+
+Colors have been eliminated.  Two "defun-modes" are supported, :program
+and :logic.  Roughly speaking, :program does what :red used to do,
+namely, allow you to prototype functions for execution without any
+proof burdens.  :Logic mode does what :blue used to do, namely, allow
+you to add a new definitional axiom to the logic.  A global
+default-defun-mode is comparable to the old default color.  The system
+comes up in :logic mode.  To change the global defun-mode, type
+:program or :logic at the top-level.  To specify the defun-mode of a
+defun locally use
+
+     (declare (xargs :mode mode)).
+
+The prompt has changed.  The initial prompt, indicating :logic mode, is
+
+     ACL2 !>
+
+If you change to :program mode the prompt becomes
+
+     ACL2 p!>
+
+Guards can be seen as having either of two roles: (a) they are a
+specification device allowing you to characterize the kinds of inputs a
+function "should" have, or (b) they are an efficiency device allowing
+logically defined functions to be executed directly in Common Lisp.  If
+a guard is specified, as with xargs :guard, then it is "verified" at
+defun-time (unless you also specify xargs :verify-guards nil).  Guard
+verification means what it always has: the input guard is shown to
+imply the guards on all subroutines in the body.  If the guards of a
+function are verified, then a call of the function on inputs satisfying
+the guard can be computed directly by Common Lisp.  Thus, verifying the
+guards on your functions will allow them to execute more efficiently.
+But it does not affect their logical behavior and since you will
+automatically get Nqthm speeds on unverified logical definitions, most
+users will probably use guards either as a specification device or only
+use them when execution efficiency is extremely important.
+
+Given the presence of guards in the system, two issues are unavoidable.
+Are guards verified as part of the defun process?  And are guards
+checked when terms are evaluated?  We answer both of those questions
+below.
+
+Roughly speaking, in its initial state the system will try to verify
+the guards of a defun if a :guard is supplied in the xargs and will not
+try otherwise.  However, guard verification in defun can be inhibited
+"locally" by supplying the xargs :verify-guards nil.  "Global"
+inhibition can be obtained via the :set-verify-guards-eagerness.  If
+you do not use the :guard xargs, you will not need to think about guard
+verification.
+
+We now turn to the evaluation of expressions.  Even if your functions
+contain no guards, the primitive functions do and hence you have the
+choice: when you submit an expression for evaluation do you mean for
+guards to be checked at runtime or not?  Put another way, do you mean
+for the expression to be evaluated in Common Lisp (if possible) or in
+the logic?  Note: If Common Lisp delivers an answer, it will be the
+same as in the logic, but it might be erroneous to execute the form in
+Common Lisp.  For example, should (car 'abc) cause a guard violation
+error or return nil?
+
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  To turn "guard checking on," by which we mean
+that guards are checked at runtime, execute the top-level form
+:set-guard-checking t.  To turn it off, do :set-guard-checking nil.
+The status of this variable is reflected in the prompt.
+
+     ACL2 !>
+
+means guard checking is on and
+
+     ACL2 >
+
+means guard checking is off.  The exclamation mark can be thought of as
+"barring" certain computations.  The absence of the mark suggests the
+absence of error messages or unbarred access to the logical axioms.
+Thus, for example
+
+     ACL2 !>(car 'abc)
+
+will signal an error, while
+
+     ACL2 >(car 'abc)
+
+will return nil.
+
+Note that whether or not guards are checked at runtime is independent
+of whether you are operating in :program mode or :logic mode and
+whether theorems are being proved or not.  (Although it must be added
+that functions defined in :program mode cannot help but check their
+guards because no logical definition exists.)
+
+Version 1.8 permits the verification of the guards of theorems, thus
+insuring that all instances of the theorem will evaluate without error
+in Common Lisp.  To verify the guards of a theorem named name execute
+the event
+
+     (verify-guards name).
+
+If a theorem's guards have been verified, the theorem is guaranteed to
+evaluate without error to non-nil in Common Lisp (provided resource
+errors do not arise).
+
+Caveat about verify-guards: implies is a function symbol, so in the
+term (implies p q), p cannot be assumed true when q is evaluated; they
+are both evaluated "outside."  Hence, you cannot generally verify the
+guards on a theorem if implies is used to state the hypotheses.  Use if
+instead.  In a future version of ACL2, implies will likely be a macro.
+
+See sum-list-example.lisp for a nice example of the use of Version 1.8.
+This is roughly the same as the documentation for guard-example.
+
+We have removed the capability to do "old-style-forcing" as existed
+before Version 1.5.  See *Note NOTE5::.
+
+NOTE:  Some low level details have, of course, changed.  One such
+change is that there are no longer two distinct type prescriptions
+stored when a function is admitted with its guards verified.  So for
+example, the type prescription rune for binary-append is now
+
+     (:type-prescription binary-append)
+
+while in Versions 1.7 and earlier, there were two such runes:
+
+     (:type-prescription binary-append . 1)
+     (:type-prescription binary-append . 2)
+
+Nqthm-style forcing on linear arithmetic assumptions is no longer
+executed when forcing is disabled.
+
+Functional instantiation now benefits from a trick also used in Nqthm:
+once a constraint generated by a :functional-instance lemma instance
+(see *note LEMMA-INSTANCE::) has been proved on behalf of a successful
+event, it will not have to be re-proved on behalf of a later event.
+
+1+ and 1- are now macros in the logic, not functions.  Hence, for
+example, it is "safe" to use them on left-hand sides of rewrite rules,
+without invoking the common warning about the presence of nonrecursive
+function symbols.
+
+A new documentation section file-reading-example illustrates how to
+process forms in a file.
+
+A new proof-checker command forwardchain has been added; see *note
+ACL2-PC||FORWARDCHAIN::.
+
+It is now possible to use quantifiers.  See *Note DEFUN-SK:: and see
+*note DEFCHOOSE::.
+
+There is a new event set-inhibit-warnings, which allows the user to
+turn off warnings of various types.  see *note SET-INHIBIT-WARNINGS::.
+
+An unsoundness relating encapsulate and :functional-instance hints has
+been remedied, with a few small effects visible at the user level.  The
+main observable effect is that defaxiom and non-local include-book
+events are no longer allowed in the scope of any encapsulate event that
+has a non-empty signature.
+
+When certify-book is called, we now require that the default defun-mode
+(see *note DEFAULT-DEFUN-MODE::) be :logic.  On a related note, the
+default defun-mode is irrelevant to include-book; the mode is always
+set to :logic initially, though it may be changed within the book and
+reverts to its original value at the conclusion of the include-book.  A
+bug in include-book prevented it from acting this way even though the
+documentation said otherwise.
+
+The documentation has been substantially improved.  A new section
+"Programming" contains documentation of many useful functions provided
+by ACL2; see *note PROGRAMMING::.  Also, the documentation has been
+"marked up" extensively.  Thus in particular, users of Mosaic will find
+many links in the documentation.
+
+The symbols force, mv-nth, and acl2-count have been added to the list
+*acl2-exports*.
+
+We now permit most names from the main Lisp package to be used as
+names, except for names that define functions, macros, or constants.
+See *Note NAME::.
+
+We have changed the list of imports from the Common Lisp package to
+ACL2, i.e., the list *common-lisp-symbols-from-main-lisp-package*, to
+be exactly those external symbols of the Common Lisp package as
+specified by the draft Common Lisp standard.  In order to accommodate
+this change, we have renamed some ACL2 functions as shown below, but
+these and other ramifications of this change should be transparent to
+most ACL2 users.
+
+     warning      --> warning$
+     print-object --> print-object$
+
+Proof trees are no longer enabled by default.  To start them up,
+:start-proof-tree.
+
+We have added the capability of building smaller images.  The easiest
+way to do this on a Unix (trademark of AT&T) system is: make small.
+
+Here we will put some less important changes, additions, and so on.
+
+We have added definitions for the Common Lisp function position (for
+the test eql), as well as corresponding versions position-equal and
+position-eq that use tests equal and eq, respectively.  See *Note
+POSITION::, see *note POSITION-EQUAL::, and see *note POSITION-EQ::.
+
+The defthm event rational-listp-implies-rationalp-car no longer exists.
+
+We fixed a bug in the hint mechanism that applied :by, :cases, and :use
+hints to the first induction goal when the prover reverted to proving
+the original goal by induction.
+
+We fixed a bug in the handling of (set-irrelevant-formals-ok :warn).
+
+In support of removing the old-style forcing capability, we deleted the
+initialization of state global old-style-forcing and deleted the
+definitions of recover-assumptions, recover-assumptions-from-goal,
+remove-assumptions1, remove-assumptions, and split-on-assumptions, and
+we renamed split-on-assumptions1 to split-on-assumptions.
+
+The special value 'none in the proof-checker commands claim and = has
+been replaced by :none.
+
+A bug in the handling of hints by subgoals has been fixed.  For
+example, formerly a :do-not hint could be "erased" by a :use hint on a
+subgoal.  Thanks go to Art Flatau for noticing the bug.
+
+The functions weak-termp and weak-term-listp have been deleted, and
+their calls have been replaced by corresponding calls of pseudo-termp
+and pseudo-term-listp.  The notion of pseudo-termp has been slightly
+strenthened by requiring that terms of the form (quote ...) have length
+2.
+
+Performance has been improved in various ways.  At the prover level,
+backchaining through the recognizer alist has been eliminated in order
+to significantly speed up ACL2's rewriter.  Among the other prover
+changes (of which there are several, all technical):  we no longer
+clausify the input term when a proof is interrupted in favor of
+inducting on the input term.  At the IO level, we have improved
+performance somewhat by suitable declarations and proclamations.  These
+include technical modifications to the macros mv and mv-let, and
+introduction of a macro the-mv analogous to the macro the but for forms
+returning multiple values.
+
+The function spaces now takes an extra argument, the current column.
+
+A bug in the proof-checker equiv command was fixed.
+
+The function intersectp has been deleted, because it was essentially
+duplicated by the function intersectp-equal.
+
+We now proclaim functions in AKCL and GCL before compiling books.  This
+should result in somewhat increased speed.
+
+The function repeat has been eliminated; use make-list instead.
+
+The proof-checker command expand has been fixed so that it eliminates
+let (lambda) expressions when one would expect it to.
+
+A new primitive function, mv-nth, has been introduced.  Mv-nth is
+equivalent to nth and is used in place of nth in the translation of
+mv-let expressions.  This allows the user to control the simplification
+of mv-let expressions without affecting how nth is treated.  In that
+spirit, the rewriter has been modified so that certain mv-nth
+expressions, namely those produced in the translation of (mv-let (a b
+c)(mv x y z) p), are given special treatment.
+
+A minor bug in untranslate has been fixed, which for example will fix
+the printing of conjunctions.
+
+Translate now takes a logicp argument, which indicates whether it
+enforces the restriction that :program mode functions do not occur in
+the result.
+
+The modified version of trace provided by ACL2, for use in raw Lisp,
+has been modified so that the lisp special variable *trace-alist* has a
+slightly different functionality.  This alist associates, using eq,
+symbols with the print representations of their values.  For example,
+initially *trace-alist* is a one-element list containing the pair (cons
+'state '|*the-live-state*|).  Thus, one may cons the pair (cons '*foo*
+"It's a FOO!") on to *trace-alist*; then until *foo* is defined, this
+change will have no effect, but after for example
+
+     (defconst *foo* 17)
+
+then trace will print 17 as "It's a FOO!".
+
+Trace also traces the corresponding logic function.
+
+Proof-tree display has been improved slightly in the case of successful
+proofs and certain event failures.
+
+The function positive-integer-log2 has been deleted.
+
+The macro skip-proofs now prints a warning message when it is
+encountered in the context of an encapsulate event or a book.  See
+*Note SKIP-PROOFS::.
+
+Some functions related to the-fn and wormhole1 now have defun-mode
+:program, but this change is almost certain to be inconsequential to
+all users.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE8-UPDATE,  Next: NOTE9,  Prev: NOTE8,  Up: RELEASE-NOTES
+
+NOTE8-UPDATE    ACL2 Version 1.8 (Summer, 1995) Notes
+
+ACL2 can now use Ordered Binary Decision Diagram technology.  See *Note
+BDD::.  There is also a proof-checker bdd command.
+
+ACL2 is now more respectful of the intention of the function hide.  In
+particular, it is more careful not to dive inside any call of hide
+during equality substitution and case splitting.
+
+The ld special (see *note LD::) ld-pre-eval-print may now be used to
+turn off printing of input forms during processing of encapsulate and
+certify-book forms, by setting it to the value :never, i.e.,
+(set-ld-pre-eval-print :never state).  See *Note LD-PRE-EVAL-PRINT::.
+
+The TUTORIAL documentation section has, with much help from Bill Young,
+been substantially improved to a bona fide introduction, and has been
+renamed acl2-tutorial.
+
+The term pretty-printer has been modified to introduce (<= X Y) as an
+abbreviation for (not (< Y X)).
+
+Forward chaining and linear arithmetic now both benefit from the
+evaluation of ground subterms.
+
+A new macro set-inhibit-output-lst has been defined.  This should be
+used when setting the state global inhibit-output-lst; see *note
+SET-INHIBIT-OUTPUT-LST:: and see *note PROOF-TREE::.
+
+The test for redundancy in definitions includes the guard and type
+declarations.  See *Note REDUNDANT-EVENTS::.
+
+See *Note GENERALIZED-BOOLEANS:: for a discussion of a potential
+soundness problem for ACL2 related to the question:  Which Common Lisp
+functions are known to return Boolean values?
+
+Here we will put some less important changes, additions, and so on.
+
+A bug has been fixed so that now, execution of :comp t (see *note
+COMP::) correctly handles non-standard characters.
+
+A bug in digit-char-p has been fixed, so that the "default" is nil
+rather than 0.
+
+True-listp now tests the final cdr against nil using eq instead of
+equal, for improved efficiency.  The logical meaning is, however,
+unchanged.
+
+Put-assoc-equal has been added to the logic (it used to have
+:defun-mode :program, and has been documented.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE9,  Prev: NOTE8-UPDATE,  Up: RELEASE-NOTES
+
+NOTE9    ACL2 Version 1.9 (Fall, 1996) Notes
+
+By default, when the system is started it is illegal to use the
+variable STATE as a formal parameter of a function definition.  The aim
+is to prevent novice users from stumbling into the Byzantine syntactic
+restrictions on that variable symbol.  Use
+
+     :set-state-ok t
+
+or, equivalently,
+
+     (set-state-ok t)
+
+to switch back to the old default mode.  See *Note SET-STATE-OK::
+
+Set-state-ok is an event that affects the ACL2 defaults table (see
+*note ACL2-DEFAULTS-TABLE::).  Recall that when books are included, the
+defaults table is restored to its pre-inclusion state.  Thus, while a
+set-state-ok form will permit the book to define a state-using
+function, it will not permit the user of the book to make such a
+definition.  We recommend putting (set-state-ok t) in any book that
+defines a state using function.
+
+Books certified under Version 1.8 must be recertified under Version
+1.9.  See :DOC version.
+
+The simplifier has been made to look out for built-in clauses, whereas
+in past versions such clauses were only noticed by the "preprocessor"
+at the top of the waterfall.  THIS CHANGE MAY PREVENT OLD SCRIPTS FROM
+REPLAYING!  The undesirable side-effect is caused by the fact that
+:HINTS require you to refer to clauses by their exact name (see *note
+GOAL-SPEC::) and because the new simplifier proves more clauses than
+before, the goals produced have different names.  Thus, if a script
+uses :HINTS that refer to clauses other than "Goal", e.g., "Subgoal
+1.3" then the hint may be applied to a different subgoal than
+originally intended.
+
+The use of built-in-clauses has been made more efficient.  If a set of
+clauses arise often in a piece of work, it might be advantageous to
+build them in even if that results in a large set (hundreds?) of
+built-in clauses.  See *Note BUILT-IN-CLAUSES::
+
+Wormholes can now be used in :logic mode functions. See *Note WORMHOLE::
+
+It is now possible to provide "computed hints."  For example, have you
+ever wished to say "in all goals with a name like this, :use that" or
+"if this term is in the subgoal, then :use that"?  Well, see *note
+COMPUTED-HINTS:: and the extraordinarily long example in see *note
+USING-COMPUTED-HINTS::.
+
+Hide terms may be rewritten with :rewrite rules about hide.  See *Note
+HIDE::, where we also now explain why hide terms are sometimes
+introduced into your proof attempts.
+
+A bug that sometimes caused the "non-lazy IF" hard error message was
+fixed.
+
+A bug that sometimes caused a hard error in forward chaining was fixed.
+
+A bug in print-rules (:pr) was fixed.
+
+We report the use of :executable-counterparts in the evaluation of
+SYNTAXP forms.
+
+Some documentation errors were fixed.
+
+A bug in parent-tree tracking in add-literal-and-pt was fixed.
+
+A bug in ok$, go$ and eval$ was fixed.
+
+Clausify now optimizes (mv-nth 'k (list x0 ... xk ... xn)) to xk.
+
+
+File: acl2-doc-emacs.info,  Node: RULE-CLASSES,  Next: STOBJ,  Prev: RELEASE-NOTES,  Up: Top
+
+RULE-CLASSES    adding rules to the data base
+
+     General Form:
+     a true list of rule class objects as defined below
+     
+     Special Cases:
+     a symbol abbreviating a single rule class object
+
+ACL2 provides users with the ability to create a number of different
+kinds of rules, including (conditional) rewrite rules but also
+including others.  Don't be put off by the long description to follow;
+usually, you'll probably want to use rewrite rules.  More on this below.
+
+A rule class object is either one of the :class keywords or else is a
+list of the form shown below.  Those fields marked with "(!)"  are
+required when the :class is as indicated.
+
+     (:class
+       :COROLLARY term
+       :TRIGGER-FNS (fn1 ... fnk) ; provided :class = :META (!)
+       :TRIGGER-TERMS (t1 ... tk) ; provided :class = :FORWARD-CHAINING
+                                  ;       or :class = :LINEAR
+       :TYPE-SET n                ; provided :class = :TYPE-SET-INVERTER
+       :TYPED-TERM term           ; provided :class = :TYPE-PRESCRIPTION
+       :CLIQUE (fn1 ... fnk)      ; provided :class = :DEFINITION
+       :CONTROLLER-ALIST alist    ; provided :class = :DEFINITION
+       :INSTALL-BODY directive    ; provided :class = :DEFINITION
+       :LOOP-STOPPER alist        ; provided :class = :REWRITE
+       :PATTERN term              ; provided :class = :INDUCTION (!)
+       :CONDITION term            ; provided :class = :INDUCTION
+       :SCHEME term               ; provided :class = :INDUCTION (!)
+       :MATCH-FREE all-or-once    ; provided :class = :REWRITE
+                                          or :class = :LINEAR
+                                          or :class = :FORWARD-CHAINING
+       :BACKCHAIN-LIMIT-LST limit ; provided :class = :REWRITE
+                                          or :class = :META
+                                          or :class = :LINEAR
+       :HINTS hints               ; provided instrs = nil
+       :INSTRUCTIONS instrs       ; provided  hints = nil
+       :OTF-FLG flg)
+
+When rule class objects are provided by the user, most of the fields
+are optional and their values are computed in a context sensitive way.
+When a :class keyword is used as a rule class object, all relevant
+fields are determined contextually.  Each rule class object in
+:rule-classes causes one or more rules to be added to the data base.
+The :class keywords are documented individually under the following
+names.  Note that when one of these names is used as a :class, it is
+expected to be in the keyword package (i.e., the names below should be
+preceded by a colon but the ACL2 documentation facilities do not permit
+us to use keywords below).
+
+* Menu:
+
+* BUILT-IN-CLAUSES:: to build a clause into the simplifier
+
+* COMPOUND-RECOGNIZER:: make a rule used by the typing mechanism
+
+* CONGRUENCE:: the relations to maintain while simplifying arguments
+
+* DEFINITION:: make a rule that acts like a function definition
+
+* ELIM:: make a destructor elimination rule
+
+* EQUIVALENCE:: mark a relation as an equivalence relation
+
+* FORWARD-CHAINING:: make a rule to forward chain when a certain trigger arises
+
+* FREE-VARIABLES:: free variables in rules
+
+* GENERALIZE:: make a rule to restrict generalizations
+
+* INDUCTION:: make a rule that suggests a certain induction
+
+* LINEAR:: make some arithmetic inequality rules
+
+* META:: make a :meta rule (a hand-written simplifier)
+
+* REFINEMENT:: record that one equivalence relation refines another
+
+* REWRITE:: make some :rewrite rules (possibly conditional ones)
+
+* TYPE-PRESCRIPTION:: make a rule that specifies the type of a term
+
+* TYPE-SET-INVERTER:: exhibit a new decoding for an ACL2 type-set
+
+* WELL-FOUNDED-RELATION:: show that a relation is well-founded on a set
+
+Before we get into the discussion of rule classes, let us return to an
+important point.  In spite of the large variety of rule classes
+available, at present we recommend that new ACL2 users rely almost
+exclusively on (conditional) rewrite rules.  A reasonable but slightly
+bolder approach is to use :type-prescription and :forward-chaining
+rules for "type-theoretic" rules, especially ones whose top-level
+function symbol is a common one like true-listp or consp; see *note
+TYPE-PRESCRIPTION:: and see *note FORWARD-CHAINING::.  However, the
+rest of the rule classes are really not intended for widespread use,
+but rather are mainly for experts.
+
+We expect that we will write more about the question of which kind of
+rule to use.  For now:  when in doubt, use a :rewrite rule.
+
+:Rule-classes is an optional keyword argument of the defthm (and
+defaxiom) event.  In the following, let name be the name of the event
+and let thm be the formula to be proved or added as an axiom.
+
+If :rule-classes is not specified in a defthm (or defaxiom) event, it
+is as though :rule-classes ((:rewrite)) had been used.  Use
+:rule-classes nil to specify that no rules are to be generated.
+
+If :rule-classes class is specified, where class is a non-nil symbol,
+it is as though :rule-classes ((class)) had been used.  Thus,
+:rule-classes :forward-chaining is equivalent to :rule-classes
+((:forward-chaining)).
+
+We therefore now consider :rule-classes as a true list.  If any element
+of that list is a keyword, replace it by the singleton list containing
+that keyword.  Thus, :rule-classes (:rewrite :elim) is the same as
+:rule-classes ((:rewrite) (:elim)).
+
+Each element of the expanded value of :rule-classes must be a true list
+whose car is one of the rule class keyword tokens listed above, e.g.,
+:rewrite, :elim, etc., and whose cdr is a "keyword alist" alternately
+listing keywords and values.  The keywords in this alist must be taken
+from those shown below.  They may be listed in any order and most may
+be omitted, as specified below.
+
+     :Corollary -- its value, term, must be a term.  If omitted, this
+     field defaults to thm.  The :corollary of a rule class object is
+     the formula actually used to justify the rule created and thus
+     determines the form of the rule.  Nqthm provided no similar
+     capability: each rule was determined by thm, the theorem or axiom
+     added.  ACL2 permits thm to be stated "elegantly" and then allows
+     the :corollary of a rule class object to specify how that elegant
+     statement is to be interpreted as a rule.  For the rule class
+     object to be well-formed, its (defaulted) :corollary, term, must
+     follow from thm.  Unless term is trivially implied by thm, using
+     little more than propositional logic, the formula (implies thm
+     term) is submitted to the theorem prover and the proof attempt
+     must be successful.  During that proof attempt the values of
+     :hints, :instructions, and :otf-flg, as provided in the rule class
+     object, are provided as arguments to the prover.  Such auxiliary
+     proofs give the sort of output that one expects from the prover.
+     However, as noted above, corollaries that follow trivially are not
+     submitted to the prover; thus, such corollaries cause no prover
+     output.
+
+     Note that before term is stored, all calls of macros in it are
+     expanded away.  See *Note TRANS::.
+
+     :Hints, :instructions, :otf-flg -- the values of these fields must
+     satisfy the same restrictions placed on the fields of the same
+     names in defthm.  These values are passed to the recursive call of
+     the prover used to establish that the :corollary of the rule class
+     object follows from the theorem or axiom thm.
+
+     :Type-set -- this field may be supplied only if the :class is
+     :type-set-inverter.  When provided, the value must be a type-set,
+     an integer in a certain range.  If not provided, an attempt is
+     made to compute it from the corollary.  See *Note
+     TYPE-SET-INVERTER::.
+
+     :Typed-term -- this field may be supplied only if the :class is
+     :type-prescription.  When provided, the value is the term for which
+     the :corollary is a type-prescription lemma.  If no :typed-term is
+     provided in a :type-prescription rule class object, we try to
+     compute heuristically an acceptable term.  See *Note
+     TYPE-PRESCRIPTION::.
+
+     :Trigger-terms -- this field may be supplied only if the :class is
+     :forward-chaining or :linear.  When provided, the value is a list
+     of terms, each of which is to trigger the attempted application of
+     the rule.  If no :trigger-terms is provided, we attempt to compute
+     heuristically an appropriate set of triggers.  See *Note
+     FORWARD-CHAINING:: or see *note LINEAR::.
+
+     :Trigger-fns -- this field must (and may only) be supplied if the
+     :class is :meta.  Its value must be a list of function symbols.
+     Terms with these symbols trigger the application of the rule.  See
+     *Note META::.
+
+     :Clique and :controller-alist -- these two fields may only be
+     supplied if the :class is :definition.  If they are omitted, then
+     ACL2 will attempt to guess them.  Suppose the :corollary of the
+     rule is (implies hyp (equiv (fn a1 ... an) body)).  The value of
+     the :clique field should be a true list of function symbols, and if
+     non-nil must include fn.  These symbols are all the members of the
+     mutually recursive clique containing this definition of fn.  That
+     is, a call of any function in :clique is considered a "recursive
+     call" for purposes of the expansion heuristics.  The value of the
+     :controller-alist field should be an alist that maps each function
+     symbol in the :clique to a list of t's and nil's of length equal to
+     the arity of the function.  For example, if :clique consists of
+     just two symbols, fn1 and fn2, of arities 2 and 3 respectively,
+     then ((fn1 t nil) (fn2 nil t t)) is a legal value of
+     :controller-alist.  The value associated with a function symbol in
+     this alist is a "mask" specifying which argument slots of the
+     function "control" the recursion for heuristic purposes.  Sloppy
+     choice of :clique or :controller-alist can result in infinite
+     expansion and stack overflow.
+
+     :Install-body -- this field may only be supplied if the :class is
+     :definition.  Its value must be t, nil, or the default,
+     :normalize.  A value of t or :normalize will cause ACL2 to install
+     this rule as the new body of the function being "defined" (fn in
+     the paragraph just above); hence this definition will be installed
+     for future :expand hints.  Furthermore, if this field is omitted
+     or the value is :normalize, then this definition will be
+     simplified using the so-called "normalization" procedure that is
+     used when processing definitions made with defun.  You must
+     explicitly specify :install-body nil in the following cases: fn
+     (as above) is a member of the value of constant
+     *definition-minimal-theory*, the arguments are not a list of
+     distinct variables, equiv (as above) is not equal, or there are
+     free variables in the hypotheses or right-hand side (see *note
+     FREE-VARIABLES::).  However, supplying :install-body nil will not
+     affect the rewriter's application of the :definition rule, other
+     than to avoid using the rule to apply :expand hints.  If a
+     definition rule equates (f a1 ... ak) with body but there are
+     hypotheses, hyps, then :expand hints will replace terms (f term1
+     ... termk) by corresponding terms (if hyps body (hide (f term1 ...
+     termk))).
+
+     :Loop-stopper -- this field may only be supplied if the class is
+     :rewrite.  Its value must be a list of entries each consisting of
+     two variables followed by a (possibly empty) list of functions, for
+     example ((x y binary-+) (u v foo bar)).  It will be used to
+     restrict application of rewrite rules by requiring that the list
+     of instances of the second variables must be "smaller" than the
+     list of instances of the first variables in a sense related to the
+     corresponding functions listed; see *note LOOP-STOPPER::.  The
+     list as a whole is allowed to be nil, indicating that no such
+     restriction shall be made.  Note that any such entry that contains
+     a variable not being instantiated, i.e., not occurring on the left
+     side of the rewrite rule, will be ignored.  However, for
+     simplicity we merely require that every variable mentioned should
+     appear somewhere in the corresponding :corollary formula.
+
+     :Pattern, :Condition, :Scheme -- the first and last of these fields
+     must (and may only) be supplied if the class is :induction.
+     :Condition is optional but may only be supplied if the class is
+     :induction.  The values must all be terms and indicate,
+     respectively, the pattern to which a new induction scheme is to be
+     attached, the condition under which the suggestion is to be made,
+     and a term which suggests the new scheme.  See *Note INDUCTION::.
+
+     :Match-free -- this field must be :all or :once and may be
+     supplied only if the :class is either :rewrite, :linear, or
+     :forward-chaining.  See *Note FREE-VARIABLES:: for a description
+     of this field.  Note: Although this field is intended to be used
+     for controlling retries of matching free variables in hypotheses,
+     it is legal to supply it even if there are no such free variables.
+     This can simplify the automated generation of rules, but note
+     that when :match-free is supplied, the warning otherwise provided
+     for the presence of free variables in hypotheses will be
+     suppressed.
+
+     Backchain-limit-lst -- this field may be supplied only if the
+     :class is either :rewrite, :meta, or :linear and only one rule is
+     generated from the formula.  Its value must be nil; a non-negative
+     integer; or, except in the case of :meta rules, a true list each
+     element of which is either nil or a non-negative integer.  If it
+     is a list, its length must be equal to the number of hypotheses of
+     the rule and each item in the list is the "backchain limit"
+     associated with the corresponding hypothesis.  If
+     backchain-limit-lst is a non-negative integer, it is defaulted to
+     a list of the appropriate number of repetions of that integer.
+     The backchain limit of a hypothesis is used to limit the effort
+     that ACL2 will expend when relieving the hypothesis.  If it is
+     NIL, no new limits are imposed; if it is an integer, the
+     hypothesis will be limited to backchaining at most that many
+     times.  Note that backchaining may be further limited by a global
+     backchain-limit; see *note BACKCHAIN-LIMIT:: for details.  For a
+     different way to reign in the rewriter, see *note
+     REWRITE-STACK-LIMIT::.  Jared Davis has pointed out that you can
+     set this field to 0 to avoid any attempt to relieve forced
+     hypotheses, which can lead to a significant speed-up in some cases.
+
+Once thm has been proved (in the case of defthm) and each rule class
+object has been checked for well-formedness (which might require
+additional proofs), we consider each rule class object in turn to
+generate and add rules.  Let :class be the class keyword token of the
+ith class object (counting from left to right).  Generate the rune
+(:class name . x), where x is nil if there is only one class and
+otherwise x is i.  Then, from the :corollary of that object, generate
+one or more rules, each of which has the name (:class name . x).  See
+the :doc entry for each rule class to see how formulas determine rules.
+Note that it is in principle possible for several rules to share the
+same name; it happens whenever a :corollary determines more than one
+rule.  This in fact only occurs for :rewrite, :linear, and
+:forward-chaining class rules and only then if the :corollary is
+essentially a conjunction.  (See the documentation for rewrite, linear,
+or forward-chaining for details.)
+
+
+File: acl2-doc-emacs.info,  Node: BUILT-IN-CLAUSES,  Next: COMPOUND-RECOGNIZER,  Prev: RULE-CLASSES,  Up: RULE-CLASSES
+
+BUILT-IN-CLAUSES    to build a clause into the simplifier
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  A :built-in-clause
+rule can be built from any formula other than propositional
+tautologies.  Roughly speaking, the system uses the list of built-in
+clauses as the first method of proof when attacking a new goal.  Any
+goal that is subsumed by a built in clause is proved "silently."
+
+ACL2 maintains a set of "built-in" clauses that are used to
+short-circuit certain theorem proving tasks.  We discuss this at length
+below.  When a theorem is given the rule class :built-in-clause ACL2
+flattens the implies and and structure of the :corollary formula so as
+to obtain a set of formulas whose conjunction is equivalent to the
+given corollary.  It then converts each of these to clausal form and
+adds each clause to the set of built-in clauses.
+
+For example, the following :corollary (regardless of the definition of
+abl)
+
+     (and (implies (and (true-listp x)
+                        (not (equal x nil)))
+                   (< (acl2-count (abl x))
+                      (acl2-count x)))
+          (implies (and (true-listp x)
+                        (not (equal nil x)))
+                   (< (acl2-count (abl x))
+                      (acl2-count x))))
+
+will build in two clauses,
+
+     {(not (true-listp x))
+      (equal x nil)
+      (< (acl2-count (abl x)) (acl2-count x))}
+
+and
+
+     {(not (true-listp x))
+      (equal nil x)
+      (< (acl2-count (abl x)) (acl2-count x))}.
+
+We now give more background.
+
+Recall that a clause is a set of terms, implicitly representing the
+disjunction of the terms.  Clause c1 is "subsumed" by clause c2 if some
+instance of c2 is a subset c1.
+
+For example, let c1 be
+
+     {(not (consp l))
+      (equal a (car l))
+      (< (acl2-count (cdr l)) (acl2-count l))}.
+
+Then c1 is subsumed by c2, shown below,
+
+     {(not (consp x))
+      ; second term omitted here
+      (< (acl2-count (cdr x)) (acl2-count x))}
+
+because we can instantiate x in c2 with l to obtain a subset of c1.
+
+Observe that c1 is the clausal form of
+
+     (implies (and (consp l)
+                   (not (equal a (car l))))
+              (< (acl2-count (cdr l)) (acl2-count l))),
+
+c2 is the clausal form of
+
+     (implies (consp l)
+              (< (acl2-count (cdr l)) (acl2-count l)))
+
+and the subsumption property just means that c1 follows trivially from
+c2 by instantiation.
+
+The set of built-in clauses is just a set of known theorems in clausal
+form.  Any formula that is subsumed by a built-in clause is thus a
+theorem.  If the set of built-in theorems is reasonably small, this
+little theorem prover is fast.  ACL2 uses the "built-in clause check"
+in four places: (1) at the top of the iteration in the prover - thus if
+a built-in clause is generated as a subgoal it will be recognized when
+that goal is considered, (2) within the simplifier so that no built-in
+clause is ever generated by simplification, (3) as a filter on the
+clauses generated to prove the termination of recursively defun'd
+functions and (4) as a filter on the clauses generated to verify the
+guards of a function.
+
+The latter two uses are the ones that most often motivate an extension
+to the set of built-in clauses.  Frequently a given formalization
+problem requires the definition of many functions which require
+virtually identical termination and/or guard proofs.  These proofs can
+be short-circuited by extending the set of built-in clauses to contain
+the most general forms of the clauses generated by the definitional
+schemes in use.
+
+The attentive user might have noticed that there are some recursive
+schemes, e.g., recursion by cdr after testing consp, that ACL2 just
+seems to "know" are ok, while for others it generates measure clauses
+to prove.  Actually, it always generates measure clauses but then
+filters out any that pass the built-in clause check.  When ACL2 is
+initialized, the clause justifying cdr recursion after a consp test is
+added to the set of built-in clauses.  (That clause is c2 above.)
+
+Note that only a subsumption check is made; no rewriting or
+simplification is done.  Thus, if we want the system to "know" that cdr
+recursion is ok after a negative atom test (which, by the definition of
+atom, is the same as a consp test), we have to build in a second
+clause.  The subsumption algorithm does not "know" about commutative
+functions.  Thus, for predictability, we have built in commuted
+versions of each clause involving commutative functions.  For example,
+we build in both
+
+     {(not (integerp x))
+      (< 0 x)
+      (= x 0)
+      (< (acl2-count (+ -1 x)) (acl2-count x))}
+
+and the commuted version
+
+     {(not (integerp x))
+      (< 0 x)
+      (= 0 x)
+      (< (acl2-count (+ -1 x)) (acl2-count x))}
+
+so that the user need not worry whether to write (= x 0) or (= 0 x) in
+definitions.
+
+:built-in-clause rules added by the user can be enabled and disabled.
+

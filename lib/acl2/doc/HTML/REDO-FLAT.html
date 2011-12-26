@@ -1,0 +1,117 @@
+<html>
+<head><title>REDO-FLAT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REDO-FLAT</h2>redo up through a failure in an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="PROGN.html">progn</a></code>
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+When one submits an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="PROGN.html">progn</a></code> event and one of its
+sub-events fails, ACL2 restores its logical <a href="WORLD.html">world</a> as though the
+<code>encapsulate</code> or <code>progn</code> had not been run.  But sometimes one would like
+to debug the failure by re-executing all sub-events that succeeded up to the
+point of failure, and then re-executing the failed sub-event.  Said
+differently, imagine that the top-level <code>encapsulate</code> or <code>progn</code> form, as
+well as all such sub-forms, were flattened into a list of events that were
+then submitted to ACL2 up to the point of failure.  This would put us in the
+state in which the original failed event had failed, so we could now submit
+that failed event and try modifying it, or first proving additional events,
+in order to get it admitted.<p>
+
+<code>Redo-flat</code> is provided for this purpose.  Consider the following (rather
+nonsensical) example, in which the <code><a href="DEFUN.html">defun</a></code> of <code>f3</code> fails (the body is
+<code>y</code> but the formal parameter list is <code>(x)</code>).
+
+<pre>
+(encapsulate
+ ()
+ (defun f1 (x) x)
+ (encapsulate ()
+              (local (defthm hack (equal (car (cons x y)) x))))
+ (encapsulate ()
+              (local (defthm hack (equal (+ x y) (+ y x)))))
+ (encapsulate ()
+              (make-event '(defun f2 (x) x))
+              (progn (defthm foo (equal x x) :rule-classes nil)
+                     (defun f3 (x) y)))
+ (defun f4 (x) x)
+ (defun f5 (x) y))
+</pre>
+
+After this attempt fails, you can evaluate the following form.
+
+<pre>
+(redo-flat)
+</pre>
+
+This will first lay down a <code><a href="DEFLABEL.html">deflabel</a></code> event, <code>(deflabel r)</code>, so that
+you can eventually remove your debugging work with <code>(:ubt! r)</code>.  Then the
+successful sub-events that preceded the failure will be executed with proofs
+skipped (so that this execution is fast).  Then, the failed event will be
+executed.  Finally, a <code>:</code><code><a href="PBT.html">pbt</a></code> command is executed so that you can see
+a summary of the events that executed successfully.<p>
+
+You can eliminate some of the steps above by supplying keyword values, as
+follows.
+
+<pre>
+(redo-flat
+ :succ  succ ; Skip the successful sub-events if val is nil.
+ :fail  fail ; Skip the failed sub-event if val is nil.
+ :label lab  ; Skip deflabel if lab or succ is nil, else use (deflabel lab).
+ :pbt   val  ; Skip the final :pbt if val, lab, or succ is nil.
+ )
+</pre>
+
+Also, you can avoid skipping proofs for the successful sub-events by
+supplying keyword <code>:succ-ld-skip-proofsp</code> with a valid value for
+<code>ld-skip-proofsp</code>; see <a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a>.<p>
+
+If you prefer only to see the successful and failed sub-events, without any
+events being re-executed, you may evaluate the following form instead.
+
+<pre>
+(redo-flat :show t)
+</pre>
+
+For the example above, this command produces the following output.
+
+<pre><p>
+
+List of events (from encapsulate or progn) preceding the failure:<p>
+
+((DEFUN F1 (X) X)
+ (ENCAPSULATE NIL
+              (LOCAL (DEFTHM HACK (EQUAL (CAR (CONS X Y)) X))))
+ (ENCAPSULATE NIL
+              (LOCAL (DEFTHM HACK (EQUAL (+ X Y) (+ Y X)))))
+ (MAKE-EVENT '(DEFUN F2 (X) X))
+ (DEFTHM FOO (EQUAL X X)
+         :RULE-CLASSES NIL))<p>
+
+Failed event:<p>
+
+(DEFUN F3 (X) Y)
+ACL2 !&gt;
+</pre>
+<p>
+
+<code>Redo-flat</code> uses a scheme that should not cause spurious name conflicts for
+<code><a href="LOCAL.html">local</a></code> events.  Above, it is mentioned that events are ``flattened'';
+now we clarify this notion.  Each sub-event that succeeds and is an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="PROGN.html">progn</a></code> is left intact.  Only such events that fail
+are replaced by their component events.  Thus, in the example above, there is
+no conflict between the two <code><a href="LOCAL.html">local</a></code> sub-events named ``<code>hack</code>,''
+because these are contained in successful <code>encapsulate</code> sub-events, which
+are therefore not flattened.  The <code><a href="PROGN.html">progn</a></code> and two <code><a href="ENCAPSULATE.html">encapsulate</a></code>
+events surrounding the definition of <code>f3</code> are, however, flattened, because
+that definition failed to be admitted.<p>
+
+Unfortunately, an event must actually fail in order for <code>redo-flat</code> to
+work.  So if the system is ``stuck'' on an event, then you may find it
+helpful to insert an illegal event just in front of it before submitting the
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="PROGN.html">progn</a></code>.
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

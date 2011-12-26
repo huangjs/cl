@@ -1,0 +1,1996 @@
+<html>
+<head>
+<title>Common Music Notation</title>
+<style type="text/css">
+<!-- 
+	EM.red {color:red; font-style:normal}
+        EM.tab {font-style: normal; font-size: small; font-family: fixed}
+	H1 {text-align: center}
+	UL {list-style-type: none}
+
+	A {text-decoration:none}
+	A:hover {text-decoration:underline}
+	A.quiet {color:black; text-decoration:none}
+	A.quiet:hover {text-decoration:underline}
+	A.def {font-weight: bold; font-style: normal; text-decoration:none; text-color:black}
+-->
+</style>
+</head>
+<body bgcolor=white>
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h1>COMMON MUSIC NOTATION</h1></td></tr></table>
+
+<p><b>cmn</b> is a simple little hack that can create and display traditional
+western music scores. 
+It is available free via anonymous ftp from ccrma-ftp as
+<a href="ftp://ccrma-ftp.stanford.edu/pub/Lisp/cmn.tar.gz">pub/Lisp/cmn.tar.gz</a>.
+</p>
+
+<p><b>cmn</b> is intended as an adjunct to Heinrich Taube's Common Music and my CLM: it can
+present a notelist (a bewildering morass of numbers) as a standard score.  Although I put a lot
+of effort into making the output legible, it really isn't aimed at producing publishable scores.
+If you need beautiful output, use Lilypond, Score or Finale. 
+</p>
+<br>
+
+<small>
+[Contents: <a href="#accidental">accidental</a>, <a href="#appoggiatura">appoggiatura</a>, <a href="#arpeggio">arpeggio</a>, <a href="#arrow">arrow</a>, <a href="#articulation-mark">articulation mark</a>, <a href="#auxiliary-note">auxiliary note</a>, <a href="#bar">bar line</a>, <a href="#beam">beam</a>, <a href="#beat-subdivision">beat subdivision</a>, <a href="#brace">brace</a>,<a href="#bracket">bracket</a>, <a href="#chord">chord</a>, <a href="#clef">clef</a>, <a href="#clm-to-cmn">clm to cmn</a>, <a href="#coordinate-transformation">coordinate transformation</a>, <a href="#crescendo">crescendo</a>, <a href="#diminuendo">diminuendo</a>, <a href="#dynamics">dynamics</a>, <a href="#ending">ending</a>, <a href="#eps-file">eps file</a>, <a href="#fingering">fingering</a>, <a href="#glissando">glissando</a>, <a href="#grace-note">grace note</a>, <a href="#graphics">graphics</a>, <a href="#horizontal-ruler">horizontal ruler</a>, <a href="#house-style">house (of?) style</a>, <a href="#justification">justification</a>, <a href="#key">key</a>, <a href="#line-mark">line mark</a>, <a href="#matrix">matrix</a>, <a href="#measure-number">measure number</a>, <a href="#meter">meter</a>, <a href="#note">note</a>, <a href="#octave-transposition">octave transposition</a>, <a href="#ornamentation">ornamentation</a>, <a href="#page-mark">page mark</a>, <a href="#pattern">pattern</a>, <a href="#pause">pause</a>, <a href="#portamento">portamento</a>, <a href="#rehearsal-mark">rehearsal mark</a>, <a href="#rest">rest</a>, <a href="#section">section</a>, <a href="#slur">slur</a>, <a href="#staff">staff</a>, <a href="#staff-layout">staff layout</a>, <a href="#system">system</a>, <a href="#text">text</a>, <a href="#tie">tie</a>, <a href="#tremolo">tremolo</a>, <a href="#trill">trill</a>, <a href="#with-cmn">with-cmn</a>]</small>
+<br><br>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Introduction</h2></td></tr></table>
+
+<p>CMN is a lisp program that is normally run from within the cmn package.
+After loading cmn, type (in-package :cmn) or (in ACL) :pa :cmn, and
+all the cmn entities will be accessible.  You can also prepend the package
+name if you're working in some other package, but that quickly becomes tedious.</p>
+
+<p>As an example of how cmn works in general, the lisp expression:</p>
+<pre>
+(cmn staff treble c4 q) 
+</pre>
+<p>produces the file "aaa.eps" (the default value of <a class=def name="*cmn-output-pathname*">*cmn-output-pathname*</a>):</p>
+<img src="png/midc1.png" alt="picture">
+<br>
+<p><b>cmn</b> is our main function.  It reads in all its arguments, organizes
+the musical data into systems and staves, adds line and page breaks,
+beams, ties, slurs, dynamics, and so on, aligns and justifies the
+result, and produces an "encapsulated PostScript" file (aaa.eps in
+this case).  The basic nomenclature is that of Score or Common Music.
+<b>c4</b> is middle c, <b>q</b> means quarter note, and so on.  In its most general
+use, cmn has the following form:</p>
+
+<pre>
+<a class=def name="cmn">cmn</a> overall-score-attributes systems
+</pre>
+<p>The overall-score-attributes control global graphics decisions such as
+overall size, page width, beam thickness, and so on.  Say we want to
+produce a smaller version of our previous example.  The default size
+is 40; we'll set it to 24:</p>
+<pre>
+(cmn (size 24) staff treble c4 w double-bar)
+</pre>
+<img src="png/cbar.png" alt="picture"><br>
+
+<p>The systems contain all our musical data.  Each system is a group of
+related staves, normally bracketed together and separated vertically
+from other systems.  Each staff contains the actual notes and whatnot.
+If no system is given explicitly, one is created automatically.
+Similarly, if no staff is given, one is provided automatically.
+Here's an example of a score with two systems, one of which has two
+staves:
+</p>
+<pre>
+(cmn (size 24)
+  (system brace 
+    (staff treble (meter 6 8) 
+      (c4 e. tenuto) (d4 s) (ef4 e sf) 
+      (c4 e) (d4 s) (en4 s) (fs4 e (fingering 3))) 
+    (staff treble (meter 3 4) 
+      (c5 e. marcato) (d5 s bartok-pizzicato) (ef5 e) 
+      (c5 e staccato tenuto) (d5 s down-bow) (en5 s) (fs5 e)))
+  (system bracket
+    (staff bar bass (meter 6 16) 
+      (c4 e. wedge) (d4 s staccato) (ef4 e left-hand-pizzicato) 
+      (c4 e tenuto accent rfz) (d4 s mordent) (en4 s pp) (fs4 e fermata))))
+</pre>
+<img src="png/accs.png" alt="picture"><br>
+<p>Each score object (c4, or staff, for example) is both a constant and a
+function.  In its existence as a constant, it provides access to all
+the defaults that surround that object.  As a function, it accepts any
+number of arguments adding or changing attributes.  In normal CLOS
+syntax, we would call setf on the slots of the associated instance
+variable, but that's a lot of typing, requires that I document the
+accessors, and makes it hard to see the musical data for all the
+parentheses and local bindings.  So, the standard way in cmn to modify
+an object is to pass the modification as an argument to the object.
+That is,</p>
+<pre>
+    (c4 q staccato)
+</pre>
+<p>creates a middle-c object, sets its duration fields to reflect the
+value of a quarter note, and adds a dot for staccato.  In simple
+cases, this is exactly the same as</p>
+<pre>
+    c4 q staccato
+</pre>
+<p>encountered in the staff data list.  The staff function notices
+sequences of notes and associated data and packages them up for you,
+just as if you had put in the parentheses by hand.  You do have to use
+parentheses when ambiguities might otherwise develop.  We could have
+written our previous example as:</p>
+<pre>
+(cmn (size 24)
+  system brace 
+    staff treble (meter 6 8) c4 e. tenuto d4 s ef4 e sf
+      c4 e d4 s en4 s fs4 e (fingering 3) 
+    staff treble (meter 3 4) c5 e. marcato d5 s bartok-pizzicato ef5 e
+      c5 e staccato tenuto d5 s down-bow en5 s fs5 e
+  system bracket
+    staff bar bass (meter 6 16) c4 e. wedge d4 s staccato
+       ef4 e left-hand-pizzicato c4 e tenuto accent rfz
+       d4 s mordent en4 s pp fs4 e fermata)
+</pre>
+<p>I find the first form easier to read, but I'm used to Lisp's
+parentheses.  I haven't completely cleaned up all the left over cases,
+so there are still a few places where parentheses are needed.  cmn,
+system, and friends are functions, not macros, so the streams of data
+are interpreted as straightforward Lisp arguments to a function.  The
+screen resolution is less than most printer resolutions, so sometimes
+the image displayed on the screen is slightly ragged due to round off
+errors and so on (the bracket in the example just given is a case in
+point).  In the code examples that follow, I'll omit the arguments,
+like <code>(size 24)</code>, that aren't completely germane to the discussion.
+</p>
+<small><p>Anders Vinjar points out that you can run gv with the -watch switch
+to automatically update the display when CMN writes a new version of aaa.eps:
+</p>
+<pre>
+ shell&gt; gv -watch aaa.eps &amp;
+</pre>
+</small>
+<br>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Overall Style</h2></td></tr></table>
+<p>The cmn argument overall-score-attributes sets various decisions that affect the layout
+of the entire score.  Except for the page-layout related variables
+(page-width, et al), all distances are in terms of staff heights --
+a normal staff is 1.0 high, and everything else is keyed to that.  If
+you want to use centimeters rather than inches, and European paper
+sizes rather than American, set the variable <a class=def name="*cmn-units*">*cmn-units*</a> to <code>:cm</code>.  It
+defaults to <code>:inches</code>. The  attributes can be any of the following:</p>
+<!-- INDEX house-style:House style --><a class=def name="house-style"></a>
+
+<table cellspacing=0 cellpadding=0>
+<tr><td><a class=def name="output-file">output-file</a></td><td>"aaa.eps"</td><td>(if name ends in "-1", subsequent files count up from there)</td></tr>
+<tr><td><a class=def name="output-type">output-type</a></td><td>*cmn-output-type*</td><td>:postscript, :x, :quickdraw</td></tr>
+<tr><td><a class=def name="size">size</a></td><td>40</td><td>overall size scaler</td></tr>
+<tr><td><a class=def name="automatic-line-breaks">automatic-line-breaks</a></td><td>t</td><td>should line breaks be added by cmn</td></tr>
+<tr><td><a class=def name="automatic-octave-signs">automatic-octave-signs</a></td><td>t</td><td>should octave signs be added by cmn</td></tr>
+<tr><td><a class=def name="automatic-beams">automatic-beams</a></td><td>t</td><td>should beams be added by cmn (see <a href="#beaming">beaming</a> meter message)</td></tr>
+<tr><td><a class=def name="automatic-ties">automatic-ties</a></td><td>t</td><td>should ties be inserted by cmn</td></tr>
+<tr><td><a class=def name="automatic-bars">automatic-bars</a></td><td>t</td><td>should bars be inserted by cmn</td></tr>
+<tr><td><a class=def name="automatic-rests">automatic-rests</a></td><td>t</td><td>should rests be inserted by cmn</td></tr>
+<tr><td><a class=def name="automatic-naturals">automatic-naturals</a></td><td>nil</td><td>should naturals be inserted by cmn</td></tr>
+<tr><td><a class=def name="automatic-beat-subdivision-numbers">automatic-beat-subdivision-numbers</a></td><td>t</td><td>should irregular subdivisions be numbered by cmn</td></tr>
+<tr><td><a class=def name="automatic-measure-numbers">automatic-measure-numbers</a></td><td>nil</td><td>can be t = 1, a number, :by-line, or :by-page</td></tr>
+<tr><td><a class=def name="automatic-page-numbers">automatic-page-numbers</a></td><td>nil</td><td>adds page numbers if t</td></tr>
+<tr><td><a class=def name="curvy-flags">curvy-flags</a></td><td>t</td><td>curved or straight flags</td></tr>
+<tr><td><a class=def name="use-italian-octave-signs">use-italian-octave-signs</a></td><td>nil</td><td>do we add "va" to "8" and "ma" to "15"</td></tr>
+<tr><td><a class=def name="add-bassa-to-octave-signs">add-bassa-to-octave-signs</a></td><td>nil</td><td>do we add "bassa" as well</td></tr>
+<tr><td><a class=def name="use-abbreviated-staff-names">use-abbreviated-staff-names</a></td><td>t</td><td>after first use, is name abbreviated?</td></tr>
+<tr><td><a class=def name="always-show-gliss-name">always-show-gliss-name</a></td><td>t</td><td>should "gliss" appear on otherwise umarked glisses</td></tr>
+<tr><td><a class=def name="always-show-staff-names">always-show-staff-names</a></td><td>t</td><td>should staves continue to be named after 1st</td></tr>
+<tr><td><a class=def name="always-show-clefs">always-show-clefs</a></td><td>t</td><td>should clefs be output at the start of every new line</td></tr>
+<tr><td><a class=def name="automatic-clef-size">automatic-clef-size</a></td><td>1.0</td><td>size of clefs added under always-show-clefs flag</td></tr>
+<tr><td><a class=def name="all-output-in-one-file">all-output-in-one-file</a></td><td>nil</td><td>put page breaks in output file (rather than separate files)</td></tr>
+<tr><td><a class=def name="implicit-accidental-style">implicit-accidental-style</a></td><td>:new-style</td><td>various ways to handle implicit accidentals</td></tr>
+<tr><td><a class=def name="implicit-accidental-duration">implicit-accidental-duration</a></td><td>1</td><td></td></tr>
+<tr><td><a class=def name="redundant-accidentals">redundant-accidentals</a></td><td>t</td><td>if nil, cancel redundant accidentals</td></tr>
+<tr><td><a class=def name="accidental-to-note-head-space">accidental-to-note-head-space</a></td><td>0.0625</td><td>breathing space between accidental and note-head</td></tr>
+<tr><td><a class=def name="layout">layout</a></td><td>nil</td><td>for complicated staff layouts -- see <a href="#staff-layout">below</a></td></tr>
+<tr><td><a class=def name="page-color">page-color</a></td><td> nil</td><td>background color (rgb) of page </td></tr>
+<tr><td><a class=def name="page-height">page-height</a></td><td>11.0 (29.7)</td><td>inches (cm) -- cm if *cmn-units* = :cm</td></tr>
+<tr><td><a class=def name="page-width">page-width</a></td><td>8.5  (21.0)</td><td>inches (cm)</td></tr>
+<tr><td><a class=def name="left-margin">left-margin</a></td><td>0.5  (1.0)</td><td>inches (cm)</td></tr>
+<tr><td><a class=def name="right-margin">right-margin</a></td><td>0.5  (1.0)</td><td>inches (cm)</td></tr>
+<tr><td><a class=def name="header-margin">header-margin</a></td><td>1.0  (2.0)</td><td>inches (cm)</td></tr>
+<tr><td><a class=def name="footer-margin">footer-margin</a></td><td>1.0  (2.0)</td><td>inches (cm)</td></tr>
+<tr><td><a class=def name="title">title</a></td><td>nil</td><td></td></tr>
+<tr><td><a class=def name="metronome">metronome</a></td><td>60</td><td>for add-note and friends</td></tr>
+<tr><td><a class=def name="line-separation">line-separation</a></td><td>2.0</td><td>white space between lines of music</td></tr>
+<tr><td><a class=def name="staff-separation">staff-separation</a></td><td>1.5</td><td>white space between staves</td></tr>
+<tr><td><a class=def name="system-separation">system-separation</a></td><td>1.5</td><td>white space between systems</td></tr>
+<tr><td><a class=def name="note-head-size">note-head-size</a></td><td>1.0</td><td>overall scaler on size of note heads (default is a bit small)</td></tr>
+<tr><td><a class=def name="grace-note-size">grace-note-size</a></td><td>.5</td><td></td></tr>
+<tr><td><a class=def name="glissando-thickness">glissando-thickness</a></td><td>.01</td><td>fatness of (straight) glissando-lines</td></tr>
+<tr><td><a class=def name="tie-thickness">tie-thickness</a></td><td>.04</td><td>fatness of ties</td></tr>
+<tr><td><a class=def name="tie-curvature">tie-curvature</a></td><td>.125</td><td>	how curved ties try to be</td></tr>
+<tr><td><a class=def name="slur-thickness">slur-thickness</a></td><td>.03</td><td>how fat slurs get (this is a skinny default)</td></tr>
+<tr><td><a class=def name="slur-curvature">slur-curvature</a></td><td>.25</td><td>how curvy slurs try to be (this is pretty flat)</td></tr>
+<tr><td><a class=def name="maximum-slur-slope">maximum-slur-slope</a></td><td>.75</td><td>how steep slurs can get</td></tr>
+<tr><td><a class=def name="beam-spacing">beam-spacing</a></td><td>(* 2.125 .126)</td><td>distance between beams</td></tr>
+<tr><td><a class=def name="beam-width">beam-width</a></td><td>(* 1.125 .126)</td><td>fatness of beams</td></tr>
+<tr><td><a class=def name="beam-slope-trigger">beam-slope-trigger</a></td><td>.5</td><td>min ambitus for sloped beam (.5=half octave)</td></tr>
+<tr><td><a class=def name="maximum-beam-tilt">maximum-beam-tilt</a></td><td>.4</td><td>how tilted beams are allowed to be</td></tr>
+<tr><td><a class=def name="partial-beam-length">partial-beam-length</a></td><td>.4</td><td>max length of a partial beam</td></tr>
+<tr><td><a class=def name="partial-stem-length">partial-stem-length</a></td><td>0</td><td>set this &gt;0 if you want partial stems</td></tr>
+<tr><td><a class=def name="stem-width">stem-width</a></td><td>.025</td><td>width (fatness) of stem</td></tr>
+<tr><td><a class=def name="barline-thickness">barline-thickness</a></td><td>.02</td><td>thickness of bar lines</td></tr>
+<tr><td><a class=def name="double-barline-thickness">double-barline-thickness</a></td><td>.1</td><td>thickness of double bar lines</td></tr>
+<tr><td><a class=def name="ideal-stem-length">ideal-stem-length</a></td><td>.5</td><td>first stab at basic stem length</td></tr>
+<tr><td><a class=def name="staff-line-width">staff-line-width</a></td><td>.02</td><td>thickness of staff lines (most use thicker lines than this)</td></tr>
+<tr><td><a class=def name="staff-name-font">staff-name-font</a></td><td>"Times-Roman"</td><td>instrument names prepended to staves</td></tr>
+<tr><td><a class=def name="staff-name-font-scaler">staff-name-font-scaler</a></td><td>.4</td><td></td></tr>
+<tr><td><a class=def name="staff-name-font-minimum-size">staff-name-font-minimum-size</a></td><td>8</td><td></td></tr>
+<tr><td><a class=def name="text-connecting-pattern">text-connecting-pattern</a></td><td>'(10 0)</td><td>default is an undashed line</td></tr>
+<tr><td><a class=def name="text-connecting-thickness">text-connecting-thickness</a></td><td>.02</td><td></td></tr>
+<tr><td><a class=def name="first-measure-number">first-measure-number</a></td><td>nil</td><td>where to start the automatic measure numbering</td></tr>
+<tr><td><a class=def name="initial-onset">initial-onset</a></td><td>0</td><td>score start time (to avoid lots of initial rests)</td></tr>
+<tr><td><a class=def name="full-last-line">full-last-line</a></td><td>nil</td><td>should last line be full length no matter what</td></tr>
+<tr><td><a class=def name="page-hook">page-hook</a></td><td>nil</td><td>used for page related actions (see cmn-ex.lisp)</td></tr>
+<tr><td><a class=def name="line-hook">line-hook</a></td><td>nil</td><td>used for line related actions</td></tr>
+<tr><td><a class=def name="free-expansion-factor">free-expansion-factor</a></td><td>1.25</td><td>white space added during justification</td></tr>
+<tr><td><a class=def name="music-font">music-font</a></td><td>nil</td><td>name of font, if not cmn's (e.g. "Sonata")</td></tr>
+<tr><td><a class=def name="one-line-per-page">one-line-per-page</a></td><td>nil</td><td>if t, each line is placed on a separate page</td></tr>
+<tr><td><a class=def name="title-separation">title-separation</a></td><td>nil</td><td>height of title above staff</td></tr>
+<tr><td><a class=def name="default-font">default-font</a></td><td>"Times-Roman"</td><td>"Times-Roman" "Times-Italic" "Times-Bold" "Times-BoldItalic"</td></tr>
+<tr><td><a class=def name="dynamics-size">dynamics-size</a></td><td>.8</td><td>default dynamics mark size</td></tr>
+<tr><td><a class=def name="dynamics-minimum-vertical-separation">dynamics-minimum-vertical-separation</a></td><td>.5</td><td>min separation</td></tr>
+<tr><td><a class=def name="brace-space">brace-space</a></td><td>.125</td><td>space between brace and staff lines</td></tr>
+<tr><td><a class=def name="first-dot-spacing">first-dot-spacing</a></td><td>.2</td><td>space between note and first time augmentation dots</td></tr>
+<tr><td><a class=def name="dot-spacing">dot-spacing</a></td><td>.1</td><td>space between subsequent time augmentation dots</td></tr>
+<tr><td><a class=def name="dot-vertical-spacing">dot-vertical-spacing</a></td><td>0.0</td><td>vertical offset of dots</td></tr>
+<tr><td><a class=def name="flag-vertical-spacing">flag-vertical-spacing</a></td><td>.2</td><td>vertical space between stem flags</td></tr>
+<tr><td><a class=def name="maximum-subdivision-bracket-tilt">maximum-subdivision-bracket-tilt</a></td><td>0</td><td>maximum bracket tilt </td></tr>
+</table>
+<br>
+
+<p>Unless otherwise stated, all of the numbers are in units of
+staff-heights.  That is, a normal five line staff is 1.0 high.  The
+function <a class=def name="in-inches">in-inches</a> (in-cm) translates from inches (cm) to cmn units.
+Say, for argument, that you want fatter beams:</p>
+<pre>
+    (cmn (beam-width .275) (beam-spacing .4) staff treble c4 s d4 s)
+</pre>
+<img src="png/fatbeam.png" alt="picture"><br>
+<p>The curvy-flags attribute controls whether flags are curved or straight:</p>
+<pre>
+    (cmn (curvy-flags nil) staff treble a4 s)
+</pre>
+<img src="png/curvynil.png" alt="picture"><br>
+<p>The actual contents of the score are the next arguments to cmn.  All
+the entities that specify either a musical object or some attribute of
+that object use the same syntax, and can accept the same "messages".
+Any object or group of objects can be rotated, scaled (that is
+stretched in the horizontal and/or vertical direction), and moved to
+any location in the score. Any arbitrary file of graphics commands (a
+.eps file) can be treated as an object just like any other object, and
+cmn can be called recursively, packaging up entire scores within other
+scores.  Finally, it is relatively easy to integrate your own graphics
+hacks into cmn (see <a href="#graphics">graphics</a>).  In what follows, I will use the name
+"message" for a function that affects the thing it is an argument to.
+That is, in the expression</p>
+<pre>
+    (meter 6 8 (meter-size 2))
+</pre>
+<p>the expression "(meter-size 2)" is hereby designated a "message" to
+the object created by the meter function.  "6" and "8" are ordinary
+arguments, "meter" is a function that creates a score object.  In this
+case, the effect of the message is to double the size of the meter
+numbers:</p>
+<pre>
+   (cmn treble (meter 6 8 (meter-size 2)) ...)
+</pre>
+<img src="png/big68.png" alt="picture"><br>
+<br>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Musical Data</h2></td></tr></table>
+<p>All the musical data is organized into a list of systems, each system
+containing a list of staves, each staff containing a list of objects
+like notes, rests, and so on, and each object containing a variety of
+lists describing its attributes.  Systems and staves are created
+automatically if not specified in the arguments to cmn.  That is, <code>(cmn
+system staff treble)</code> is the same as <code>(cmn treble)</code> but in more
+complicated cases, it is better (and sometimes necessary) to be
+explicit about groupings.  In addition to the built-in entities, any
+function encountered in the list of cmn arguments is (of course)
+evaluated and the result (either one object, or a list of objects) is
+spliced into the data as though it had been written explicitly,
+providing a simple and extremely powerful way to call on the full
+resources of lisp.  A few such functions are provided by cmn, and
+examples of others will be given below.
+</p>
+<p>In the following discussion of the various things cmn knows about, it
+should be kept in mind that any object not only reponds to the
+standard messages like rotate or x0 (all of which are listed below),
+but can also have attached to it a list of "marks".  A "mark" is any
+arbitrary code you want associated with some other object (itself a
+"mark" in some cases), and evaluated whenever its owner is evaluated
+(displayed).  A staccato dot, for example, is a mark attached to a
+note.  Its associated code figures out where the center of the note
+is, which side (up or down) the dot belongs on, and how far away it
+should be (to avoid collision with staff lines, for example).  This
+code gets called when we want to display an object or find out how big
+it is.  The standard messages are:
+</p><hr><pre>
+<a class=def name="dx">dx</a> <a class=def name="dy">dy</a> <a class=def name="x0">x0</a> <a class=def name="y0">y0</a> <a class=def name="x1">x1</a> <a class=def name="y1">y1</a> <a class=def name="center">center</a> <a class=def name="justification">justification</a>
+</pre>
+<p>dx and dy normally affect the placement of the object relative to
+whoever owns it. A note, for example, is owned by the staff it is on,
+and travels around with that staff as lines and pages are justified.
+The note may itself own a staccato mark, which travels around with the
+note as it finds its vertical position on the staff.  Very often the
+point (x0,y0) is the lower left corner of the object, and (x1,y1)
+marks the upper right corner of the "bounding box" of the object.  Not
+all objects know about center, but those that do return the musical
+center point of the object (the point used to align things across
+staves and so on).  For example, say we want to push a marcato mark
+over to the right:
+</p><pre>
+(cmn (staff treble (c4 w (marcato (dx .5)))))
+</pre>
+<img src="png/cmarcato.png" alt="picture"><br>
+<hr>
+<!-- INDEX coordinate-transformation:Coordinate Transformations --><a class=def name="coordinate-transformation"></a>
+<p><a class=def name="matrix">matrix</a></p>
+
+<p>An object's matrix controls its orientation and placement relative to
+whoever owns it.  There are a variety of functions provided to make it
+easier to deal with coordinate transformations:</p>
+<pre>
+    <a class=def name="rotate">rotate</a> angle	; rotates the current object counterclockwise by angle degrees.
+    <a class=def name="scale">scale</a> x y 		; stretches or compresses the object by x and y (as multipliers)
+	; <code>(scale 0 0)</code> or <code>invisible</code> makes the current object invisible
+    <a class=def name="mirror">mirror</a> (function) and <a class=def name="mirrored">mirrored</a> (variable)	; the same as <code>(scale -1 1)</code>
+    <a class=def name="transform">transform</a> matrix	; multiplies the current object's matrix by matrix
+</pre>
+<p>The outer score's matrix can be
+used to move the score around on the output page:</p>
+<pre>
+(cmn (matrix (list 1 0 0 1 200 0)) staff treble)
+</pre>
+<p>The first 4 numbers ("1 0 0 1") provide an unscaled, unrotated display of
+the score; the fifth is the x offset, and the sixth if the y offset (in pixels).
+</p>
+<hr>
+<p><a class=def name="pattern">pattern</a> 
+</p>
+<p>An object's pattern controls how it is drawn (its "ink"):</p>
+<pre>
+    <a class=def name="gray-scale">gray-scale</a> &amp;optional (val 0)  ; 0 = black (the default), 1 = white, val is between 0 and 1
+    <a class=def name="outlined">outlined</a> &amp;optional (val 0)    ; 0 = thinnest outline, val is a float
+    <a class=def name="color">color</a> r-g-b     ; 1.0 = color, 0.0  none (e.g (color '(1.0 0.0 0.0)) =&gt; red)
+<br><br>
+    (cmn staff (treble mirrored (dx .5)) 
+               (treble (rotate 180) (dy .75) (color '(0.25 0.5 0.0)) (scale -2 .5))
+               (bass (gray-scale .5) (dx .75))
+               (bass (outlined .02) (dx .75))
+               (quarter-rest (color '(1.0 0.0 0.0)) (rotate 45) (dx .85) (scale 1 2))
+               (eighth-rest (rotate 90) (dy -.4) (dx .25) (color '(0.0 0.5 0.5)) (scale 2 1)))
+</pre>
+<img src="png/trebleb.png" alt="picture"><br>
+
+<p>The X11 color names are defined in rgb.lisp.  (cmn (treble aquamarine) c4 q) for example.
+For more complex patterns, see the example in cmn-ex.lisp. </p>
+<hr>
+
+
+<p><a class=def name="system">system</a> &amp;rest objects</p>
+
+<p>Each score is organized into groups of related staves, each such group
+called a system. The system function is much like the cmn function --
+it tries to organize its arguments into system-wide marks and staves
+full of musical objects. The main objects that a system notices are
+staff objects and system-wide brackets.  The two kinds of brackets are
+bracket and brace.  If a staff has both a bracket and a brace (divided
+strings in an orchestral score, for example), put the bracket on the
+system, and the brace on the lower of the staves:</p>
+<pre>
+  (cmn (system (staff)) (system bracket (staff) (staff brace) (staff)))
+</pre>
+<img src="png/staves.png" alt="picture"><img src="png/opus.png" alt="picture"><br>
+<p>If a mark occurs before any staff has been created, it is attached to
+the system as a whole. Anything else is assumed to belong to the
+current staff.</p>
+
+<p><small>
+It has been pointed out to me that most others use "system" to mean the entire group of staves that make
+up what I call a "line", and that the word "section" is used where I am using "system".  I was thinking
+of "section" as "a portion of a piece" (see the <a href="#section">section</a> function below), not "a portion of an ensemble".  I hope this use of
+non-standard terminology won't cause too much confusion.
+</small></p>
+<hr>
+
+
+
+<a class=def name="staff">staff</a> &amp;rest objects
+<pre>
+   <a class=def name="staff-name">staff-name</a> <a class=def name="staff-size">staff-size</a> <a class=def name="staff-lines">staff-lines</a> <a class=def name="tied-to">tied-to</a> <a class=def name="start-line">start-line</a> line-separation
+</pre>
+
+<p>Each staff treats its arguments much as cmn and system do -- it tries
+to collect everything into key signatures, meters, clefs, bar lines,
+notes, chords, and so on.  A staff has an optional name (normally the
+instrument associated with that staff), a size (a multiplier on the
+y-extent of everything on that staff), a number of lines (normally 5),
+a list of marks, and a list of objects.</p>
+<pre>
+ (cmn (staff (staff-name "E-sharp Bazooka") (staff-lines 2) (e4 w fff)) 
+      (staff (staff-name "c-flat Clavicle") (staff-lines 0) treble d4 q c5 h.) 
+      (staff (staff-name "Violin") (staff-size .5) sub-bass g2 h c2 h))
+</pre>
+<img src="png/bazooka.png" alt="picture"><br>
+
+<p>If the staff name has "-flat" or "-sharp" after the first letter, the
+musical symbol is used instead.  Unless you say otherwise (via the
+score slots always-show-staff-names and use-abbreviated-staff-names),
+subsequent lines of a staff try to use an abbreviated version of the
+instrument name.  The <b>tied-to</b> message overlays staves.
+You can set the staff position and extent using dy, x0 and x1.  For
+example, to get an empty staff 3 inches long:</p>
+<pre>
+     (cmn (staff (x1 (in-inches 3))))
+</pre>
+<p>to get a score printed vertically:</p>
+<pre>
+     (cmn (transform '(0 1 -1 0 200 200)) (staff (x1 7.5) treble c4 e d4 e))
+</pre>
+<p>or to make a piece of blank music paper:</p>
+<pre>
+     (cmn (header-margin 0) (engorge 
+        (loop for i from 0 to 6 collect (staff (x1 (in-inches 7.5))))))
+</pre>
+<p>If a staff is passed the gray-scale message, everything on the staff
+is printed with that color.  The message start-line is useful with
+percussion parts -- it specifies which line to start with (3=mid).
+</p>
+<p>The line-separation message can be used to change the staff's line
+separation independent of the staff size or the global value of *staff-line-separation*
+(which defaults to .126).</p>
+
+<p>See stf.lisp for an example of changing staff-lines at odd times.</p>
+<hr>
+
+<a class=def name="bar">bar</a> &amp;rest objects
+<pre>
+   bar <a class=def name="double-bar">double-bar</a> <a class=def name="interior-double-bar">interior-double-bar</a> 
+   <a class=def name="dashed-bar">dashed-bar</a> <a class=def name="full-double-bar">full-double-bar</a> <a class=def name="full-bar">full-bar</a> 
+   <a class=def name="begin-repeat-bar">begin-repeat-bar</a> <a class=def name="end-repeat-bar">end-repeat-bar</a> 
+   <a class=def name="begin-and-end-repeat-bar">begin-and-end-repeat-bar</a> <a class=def name="full-interior-double-bar">full-interior-double-bar</a> 
+   begin-and-end-repeat-bar-without-thin-lines
+   begin-and-end-repeat-bar-with-one-thick-line
+   begin-flanges-repeat-bar
+   end-flanges-repeat-bar
+<br>
+(cmn (size 24) bar c4 q begin-and-end-repeat-bar c4 q interior-double-bar
+                   c4 q  dashed-bar c4 q begin-repeat-bar
+                   c4 q end-repeat-bar c4 q double-bar)
+</pre>
+<img src="png/bars.png" alt="picture"><br>
+<p>If a bar occurs as the first or last thing on a staff, it is left or
+right justified to the beginning or end of that staff.  
+The "full"
+bars continue across system breaks.  
+To get a bar covering a whole system at the start of every new
+line, include the bar as the first thing on the last staff in
+the system.
+</p>
+<pre>
+  <a class=def name="double">double</a> <a class=def name="terminal">terminal</a> justification <a class=def name="within-measure">within-measure</a> 
+  <a class=def name="dashed">dashed</a> <a class=def name="dots-left">dots-left</a> <a class=def name="dots-right">dots-right</a> <a class=def name="broken">broken</a> 
+  <a class=def name="height">height</a> <a class=def name="breathing-space">breathing-space</a> <a class=def name="thickness">thickness</a> <a class=def name="flanges">flanges</a>
+</pre>
+<ul>
+<li>justification can be <code>nil, :right, or :left</code>.
+<li>within-measure is t if the bar (normally a repeat bar) has no metrical significance. 
+<li>broken determines whether the bar continues across system breaks.
+<li>breathing-space applies to the double-bar
+<li>thickness sets the thickness of the barline
+<li>height sets the line height (overriding cmn's choice)
+<li>flanges (a bracket-like bar) can be <code>t, :right, or :left</code>
+</ul>
+<p>Here we have a thick bar line half a staff tall positioned in mid-staff:</p>
+<pre>
+  (cmn (barline-thickness .2) treble c4 q (bar (dy .25) (height .5)) c4 q)
+</pre>
+<hr>
+<pre>
+<a class=def name="bracket">bracket</a> &amp;rest objects
+<a class=def name="brace">brace</a> &amp;rest objects
+</pre>
+<p>The brace is a piano-style curly-bracket.  It should be placed on the
+lower of the two staves.  Bracket can cover any number of staves; to
+get a brace over many staves use the brace-staves message.</p>
+<hr>
+<a class=def name="clef">clef</a> &amp;rest objects
+<pre>
+    <a class=def name="french-violin">french-violin</a> <a class=def name="treble">treble</a> <a class=def name="tenor-treble">tenor-treble</a> 
+    <a class=def name="soprano">soprano</a> <a class=def name="mezzo-soprano">mezzo-soprano</a> <a class=def name="alto">alto</a> <a class=def name="tenor">tenor</a> <a class=def name="baritone">baritone</a> <a class=def name="baritone-C">baritone-C</a> 
+    <a class=def name="baritone-F">baritone-F</a> <a class=def name="bass">bass</a> <a class=def name="sub-bass">sub-bass</a> <a class=def name="double-bass">double-bass</a> 
+    <a class=def name="percussion">percussion</a> <a class=def name="quad-bass">quad-bass</a> <a class=def name="double-treble">double-treble</a> <a class=def name="quad-treble">quad-treble</a> 
+</pre>
+<p><code>(clef treble ...)</code> is the same as <code>(treble ...)</code>.</p>
+<pre>
+(cmn staff french-violin c4 q treble c4 q soprano c4 q mezzo-soprano c4 q
+           alto c4 q tenor c4 q baritone c4 q bass c4 q sub-bass c4 q)
+</pre>
+<img src="png/clefs.png" alt="picture"><br>
+<p>If a staff has no clef, it is given one (for note placement
+decisions), but it is scaled (by 0 0) to be invisible.  Clefs take the
+additional messages unjustified and breathing-space. 
+Unless the score-slot always-show-clefs is nil the clef is displayed
+at the start of every new line.</p>
+<p>
+Tenor-treble is a treble clef with an "8" at the bottom, transposing down an octave (used in vocal music for the
+tenor part, which is always far too high for modern day tenors); double-treble has an 8 at the top, transposing
+up an octave; quad-treble (is there a standard name for this?) has "15" transposing up two octaves; the double-bass
+and quad-bass clefs are similar.
+</p>
+<hr>
+
+<pre>
+<a class=def name="accidental">accidental</a> &amp;rest objects
+
+  <a class=def name="sharp">sharp</a> <a class=def name="flat">flat</a> <a class=def name="natural">natural</a> <a class=def name="double-sharp">double-sharp</a> <a class=def name="double-flat">double-flat</a> 
+  <a class=def name="small-sharp">small-sharp</a> <a class=def name="small-flat">small-flat</a> <a class=def name="small-natural">small-natural</a>
+
+  (cmn staff treble g4 q gs4 q gf4 q gn4 q (g4 q double-sharp) 
+   (g4 q double-flat) (g4 q natural-sharp) (g4 q natural-flat))
+</pre>
+<img src="png/59785_accs.png" alt="picture"><br>
+<p>When used with notes, use either the cs/cn/cf notation or the sign
+function; when used with ornaments, use ornament-sign.
+The file quarter.lisp implements one form of
+quarter-tone accidentals.</p><hr>
+
+<pre>
+<a class=def name="key">key</a> &amp;rest objects
+
+  <a class=def name="c-major">c-major</a> <a class=def name="a-minor">a-minor</a> <a class=def name="cs-major">cs-major</a> <a class=def name="as-minor">as-minor</a> <a class=def name="df-major">df-major</a> <a class=def name="bf-minor">bf-minor</a> 
+  <a class=def name="d-major">d-major</a> <a class=def name="b-minor">b-minor</a> <a class=def name="ef-major">ef-major</a> <a class=def name="c-minor">c-minor</a> <a class=def name="e-major">e-major</a> <a class=def name="cs-minor">cs-minor</a> 
+  <a class=def name="f-major">f-major</a> <a class=def name="d-minor">d-minor</a> <a class=def name="fs-major">fs-major</a> <a class=def name="ds-minor">ds-minor</a> <a class=def name="gf-major">gf-major</a> <a class=def name="ef-minor">ef-minor</a> 
+  <a class=def name="g-major">g-major</a> <a class=def name="e-minor">e-minor</a> <a class=def name="af-major">af-major</a> <a class=def name="f-minor">f-minor</a> <a class=def name="a-major">a-major</a> <a class=def name="fs-minor">fs-minor</a> 
+  <a class=def name="bf-major">bf-major</a> <a class=def name="g-minor">g-minor</a> <a class=def name="b-major">b-major</a> <a class=def name="gs-minor">gs-minor</a> <a class=def name="cf-major">cf-major</a> <a class=def name="af-minor">af-minor</a>
+</pre>
+<p>To cancel a key signature (i.e. put naturals where the accidentals
+would normally be), use <b>cancel</b> key.  For funny key signatures, use
+def-key.  Here the name of the key is followed by the note names
+corresponding to the accidentals as displayed in the treble clef.</p>
+<pre>
+  (def-key foo-major bf4 ef5 fs5)
+  (cmn staff tenor b-major c4 q 
+     bar (cancel b-major) ef-major c4 q bar bass foo-major c4 q)
+</pre>
+<img src="png/keys.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="meter">meter</a> numerator denominator &amp;rest objects
+</pre>
+<p>meter displays a meter and sets the staff's current meter (for beaming
+decisions and so on).  Numerator and denominator can be integers,
+strings, or symbols.  The named meters are</p>
+<pre>
+  <a class=def name="alla-breve">alla-breve</a> <a class=def name="common-time">common-time</a> <a class=def name="cut-time">cut-time</a> <a class=def name="unmetered">unmetered</a> 
+
+  (cmn staff treble (meter 6 8) c4 h. bar (meter '5+7 8) c4 w 
+    bar cut-time c4 w bar (meter 2 2 in-parentheses (dx .1)) c4 h
+    bar (meter 9 8) (meter '4+5 8 (dx .1) in-parentheses) c4 w 
+    bar (meter 3 2 note-head-denominator) c4 h
+    bar (meter 3 4 suppressed-denominator (meter-size 2)) c4 q.)
+</pre>
+<img src="png/met.png" alt="picture"><br>
+
+<p>The size of the meter numerals can be changed with the message
+meter-size.  If you want beaming decisions to follow a meter without
+any meter being displayed, set the meter-size to 0.  Meter takes the
+additional messages: suppressed-denominator, note-head-denominator,
+and beaming.  The <a class=def name="beaming">beaming</a> message affects the automatic beaming
+decisions -- see cmn-ex.lisp for examples.</p><hr>
+
+
+<pre>
+<a class=def name="note">note</a> &amp;rest objects
+</pre>
+
+<p>The standard Score or Common Music note names c0..bs8 are all built-in
+both as constants and as functions.  c4 is middle-c; cf4 is a semitone
+from c4, and bs4 is a semitone from b4.  As a function, each takes all
+the usual messages.  Onset times and durations are handled in terms of
+quarter notes, independent of the actual tempo. That is, the message
+<code>(onset 2.5)</code> means the note in question starts at the time of the
+2.5-th quarter note -- the true time in seconds is of no interest to
+us.  Similarly, <code>(duration .5)</code> means an eighth-note, no matter what the
+tempo or meter are.  The only place this might cause confusion is in
+compound meters (6/8) where we are still calculating onsets and
+durations in quarter notes, not 1.5 quarter notes.  Unfortunately
+western music notation has some peculiar special cases involving
+measured tremolos and so on -- these will be treated as we get to
+them.  The rhythmic values can be:</p>
+<pre>
+  <a class=def name="double-whole">double-whole</a> <a class=def name="whole">whole</a> <a class=def name="half">half</a> <a class=def name="quarter">quarter</a> <a class=def name="eighth">eighth</a> <a class=def name="sixteenth">sixteenth</a> 
+  <a class=def name="thirty-second">thirty-second</a> <a class=def name="sixty-fourth">sixty-fourth</a> <a class=def name="one-twenty-eighth">one-twenty-eighth</a> 
+  64th 64th. 32nd 32nd. 16th 16th. 8th 8th. 
+  q q. q.. h h. h.. w w. dw e e. e.. 
+  s s. s.. ts te tq th te. tq. ts. q... h... 
+</pre>
+<p>ts stands for triplet-sixteenth.  The periods indicate dotted rhythmic
+values.  That is, q. is a dotted quarter.  In general, (rq n) produces
+a rhythm object with a rhythmic value of n quarter notes.  q = (rq 1),
+tq = (rq 2/3), a quintuplet eight is (rq 2/5) and so on.  Use the
+ratio form of the value so that cmn has some chance of telling that
+you really mean a triplet 17-th.  The numbers and brackets marking
+irregular beat divisions are normally added automatically by cmn.</p>
+
+<p>When notes are not simply marching along one after the other, you can
+use the onset message to set the onset times explicitly (or use the
+beat message which is relative to the measure onset and numbers the
+beats starting at 1).  Additional messages to note are:</p>
+<pre>
+  <a class=def name="line">line</a> <a class=def name="note-head">note-head</a> <a class=def name="sign">sign</a> <a class=def name="cclass">cclass</a> <a class=def name="pitch">pitch</a> <a class=def name="octave">octave</a> 
+  <a class=def name="head-quarters">head-quarters</a> <a class=def name="tie-direction">tie-direction</a> stem-dy 
+  stem-direction <a class=def name="stem-up">stem-up</a> <a class=def name="stem-down">stem-down</a> <a class=def name="no-stem">no-stem</a> 
+  <a class=def name="in-parentheses">in-parentheses</a> <a class=def name="slur-direction">slur-direction</a> note-head-size
+  dots flags head-quarters dashed-stem
+</pre>
+<p>Stem direction is either :up, :down, :none, or nil.  If the latter,
+cmn tries to decide from the context which direction to draw the stem.
+:none means "don't draw a stem".  stem-up, stem-down, and no-stem are
+also variables.</p>
+<pre>
+(cmn staff treble (c4 h (onset 0) stem-down) (c5 e (onset 0) stem-up) 
+  (b4 e (onset .5) stem-up) (a4 q (onset 1.0) stem-up))
+</pre>
+<img src="png/cud.png" alt="picture"><br>
+<p>The message dashed-stem to notes can be used to draw a dashed stem.
+It is either nil, t or a pattern-list.  dashed-stem and whisper are also
+variables.</p>
+
+<p>It is a bother to keep track of onsets, ties, and so on when there are
+several voices on a staff.  For this case, put the voices on separate
+staves, then tie them together using the tied-to message:</p>
+<pre>
+(cmn (setf s1 (staff treble (meter 6 8) a4 e a4 e a4 e a4 q.)) 
+              (staff (tied-to s1) (d4 q. stem-down) (d4 q. stem-down)))
+</pre>
+<img src="png/bud68.png" alt="picture"><br>
+<p>Note-head describes what kind of note head you want.  Nil, the
+default, is the same as :normal and produces a normal note head.
+Other types are :diamond, :diamond-1 (slanted sides), :triangle, :square, :x, :circled-x,
+:artificial-harmonic, :tremolo, :slash, :none, :airy-head, :breath-out, :breath-in, :arrow-up, :arrow-down.  The note-head can also
+be any arbitrary mark (graphics code) you want -- it will be placed
+where the note head would otherwise have gone.</p>
+<pre>
+(cmn (size 24) staff treble 
+  (c4 e (note-head :square)) 
+  (e4 e (note-head :x)) 
+  (g4 q (note-head :triangle)))
+</pre>
+<img src="png/sqnote.png" alt="picture"><br>
+<p>Additional attributes of a given note are simply added to the list of
+arguments, and it is normally up to the individual marks and cmn to
+sort out who goes where.  The dots, flags, and head-quarters messages
+can be used to override cmn's simple-minded decisions about these
+things (head-quarters sets whether to use a quarter-note, half-note,
+or whole-note note head):</p>
+<pre>
+(cmn
+ (automatic-rests t) (automatic-ties nil) (automatic-beat-subdivision-numbers nil) 
+ staff treble (meter 7 8)
+ (c4 (rhythm 7/16) (dots 0) (flags 1) (setf sub (beat-subdivision- (subdivision "8:7"))))
+ (c4 (rhythm 21/16) (dots 1) (flags 0))
+ (c4 (rhythm 7/4) (dots 0) (flags 0) (head-quarters 2) (-beat-subdivision sub))
+ (c4 q. (dots 0) (flags 5))
+ (c4 (rhythm 3/16) (dots 0) (flags 3) (setf sub (beat-subdivision- (subdivision "4:3"))))
+ (c4 (rhythm 9/16) (dots 1) (flags 2))
+ (c4 (rhythm 3/4) (dots 4) (flags 0) (-beat-subdivision sub)))
+</pre>
+<p>When note heads would collide, cmn tries to move one back or forth so that
+both are displayed.  If you want unisons to share the same notehead, set
+the variable *overlap-noteheads* to t.  To assure cmn that rhythmic values
+are exact (to keep it from trying to "rationalize" Common Music input),
+set the variable *exact-rhythms* to t.
+</p>
+<p>If you set curvy-flags to nil, the length and slant of the flags can be
+set via the variables *straight-flag-dx* (default is .3) and *straight-flag-dy*
+(default is 0.0).
+</p>
+<hr>
+
+
+<pre>
+<a class=def name="chord">chord</a> &amp;rest objects</pre>
+
+<p>Chord produces a chord.  One of the arguments to chord should be</p>
+<pre>
+  <a class=def name="notes">notes</a> &amp;rest ns</pre>
+<pre>
+(cmn staff treble
+  (chord (notes e4 g4 f4 a4 c5 b4 d5) s stem-down)
+  (chord (notes e5 g5 f5 a4 c5 b4 d5) s)
+  (chord (notes cn4 ef4 gn4 bf4 ds5 fn5) e stem-down))
+</pre>
+<img src="png/chords.png" alt="picture"><br>
+<p>Messages to the chord object (ties, note-head shapes, rhythmic values,
+and so on) affect every note in that chord.  To set some attribute of
+just one note in a chord, pass it as a message to that note within the
+notes list.  Chords across staves use the tied-to message (see
+cmn-ex.lisp).</p>
+<pre>
+(cmn staff treble 
+  (chord (notes c4 e4 g4) q (note-head :diamond))
+  (chord (notes (c4 (note-head :diamond)) 
+                (e4 (note-head :triangle))
+                (g4 (note-head :x))) q))
+</pre>
+<img src="png/diamond.png" alt="picture"><br>
+<img src="png/hen.png" alt="picture"><br>
+<pre>
+<a class=def name="auxiliary-note">auxiliary-note</a> &amp;rest objects</pre>
+
+<p>Auxiliary-note creates a mark that contains a (small) note.  It is
+normally used in situations like harmonics where we sometimes want to
+display a little note where the true pitch is.  The arguments to
+auxiliary-note are exactly the same as those to note.  There's also
+auxiliary-note-at-end to place the note at the right side of the owning note.
+</p>
+<pre>
+(cmn staff treble (c4 q (note-head :diamond) 
+    (auxiliary-note c6 no-stem in-parentheses)))
+</pre>
+<img src="png/aux.png" alt="picture"><br>
+
+<pre>
+<a class=def name="grace-note">grace-note</a> &amp;rest objects
+<a class=def name="grace-notes">grace-notes</a> &amp;rest objects
+<a class=def name="appoggiatura">appoggiatura</a> &amp;rest objects
+
+  <a class=def name="stem-direction">stem-direction</a> <a class=def name="slashed">slashed</a> <a class=def name="slurred">slurred</a> 
+  <a class=def name="unjustified">unjustified</a> <a class=def name="stem-dy">stem-dy</a> <a class=def name="slash-thickness">slash-thickness</a>
+</pre>
+<p>Stem-direction is normally :up.  Slashed is t for grace-notes and nil
+for appoggiaturas. Slurred is t for both.  Slurs are very hard to get
+right automatically in all cases.  See more discussion under <a href="#slur">slur</a>.  
+If you don't want extra room provided for the grace note or
+appoggiatura, use the message unjustified.  For multiple grace notes,
+the default is to place two beams on two and three such notes, and
+three beams on more than three.  This can be over-ridden simply by
+specifying explicitly the rhythm you want:</p>
+<pre>
+(cmn staff treble 
+  (g4 q (grace-note fs4)) 
+  (g4 q (grace-note (slurred nil) (stem-direction :down) b4 
+          (note-head :diamond) staccato tenuto wedge fermata))
+        ;; omit the slur and use a diamond head on the grace note
+        ;; and get very confused about articulation
+  (g4 q (grace-note e4 fs4)) (g4 q (grace-note gf4 ef4)) 
+  (g4 q (grace-note (slashed nil) b4 a4))  ;; omit the slash 
+  (b4 q (grace-note d4 e4 fs4 g4 a4)) 
+  (g4 q (grace-note ef5 e bf4 e ef4 e)))   ;; just one beam on the grace notes
+</pre>
+<img src="png/grace.png" alt="picture"><br>
+
+<p>Appoggiaturas are similar to grace notes in that they are normally
+displayed in a smaller size than the normal notes, and are not
+explicitly lined up in terms of onset and duration (the main note is
+aligned and the little notes tag along behind).  Appoggiaturas in cmn
+assume that you don't want a slash through the beam or flag, and that
+the default rhythmic value is eighth note.  The syntax is otherwise
+the same as that for grace notes.</p><hr>
+
+<pre>
+<a class=def name="rest">rest</a> &amp;rest objects</pre>
+<pre>
+  <a class=def name="double-whole-rest">double-whole-rest</a> <a class=def name="whole-rest">whole-rest</a> <a class=def name="measure-rest">measure-rest</a> <a class=def name="dotted-whole-rest">dotted-whole-rest</a> 
+  <a class=def name="half-rest">half-rest</a> <a class=def name="dotted-half-rest">dotted-half-rest</a> <a class=def name="quarter-rest">quarter-rest</a> <a class=def name="dotted-quarter-rest">dotted-quarter-rest</a> 
+  <a class=def name="eighth-rest">eighth-rest</a> <a class=def name="dotted-eighth-rest">dotted-eighth-rest</a> <a class=def name="sixteenth-rest">sixteenth-rest</a> <a class=def name="dotted-sixteenth-rest">dotted-sixteenth-rest</a> 
+  <a class=def name="thirty-second-rest">thirty-second-rest</a> <a class=def name="sixty-fourth-rest">sixty-fourth-rest</a> <a class=def name="one-twenty-eighth-rest">one-twenty-eighth-rest</a>
+<br>
+(cmn staff treble bar whole-rest bar half-rest 
+   quarter-rest eighth-rest sixteenth-rest 
+   thirty-second-rest sixty-fourth-rest 
+   one-twenty-eighth-rest bar (measure-rest 23) bar)
+</pre>
+<img src="png/rest.png" alt="picture"><br>
+
+<p>Unless you indicate otherwise (via (automatic-rests nil)), cmn adds
+rests wherever note onsets and previous durations seem to have left a
+gap:</p>
+<pre>
+(cmn staff treble (c5 s (onset .75)) (g4 e. (onset 1.25)))
+</pre>
+<img src="png/autorest.png" alt="picture"><br>
+<p>cmn-ex.lisp and rests.lisp contain abbreviations for common rest names
+and code for other kinds of rests, such as slanted measure rests.
+If the measure length is greater than a whole note (for example,
+a meter of 3/2 as in joh.cmn), the whole-rest refers to a rest
+of up to four quarters in length; to indicate a whole rest symbol that
+fills out a full measure, use <b>whole-measure-rest</b>.
+</p><hr>
+
+<pre>
+<a class=def name="dynamics">dynamics</a> &amp;rest objects
+
+  <a class=def name="ppp">ppp</a> <a class=def name="pianississimo">pianississimo</a> <a class=def name="pp">pp</a> <a class=def name="pianissimo">pianissimo</a> <a class=def name="p">p</a> <a class=def name="piano">piano</a> 
+  <a class=def name="mp">mp</a> <a class=def name="mezzopiano">mezzopiano</a> <a class=def name="pppp">pppp</a> <a class=def name="ffff">ffff</a> 
+  <a class=def name="fff">fff</a> <a class=def name="fortississimo">fortississimo</a> <a class=def name="ff">ff</a> <a class=def name="fortissimo">fortissimo</a> <a class=def name="f">f</a> <a class=def name="forte">forte</a> 
+  <a class=def name="mf">mf</a> <a class=def name="mezzoforte">mezzoforte</a> <a class=def name="sff">sff</a> <a class=def name="spp">spp</a> 
+  <a class=def name="sf">sf</a> <a class=def name="sforzato">sforzato</a> <a class=def name="sforzando">sforzando</a> <a class=def name="forzando">forzando</a> <a class=def name="fz">fz</a> <a class=def name="fp">fp</a> 
+  <a class=def name="rfz">rfz</a> <a class=def name="rinforzando">rinforzando</a> <a class=def name="sfp">sfp</a> <a class=def name="sfz">sfz</a> niente
+</pre>
+<p>If you want some other indication, try <b>dynamic</b> n &amp;optional spacing-data.  Crescendo wedges
+are handled separately (see <a href="#crescendo">crescendo</a>), and connected text like
+poco a poco is handled as <a href="#connected-text">connected-text</a>. An example of the dynamic
+function is <code>(cmn staff treble c4 q (dynamic "fffffff"))</code>.  The spacing-data affects the
+internal glyph spacing -- <code>(cmn treble c4 q (dynamic "fffspz" (list .2 0 .2 0 .15 0 .05 0 0 0 0 0)))</code>.
+The vertical line for subito is "I" or "subito":
+</p>
+<pre>
+(cmn (free-expansion-factor 3.8)
+     (c4 h (begin-crescendo (begin-dynamic (dynamic "fIp")) (end-dynamic  (dynamic "Ipp" ))))
+     (c5 h (stem-up) (end-crescendo))
+     (c4 h (begin-crescendo mf (dynamic "Ip")))
+     (c5 h (stem-up) (end-crescendo)))
+</pre>
+<hr>
+
+<pre>
+<a class=def name="articulation-mark">Articulation</a>
+
+  <a class=def name="staccato">staccato</a> <a class=def name="accent">accent</a> <a class=def name="little-swell">little-swell</a> <a class=def name="wedge">wedge</a> 
+  <a class=def name="tenuto">tenuto</a> <a class=def name="marcato">marcato</a> <a class=def name="down-bow">down-bow</a> <a class=def name="up-bow">up-bow</a> 
+  <a class=def name="detache">detache</a> <a class=def name="martele">martele</a> <a class=def name="thumb">thumb</a> <a class=def name="natural-harmonic">natural-harmonic</a> 
+  <a class=def name="stopped-note">stopped-note</a> <a class=def name="open-note">open-note</a> <a class=def name="pedal">pedal</a> <a class=def name="pedal-off">pedal-off</a>
+  <a class=def name="bartok-pizzicato">bartok-pizzicato</a> <a class=def name="snap-pizzicato">snap-pizzicato</a> <a class=def name="left-hand-pizzicato">left-hand-pizzicato</a>
+  swirl mouth-position
+</pre>
+<p>The long example in the introduction uses most of these marks.
+Little-swell takes an optional dynamic mark.  Marcato and the
+pizzicatoes take the optional message thickness.  Pedal.lisp provides
+support for the three piano pedals and explicit pedalling.  See also
+accent.lisp and percussion.lisp for 20-th century markings such as:</p>
+<img src="png/20c.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="ornamentation">Ornaments</a>
+
+  <a class=def name="mordent">mordent</a> <a class=def name="inverted-mordent">inverted-mordent</a> <a class=def name="double-mordent">double-mordent</a> <a class=def name="turn">turn</a> 
+  <a class=def name="short-trill">short-trill</a> <a class=def name="trilled-turn">trilled-turn</a>  <a class=def name="trill">trill</a> <a class=def name="tr">tr</a>
+</pre>
+<p>Each of these has an optional sign (ornament-sign).  Trill takes
+several addditional messages -- the main issue here is how to
+display the details of the trill.  The options are:</p>
+<pre>
+  <a class=def name="sign-position">sign-position</a> <a class=def name="other-note">other-note</a> <a class=def name="wavy-line">wavy-line</a> <a class=def name="wavy-time">wavy-time</a> 
+</pre>
+<p>sign-position can be :right (the default), :up, or :in-parentheses.
+wavy-line creates a wavy line to the next note.  wavy-time sets the
+end point (in onset-style values) of the wavy line (the default is the
+note's end time).  Wavy-line's argument can be t, nil, or a list; if
+the latter, the arguments are considered '(dx0 dy0 dx1 dy1) to make it
+easier to extend the line in various ways.</p>
+<pre>
+(cmn staff treble c5 q mordent   c5 q turn   c5 q short-trill 
+  c5 q trilled-turn   c5 q trill c5 q (mordent (ornament-sign small-flat)) 
+  (c5 q (trill (sign-position :up) (ornament-sign small-natural))) 
+  (cs5 q (trill (ornament-sign small-sharp) (sign-position :in-parentheses))) 
+  (c5 q (trill (wavy-line t))) (c5 q (trill (ornament-sign flat))))
+</pre>
+<img src="png/trill.png" alt="picture"><br><hr>
+<pre>
+<a class=def name="arpeggio">arpeggio</a> <a class=def name="arrow">arrow</a> <b>arrow-up arrow-down no-arpeggio </b>
+</pre>
+<p>These articulation marks apply primarily to chords.  The arpeggio mark
+can have an arrow at the top or bottom.  No-arpeggio is a bracket on
+the left side of the chord.</p>
+<pre>
+  (cmn staff treble 
+    (chord (notes c4 e4 g4) h (arpeggio arrow-down)) 
+    (chord (notes c4 e4 g4) h arrow-up) 
+    (chord (notes d4 g4 e5) h no-arpeggio))
+</pre>
+<img src="png/arpeggio.png" alt="picture"><br>
+<pre>
+<a class=def name="arrowhead">arrowhead-up</a><b> arrowhead-down</b>
+</pre>
+<p>These draw arrowheads.</p>
+
+
+<hr>
+
+<pre>
+<a class=def name="fingering">fingering</a> &amp;rest objects
+</pre>
+<p>Fingering takes, in addition to the usual arguments, any number of
+numbers which are then displayed in a vertical stack above or below
+the object.  fingering-size and fingers exist. The arguments to
+fingering can also be strings or text objects.</p>
+<pre>
+(cmn staff treble (e4 q (fingering 3)) 
+  (chord (notes c5 g4) q (fingering 7 2)))
+</pre>
+<img src="png/finger.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="pause">pause</a> &amp;rest objects
+
+  <a class=def name="breath-mark">breath-mark</a> <a class=def name="general-pause">general-pause</a> <a class=def name="g.p.">g.p.</a> <a class=def name="grand-pause">grand-pause</a> 
+  <a class=def name="fermata">fermata</a> <a class=def name="upside-down-fermata">upside-down-fermata</a> <a class=def name="hold">hold</a> 
+  <a class=def name="caesura">caesura</a> pause
+
+(cmn staff treble (meter 2 4) 
+  (c4 q fermata) (quarter-rest g.p.) (c4 q breath-mark) 
+  (c4 q upside-down-fermata) double-bar)
+</pre>
+<img src="png/gp.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="text">text</a> &amp;rest objects
+</pre>
+
+<p>Text is a form of mark like staccato.  The text can be in any
+available font, and, as usual, scaled, rotated, etc.  The default font
+is given by the slot text-font.  The font-related messages are:</p>
+<pre>
+  font-name font-size font-scaler ;font-name default is "Times-Roman"
+
+(cmn staff treble 
+  (c4 q (text "middle-c" (dx 1.0) (dy 2.0) (rotate 180) 
+          (font-name "Times-Roman") (font-size 12))))
+</pre>
+<img src="png/upsidemidc.png" alt="picture"><br>
+<p>In addition to the default justification (:none), the text can be
+left justified (:left), centered (:center) or right justified (:right) -- (text
+"hi" (justification :right)).  (Unjustified = (justification :none)).
+Connected text is handled by text- and friends discussed <a href="#connected-text">below</a>.
+font-size is the true size (unscaled), whereas font-scaler scales the
+font-size by the overall score size. 
+Text placement
+normally is anchored to the owning object (the c4 in our previous
+example), but this can cause endless positioning headaches for lyrics
+and whatnot.  For special cases, use the messages x and y.  These are
+either nil (the default) or a lambda form that completely over-rides
+normal positioning decisions.  The form is apply'd to the text mark,
+the owning object, the current score, and whatever other arguments
+were passed to the display procedure.  Examples can be found in the
+various .cmn files included with cmn.  (See also <a href="#prolog">prolog</a>).
+To position lyrics, one possibility is the following
+(see also lyrics.lisp):</p>
+<pre>
+  (defun lyrics (&amp;rest args)
+    (apply #'text (font-name "Times-Roman") (font-scaler .5) 
+      (y #'(lambda (mark note score &amp;optional justifying) (- (staff-y0 note) .9)))
+      (x #'(lambda (mark note score &amp;optional justifying) 
+        (+ (x0 note) (if (sign note) .2 0))))
+      args))
+</pre>
+<p>To display a particular glyph from a font using the character's location in
+the font, use the glyph function (see cmn-ex.lisp for an example).</p>
+
+<p>The message underlined causes the text to be underlined.</p>
+<p><b>font-name</b> must be a font that the current output-type choice
+can handle. In postscript (the default), this means that the postscript
+interpreter must be able to find the font somehow.  On some systems,
+there's a file named Fontmap (or Fontmap.GS for ghostscript -- /usr/share/ghostscript/7.05/lib/Fontmap.GS on my machine) that
+contains a list of names and the associated font:
+</p>
+<pre>
+/Palatino-Roman			/URWPalladioL-Roma	;
+</pre>
+<p>which says that the font-name "Palatino-Roman" will be recognized,
+and that its font file can be found via the alias "URWPalladioL-Roma"
+which itself points to p052003l.pfb which can be found in one of
+the font directories (/usr/share/fonts/default/Type1/p052003l.pfb on
+my machine).  If you give some unknown font name, the text will likely
+be rendered as a series of question marks.
+</p>
+<br>
+
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3>Multi-note marks</h3></td></tr></table>
+
+<p>There are a number of marks that apply to more than one note -- ties,
+slurs, beams, and so on.  cmn handles these in two ways.  Each
+multi-note mark has a begin-&lt;mark&gt; and end-&lt;mark&gt; form that is both a
+variable and a function (as with all the other objects), and these
+follow a stack discipline.  That is, the last one to begin is the
+first one to end -- marks can be nested without problem.  If the marks
+need to cross one another, a mechanism is needed to make it obvious
+which begin-&lt;mark&gt; belongs to which end-&lt;mark&gt;.  In cmn, this is done
+with tags.  Here is an example of the simple form:</p>
+<pre>
+(cmn staff treble (c4 q begin-slur) (d4 q) (e4 q end-slur))
+</pre>
+<img src="png/simple-slur.png" alt="picture"><br>
+<p>And an example of tags:</p>
+<pre>
+(cmn staff treble (c4 q (setf slur-tag (begin-slur))) (d4 q (end-slur slur-tag)))
+</pre>
+<img src="png/twonoteslur.png" alt="picture"><br>
+<p>The tag is simply a variable (give it any name you like).  In the
+example given above the tag was unnecessary, but consider this
+example:</p>
+<pre>
+(cmn staff treble 
+  (c4 h (setf lower-text (text- "hi")) 
+        (setf upper-text (text- "sil" (y0 2.0))))
+  (d4 q (-text- "ver" upper-text (y0 2.0))) 
+  (d4 q (-text- "ho" lower-text)) 
+  (e4 q (-text "!" upper-text (y0 2.0))) 
+  (e4 h (-text "away!" lower-text)))
+</pre>
+<img src="png/hihosilver.png" alt="picture"><br>
+<p>Here the line connecting the words has to know where the next word in
+its sentence is, and without the tags (upper-text, lower-text), that
+task could be relatively difficult.</p><hr>
+
+<pre>
+<a class=def name="connected-text">Connected text</a>
+</pre>
+<p>Text that needs to be connected across notes or passages is handled by</p>
+<pre>
+  text- -text- -text    text_ _text_ _text
+</pre>
+<p>These take any number of arguments, one of which should be either a
+string or a text object.  text- starts a new connected text sequence
+and connects to either -text- or -text.  -text- connects to a current
+sequence (either the last one started or the one indicated by a tag
+passed to -text-) and continues it forward.  -text connects to a
+current sequence and finishes it.  The connecting pattern is the list
+text-connecting-pattern which defaults to a simple line between the
+pieces of text (that is '(10 0)).  To get a dashed line,</p>
+<pre>
+(cmn (text-connecting-pattern '(5 10)) staff treble
+  (c4 h (text- "hi")) (d4 q) (d4 q (-text- "ho")) 
+  (e4 q) (e4 h (-text "away!")))
+</pre>
+<img src="png/hihoaway.png" alt="picture"><br>
+<p>The level (vertical position) of the pattern can be set with
+connecting-pattern-level.  Other possible patterns are :dash (centered between words)
+and :arrow (long right-arrow).  The score-slot connecting-pattern-thickness or the message
+thickness sets the thickness of the connecting-line.
+text- returns a tag that can be used to distinguish between
+simultaneous text sequences.  If the
+text- call encounters the x or y message, the associated lambda form
+is applied across the entire connected text sequence (see joh.cmn for
+an example).  For a purely local change of connecting pattern, use the
+message (to text- et al) connecting-pattern.  <b>text_</b> and
+friends are like <b>text-</b>, but place the connecting pattern at the
+base line (the level of the period), rather than in the middle of the line.
+See also the comments in cmn3.lisp about various lyrics functions -- these
+provide much more control over the placement of the text and the connecting
+pattern.
+</p><hr>
+
+
+<pre>
+<a class=def name="glissando">glissando</a> <b>and</b> <a class=def name="portamento">portamento</a>
+
+  <a class=def name="glissando-to">glissando-to</a> &amp;rest objects   
+  <a class=def name="portamento-to">portamento-to</a> &amp;rest objects
+
+  <a class=def name="begin-glissando">begin-glissando</a> <a class=def name="end-glissando">end-glissando</a> <a class=def name="begin-portamento">begin-portamento</a> <a class=def name="end-portamento">end-portamento</a> 
+  glissando- -glissando portamento- -portamento
+</pre>
+<p>These create the line connecting two notes with optional text sitting
+on the slanted line.  The line is normally straight; use the message
+wavy-line to get a curvy connecting line.
+Use the message thickness or score slot glissando-thickness
+to adjust the thickness of the (straight) glissando-line.
+The variable <b>*cmn-glissando-extension*</b> can be used to
+change the gliss line length (default .125, reduce to lengthen).
+</p>
+<pre>
+(cmn staff treble (e4 h (glissando-to a3)) quarter-rest 
+  (c4 h begin-glissando) (g4 h end-glissando))
+  ;; set free-expansion-factor to 2 to get room for the word "gliss"
+  ;; or use the message minimum-length: (minimum-length 2.0)
+</pre>
+<img src="png/gliss.png" alt="picture"><br>
+<p>If there's room, cmn adds the word "gliss" or "port" or whatever you
+want to the line.</p>
+<pre>
+(cmn staff treble
+  (c4 h (begin-glissando 
+          (text "up up up" (font-name "Times-Roman") (font-scaler .6))))
+  (c5 h end-glissando))
+</pre>
+<img src="png/glup.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="crescendo">crescendo</a> <b>and</b> <a class=def name="diminuendo">diminuendo</a>
+
+  <a class=def name="begin-crescendo">begin-crescendo</a> <a class=def name="begin-diminuendo">begin-diminuendo</a> <a class=def name="end-crescendo">end-crescendo</a> <a class=def name="end-diminuendo">end-diminuendo</a> 
+  crescendo- -crescendo diminuendo- -diminuendo
+</pre>
+<p>These create the wedges sometimes used to mark crescendos and
+diminuendos.  The wedge starts at the current note and ends either at
+the note that contains the end-crescendo or wherever its duration
+falls.  The wedge can start anywhere -- the message to delay the
+wedge beginning is onset-offset.  The message width controls how wide
+the wedge gets.  You can specify the dynamics mark to be placed at the
+beginning or end of the wedge either by passing the mark to the
+begin-crescendo function, or by using begin-dynamic and end-dynamic.
+The always-dyn-up macro places these marks (and dynamics) above the staff.
+If you use the function begin-crescendo (or begin-diminuendo), end
+it with the function end-crescendo (end-diminuendo), not the variable
+form.
+</p>
+<pre>
+(cmn staff treble 
+  (c4 q (crescendo (duration 2.0))) (d4 q)
+  (c4 q (begin-diminuendo (end-dynamic f) (width .75))) (d4 q) 
+  (e4 q (end-diminuendo))
+  (c4 q (begin-crescendo ppp f)) d4 q e4 q f4 q (g4 q (end-crescendo)))
+</pre>
+<img src="png/cresc.png" alt="picture"><br><hr>
+
+
+<pre>
+<a class=def name="tie">Ties</a>
+
+  <a class=def name="begin-tie">begin-tie</a> <a class=def name="end-tie">end-tie</a> tie-direction tie-curvature 
+  dashed <a class=def name="dx0">dx0</a> <a class=def name="dy0">dy0</a> <a class=def name="dx1">dx1</a> <a class=def name="dy1">dy1</a> breathing-space
+</pre>
+<p>Ties are handled like glissandos.  Tie-direction sets which way the
+tie curves, either :up or :down.  Tie-curvature controls how much the
+tie curves; the default is the score slot tie-curvature.  The
+argument to dashed is a list (length-of-pattern
+length-of-white-space).</p>
+<pre>
+(cmn staff treble (c4 q begin-tie) (c4 q end-tie) 
+  (c4 q (begin-tie (tie-direction :up) (tie-curvature .5))) (c4 q end-tie))
+</pre>
+<img src="png/twoties.png" alt="picture"><br>
+<p>When entire chords are tied, all notes within the chord are tied
+automatically.</p>
+<pre>
+(cmn staff treble (chord (notes c4 e4 g4 c5) q begin-tie) 
+  (chord (notes c4 e4 g4 c5) q end-tie))
+</pre>
+<img src="png/tie2chords.png" alt="picture"><br>
+<p>To tie just selected notes of a chord, put the ties on those
+individual notes:</p>
+<pre>
+(cmn staff treble (chord (notes (c4 (setf tie-c4 (begin-tie))) e4 g4 c5) q)
+  (chord (notes (c4 (end-tie tie-c4)) e4 g4 c5) q))
+</pre>
+<img src="png/tiecinchord.png" alt="picture"><br>
+<p>Unless you indicate otherwise (by setting automatic-ties to nil), cmn
+puts in ties wherever it deems necessary.  See also ring.lisp for
+ring- and friends (ties off into space).</p>
+<pre>
+(cmn staff treble (meter 2 4) f4 e. f4 q. f4 h.)
+</pre>
+<img src="png/fstied.png" alt="picture"><br>
+<pre>
+(cmn staff treble (meter 2 4) 
+  (chord (notes f5 af4 df5) (rq 5/4)) 
+  (chord (notes f5 ef5 df5 a4) (rq 3/2)) 
+  (chord (notes f4 gf4 af4 d5) (rq 5/4) stem-down))
+</pre>
+<img src="png/tieddfchords.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="slur">Slurs</a>
+
+  <a class=def name="begin-slur">begin-slur</a> <a class=def name="end-slur">end-slur</a> 
+  slur- -slur- -slur
+</pre>
+<p>Slurs are like ties, but can cover any number of notes.  cmn makes a
+real effort to make a pretty slur, but it often screws up.  When that
+happens, you will have to edit the slur-data by hand, and that's not
+easy.  The data is a list of two lists, each a set of 6 points.  These
+are the controlling points of the two Bezier curves that outline the
+slur.  '((x1 y1 x2 y2 x3 y3) (x2 y2 x1 y1 x0 y0)) is the general idea,
+with the slur thickness subtracted from y1 and y2 on the return run.
+There are a variety of messages to begin-slur to help edit slurs:</p>
+<pre>
+  dx dy dx0 dy0 dx1 dy1 dx2 dy2 dx3 dy3 
+  slur-direction slur-thickness slur-curvature dashed
+</pre>
+<p>dx and dy are applied to all points whereas the others apply only to
+the indicated point.  (begin-slur (dy -.25)) moves the entire slur
+down .25, but (begin-slur (dy0 -.25)) moves only the first of the 4
+points that describe the slur.  Dashed for slurs is the same as for
+ties.</p>
+<pre>
+(cmn staff treble 
+     g4 q begin-slur ef4 q c4 q end-slur
+     g4 q begin-slur b4 q a4 q end-slur
+     b4 q begin-slur e5 q d5 q cs5 q end-slur
+     a4 q begin-slur e4 q f4 q g4 q a4 q end-slur
+     g4 q begin-slur ef5 q bf4 q ef4 q end-slur)
+</pre>
+<img src="png/slurs.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="tremolo">tremolo</a> &amp;rest objects
+</pre>
+<p>There are two kinds of tremolo: unmeasured and measured. In addition,
+there are a number of stylistic choices involving beams, slashes,
+slurs, and note heads, not all of them entirely logical.  For example,
+one book on music notation says half note tremolos should have one
+beam and two slashes, quarter note tremolos should have no beams and
+three slashes, and eighth note tremolos should have one beam and two
+slashes, but filled in note heads, since otherwise there would be no
+way to tell them from half note tremolos.  The logical way would be to
+put no beams and three slashes on both half note and quarter note
+tremolos.  Grumble!  To try to sort out the various possibilities,
+there are first:</p>
+<pre>
+  <a class=def name="begin-tremolo">begin-tremolo</a> <a class=def name="end-tremolo">end-tremolo</a> <a class=def name="begin-measured-tremolo">begin-measured-tremolo</a> <a class=def name="end-measured-tremolo">end-measured-tremolo</a> 
+  <a class=def name="unmeasured-tremolo">unmeasured-tremolo</a> tremolo <a class=def name="paranoid-tremolo">paranoid-tremolo</a> <a class=def name="measured-tremolo">measured-tremolo</a> 
+</pre>
+<p>begin-tremolo and end-tremolo are unmeasured tremolos.  The begin and
+end forms apply to those cases where there are two notes in the
+tremolo.  The others (unmeasured-tremolo, etc) are for single note
+tremolos.  Paranoid-tremolo includes the word "trem.".  These take the
+additional messages:</p>
+<pre>
+  tremolo-position	:on-stem or :between-stems
+  measured		t or nil
+  paranoid		t or nil
+  tremolo-slashes	nil (=3) or an integer
+  tremolo-beams		nil or the number of beams
+  slant			.1
+  width			.3
+  thickness		.08
+  font-name		"Times-Roman"
+  font-scaler		.4
+  maximum-length	.85
+
+(cmn staff treble 
+  (c4 q tremolo) (c4 w paranoid-tremolo) 
+  (c5 q (tremolo (tremolo-slashes 1)))
+  (c4 h begin-measured-tremolo) (d4 h end-measured-tremolo) 
+  (c4 e begin-tremolo) (d4 e end-tremolo))
+</pre>
+<img src="png/trem.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="beam">Beams</a>
+</pre>
+<p>Beams can be handled automatically or by hand.  If the score slot
+automatic-beams is t (the default), automatic beaming follows the
+current meter if it can.  Any explicit
+beams over-ride automatic beaming.  Explicit beams are handled by:</p>
+<pre>
+  <a class=def name="begin-beam">begin-beam</a> <a class=def name="end-beam">end-beam</a> <a class=def name="no-beam">no-beam</a> <a class=def name="no-beam-break">no-beam-break</a> 
+  beam- -beam- -beam 
+  <a class=def name="beam-direction">beam-direction</a> <a class=def name="explicit-beams">explicit-beams</a> dx dy dx0..dy1    ;see cmn-ex.lisp for examples
+</pre>
+<p>The first two are like begin-slur and end-slur and apply to all notes
+on the staff between the begin-beam and end-beam.  Beam- and friends
+are like text- and friends.  Here's an example of all three
+possibilities:</p>
+<pre>
+(cmn staff treble c4 e d4 e (c4 e begin-beam) (d4 s) (e4 s end-beam)
+  (c4 e (setf beam (beam-))) (d4 e (-beam- beam)) (e4 e (-beam beam)))
+</pre>
+<img src="png/beams.png" alt="picture"><br>
+<p>The numbers marking irregular beat subdivisions are kept as simple as
+possible -- cmn adds the bracket only if there is something peculiar
+in the grouping.  To deal with these explicitly use:</p>
+<!-- INDEX beat-subdivision:Beat subdivision --><a class=def name="beat-subdivision"></a>
+<pre>
+  beat-subdivision- -beat-subdivision- -beat-subdivision <a class=def name="no-beat-subdivision">no-beat-subdivision</a> 
+</pre>
+<p>These take the additional messages subdivision (a number, string, or
+text object) and bracketed.  The latter can be t (the default), nil,
+:up, or :down.  The details of the bracket can be changed with the
+messages dx, dy, dx0, dy0, dx1, dy1, and bracket-type (see
+cmn-ex.lisp).</p>
+<pre>
+  (cmn staff treble c4 te c4 te c4 te 
+    (d4 (rq 1/5)) (d4 (rq 1/5)) (d4 (rq 1/5)) (d4 (rq 1/5)) (d4 (rq 1/5))
+    (c5 (rq 2/3)) (c5 (rq 1/3))
+    (c4 te (setf hi (beat-subdivision- (subdivision 7) (dy0 -.5) (dy .5))))
+    (c4 te (-beat-subdivision- hi)) (c4 te (-beat-subdivision hi)))
+</pre>
+<img src="png/subdiv.png" alt="picture"><br>
+<p>If the beamed notes fall on different staves, start the beam on the
+higher staff even if the notes on that staff come later in the beam:
+</p>
+<pre>
+(let ((tag nil))
+  (cmn
+   (staff bass
+	  (c3 e (setf tag (beam-)))
+	  (quarter-rest invisible) ; not strictly necessary, but improves spacing
+	  (eighth-rest invisible))
+   (staff bass
+	  (eighth-rest invisible)
+	  (d3 e (-beam- tag))
+	  (ef3 e (-beam- tag))
+	  (g3 e  (-beam tag))
+	  bar)))
+</pre>
+<p>
+If the onsets are given explicitly, the notes being beamed are sorted
+out automatically.  Wedged ("feathered") beams (as used by Bartok and
+others) are implemented in wedge.lisp, included with cmn (see also
+cmn-ex.lisp for explicit beam choices).  The function <a class=def name="rqq">rqq</a>
+in rqq.lisp extends this notion to much more fancy rhythms.  See
+the comments and examples in that file for details; here's an
+example of rqq:</p>
+<pre>
+  (cmn treble (rqq '(2 ((1 (1 1 1 2)) (1 (1 2)) (1 (1 2 4)))) 
+                g4 fs4 sixteenth-rest en4 (chord c4 ef4) eighth-rest af4 bf4 gf4))  
+</pre>
+<img src="png/rqq.png" alt="picture"><br>
+<hr>
+<img src="png/franz.png" alt="picture"><br><hr>
+
+
+<pre>
+<a class=def name="ending">endings</a>
+</pre>
+<p>These are the first and second ending marks.</p>
+<pre>
+  <a class=def name="begin-first-ending">begin-first-ending</a> <a class=def name="begin-second-ending">begin-second-ending</a> 
+  <a class=def name="end-first-ending">end-first-ending</a> <a class=def name="end-second-ending">end-second-ending</a> 
+</pre>
+<p>Begin-first-ending and begin-second-ending take the additional messages:</p>
+<pre>
+  max-line	;the line number of the highest (lowest) note under the octave sign
+  terminal	;t if the ending is also the ending of the piece
+
+(cmn staff treble (meter 2 4) 
+  (c4 q) (c4 q) (bar begin-first-ending)
+  (c4 q) (c4 q) (end-repeat-bar end-first-ending begin-second-ending)
+  (c4 q) (c4 q) (bar end-second-ending)
+  c4 q c4 q double-bar)
+</pre>
+<img src="png/ends.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="segno">segno</a> <a class=def name="coda">coda</a>
+
+(cmn staff (bar (mm 96 e)) treble c4 w (bar segno) (c4 w) (bar coda)
+  (c4 w) (bar (change-beat q. e)) (c4 w))
+</pre>
+<img src="png/segno.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="change-beat">change-beat</a> <a class=def name="mm">mm</a>
+</pre>
+<p>These two set the current metronome marking and (as shown above) a
+change of beat.  Change-beat takes two arguments, the old beat and the
+new beat.  mm takes two arguments, the metronome marking, and
+optionally the rhythmic value that marking applies to (it defaults to
+a quarter note).  Normally the metronome marking is a parenthetical
+addition to the tempo indication.  mm also responds to in-parentheses
+and the various justification messages.</p>
+
+
+<pre>
+<a class=def name="repeat-measure">repeat-measure</a>
+</pre>
+<p>The repeat-measure mark is centered between bar lines and has a
+metrical value equal to a measure.  As a function it accepts an
+optional number to be displayed over the mark.</p>
+<pre>
+(cmn staff treble (meter 2 4) c4 q c4 q bar repeat-measure bar
+  c4 q g4 q bar (repeat-measure 440) c4 q c4 q double-bar)
+</pre>
+<img src="png/repeat.png" alt="picture"><br><hr>
+
+<pre>
+<a class=def name="octave-transposition">octave transposition</a>
+</pre>
+<p>Octave transposition signs are added automatically to very high (or
+low) passages unless you set the score slot automatic-octave-signs to
+nil.</p>
+<pre>
+(cmn staff bass c5 e d5 e f5 e g5 e c5 q g4 q c4 q)
+</pre>
+<img src="png/oct8.png" alt="picture"><br>
+<p>If you like the Italian persiflage of "va" and "ma" (or, God forbid,
+"bassa"), set the appropriate score structure slot
+(use-italian-octave-signs, add-bassa-to-octave-signs).  Explicit
+octave signs are handled with:</p>
+<pre>
+  <a class=def name="begin-octave-up">begin-octave-up</a> <a class=def name="octave-up">octave-up</a> <a class=def name="end-octave-up">end-octave-up</a> 
+  <a class=def name="begin-octave-down">begin-octave-down</a> <a class=def name="octave-down">octave-down</a> <a class=def name="end-octave-down">end-octave-down</a> 
+  <a class=def name="begin-two-octaves-up">begin-two-octaves-up</a> <a class=def name="two-octaves-up">two-octaves-up</a> <a class=def name="end-two-octaves-up">end-two-octaves-up</a> 
+  <a class=def name="begin-two-octaves-down">begin-two-octaves-down</a> <a class=def name="two-octaves-down">two-octaves-down</a> <a class=def name="end-two-octaves-down">end-two-octaves-down</a> 
+  <a class=def name="begin-no-octave-sign">begin-no-octave-sign</a> <a class=def name="no-octave-sign">no-octave-sign</a> <a class=def name="end-no-octave-sign">end-no-octave-sign</a>  
+</pre>
+<p>These act like the tie and slur messages.  Octave-up and friends apply
+only to one note; no-octave-sign and friends turn off the automatic
+octave signs for short passages.  The note pitch values within the
+octave signs are the displayed values, not the true values:</p>
+<pre>
+(cmn staff treble c4 q begin-two-octaves-up d4 q e4 q f4 q end-two-octaves-up)
+</pre>
+<img src="png/oct15.png" alt="picture"><br>
+<p>These take the messages <a class=def name="vertical-separation">vertical-separation</a>, font-name, font-scaler,
+and <a class=def name="octave-sign-pattern">octave-sign-pattern</a>.</p>
+<hr>
+
+<pre>
+<a class=def name="rehearsal-mark">Rehearsal marks</a> <b>and</b> <a class=def name="measure-number">measure numbers</a>
+</pre>
+<p>Rehearsal marks are either numbers or letters, optionally boxed or
+circled, and normally attached to a bar line.  The cmn entities are:</p>
+<pre>
+  <a class=def name="rehearsal-number">rehearsal-number</a> <a class=def name="rehearsal-letter">rehearsal-letter</a> 
+</pre>
+<p>each of which take the additional message frame to set the type of the
+surrounding frame.  The frame can be nil (the default), :none, :box,
+or :circle.  It need be set only on the first rehearsal mark.  Each
+mark after the first normally increments the mark letter or number
+("Z" goes to "AA", and "I" is skipped), but you can reset the mark to
+be anything by passing it as an argument to rehearsal-number or
+whatever.  measure-number is similar -- it displays a number.  Other
+messages are: rehearsal-frame-width and rehearsal-frame-white-space.</p><hr>
+<!-- INDEX horizontal-ruler:Horizontal ruler --><a class=def name="horizontal-ruler"></a>
+<pre>
+<a class=def name="page-mark">page-mark</a> <b>and</b> <a class=def name="line-mark">line-mark</a>
+</pre>
+<p>Page-mark is an explicit end-of-page mark.  Line-mark is an explicit
+end-of-line mark.  Line-mark takes the additional messages dx and dy.
+In this context, these refer to the positioning and justification of
+the upcoming line.  Normally staff positioning within a line is set by
+the dy message to the staff, and the staff/system-separation
+variables.  There are cases where one line, or a staff within a line
+needs to be moved vertically to avoid collisions.  Similarly, the
+justification decisions within a line are sometimes suboptimal.  In a
+sense, the dx and dy messages provide you with a horizontal and
+vertical ruler to guide the positioning process to whatever level of
+detail you like.  The argument to dx (in this case) is a list of
+lists, each inner list a pair of numbers: '(beat dx-position) where
+the beats (actually quarter-notes, not beats) are numbered from 1, and
+the dx-position is in the normal staff-based units (use in-inches, if
+you like).  If more than one line-mark applies to a given line (via
+multiple staves, all being explicit about line breaks), all the dx
+(and dy) messages are merged before being applied to the justification
+of that line.  Vertical (staff) positioning is handled by dy.  Its
+argument can be a number, or a list of lists.  If a number, it is like
+a local dy message to the staff it occurs in.  If a list of lists,
+each inner list is a pair of numbers '(staff-number dy) where the dy
+number is in the usual units, and the staves are numbered from 1 at
+the top of the line.  To see the current rulers, set the show-rulers
+field of the score.  In the glorious (but distant) future, we will
+figure out how to tie this into the window system and use a mouse to
+push tab stops around, as in WriteNow.  Line-break and page-break are
+the same as line-mark and page-mark.</p><hr>
+
+<!-- INDEX clm-to-cmn:CLM to CMN -->
+<pre>
+<A CLASS=DEF NAME="clm-to-cmn">Note list display (add-note, display-notes)</a>
+
+  <a class=def name="add-note">add-note</a> score name begin-time duration frequency &amp;rest rest
+</pre>
+<p>Add-note is the main interface between clm note lists and cmn.  name
+is the instrument name, begin-time and duration are in seconds,
+frequency is in Hz.  cmn assumes 12 tone equal tempered 5-line staff
+output, and uses the score slot metronome to choose the closest simple
+rhythmic values for begin-time and duration.  To save the result as a
+call on cmn, use cmn-store.  The easiest way to read in a note list is
+to wrap it up in a list and call display-notes:</p>
+<pre>
+  <a class=def name="display-notes">display-notes</a> score-attributes notes
+
+    (display-notes nil 
+      '((vln 0 .5 440 .1) (vln 0 .5 660 .1) (vln .5 .5 880 .1)))
+</pre>
+<img src="png/addnotes.png" alt="picture"><br>
+<p>We can now write this out as a call on cmn with cmn-store.  The
+latter's two optional arguments are the score structure to be stored
+(it defaults to the last score created -- *cmn-score*), and the output
+file name (it defaults to "hi.cmn").</p>
+
+<p>If the score slot automatic-naturals is t, cmn adds natural signs
+wherever they seem to be needed.  The two slots,
+implicit-accidental-style and implicit-accidental-duration, give you
+some control over how these decisions are made.  The style can
+currently be :new-style, :old-style, :only-chords, or :paranoid.  The
+duration (perhaps "persistence" is a better word) is the number of
+notes an accidental mark hangs over -- it only applies to :new-style
+(the default) where it defaults to 1.  :old-style is the 19th century
+way -- an accidental is cancelled only by a bar line.  :paranoid
+doesn't let anything cancel an accidental.  cmn tries to be smart
+about key signatures as well, but there are some weird ambiguous cases
+here.</p><hr>
+
+<!-- INDEX eps-file:eps files --><a class=def name="eps-file"></a>
+<pre>
+<a class=def name="graphics">graphics</a> &amp;rest objects
+</pre>
+<p>Any .eps file can be imported into the cmn score, rotated, scaled, and
+so on.  Graphics takes one additional message to the usual ones: file.
+The argument to file is the name of the .eps file to be inserted.</p>
+<pre>
+(cmn (output-file "2.eps") staff treble c5 s)
+(cmn staff treble 
+  (c4 q (graphics (file "2.eps") (scale .6 .6) 
+                  (dx 2.0) (dy 1.0) (rotate 90))))
+</pre>
+<img src="png/withcmn.png" alt="picture"><br>
+<p>The contents of the .eps file are copied into the output file of cmn.</p><hr>
+
+
+<pre>
+<a class=def name="with-cmn">with-cmn</a> &amp;rest objects
+</pre>
+<p>It is possible to package up an entire score as a mark by calling
+with-cmn.  with-cmn is just like cmn except that it doesn't open any
+files.</p>
+<img src="png/twithc.png" alt="picture"><br><br>
+
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3>Extensions to the input functions</h3></td></tr></table>
+
+<p>cmn is just a normal Lisp function of any number of arguments.  If an
+argument evaluates to nil, it is ignored (this is useful for functions
+called only for their side effects); if an argument is a score-
+object-list, the entire associated list is spliced into the argument
+list as though it had occurred that way from the start.  To take
+advantage of this, use disgorge and engorge.  Engorge returns a score-
+object-list instance containing the objects passed as its arguments;
+the various functions that take data lists (cmn, system, staff, etc)
+notice these objects and "flatten" them, treating the list of objects
+just as if they had come in the normal argument list.  For example,
+say we want a bunch of quarter notes all staccato, stem down, and we
+are lazy typists:</p>
+<pre>
+(defun qsd (&amp;rest notes) 
+  (engorge 
+    (loop for note-name in notes
+     collect (note note-name q staccato (stem-direction :down)))))
+</pre>
+<p>and now in cmn we can say: <code>(cmn staff treble (qsd a4 c4 b4 g5 d5 d4))</code>
+This process can be carried as far as you like -- everything is
+straight-forward lisp, and all of lisp is at your disposal.  The
+opposite of engorge (which wraps up the list of objects into a
+score-object-list instance) is disgorge.  When passed a
+score-object-list instance, it returns the list you originally wrapped
+up.  A slightly more complicated example of engorge is the function:</p>
+<pre>
+  <a class=def name="cycle">cycle</a> &amp;rest objects
+</pre>
+<p>The objects passed to cycle are sequences of cmn objects.  Each is
+treated as a circular list, and the result of cycle is a list whose
+length is the length of the longest sequence passed.  Each object in
+the resultant list reflects the combination of the corresponding
+objects from the lists of sequences.  That is,</p>
+<pre>
+  (cmn staff treble (cycle (list c4 e4 g4 c4 e4 g4) (list e. s) staccato))
+</pre>
+<p>produces the same result as</p> 
+<pre>
+  (cmn staff treble (c4 e. staccato) (e4 s staccato) (g4 e. staccato)...)
+</pre>
+<p>In the same vein as engorge are the functions staff-engorge,
+system-engorge, and score-engorge, the latter involving the function
+score.  Each of the engorging functions takes a list of staves,
+systems, or scores, and returns the new staff or whatever that
+contains all the data of its arguments.  For example,</p>
+<pre>
+  (setf v1 (staff treble (meter 3 4) c4 q c4 h))
+  (setf v2 (staff treble (meter 3 4) d4 h d4 q))
+  (cmn (staff-engorge (list v1 v2)))
+
+  (setf s1 (system (staff treble (meter 3 4) c4 q c4 h) 
+                   (staff bass (meter 3 4) c3 h c3 q)))
+  (setf s2 (system (staff treble (meter 3 4) d4 q d4 h) 
+                   (staff bass (meter 3 4) d3 h d3 q)))
+  (cmn (system-engorge (list s1 s2)))
+
+  (setf sc1 (score staff treble c4 h c4 q))
+  (setf sc2 (score (initial-onset 3) staff treble 
+		(d4 q (onset 3)) (d4 h (onset 4))))
+  (cmn (score-engorge (list sc1 sc2)))
+</pre>
+<p>The arguments to system-engorge and score-engorge must be compatible
+in the sense that the list of systems and staves must match.  Score
+looks like the overall cmn call, but it only packages up the score
+data ready for a "real" cmn call.</p>
+
+<!-- INDEX section:section --><a class=def name="section"></a>
+<p>These functions provide the underlying support for sections.  In the
+cmn function call described earlier, there is actually yet another
+outer layer above systems, called sections.  These provide a way to
+package up portions of a piece, apply local score decisions to those
+portions, and then glue them all together at the end.  Each section
+looks like a cmn or score call:</p>
+<pre>
+  (cmn (section (redundant-accidentals nil)
+         (staff treble (meter 4 4) cs4 q cs4 q cs4 q cs4 q)) 
+       (section (staff treble cs4 q cs4 q cs4 q cs4 q)))
+</pre>
+<p>The successive sections either are abutted (as in the example above),
+or use the score slot section-onset to specify the starting time, or
+use the score-slot initial-onset with correct onsets within the
+section data.</p><br>
+
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3>Extensions to the display functions</h3></td></tr></table>
+
+<p>The easiest way to add your own graphics code is to package it up in a
+<a class=def name="sundry">sundry</a> instance and pass that to the object you want to own the code.
+The sundry class has two slots, sundry-name (a debugging convenience)
+and <a class=def name="sundry-mark">sundry-mark</a>.  Sundry-mark is a function that is called as follows:</p>
+<pre>
+   (funall (sundry-mark sundry) sundry object score justifying).
+</pre>
+<p>The staccato function, for example, is essentially:</p>
+<pre>
+(defun staccato (&amp;rest objects)
+  (make-instance 'sundry :name :staccato 
+    :mark #'(lambda (mark note score &amp;optional justifying)
+              (circle score 
+                      (+ (x0 note) (center note)) 
+                      (+ (y0 note) .25)
+                      .05 0 360))))
+</pre>
+<p>It finds the center of the note it belongs to, then tries to put a dot
+over it.  Of course, the actual code is a bit more complicated because
+sometimes the dot goes under the note, we have to try to avoid
+colliding with staff lines, and we have to do something reasonable
+with the objects that might be passed as arguments to staccato.  The
+basic graphics operations are:</p>
+<pre>
+  <a class=def name="lineto">lineto</a> score x y		;add a line to (x,y)
+  <a class=def name="rlineto">rlineto</a> score dx dy		;add a line from the current point to (current-point+dx,current-point+dy)
+  <a class=def name="moveto">moveto</a> score x y		;add a jump to (x,y) 
+  <a class=def name="rmoveto">rmoveto</a> score dx dy		;add a jump from the current-point to (current-point+dx,current-point+dy)
+  <a class=def name="curveto">curveto</a> score x0 y0 x1 y1 x2 y2
+	;add a Bezier curve from the current-point using these three points as guides
+  <a class=def name="show">show</a> score mark		;display a mark of some sort
+  <a class=def name="draw">draw</a> score			;cause the current lines to be drawn
+  <a class=def name="fill-in">fill-in</a> score			;cause the current lines to be filled in
+  <a class=def name="circle">circle</a> score x y r &amp;optional (ang1 0) (ang2 360) filled
+	;draw a circle, center (x,y), radius r  starting at ang1 and going to ang2
+  <a class=def name="line-width">line-width</a> score 		;the thickness of the line drawn by draw (a slot that can be setf'd)
+</pre>
+<p>The easiest way to mix text and music is to position the music using
+the margin slots, then attach the text as a series of marks on a
+staff.  See cmnt.lisp for several examples used in this manual, cmn-glyphs.lisp
+for the standard music symbols, and percussion.lisp for a variety of
+simple examples.  The
+field staff-y0 gives the bottom of the staff containing the current
+object.</p><br>
+
+<table width="100%" border=0><tr><td bgcolor="lightgreen" valign="middle"><h3>A complete example</h3></td></tr></table>
+
+<p>Say we want to add a mark called smiley-face that will always appear
+above the staff centered over whatever object it is attached to.  We
+want smiley-face to take all the usual messages.  First, we write the
+display function that positions the face and draws it:</p>
+<pre>
+(defun display-smiley-face (mark note score &amp;optional size)
+  (let* ((y-off (+ (y0 mark) (dy mark) (staff-y0 note) 
+		   (* (max 11 (+ 4 (head-line note))) *staff-line-separation*)))
+	 (r (/ 10 40))
+	 (x-off (+ (x0 note) -.05 (dx mark) (center note) (x0 mark))))
+    (with-thickness score mark .025
+      (circle score x-off y-off r)
+      (circle score x-off y-off (* r .6) 190 350)
+      (circle score (- x-off (* .33 r)) (+ y-off (* .25 r)) (* r .1))
+      (circle score (+ x-off (* .33 r)) (+ y-off (* .25 r)) (* r .1)))))
+
+</pre>
+<p>Using head-line, we either display the face
+above the staff (line 11) or above the note if it is above the staff.
+We center it over the note taking dx messages into account.  Next we
+set the line width to be a little thicker than the minimum (.025), draw the
+outer circle, the mouth circle, and the two eyes.
+Now, to make this a normal CMN mark, we need to
+define the variable and function smiley-face.</p>
+<pre>
+(defvar smiley-face 
+  (make-instance 'write-protected-sundry 
+    :name :smiley-face :mark #'display-smiley-face))
+
+(defun smiley-face (&amp;rest objects) 
+  (apply #'mark #'display-smiley-face :smiley-face objects))
+</pre>
+<p>and now we can use our new mark:</p>
+<pre>
+(cmn staff treble c4 q smiley-face)
+</pre>
+<img src="png/smiley.png" alt="picture"><br>
+
+<p>Here's an example of drawing an arbitrary set of connected
+line segments:</p>
+<pre>
+
+(defun a-line (line-data &amp;rest objects)
+  ;; line-data is assumed to be a list of x y breakpoints
+  (apply #'mark
+	 (lambda (mark note score &amp;optional size)
+	   (let* ((y-off (+ (y0 mark) (dy mark) (staff-y0 note)))
+		  (x-off (+ (x0 note) (dx mark) (x0 mark))))
+	     (with-thickness score mark 0
+	       (moveto score (+ x-off (first line-data)) (+ y-off (second line-data)))
+	       (loop for x in (cddr line-data) by #'cddr and y in (cdddr line-data) by #'cddr do
+		 (lineto score (+ x-off x) (+ y-off y)))
+	       (draw score))))
+	 :a-line
+	 objects))
+
+(cmn staff treble c4 q (a-line '(0 0 1.0 .5 2.0 0)))
+</pre>
+<br><hr>
+<pre>
+  <a class=def name="with-scaling">with-scaling</a> score size x0 y0 &amp;body body
+  <a class=def name="with-transformation">with-transformation</a> score matrix x0 y0 &amp;body body
+  <a class=def name="with-pattern">with-pattern</a> score pattern &amp;body body
+</pre>
+<p>These macros take some arbitrary graphics code and then apply some
+transformation to the result.  With-scaling evaluates body, scales the
+result by size in both the x and y directions and puts the result at
+the location (x0, y0) in the outer score.  With-transformation is
+similar but lets you apply an arbitrary transformation to the result
+of evaluating body.  Matrix is used to transform the result of body,
+and the result is placed at (x0, y0). In both cases, the (x0, y0)
+coordinates should be scaled by the overall score size.  With-pattern
+evaluates body using the pattern pattern.</p>
+
+<p>More complex graphics additions can follow the example of trill (for
+simple one-note marks), or ties (for multi-note marks).  Each new
+class should include methods for descry (to produce a printed
+representation of the instance), copy (to copy an instance), and
+display (the graphics code associated with the object).  For
+multi-note marks that need to know the position of the later marks,
+specialize backpatch to the new class.  If your new class is a
+sub-class of the sundry class, there should be no special cases to
+worry about.  If your object has metrical significance that the
+justification routines need to handle, add a house method (see any
+example in the source).  If you want to add your own graphics
+procedures to the header or "prolog" portion of the graphics output,
+use the message <a class=def name="prolog">prolog</a> (passed to the score in the
+overall-score-attributes section).  Prolog's argument is a function of
+one argument, the overall score.  It should send whatever graphics
+code it wants to (output score).  For example, say we want to use the
+"ISO encoding" for the Times-Roman font (to get at umlauts and so on).
+In this case, we can use the built-in function
+make-ISO-encoded-version (which can also serve as an example of a
+Prolog function):</p>
+<pre>
+  (cmn (prolog #'(lambda (score) 
+                    (make-ISO-encoded-version score 
+                      "Times-Roman" "ISO-Times-Roman")))
+    staff treble
+    (c4 q (text "s\\374\\337"
+            (dy 1.5) (dx -.25) (font-name "ISO-Times-Roman")
+            (font-scaler .5) (gray-scale .25))))
+</pre>
+<p>There can be any number of prolog calls -- the associated procedures
+are called in the order given in the argument list.  Similarly, the
+code executed by the sundry object can send graphics commands directly
+to the output graphics file -- (output score) is the output stream.</p><br>
+
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><a class=def name="staff-layout">Line Layout</a></h3></td></tr></table>
+
+<p>Unless told otherwise, cmn includes every staff on every line, even if
+the staff has nothing but rests for line after line.  There are a
+number of layout options to affect this decision.  The layout message
+can be passed to the score (as one of the "attributes"), any system,
+or any staff, affecting everything "beneath" it that doesn't have some
+explicit layout directive.  The default layout is nil; the other
+options are t, :old-style, :new-style, :locked, and a list of lists.
+:old-style layout includes a staff on a given line only if it has
+notes on that line.  The layout t is the same as :old-style except
+that the first line of the score includes every staff (this is the
+norm for orchestra scores).  :locked is used to explicitly override a
+higher-level layout setting, equivalent to an explicit (layout nil).
+:new-style layout omits the staff lines where the staff has no notes.
+Here's an example of :new-style</p>
+<img src="png/joe.png" alt="picture"><br><br>
+
+<!-- INDEX global-justification:Justification -->
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A CLASS=DEF NAME="global-justification">Changing Global Justification Decisions</a></h3></td></tr></table>
+
+
+<p>The justification routines need to know which objects cannot be
+overwritten and how much white space they need or want around them.
+The four boxes surrounding each such object are its bounding box (x0
+y0 to x1 y1 -- this is where the object is actually drawn), its
+"walls" (the absolute minimum white space the object can get by with),
+"fences" (the amount of white space that makes the object look
+uncrowded), and "expanders" (how to expand white space around the
+object when there's more space than we'd like).  The walls, fences,
+and expanders are kept in variables with names such as:</p>
+<pre>
+    <a class=def name="bar-walls">bar-walls</a> <a class=def name="bar-fences">bar-fences</a> <a class=def name="bar-expanders">bar-expanders</a> 
+</pre>
+<p>Each is a list of two numbers: left side, right side.  Walls and
+fences are in the staff relative coordinates.  Expanders are usually
+just integers -- the bigger the integer the more white space will be
+placed on that side of the object if needed to fill out the line.  The
+bar data, for example, is:</p>
+<pre>
+  (defparameter bar-walls '(.1 .1))
+  (defparameter bar-fences '(.1 .05))
+  (defparameter bar-expanders '(0 1))
+</pre>
+<p>These cause there to be .1 space on each side of the bar, no matter
+what.  If bar-walls were '(.1 0) an object could stick right to it on
+the right side.  You can uses the messages fences, walls, and expanders
+to make local changes to the spacing decisions.  For example, in an
+extract from the Mozart Clarinet Quintet, the repeat bar was not 
+giving itself enough white space, so I used:</p>
+<pre>
+(begin-and-end-repeat-bar (fences '(.2 .3)))
+</pre>
+<p>When a line is being justified and the line does not fill the page
+width, the score slot free-expansion-factor determines how much
+expansion takes place over the absolute minimum needed to display the
+objects.  It defaults to 1.25, which may be a little stuffy, but 1.5
+often looks spaced out.  A free-expansion-factor less than 1.0 will
+force the objects to smash into each other.  The score slot regularize
+(normally nil) can be used to instruct cmn to make a greater effort to
+attain a regular spacing.</p>
+<br>
+
+
+<table width="100%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3>Hooks</h3></td></tr></table>
+<pre>
+  <a class=def name="editor-hook">editor-hook</a> <a class=def name="filter-hook">filter-hook</a> page-hook line-hook <a class=def name="spacing-hook">spacing-hook</a>
+</pre>
+<p>These "hooks" provide ways to edit the cmn data lists before the
+output is produced.  Line-hook, page-hook, and spacing-hook are also
+score slots.  See cmn-ex.lisp for examples.  editor-hook is applied to
+the raw input data stream, and can be used to extract or transpose
+parts, for example.  filter-hook is applied to the end result of the
+justification process, and can be used to extract a page from a large
+score, or apply some last minute editing function.  The function
+extract-part provides part extraction using editor-hook.  It takes the
+name of the part to be extracted, or a function that takes the staff
+name and returns t if it wants that part:</p>
+<pre>
+  (cmn (extract-part "hi") 
+    (staff (staff-name "hi") treble c4 q) 
+    (staff (staff-name "ho") bass c4 q))
+</pre>
+<p>To transpose a score or any portion thereof, see transpose.lisp.</p><br>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Examples</h2></td></tr></table>
+
+<p>There are a few longer examples included on the cmn directory:
+fux.cmn, moz.cmn, gus.cmn, carl.cmn, and so on.  cmn-ex.lisp has some
+examples of programming in cmn.  The examples in this manual are in
+cmnt.lisp. The variable *cmn-version* contains the current version
+number (a date). 
+</p>
+<br>
+
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Known bugs and lacunae</h2></td></tr></table>
+
+<p>The following are on my list of things to do:
+cadenzas,
+cues, 
+better part-extraction,
+early music glyphs,
+fillable glyphs for X and Quickdraw,
+a complete graphical user interface
+</p>
+
+<pre>
+Bill Schottstaedt
+bil@ccrma.stanford.edu
+</pre>
+<br>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2>Glossary</h2></td></tr></table>
+
+<img src="png/s0.png" alt="picture"><br>
+<img src="png/s1.png" alt="picture"><br>
+<br>
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h1>Index</h1></td></tr></table>
+<br>
+<!-- created 29-Jan-04 -->
+<table cellspacing=0 cellpadding=1>
+  <tr><td><em class=tab><a href="cmn.html#a-major">a-major</a></em></td><td><em class=tab><a href="cmn.html#detache">detache</a></em></td><td><em class=tab><a href="cmn.html#hold">hold</a></em></td><td><em class=tab><a href="cmn.html#rlineto">rlineto</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#a-minor">a-minor</a></em></td><td><em class=tab><a href="cmn.html#df-major">df-major</a></em></td><td><em class=tab><a href="cmn.html#horizontal-ruler"><b>Horizontal ruler</b></a></em></td><td><em class=tab><a href="cmn.html#rmoveto">rmoveto</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#accent">accent</a></em></td><td><em class=tab><a href="cmn.html#diminuendo">diminuendo</a></em></td><td><em class=tab><a href="cmn.html#house-style"><b>House style</b></a></em></td><td><em class=tab><a href="cmn.html#rotate">rotate</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#accidental">accidental</a></em></td><td><em class=tab><a href="cmn.html#display-notes">display-notes</a></em></td><td><em class=tab><a href="cmn.html#ideal-stem-length">ideal-stem-length</a></em></td><td><em class=tab><a href="cmn.html#rqq">rqq</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#accidental-to-note-head-space">accidental-to-note-head-space</a></em></td><td><em class=tab><a href="cmn.html#dot-spacing">dot-spacing</a></em></td><td><em class=tab><a href="cmn.html#implicit-accidental-duration">implicit-accidental-duration</a></em></td><td><em class=tab><a href="cmn.html#scale">scale</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#add-bassa-to-octave-signs">add-bassa-to-octave-signs</a></em></td><td><em class=tab><a href="cmn.html#dots-left">dots-left</a></em></td><td><em class=tab><a href="cmn.html#implicit-accidental-style">implicit-accidental-style</a></em></td><td><em class=tab><a href="cmn.html#section"><b>section</b></a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#add-note">add-note</a></em></td><td><em class=tab><a href="cmn.html#dots-right">dots-right</a></em></td><td><em class=tab><a href="cmn.html#in-inches">in-inches</a></em></td><td><em class=tab><a href="cmn.html#segno">segno</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#af-major">af-major</a></em></td><td><em class=tab><a href="cmn.html#dotted-eighth-rest">dotted-eighth-rest</a></em></td><td><em class=tab><a href="cmn.html#in-parentheses">in-parentheses</a></em></td><td><em class=tab><a href="cmn.html#sf">sf</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#af-minor">af-minor</a></em></td><td><em class=tab><a href="cmn.html#dotted-half-rest">dotted-half-rest</a></em></td><td><em class=tab><a href="cmn.html#initial-onset">initial-onset</a></em></td><td><em class=tab><a href="cmn.html#sff">sff</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#all-output-in-one-file">all-output-in-one-file</a></em></td><td><em class=tab><a href="cmn.html#dotted-quarter-rest">dotted-quarter-rest</a></em></td><td><em class=tab><a href="cmn.html#interior-double-bar">interior-double-bar</a></em></td><td><em class=tab><a href="cmn.html#sforzando">sforzando</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#alla-breve">alla-breve</a></em></td><td><em class=tab><a href="cmn.html#dotted-sixteenth-rest">dotted-sixteenth-rest</a></em></td><td><em class=tab><a href="cmn.html#inverted-mordent">inverted-mordent</a></em></td><td><em class=tab><a href="cmn.html#sforzato">sforzato</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#alto">alto</a></em></td><td><em class=tab><a href="cmn.html#dotted-whole-rest">dotted-whole-rest</a></em></td><td><em class=tab><a href="cmn.html#justification">justification</a></em></td><td><em class=tab><a href="cmn.html#sfp">sfp</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#always-show-clefs">always-show-clefs</a></em></td><td><em class=tab><a href="cmn.html#double">double</a></em></td><td><em class=tab><a href="cmn.html#global-justification"><b>Justification</b></a></em></td><td><em class=tab><a href="cmn.html#sfz">sfz</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#always-show-gliss-name">always-show-gliss-name</a></em></td><td><em class=tab><a href="cmn.html#double-bar">double-bar</a></em></td><td><em class=tab><a href="cmn.html#key">key</a></em></td><td><em class=tab><a href="cmn.html#sharp">sharp</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#always-show-staff-names">always-show-staff-names</a></em></td><td><em class=tab><a href="cmn.html#double-bass">double-bass</a></em></td><td><em class=tab><a href="cmn.html#layout">layout</a></em></td><td><em class=tab><a href="cmn.html#short-trill">short-trill</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#appoggiatura">appoggiatura</a></em></td><td><em class=tab><a href="cmn.html#double-flat">double-flat</a></em></td><td><em class=tab><a href="cmn.html#left-hand-pizzicato">left-hand-pizzicato</a></em></td><td><em class=tab><a href="cmn.html#show">show</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#arpeggio">arpeggio</a></em></td><td><em class=tab><a href="cmn.html#double-mordent">double-mordent</a></em></td><td><em class=tab><a href="cmn.html#left-margin">left-margin</a></em></td><td><em class=tab><a href="cmn.html#sign">sign</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#arrow">arrow</a></em></td><td><em class=tab><a href="cmn.html#double-sharp">double-sharp</a></em></td><td><em class=tab><a href="cmn.html#line">line</a></em></td><td><em class=tab><a href="cmn.html#sign-position">sign-position</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#arrowhead">arrowhead-up</a></em></td><td><em class=tab><a href="cmn.html#double-treble">double-treble</a></em></td><td><em class=tab><a href="cmn.html#staff-layout">line Layout</a></em></td><td><em class=tab><a href="cmn.html#sixteenth">sixteenth</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#articulation-mark">articulation</a></em></td><td><em class=tab><a href="cmn.html#double-whole">double-whole</a></em></td><td><em class=tab><a href="cmn.html#line-hook">line-hook</a></em></td><td><em class=tab><a href="cmn.html#sixteenth-rest">sixteenth-rest</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#as-minor">as-minor</a></em></td><td><em class=tab><a href="cmn.html#double-whole-rest">double-whole-rest</a></em></td><td><em class=tab><a href="cmn.html#line-mark">line-mark</a></em></td><td><em class=tab><a href="cmn.html#sixty-fourth">sixty-fourth</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-bars">automatic-bars</a></em></td><td><em class=tab><a href="cmn.html#down-bow">down-bow</a></em></td><td><em class=tab><a href="cmn.html#line-separation">line-separation</a></em></td><td><em class=tab><a href="cmn.html#sixty-fourth-rest">sixty-fourth-rest</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-beams">automatic-beams</a></em></td><td><em class=tab><a href="cmn.html#draw">draw</a></em></td><td><em class=tab><a href="cmn.html#line-width">line-width</a></em></td><td><em class=tab><a href="cmn.html#size">size</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-beat-subdivision-numbers">automatic-beat-subdivision-numbers</a></em></td><td><em class=tab><a href="cmn.html#ds-minor">ds-minor</a></em></td><td><em class=tab><a href="cmn.html#lineto">lineto</a></em></td><td><em class=tab><a href="cmn.html#slash-thickness">slash-thickness</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-clef-size">automatic-clef-size</a></em></td><td><em class=tab><a href="cmn.html#dx">dx</a></em></td><td><em class=tab><a href="cmn.html#little-swell">little-swell</a></em></td><td><em class=tab><a href="cmn.html#slashed">slashed</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-line-breaks">automatic-line-breaks</a></em></td><td><em class=tab><a href="cmn.html#dx0">dx0</a></em></td><td><em class=tab><a href="cmn.html#marcato">marcato</a></em></td><td><em class=tab><a href="cmn.html#slur-curvature">slur-curvature</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-measure-numbers">automatic-measure-numbers</a></em></td><td><em class=tab><a href="cmn.html#dx1">dx1</a></em></td><td><em class=tab><a href="cmn.html#martele">martele</a></em></td><td><em class=tab><a href="cmn.html#slur-direction">slur-direction</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-naturals">automatic-naturals</a></em></td><td><em class=tab><a href="cmn.html#dy">dy</a></em></td><td><em class=tab><a href="cmn.html#matrix">matrix</a></em></td><td><em class=tab><a href="cmn.html#slur-thickness">slur-thickness</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-octave-signs">automatic-octave-signs</a></em></td><td><em class=tab><a href="cmn.html#dy0">dy0</a></em></td><td><em class=tab><a href="cmn.html#maximum-beam-tilt">maximum-beam-tilt</a></em></td><td><em class=tab><a href="cmn.html#slurred">slurred</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-page-numbers">automatic-page-numbers</a></em></td><td><em class=tab><a href="cmn.html#dy1">dy1</a></em></td><td><em class=tab><a href="cmn.html#maximum-slur-slope">maximum-slur-slope</a></em></td><td><em class=tab><a href="cmn.html#slur">slurs</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-rests">automatic-rests</a></em></td><td><em class=tab><a href="cmn.html#dynamics">dynamics</a></em></td><td><em class=tab><a href="cmn.html#maximum-subdivision-bracket-tilt">maximum-subdivision-bracket-tilt</a></em></td><td><em class=tab><a href="cmn.html#small-flat">small-flat</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#automatic-ties">automatic-ties</a></em></td><td><em class=tab><a href="cmn.html#dynamics-size">dynamics-size</a></em></td><td><em class=tab><a href="cmn.html#measure-number">measure numbers</a></em></td><td><em class=tab><a href="cmn.html#small-natural">small-natural</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#auxiliary-note">auxiliary-note</a></em></td><td><em class=tab><a href="cmn.html#e-major">e-major</a></em></td><td><em class=tab><a href="cmn.html#measure-rest">measure-rest</a></em></td><td><em class=tab><a href="cmn.html#small-sharp">small-sharp</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#b-major">b-major</a></em></td><td><em class=tab><a href="cmn.html#e-minor">e-minor</a></em></td><td><em class=tab><a href="cmn.html#measured-tremolo">measured-tremolo</a></em></td><td><em class=tab><a href="cmn.html#snap-pizzicato">snap-pizzicato</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#b-minor">b-minor</a></em></td><td><em class=tab><a href="cmn.html#editor-hook">editor-hook</a></em></td><td><em class=tab><a href="cmn.html#meter">meter</a></em></td><td><em class=tab><a href="cmn.html#soprano">soprano</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bar">bar</a></em></td><td><em class=tab><a href="cmn.html#ef-major">ef-major</a></em></td><td><em class=tab><a href="cmn.html#metronome">metronome</a></em></td><td><em class=tab><a href="cmn.html#spacing-hook">spacing-hook</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bar-expanders">bar-expanders</a></em></td><td><em class=tab><a href="cmn.html#ef-minor">ef-minor</a></em></td><td><em class=tab><a href="cmn.html#mezzo-soprano">mezzo-soprano</a></em></td><td><em class=tab><a href="cmn.html#spp">spp</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bar-fences">bar-fences</a></em></td><td><em class=tab><a href="cmn.html#eighth">eighth</a></em></td><td><em class=tab><a href="cmn.html#mezzoforte">mezzoforte</a></em></td><td><em class=tab><a href="cmn.html#staccato">staccato</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bar-walls">bar-walls</a></em></td><td><em class=tab><a href="cmn.html#eighth-rest">eighth-rest</a></em></td><td><em class=tab><a href="cmn.html#mezzopiano">mezzopiano</a></em></td><td><em class=tab><a href="cmn.html#staff">staff</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#baritone">baritone</a></em></td><td><em class=tab><a href="cmn.html#end-beam">end-beam</a></em></td><td><em class=tab><a href="cmn.html#mf">mf</a></em></td><td><em class=tab><a href="cmn.html#staff-line-width">staff-line-width</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#baritone-C">baritone-C</a></em></td><td><em class=tab><a href="cmn.html#end-crescendo">end-crescendo</a></em></td><td><em class=tab><a href="cmn.html#mirror">mirror</a></em></td><td><em class=tab><a href="cmn.html#staff-lines">staff-lines</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#baritone-F">baritone-F</a></em></td><td><em class=tab><a href="cmn.html#end-diminuendo">end-diminuendo</a></em></td><td><em class=tab><a href="cmn.html#mirrored">mirrored</a></em></td><td><em class=tab><a href="cmn.html#staff-name">staff-name</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#barline-thickness">barline-thickness</a></em></td><td><em class=tab><a href="cmn.html#end-first-ending">end-first-ending</a></em></td><td><em class=tab><a href="cmn.html#mm">mm</a></em></td><td><em class=tab><a href="cmn.html#staff-name-font">staff-name-font</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bartok-pizzicato">bartok-pizzicato</a></em></td><td><em class=tab><a href="cmn.html#end-glissando">end-glissando</a></em></td><td><em class=tab><a href="cmn.html#mordent">mordent</a></em></td><td><em class=tab><a href="cmn.html#staff-name-font-minimum-size">staff-name-font-minimum-size</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bass">bass</a></em></td><td><em class=tab><a href="cmn.html#end-measured-tremolo">end-measured-tremolo</a></em></td><td><em class=tab><a href="cmn.html#moveto">moveto</a></em></td><td><em class=tab><a href="cmn.html#staff-name-font-scaler">staff-name-font-scaler</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beam-direction">beam-direction</a></em></td><td><em class=tab><a href="cmn.html#end-no-octave-sign">end-no-octave-sign</a></em></td><td><em class=tab><a href="cmn.html#mp">mp</a></em></td><td><em class=tab><a href="cmn.html#staff-separation">staff-separation</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beam-slope-trigger">beam-slope-trigger</a></em></td><td><em class=tab><a href="cmn.html#end-octave-down">end-octave-down</a></em></td><td><em class=tab><a href="cmn.html#music-font">music-font</a></em></td><td><em class=tab><a href="cmn.html#staff-size">staff-size</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beam-spacing">beam-spacing</a></em></td><td><em class=tab><a href="cmn.html#end-octave-up">end-octave-up</a></em></td><td><em class=tab><a href="cmn.html#natural">natural</a></em></td><td><em class=tab><a href="cmn.html#start-line">start-line</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beam-width">beam-width</a></em></td><td><em class=tab><a href="cmn.html#end-portamento">end-portamento</a></em></td><td><em class=tab><a href="cmn.html#natural-harmonic">natural-harmonic</a></em></td><td><em class=tab><a href="cmn.html#stem-direction">stem-direction</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beaming">beaming</a></em></td><td><em class=tab><a href="cmn.html#end-repeat-bar">end-repeat-bar</a></em></td><td><em class=tab><a href="cmn.html#no-beam">no-beam</a></em></td><td><em class=tab><a href="cmn.html#stem-down">stem-down</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beam">beams</a></em></td><td><em class=tab><a href="cmn.html#end-second-ending">end-second-ending</a></em></td><td><em class=tab><a href="cmn.html#no-beam-break">no-beam-break</a></em></td><td><em class=tab><a href="cmn.html#stem-dy">stem-dy</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#beat-subdivision"><b>Beat subdivision</b></a></em></td><td><em class=tab><a href="cmn.html#end-slur">end-slur</a></em></td><td><em class=tab><a href="cmn.html#no-beat-subdivision">no-beat-subdivision</a></em></td><td><em class=tab><a href="cmn.html#stem-up">stem-up</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-and-end-repeat-bar">begin-and-end-repeat-bar</a></em></td><td><em class=tab><a href="cmn.html#end-tie">end-tie</a></em></td><td><em class=tab><a href="cmn.html#no-octave-sign">no-octave-sign</a></em></td><td><em class=tab><a href="cmn.html#stem-width">stem-width</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-beam">begin-beam</a></em></td><td><em class=tab><a href="cmn.html#end-tremolo">end-tremolo</a></em></td><td><em class=tab><a href="cmn.html#no-stem">no-stem</a></em></td><td><em class=tab><a href="cmn.html#stopped-note">stopped-note</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-crescendo">begin-crescendo</a></em></td><td><em class=tab><a href="cmn.html#end-two-octaves-down">end-two-octaves-down</a></em></td><td><em class=tab><a href="cmn.html#note">note</a></em></td><td><em class=tab><a href="cmn.html#sub-bass">sub-bass</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-diminuendo">begin-diminuendo</a></em></td><td><em class=tab><a href="cmn.html#end-two-octaves-up">end-two-octaves-up</a></em></td><td><em class=tab><a href="cmn.html#note-head">note-head</a></em></td><td><em class=tab><a href="cmn.html#sundry">sundry</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-first-ending">begin-first-ending</a></em></td><td><em class=tab><a href="cmn.html#ending">endings</a></em></td><td><em class=tab><a href="cmn.html#note-head-size">note-head-size</a></em></td><td><em class=tab><a href="cmn.html#sundry-mark">sundry-mark</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-glissando">begin-glissando</a></em></td><td><em class=tab><a href="cmn.html#eps-file"><b>eps files</b></a></em></td><td><em class=tab><a href="cmn.html#notes">notes</a></em></td><td><em class=tab><a href="cmn.html#system">system</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-measured-tremolo">begin-measured-tremolo</a></em></td><td><em class=tab><a href="cmn.html#explicit-beams">explicit-beams</a></em></td><td><em class=tab><a href="cmn.html#octave">octave</a></em></td><td><em class=tab><a href="cmn.html#system-separation">system-separation</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-no-octave-sign">begin-no-octave-sign</a></em></td><td><em class=tab><a href="cmn.html#f">f</a></em></td><td><em class=tab><a href="cmn.html#octave-transposition">octave transposition</a></em></td><td><em class=tab><a href="cmn.html#tenor">tenor</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-octave-down">begin-octave-down</a></em></td><td><em class=tab><a href="cmn.html#f-major">f-major</a></em></td><td><em class=tab><a href="cmn.html#octave-down">octave-down</a></em></td><td><em class=tab><a href="cmn.html#tenor-treble">tenor-treble</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-octave-up">begin-octave-up</a></em></td><td><em class=tab><a href="cmn.html#f-minor">f-minor</a></em></td><td><em class=tab><a href="cmn.html#octave-sign-pattern">octave-sign-pattern</a></em></td><td><em class=tab><a href="cmn.html#tenuto">tenuto</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-portamento">begin-portamento</a></em></td><td><em class=tab><a href="cmn.html#fermata">fermata</a></em></td><td><em class=tab><a href="cmn.html#octave-up">octave-up</a></em></td><td><em class=tab><a href="cmn.html#terminal">terminal</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-repeat-bar">begin-repeat-bar</a></em></td><td><em class=tab><a href="cmn.html#ff">ff</a></em></td><td><em class=tab><a href="cmn.html#one-line-per-page">one-line-per-page</a></em></td><td><em class=tab><a href="cmn.html#text">text</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-second-ending">begin-second-ending</a></em></td><td><em class=tab><a href="cmn.html#fff">fff</a></em></td><td><em class=tab><a href="cmn.html#one-twenty-eighth">one-twenty-eighth</a></em></td><td><em class=tab><a href="cmn.html#text-connecting-pattern">text-connecting-pattern</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-slur">begin-slur</a></em></td><td><em class=tab><a href="cmn.html#ffff">ffff</a></em></td><td><em class=tab><a href="cmn.html#one-twenty-eighth-rest">one-twenty-eighth-rest</a></em></td><td><em class=tab><a href="cmn.html#text-connecting-thickness">text-connecting-thickness</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-tie">begin-tie</a></em></td><td><em class=tab><a href="cmn.html#fill-in">fill-in</a></em></td><td><em class=tab><a href="cmn.html#open-note">open-note</a></em></td><td><em class=tab><a href="cmn.html#thickness">thickness</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-tremolo">begin-tremolo</a></em></td><td><em class=tab><a href="cmn.html#filter-hook">filter-hook</a></em></td><td><em class=tab><a href="cmn.html#ornamentation">ornaments</a></em></td><td><em class=tab><a href="cmn.html#thirty-second">thirty-second</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-two-octaves-down">begin-two-octaves-down</a></em></td><td><em class=tab><a href="cmn.html#fingering">fingering</a></em></td><td><em class=tab><a href="cmn.html#other-note">other-note</a></em></td><td><em class=tab><a href="cmn.html#thirty-second-rest">thirty-second-rest</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#begin-two-octaves-up">begin-two-octaves-up</a></em></td><td><em class=tab><a href="cmn.html#first-dot-spacing">first-dot-spacing</a></em></td><td><em class=tab><a href="cmn.html#outlined">outlined</a></em></td><td><em class=tab><a href="cmn.html#thumb">thumb</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bf-major">bf-major</a></em></td><td><em class=tab><a href="cmn.html#first-measure-number">first-measure-number</a></em></td><td><em class=tab><a href="cmn.html#output-file">output-file</a></em></td><td><em class=tab><a href="cmn.html#tie-curvature">tie-curvature</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bf-minor">bf-minor</a></em></td><td><em class=tab><a href="cmn.html#flag-vertical-spacing">flag-vertical-spacing</a></em></td><td><em class=tab><a href="cmn.html#output-type">output-type</a></em></td><td><em class=tab><a href="cmn.html#tie-direction">tie-direction</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#brace">brace</a></em></td><td><em class=tab><a href="cmn.html#flanges">flanges</a></em></td><td><em class=tab><a href="cmn.html#p">p</a></em></td><td><em class=tab><a href="cmn.html#tie-thickness">tie-thickness</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#brace-space">brace-space</a></em></td><td><em class=tab><a href="cmn.html#flat">flat</a></em></td><td><em class=tab><a href="cmn.html#page-color">page-color</a></em></td><td><em class=tab><a href="cmn.html#tied-to">tied-to</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#bracket">bracket</a></em></td><td><em class=tab><a href="cmn.html#footer-margin">footer-margin</a></em></td><td><em class=tab><a href="cmn.html#page-height">page-height</a></em></td><td><em class=tab><a href="cmn.html#tie">ties</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#breath-mark">breath-mark</a></em></td><td><em class=tab><a href="cmn.html#forte">forte</a></em></td><td><em class=tab><a href="cmn.html#page-hook">page-hook</a></em></td><td><em class=tab><a href="cmn.html#title">title</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#breathing-space">breathing-space</a></em></td><td><em class=tab><a href="cmn.html#fortissimo">fortissimo</a></em></td><td><em class=tab><a href="cmn.html#page-mark">page-mark</a></em></td><td><em class=tab><a href="cmn.html#title-separation">title-separation</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#broken">broken</a></em></td><td><em class=tab><a href="cmn.html#fortississimo">fortississimo</a></em></td><td><em class=tab><a href="cmn.html#page-width">page-width</a></em></td><td><em class=tab><a href="cmn.html#tr">tr</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#c-major">c-major</a></em></td><td><em class=tab><a href="cmn.html#forzando">forzando</a></em></td><td><em class=tab><a href="cmn.html#paranoid-tremolo">paranoid-tremolo</a></em></td><td><em class=tab><a href="cmn.html#transform">transform</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#c-minor">c-minor</a></em></td><td><em class=tab><a href="cmn.html#fp">fp</a></em></td><td><em class=tab><a href="cmn.html#partial-beam-length">partial-beam-length</a></em></td><td><em class=tab><a href="cmn.html#treble">treble</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#caesura">caesura</a></em></td><td><em class=tab><a href="cmn.html#free-expansion-factor">free-expansion-factor</a></em></td><td><em class=tab><a href="cmn.html#partial-stem-length">partial-stem-length</a></em></td><td><em class=tab><a href="cmn.html#tremolo">tremolo</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cclass">cclass</a></em></td><td><em class=tab><a href="cmn.html#french-violin">french-violin</a></em></td><td><em class=tab><a href="cmn.html#pattern">pattern</a></em></td><td><em class=tab><a href="cmn.html#trill">trill</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#center">center</a></em></td><td><em class=tab><a href="cmn.html#fs-major">fs-major</a></em></td><td><em class=tab><a href="cmn.html#pause">pause</a></em></td><td><em class=tab><a href="cmn.html#trilled-turn">trilled-turn</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cf-major">cf-major</a></em></td><td><em class=tab><a href="cmn.html#fs-minor">fs-minor</a></em></td><td><em class=tab><a href="cmn.html#pedal">pedal</a></em></td><td><em class=tab><a href="cmn.html#turn">turn</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#change-beat">change-beat</a></em></td><td><em class=tab><a href="cmn.html#full-bar">full-bar</a></em></td><td><em class=tab><a href="cmn.html#pedal-off">pedal-off</a></em></td><td><em class=tab><a href="cmn.html#two-octaves-down">two-octaves-down</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#chord">chord</a></em></td><td><em class=tab><a href="cmn.html#full-double-bar">full-double-bar</a></em></td><td><em class=tab><a href="cmn.html#percussion">percussion</a></em></td><td><em class=tab><a href="cmn.html#two-octaves-up">two-octaves-up</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#circle">circle</a></em></td><td><em class=tab><a href="cmn.html#full-interior-double-bar">full-interior-double-bar</a></em></td><td><em class=tab><a href="cmn.html#pianissimo">pianissimo</a></em></td><td><em class=tab><a href="cmn.html#unjustified">unjustified</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#clef">clef</a></em></td><td><em class=tab><a href="cmn.html#full-last-line">full-last-line</a></em></td><td><em class=tab><a href="cmn.html#pianississimo">pianississimo</a></em></td><td><em class=tab><a href="cmn.html#unmeasured-tremolo">unmeasured-tremolo</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#clm-to-cmn"><b>CLM to CMN</b></a></em></td><td><em class=tab><a href="cmn.html#fz">fz</a></em></td><td><em class=tab><a href="cmn.html#piano">piano</a></em></td><td><em class=tab><a href="cmn.html#unmetered">unmetered</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cmn">cmn</a></em></td><td><em class=tab><a href="cmn.html#g-major">g-major</a></em></td><td><em class=tab><a href="cmn.html#pitch">pitch</a></em></td><td><em class=tab><a href="cmn.html#up-bow">up-bow</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#*cmn-output-pathname*">*cmn-output-pathname*</a></em></td><td><em class=tab><a href="cmn.html#g-minor">g-minor</a></em></td><td><em class=tab><a href="cmn.html#portamento">portamento</a></em></td><td><em class=tab><a href="cmn.html#upside-down-fermata">upside-down-fermata</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#*cmn-units*">*cmn-units*</a></em></td><td><em class=tab><a href="cmn.html#g.p.">g.p.</a></em></td><td><em class=tab><a href="cmn.html#portamento-to">portamento-to</a></em></td><td><em class=tab><a href="cmn.html#use-abbreviated-staff-names">use-abbreviated-staff-names</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#coda">coda</a></em></td><td><em class=tab><a href="cmn.html#general-pause">general-pause</a></em></td><td><em class=tab><a href="cmn.html#pp">pp</a></em></td><td><em class=tab><a href="cmn.html#use-italian-octave-signs">use-italian-octave-signs</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#color">color</a></em></td><td><em class=tab><a href="cmn.html#gf-major">gf-major</a></em></td><td><em class=tab><a href="cmn.html#ppp">ppp</a></em></td><td><em class=tab><a href="cmn.html#vertical-separation">vertical-separation</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#common-time">common-time</a></em></td><td><em class=tab><a href="cmn.html#glissando">glissando</a></em></td><td><em class=tab><a href="cmn.html#pppp">pppp</a></em></td><td><em class=tab><a href="cmn.html#wavy-line">wavy-line</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#connected-text">connected text</a></em></td><td><em class=tab><a href="cmn.html#glissando-thickness">glissando-thickness</a></em></td><td><em class=tab><a href="cmn.html#prolog">prolog</a></em></td><td><em class=tab><a href="cmn.html#wavy-time">wavy-time</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#coordinate-transformation"><b>Coordinate Transformations</b></a></em></td><td><em class=tab><a href="cmn.html#glissando-to">glissando-to</a></em></td><td><em class=tab><a href="cmn.html#quad-bass">quad-bass</a></em></td><td><em class=tab><a href="cmn.html#wedge">wedge</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#crescendo">crescendo</a></em></td><td><em class=tab><a href="cmn.html#grace-note">grace-note</a></em></td><td><em class=tab><a href="cmn.html#quad-treble">quad-treble</a></em></td><td><em class=tab><a href="cmn.html#whole">whole</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cs-major">cs-major</a></em></td><td><em class=tab><a href="cmn.html#grace-note-size">grace-note-size</a></em></td><td><em class=tab><a href="cmn.html#quarter">quarter</a></em></td><td><em class=tab><a href="cmn.html#whole-rest">whole-rest</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cs-minor">cs-minor</a></em></td><td><em class=tab><a href="cmn.html#grace-notes">grace-notes</a></em></td><td><em class=tab><a href="cmn.html#quarter-rest">quarter-rest</a></em></td><td><em class=tab><a href="cmn.html#with-cmn">with-cmn</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#curveto">curveto</a></em></td><td><em class=tab><a href="cmn.html#grand-pause">grand-pause</a></em></td><td><em class=tab><a href="cmn.html#redundant-accidentals">redundant-accidentals</a></em></td><td><em class=tab><a href="cmn.html#with-pattern">with-pattern</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#curvy-flags">curvy-flags</a></em></td><td><em class=tab><a href="cmn.html#graphics">graphics</a></em></td><td><em class=tab><a href="cmn.html#rehearsal-mark">rehearsal marks</a></em></td><td><em class=tab><a href="cmn.html#with-scaling">with-scaling</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cut-time">cut-time</a></em></td><td><em class=tab><a href="cmn.html#gray-scale">gray-scale</a></em></td><td><em class=tab><a href="cmn.html#rehearsal-letter">rehearsal-letter</a></em></td><td><em class=tab><a href="cmn.html#with-transformation">with-transformation</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#cycle">cycle</a></em></td><td><em class=tab><a href="cmn.html#gs-minor">gs-minor</a></em></td><td><em class=tab><a href="cmn.html#rehearsal-number">rehearsal-number</a></em></td><td><em class=tab><a href="cmn.html#within-measure">within-measure</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#d-major">d-major</a></em></td><td><em class=tab><a href="cmn.html#half">half</a></em></td><td><em class=tab><a href="cmn.html#repeat-measure">repeat-measure</a></em></td><td><em class=tab><a href="cmn.html#x0">x0</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#d-minor">d-minor</a></em></td><td><em class=tab><a href="cmn.html#half-rest">half-rest</a></em></td><td><em class=tab><a href="cmn.html#rest">rest</a></em></td><td><em class=tab><a href="cmn.html#x1">x1</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#dashed">dashed</a></em></td><td><em class=tab><a href="cmn.html#head-quarters">head-quarters</a></em></td><td><em class=tab><a href="cmn.html#rfz">rfz</a></em></td><td><em class=tab><a href="cmn.html#y0">y0</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#dashed-bar">dashed-bar</a></em></td><td><em class=tab><a href="cmn.html#header-margin">header-margin</a></em></td><td><em class=tab><a href="cmn.html#right-margin">right-margin</a></em></td><td><em class=tab><a href="cmn.html#y1">y1</a></em></td></tr>
+  <tr><td><em class=tab><a href="cmn.html#default-font">default-font</a></em></td><td><em class=tab><a href="cmn.html#height">height</a></em></td><td><em class=tab><a href="cmn.html#rinforzando">rinforzando</a></em></td>
+</tr>
+
+</table>
+</body></html>

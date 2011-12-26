@@ -1,0 +1,266 @@
+<html>
+<head><title>STOBJ-EXAMPLE-1.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-1</h2>an example of the use of single-threaded objects
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+Suppose we want to sweep a tree and (1) count the number of interior
+nodes, (2) count the number of tips and (3) keep a record of every
+tip we encounter that is an integer.  We could use a single-threaded
+object as our ``accumulator''.  Such an object would have three
+fields, one holding the number of nodes seen so far, one holding the
+number of tips, and one holding all the integer tips seen.
+<p>
+The following event declares <code>counters</code> to be a single-threaded object.
+
+<pre>
+(defstobj counters
+  (NodeCnt     :type integer :initially 0)
+  (TipCnt      :type integer :initially 0)
+  (IntTipsSeen :type t       :initially nil))
+</pre>
+
+It has three fields, <code>NodeCnt</code>, <code>TipCnt</code>, and <code>IntTipsSeen</code>.
+(As always in ACL2, capitalization is irrelevant in simple symbol
+names, so the first name could be written <code>nodecnt</code> or
+<code>NODECNT</code>, etc.) Those are the name of the accessor functions for
+the object.  The corresponding update functions are named
+<code>update-NodeCnt</code>, <code>update-TipCnt</code> and <code>update-IntTipsSeen</code>.<p>
+
+If you do not like the default function names chosen above, there is
+a feature in the <code><a href="DEFSTOBJ.html">defstobj</a></code> event that allows you to specify other
+names.<p>
+
+If you want to see the ACL2 definitions of all the functions defined
+by this event, look at <a href="STOBJ-EXAMPLE-1-DEFUNS.html">stobj-example-1-defuns</a>.<p>
+
+If, after this event, we evaluate the top-level ``global variable''
+<code>counters</code> in the ACL2 read-eval-print loop we get:
+
+<pre>
+ACL2 !&gt;counters
+&lt;counters&gt;
+</pre>
+
+Note that the value printed is ``<code>&lt;counters&gt;</code>''.  Actually, the
+value of <code>counters</code> in the logic is <code>(0 0 NIL)</code>.  But ACL2 always prints
+single-threaded objects in this non-informative way because they are
+usually so big that to do otherwise would be unpleasant.<p>
+
+Had you tried to evaluate the ``global variable'' <code>counters</code> before
+declaring it a single-threaded object, ACL2 would have complained that
+it does not support global variables.  So a lesson here is that
+once you have declared a new single-threaded object your top-level
+forms can reference it.  In versions of ACL2 prior to Version  2.4
+the only variable enjoying this status was <code>STATE</code>.  single-threaded
+objects are a straightforward generalization of the long-implemented
+von Neumann <code><a href="STATE.html">state</a></code> feature of ACL2.<p>
+
+We can access the fields of <code>counters</code> as with:
+
+<pre>
+ACL2 !&gt;(NodeCnt counters)
+0
+ACL2 !&gt;(IntTipsSeen counters)  
+NIL
+</pre>
+
+and we can set the fields of <code>counters</code> as with:
+
+<pre>
+ACL2 !&gt;(update-NodeCnt 3 counters)
+&lt;counters&gt;
+ACL2 !&gt;(NodeCnt counters)
+3  
+</pre>
+
+Observe that when we evaluate an expression that returns a
+counter object, that object becomes the ``current value'' of
+<code>counters</code>.  <p>
+
+Here is a function that ``converts'' the <code>counters</code> object to its
+``ordinary'' representation:
+
+<pre>
+(defun show-counters (counters)
+  (declare (xargs :stobjs (counters)))
+  (list (NodeCnt counters)
+        (TipCnt counters)
+        (IntTipsSeen counters)))
+</pre>
+
+Observe that we <em>must</em> declare, at the top of the <code>defun</code>, that
+we mean to use the formal parameter <code>counters</code> as a single-threaded
+object!  If we did not make this declaration, the body of
+<code>show-counters</code> would be processed as though <code>counters</code> were an
+ordinary object.  An error would be caused because the accessors
+used above cannot be applied to anything but the single-threaded
+object <code>counters</code>.  If you want to know why we insist on this
+declaration, see <a href="DECLARE-STOBJS.html">declare-stobjs</a>.<p>
+
+When <code>show-counters</code> is admitted, the following message is printed:
+
+<pre>
+Since SHOW-COUNTERS is non-recursive, its admission is trivial.  We
+observe that the type of SHOW-COUNTERS is described by the theorem
+(AND (CONSP (SHOW-COUNTERS COUNTERS))
+     (TRUE-LISTP (SHOW-COUNTERS COUNTERS))).
+We used primitive type reasoning.<p>
+
+(SHOW-COUNTERS COUNTERS) =&gt; *.<p>
+
+The guard conjecture for SHOW-COUNTERS is trivial to prove.  
+SHOW-COUNTERS is compliant with Common Lisp.
+</pre>
+
+The line above containing the ``=&gt;'' is called the ``signature'' of
+<code>show-counters</code>; it conveys the information that the first argument
+is the single-threaded object <code>counters</code> and the only result is an
+ordinary object.  Here is an example of another signature:
+
+<pre>
+(PROCESSOR * * COUNTERS) =&gt; (MV * COUNTERS)
+</pre>
+
+which indicates that the function <code>PROCESSOR</code> (which we haven't
+shown you) takes three arguments, the third of which is the 
+<code>COUNTERS</code> stobj, and returns two results, the second of which
+is the modified <code>COUNTERS</code>.<p>
+
+Returning to the admission of <code>show-counters</code> above, the last
+sentence printed indicates that the <code><a href="GUARD.html">guard</a></code> conjectures for the
+function were proved.  When some argument of a function is declared
+to be a single-threaded object via the <code>xargs</code> <code>:stobj</code>, we
+automatically add (conjoin) to the guard the condition that the
+argument satisfy the recognizer for that single-threaded object.  In
+the case of <code>show-counters</code> the guard is <code>(countersp counters)</code>.<p>
+
+Here is an example of <code>show-counters</code> being called:
+
+<pre>
+ACL2 !&gt;(show-counters counters)
+(3 0 NIL)
+</pre>
+
+This is what we would see had we set the <code>NodeCnt</code> field of the
+initial value of <code>counters</code> to <code>3</code>, as we did earlier in this
+example.<p>
+
+We next wish to define a function to reset the <code>counters</code> object.
+We could define it this way:
+
+<pre>
+(defun reset-counters (counters)
+  (declare (xargs :stobjs (counters)))
+  (let ((counters (update-NodeCnt 0 counters)))
+    (let ((counters (update-TipCnt 0 counters)))
+      (update-IntTipsSeen nil counters))))
+</pre>
+
+which ``successively'' sets the <code>NodeCnt</code> field to <code>0</code>, then the
+<code>TipCnt</code> field to <code>0</code>, and then the <code>IntTipsSeen</code> field to <code>nil</code> and
+returns the resulting object.<p>
+
+However, the nest of <code>let</code> expressions is tedious and we use this
+definition instead.  This definition exploits a macro, here named
+``<code>seq</code>'' (for ``sequentially'') which evaluates each of the forms
+given, binding their results successively to the stobj name given.  
+
+<pre>
+(defun reset-counters (counters)
+  (declare (xargs :stobjs (counters)))
+  (seq counters
+       (update-NodeCnt 0 counters)
+       (update-TipCnt 0 counters)
+       (update-IntTipsSeen nil counters)))
+</pre>
+
+This definition is syntactically identical to the one above, after macro
+expansion.  Our definition of <code>seq</code> is shown below and is not part of
+native ACL2.
+
+<pre>
+(defmacro seq (stobj &amp;rest rst)
+  (cond ((endp rst) stobj)
+        ((endp (cdr rst)) (car rst))
+        (t `(let ((,stobj ,(car rst)))
+             (seq ,stobj ,@(cdr rst))))))
+</pre>
+<p>
+
+The signature printed for <code>reset-counters</code> is
+
+<pre>
+(RESET-COUNTERS COUNTERS) =&gt; COUNTERS.
+</pre>
+<p>
+
+Here is an example.
+
+<pre>
+ACL2 !&gt;(show-counters counters)
+(3 0 NIL)
+ACL2 !&gt;(reset-counters counters)
+&lt;counters&gt;
+ACL2 !&gt;(show-counters counters)
+(0 0 NIL) 
+</pre>
+<p>
+
+Here finally is a function that uses <code>counters</code> as a single-threaded
+accumulator to collect the desired information about the tree <code>x</code>.
+
+<pre>
+(defun sweep-tree (x counters)
+  (declare (xargs :stobjs (counters)))
+  (cond ((atom x)
+         (seq counters
+              (update-TipCnt (+ 1 (TipCnt counters)) counters)
+              (if (integerp x)
+                  (update-IntTipsSeen (cons x (IntTipsSeen counters))
+                                  counters)
+                counters)))
+        (t (seq counters
+                (update-NodeCnt (+ 1 (NodeCnt counters)) counters)
+                (sweep-tree (car x) counters)
+                (sweep-tree (cdr x) counters)))))
+</pre>
+
+We can paraphrase this definition as follows.  If <code>x</code> is an atom,
+then increment the <code>TipCnt</code> field of <code>counters</code> and <em>then</em>,
+if <code>x</code> is an integer, add <code>x</code> to the <code>IntTipsSeen</code> field, and
+return <code>counters</code>.  On the other hand, if <code>x</code> is not
+an atom, then increment the <code>NodeCnt</code> field of <code>counters</code>, and
+<em>then</em> sweep the <code>car</code> of <code>x</code> and <em>then</em> sweep the <code>cdr</code>
+of <code>x</code> and return the result.<p>
+
+Here is an example of its execution.  We have displayed the input tree
+in full dot notation so that the number of interior nodes is just the
+number of dots.
+
+<pre>
+ACL2 !&gt;(sweep-tree '((((a . 1) . (2 . b)) . 3)
+                     . (4 . (5 . d)))
+                   counters)
+&lt;counters&gt;
+ACL2 !&gt;(show-counters counters)
+(7 8 (5 4 3 2 1))
+ACL2 !&gt;(reset-counters counters)
+&lt;counters&gt;
+ACL2 !&gt;(show-counters counters)
+(0 0 NIL)
+</pre>
+<p>
+
+The <code>counters</code> object has two integer fields and a field whose
+type is unrestricted.  single-threaded objects support other types of
+fields, such as arrays.  We deal with that in the <a href="STOBJ-EXAMPLE-2.html">stobj-example-2</a>.
+But we recommend that you first consider the implementation issues for
+the <code>counters</code> example (in <a href="STOBJ-EXAMPLE-1-IMPLEMENTATION.html">stobj-example-1-implementation</a>) and
+then consider the proof issues (in <a href="STOBJ-EXAMPLE-1-PROOFS.html">stobj-example-1-proofs</a>).<p>
+
+To continue the stobj tour, see <a href="STOBJ-EXAMPLE-2.html">stobj-example-2</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

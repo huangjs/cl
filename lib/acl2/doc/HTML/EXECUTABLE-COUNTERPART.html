@@ -1,0 +1,91 @@
+<html>
+<head><title>EXECUTABLE-COUNTERPART.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>EXECUTABLE-COUNTERPART</h2>a rule for computing the value of a function
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(:executable-counterpart length)
+</pre>
+
+which may be abbreviated in <a href="THEORIES.html">theories</a> as
+
+<pre>
+(length)
+</pre>
+
+<p>
+Every <code><a href="DEFUN.html">defun</a></code> introduces at least two rules used by the theorem
+prover.  Suppose <code>fn</code> is the name of a <code><a href="DEFUN.html">defun</a></code>'d function.  Then
+<code>(:definition fn)</code> is the rune (see <a href="RUNE.html">rune</a>) naming the rule that
+allows the simplifier to replace calls of <code>fn</code> by its instantiated
+body.  <code>(:executable-counterpart fn)</code> is the <a href="RUNE.html">rune</a> for the rule for how
+to evaluate the function on known constants.<p>
+
+When typing <a href="THEORIES.html">theories</a> it is convenient to know that <code>(fn)</code> is a runic
+designator that denotes <code>(:executable-counterpart fn)</code>.
+See <a href="THEORIES.html">theories</a>.<p>
+
+If <code>(:executable-counterpart fn)</code> is <a href="ENABLE.html">enable</a>d, then when applications
+of <code>fn</code> to known constants are seen by the simplifier they are
+computed out by executing the Common Lisp code for <code>fn</code> (with the
+appropriate handling of <a href="GUARD.html">guard</a>s).  Suppose <code>fact</code> is defined as the
+factorial function.  If the executable counterpart <a href="RUNE.html">rune</a> of <code>fact</code>,
+<code>(:executable-counterpart fact)</code>, is <a href="ENABLE.html">enable</a>d when the simplifier
+encounters <code>(fact 12)</code>, then that term will be ``immediately''
+expanded to <code>479001600</code>.  Note that even if subroutines of <code>fn</code> have
+disabled executable counterparts, <code>fn</code> will call their Lisp code
+nonetheless:  once an executable counterpart function is applied, no
+subsidiary enable checks are made.<p>
+
+Such one-step expansions are sometimes counterproductive because
+they prevent the anticipated application of certain lemmas about the
+subroutines of the expanded function.  Such computed expansions can
+be prevented by disabling the executable counterpart <a href="RUNE.html">rune</a> of the
+relevant function.  For example, if <code>(:executable-counterpart fact)</code>
+is <a href="DISABLE.html">disable</a>d, <code>(fact 12)</code> will not be expanded by computation.  In this
+situation, <code>(fact 12)</code> may be rewritten to <code>(* 12 (fact 11))</code>, using the
+rule named <code>(:definition fact)</code>, provided the system's heuristics
+permit the introduction of the term <code>(fact 11)</code>.  Note that lemmas
+about multiplication may then be applicable (while such lemmas would
+be inapplicable to <code>479001600</code>).  In many proofs it is desirable to
+<a href="DISABLE.html">disable</a> the executable counterpart <a href="RUNE.html">rune</a>s of certain functions to
+prevent their expansion by computation.
+See <a href="EXECUTABLE-COUNTERPART-THEORY.html">executable-counterpart-theory</a>.<p>
+
+Finally:  What do we do about functions that are ``constrained''
+rather than defined, such as the following?  (See <a href="ENCAPSULATE.html">encapsulate</a>.)
+
+<pre>
+(encapsulate (((foo *) =&gt; *))
+             (local (defun foo (x) x)))
+</pre>
+
+Does <code>foo</code> have an executable counterpart?  Yes:  since the vast
+majority of functions have sensible executable counterparts, it was
+decided that <strong>all</strong> functions, even such ``constrained'' ones, have
+executable counterparts.  We essentially ``trap'' when such calls
+are inappropriate.  Thus, consider for example:
+
+<pre>
+(defun bar (x)
+  (if (rationalp x)
+      (+ x 1)
+    (foo x)))
+</pre>
+
+If the term <code>(bar '3)</code> is encountered by the ACL2 rewriter during a
+proof, and if the <code>:executable-counterpart</code> of <code>bar</code> is <a href="ENABLE.html">enable</a>d, then it
+will be invoked to reduce this term to <code>'4</code>.  However, if the term
+<code>(bar 'a)</code> is encountered during a proof, then since <code>'a</code> is not a
+<code><a href="RATIONALP.html">rationalp</a></code> and since the <code>:executable-counterpart</code> of <code>foo</code> is only a
+``trap,'' then this call of the <code>:executable-counterpart</code> of <code>bar</code> will
+result in a ``trap.'' In that case, the rewriter will return the
+term <code>(hide (bar 'a))</code> so that it never has to go through this process
+again.  See <a href="HIDE.html">hide</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

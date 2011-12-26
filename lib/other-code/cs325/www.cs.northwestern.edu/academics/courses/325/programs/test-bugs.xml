@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+
+<bug-fixes>
+<bug-fix>
+<title>Nil printed to web browser</title>
+<language>Allegro Common Lisp</language>
+<symptoms>Function prints fine in debug window, but when using the aserve html
+macro, only nil is printed.</symptoms>
+<example>(html
+ ((:pre )
+  (:princ (show-frame symbol))))
+</example>
+<explanation>The show-frame function prints to *standard-output*, and not
+to *html-stream*.
+</explanation>
+<repairs>
+<repair>
+<precondition>Function prints to *standard-output* or another output
+stream which you know.
+</precondition>
+<action>Wrap printing code with (with-output-to-string (*output-stream*) ...)
+where *output-stream* is the stream that the function normally prints to.
+</action>
+<result>(html
+ ((:pre )
+  (:princ (with-output-to-string (*standard-output*)
+             (show-frame symbol)))))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Class not found.</title>
+<language>Java</language>
+<symptoms>Code compiles fine, but when trying to run, get an error that says:
+"Exception in thread "main" java.lang.NoClassDefFoundError: ..."
+</symptoms>
+<example>java MyClass
+</example>
+<explanation>The java interpreter cannot find your class.  This is a problem
+with the classpath, a variable which tells java where to find your classes.
+</explanation>
+<repairs>
+<repair>
+<precondition>Must be able to set system properties.</precondition>
+<action>Set the system property "classpath" to point to where your java
+classes are.
+</action>
+<result>set classpath="."
+java MyClass></result>
+</repair>
+<repair>
+<precondition>None.
+</precondition>
+<action>Pass the classpath into the java interpreter.
+</action>
+<result>java -classpath "." MyClass
+</result>
+</repair>
+</repairs>
+</bug-fix>
+</bug-fixes>

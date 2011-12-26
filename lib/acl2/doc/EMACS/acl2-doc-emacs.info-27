@@ -1,0 +1,1036 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-7,  Next: USING-COMPUTED-HINTS-8,  Prev: USING-COMPUTED-HINTS-6,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-7    Using the stable-under-simplificationp flag
+
+A problem with the example in using-computed-hints-6 is that exactly
+one simplification occurs between each (effective) firing of the hint.
+Much more commonly we wish to fire a hint once a subgoal has become
+stable under simplification.
+
+A classic example of this is when we are dealing with an interpreter
+for some state machine.  We typically do not want the "step" function
+to open up on the symbolic representation of a state until that state
+has been maximally simplified.  We will illustrate with a simple state
+machine.
+
+Let us start by defining the step function, stp, and the corresponding
+run function that applies it a given number of times.
+
+     (defun stp (s)
+       (+ 1 s))
+     
+     (defun run (s n)
+       (if (zp n)
+           s
+           (run (stp s) (- n 1))))
+
+The step function here is trivial:  a state is just a number and the
+step function increments it.  In this example we will not be interested
+in the theorems we prove but in how we prove them.  The formula we will
+focus on is
+
+     (thm (equal (run s 7) xxx))
+
+This is not a theorem, of course.  But we want to test our advice on
+non-theorems because we do not want the advice to work only for proofs
+that succeed.  (In the past, we gave advice about using computed hints
+and that advice caused the theorem prover to run forever when given
+formulas that it couldn't prove - but most of the time the system is
+presented with formulas it cannot prove!)
+
+Furthermore, without some kind of additional rules, the (run s 7)
+expression in the conjecture above will not expand at all, because
+ACL2's heuristics do not approve.
+
+In fact, we do not want to take chances that run will be expanded - we
+want to control its expansion completely.  Therefore, disable run.
+
+     (in-theory (disable run))
+
+Now, what do we want?  (That is always a good question to ask!)  We want
+(run s 7) to expand "slowly."  In particular, we want it to expand
+once, to (run (stp s) 6).  Then we want the stp to be expanded and
+fully simplified before the run expression is expanded again.  That is,
+we want to force the expansion of run whenever the goal is stable under
+simplification.  This is sometimes called "staged simplification."
+
+We can achieve staged simplification for any given function symbol by
+defining the functions shown below and then using a simple computed
+hint:
+
+     (thm (equal (run s 7) xxx)
+          :hints ((stage run)))
+
+By inspecting how stage is defined you can see how to extend it, but we
+explain as we go.  To experiment, you can just paste the definitions
+(and defmacro) below into your ACL2 shell and then try the thm command.
+
+First, define this pair of mutually recursive functions.
+Find-first-call finds the first call of the function symbol fn in a
+given term.
+
+     (mutual-recursion
+      (defun find-first-call (fn term)
+      ; Find the first call of fn in term.
+       (cond ((variablep term) nil)
+             ((fquotep term) nil)
+             ((equal (ffn-symb term) fn)
+              term)
+             (t (find-first-call-lst fn (fargs term)))))
+      (defun find-first-call-lst (fn lst)
+      ; Find the first call of fn in a list of terms.
+       (cond ((endp lst) nil)
+             (t (or (find-first-call fn (car lst))
+                    (find-first-call-lst fn (cdr lst)))))))
+
+We will arrange for the computed hint to generate an :EXPAND hint for
+the first call of fn, whenever the goal becomes stable under
+simplification.  If no call is found, the hint will do nothing.  To
+make sure the hint will not loop indefinitely (for example, by forcing
+fn to expand only to have the rewriter "fold" it back up again), we
+will provide the hint with a bound that stops it after some number of
+iterations.  Here is the basic function that creates the expand hint
+and replaces itself to count down.
+
+     (defun stage1 (fn max clause flg)
+     ; If the clause is stable under simplification and there is a call of
+     ; fn in it, expand it.  But don't do it more than max times.
+      (let ((temp (and flg
+                       (find-first-call-lst fn clause))))
+        (if temp
+            (if (zp max)
+                (cw "~%~%HINT PROBLEM:  The maximum repetition count of ~
+                     your STAGE hint been reached without eliminating ~
+                     all of the calls of ~x0.  You could supply a larger ~
+                     count with the optional second argument to STAGE ~
+                     (which defaults to 100).  But think about what is ~
+                     happening! Is each stage permanently eliminating a ~
+                     call of ~x0?~%~%"
+                    fn)
+              `(:computed-hint-replacement
+                 ((stage1 ',fn ,(- max 1)
+                          clause
+                          stable-under-simplificationp))
+                :expand (,temp)))
+          nil)))
+
+Suppose that when stage1 is called, fn is the function we want to
+expand, max is the maximum number of iterations of this expansion,
+clause is the current goal clause, and flg is the value of the
+stable-under-simplificationp flag.  Then if clause is stable and we can
+find a call of fn in it, we ask whether max is exhausted.  If so, we
+print an "error message" to the comment window with cw and return nil
+(the value of cw).  That nil means the hint does nothing.  But if max
+is not yet exhausted, we return a new hint.  As you can see above, the
+hint replaces itself with another stage1 hint with the same fn and a
+decremented max to be applied to the new clause and the then-current
+value of stable-under-simplificationp.  The hint also contains an
+:expand directive for the call of fn found.
+
+Thus, if the computed hint was:
+
+     (stage1 'run 5 clause stable-under-simplificationp)
+
+and (run s 7) occurs in the clause, then it will generate
+
+     (:computed-hint-replacement
+       ((stage1 'run 4 clause stable-under-simplificationp))
+      :expand ((run s 7)))
+
+which will in turn replace the old stage1 hint with the new one and
+will apply :expand ((run s 7)) to the current goal.
+
+We can make this more convenient by defining the macro:
+
+     (defmacro stage (fn &optional (max '100))
+      `(stage1 ',fn ,max clause stable-under-simplificationp))
+
+Note that the macro allows us to either provide the maximum bound or
+let it default to 100.
+
+Henceforth, we can type
+
+     (thm (equal (run s 7) xxx)
+          :hints ((stage run)))
+
+to stage the opening of run up to 100 times, or we can write
+
+     (thm (equal (run s 7) xxx)
+          :hints ((stage run 5)))
+
+to stage it only 5 times.  In the latter example, the system with print
+a "error message" after the fifth expansion.
+
+Note that if we executed
+
+     (set-default-hints '((stage run)))
+
+then we could attack all theorems (involving run) with staged
+simplification (up to bound 100), without typing an explicit hint.
+
+     (thm (equal (run s 7) xxx))
+
+Using techniques similar to those above we have implemented "priority
+phased simplification" and provided it as a book.  See
+books/misc/priorities.lisp.  This is an idea suggested by Pete
+Manolios, by which priorities may be assigned to rules and then the
+simplifier simplifies each subgoal maximally under the rules of a given
+priority before enabling the rules of the next priority level.  The
+book above documents both how we implement it with computed hints and
+how to use it.
+
+Here is another example of using the stable-under-simplificationp flag
+to delay certain actions.  It defines a default hint, see *note
+DEFAULT-HINTS::, which will enable non-linear-arithmetic on precisely
+those goals which are stable-under-simplificationp.  It also uses the
+HISTORY and PSPV variables to determine when toggling
+non-linear-arithmetic is appropriate.  These variables are documented
+only in the source code.  If you start using these variables
+extensively, please contact the developers of ACL2 or Robert Krug
+(rkrug@cs.utexas.edu) and let us know how we can help.
+
+     (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
+       (cond (stable-under-simplificationp
+              (if (not (access rewrite-constant
+                               (access prove-spec-var pspv :rewrite-constant)
+                               :nonlinearp))
+                  '(:computed-hint-replacement t
+                    :nonlinearp t)
+                nil))
+             ((access rewrite-constant
+                      (access prove-spec-var pspv :rewrite-constant)
+                      :nonlinearp)
+              (if (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE))
+                  '(:computed-hint-replacement t
+                    :nonlinearp nil)
+                nil))
+             (t
+              nil)))
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-8,  Next: VERSION,  Prev: USING-COMPUTED-HINTS-7,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-8    Some Final Comments
+
+None of the examples show the use of the variable WORLD, which is
+allowed in computed hints.  There are some (undocumented) ACL2
+utilities that might be useful in programming hints, but these
+utilities need access to the ACL2 logical world (see *note WORLD::).
+
+A very useful fact to know is that (table-alist name world) returns an
+alist representation of the current value of the table named name.
+
+The ACL2 source code is littered with :program mode functions for
+manipulating world.  In our source code, the world is usually bound a
+variable named wrld; so searching our code for that name might be
+helpful.
+
+Using these utilities to look at the WORLD one can, for example,
+determine whether a symbol is defined recursively or not, get the body
+and formals of a defined function, or fetch the statement of a given
+lemma.  Because these utilities are not yet documented, we do not
+expect users to employ WORLD in computed hints.  But experts might and
+it might lead to the formulation of a more convenient language for
+computed hints.
+
+None of our examples illustrated the 7 argument form of a computed hint,
+(fn ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP HIST PSPV CTX).  When
+used, the variables HIST, PSPV, and CTX, are bound to the clause
+history, the package of "special variables" governing the clause, and
+the "error message context."  These variables are commonly used
+throughout our source code but are, unfortunately, undocumented.
+Again, we expect a few experts will find them useful in developing
+computed hints.
+
+If you start using computed hints extensively, please contact the
+developers of ACL2 and let us know what you are doing with them and how
+we can help.
+
+
+File: acl2-doc-emacs.info,  Node: VERSION,  Next: WHY-BRR,  Prev: USING-COMPUTED-HINTS-8,  Up: MISCELLANEOUS
+
+VERSION    ACL2 Version Number
+
+To determine the version number of your copy of ACL2, evaluate the form
+(@ acl2-version).  The value will be a string.  For example,
+
+     ACL2 !>(@ acl2-version)
+     "ACL2 Version 3.1"
+
+The part of the string after "ACL2 Version " is of the form x.y or
+x.y.z, optionally followed by a succession of values in parentheses,
+where x, y, and z are natural numbers.  If z is omitted then it is
+implicitly 0.  We refer to X, y, and z as the "major", "minor", and
+"incrl" fields, respectively.  The incrl field is used for incremental
+releases.  The discussion just below assumes that incremental releases
+are not employed at the user's site, i.e., the incrl fields are always
+0.  We remove this assumption when we discuss incremental releases at
+the end of this documenttation topic.
+
+Books are considered certified only in the same version of ACL2 in
+which the certification was done.  The certificate file records the
+version number of the certifying ACL2 and include-book considers the
+book uncertified if that does not match the current version number.
+Thus, each time we release a new version of ACL2, previously certified
+books should be recertified.
+
+Note that there are over 150 constants in the system, most having to do
+with the fact that ACL2 is coded in ACL2.  Many of these, for example
+*common-lisp-specials-and-constants* and *acl2-exports*, may change
+from version to version, and this can cause unsoundness.  For example,
+the symbol 'set-difference-eq was added to *acl2-exports* in
+Version_2.9, so we can certify a book in Version_2.8 containing the
+following theorem, which is false in Version_2.9.
+
+     (null (member 'set-difference-eq *acl2-exports*))
+
+Therefore, we need to disallow inclusion of such a book in a Version_2.9
+session, which otherwise would allow us to prove nil.  Furthermore, it
+is possible that from one version of the system to another we might
+change, say, the default values on some system function or otherwise
+make "intentional" changes to the axioms.  It is even possible one
+version of the system is discovered to be unsound and we release a new
+version to correct our error.
+
+Therefore we adopted the draconian policy that books are certified by a
+given version of ACL2 and "must" be recertified to be used in other
+versions.  We put "must" in quotes because in fact, ACL2 allows a book
+that was certified in one ACL2 version to be included in a later
+version, using include-book.  But ACL2 does not allow certify-book to
+succeed when such an include-book is executed on its behalf.  Also, you
+may experience undesirable behavior if you avoid recertification when
+moving to a different version.  (We try to prevent some undesirable
+behavior by refusing to load the compiled code for an uncertified book,
+but this does not guarantee good behavior.)  Hence we recommend that
+you stick to the draconion policy of recertifying books when updating
+to a new ACL2 version.
+
+The string (@ acl2-version) can contain implementation-specific
+information in addition to the version number.  For example, in
+Macintosh Common Lisp (MCL) (char-code #Newline) is 13, while as far as
+we know, it is 10 in every other Common Lisp.  Our concern is that one
+could certify a book in an MCL-based ACL2 with the theorem
+
+     (equal (char-code #Newline) 13)
+
+and then include this book in another Lisp and thereby prove nil.  So,
+when a book is certified in an MCL-based ACL2, the book's certificate
+mentions "MCL" in its version string.  Moreover, (@ acl2-version)
+similarly mentions "MCL" when the ACL2 image has been built on top of
+MCL.  Thus, an attempt to include a book in an MCL-based ACL2 that was
+certified in a non-MCL-based ACL2, or vice-versa, will be treated like
+an attempt to include an uncertified book.
+
+_Incremental releases._
+
+From time to time, so-called "incremental releases" of ACL2 are made
+available.  These releases are thoroughly tested on at least two
+platforms; "normal" releases, on the other hand, are thoroughly tested
+on many more platforms (perhaps a dozen or so) and are accompanied by
+updates to the ACL2 home page.  We provide incremental releases in
+order to provide timely updates for ACL2 users who want them, without
+imposing unnecessary burdens on either on the ACL2 implementors or on
+ACL2 users who prefer to update less frequently.  The implementors
+expect users to update their copies of ACL2 when normal releases are
+made available, but not necessarily when incremental releases are made
+available.
+
+Incremental releases are accompanied by a bump in the incrl field of the
+version field, while normal releases are accompanied by a bump in the
+minor or (much less frequently) major field and zeroing out of the
+incrl field.
+
+Note that LOGICALLY SPEAKING, INCREMENTAL RELEASES ARE FULL-FLEDGE
+RELEASES.  However, ACL2 users may wish to experiment with incremental
+releases without recertifying all of their existing ACL2 books (see
+*note CERTIFY-BOOK::).  In order to learn how to avoid such
+recertification, see *note SET-TAINTED-OKP::.  The basic idea is that
+if certification may depend on including books from an ACL2 version
+with a different incrl field, the book's certificate is marked with a
+"tainted" version, i.e., a version with "(tainted" as a substring.
+Subsequent inclusion of any such book is restricted to sessions in
+which the user explicitly invokes (set-tainted-okp t), which is
+intended as an acknowledgment that including such a book may render the
+ACL2 session unsound.
+
+
+File: acl2-doc-emacs.info,  Node: WHY-BRR,  Next: WORLD,  Prev: VERSION,  Up: MISCELLANEOUS
+
+WHY-BRR    an explanation of why ACL2 has an explicit brr mode
+
+Why isn't brr mode automatically disabled when there are no monitored
+runes?  The reason is that the list of monitored runes is kept in a
+wormhole state.
+
+See *Note WORMHOLE:: for more information on wormholes in general.  But
+the fundamental property of the wormhole function is that it is a
+logical no-op, a constant function that does not take state as an
+argument.  When entering a wormhole, arbitrary information can be
+passed in (including the external state).  That information is used to
+construct a near copy of the external state and that "wormhole state"
+is the one with respect to which interactions occur during breaks.  But
+no information is carried by ACL2 out of a wormhole -- if that were
+allowed wormholes would not be logical no-ops.  The only information
+carried out of a wormhole is in the user's head.
+
+Break-rewrite interacts with the user in a wormhole state because the
+signature of the ACL2 rewrite function does not permit it to modify
+state.  Hence, only wormhole interaction is possible.  (This has the
+additional desirable property that the correctness of the rewriter does
+not depend on what the user does during interactive breaks within it;
+indeed, it is logically impossible for the user to affect the course of
+rewrite.)
+
+Now consider the list of monitored runes.  Is that kept in the external
+state as a normal state global or is it kept in the wormhole state?  If
+it is in the external state then it can be inspected within the
+wormhole but not changed.  This is unacceptable; it is common to change
+the monitored rules as the proof attempt progresses, installing
+monitors when certain rules are about to be used in certain contexts.
+Thus, the list of monitored runes must be kept as a wormhole variable.
+Hence, its value cannot be determined outside the wormhole, where the
+proof attempt is ongoing.
+
+This raises another question: If the list of monitored runes is unknown
+to the rewriter operating on the external state, how does the rewriter
+know when to break?  The answer is simple: it breaks every time, for
+every rune, if brr mode is enabled.  The wormhole is entered
+(silently), computations are done within the wormhole state to
+determine if the user wants to see the break, and if so, interactions
+begin.  For unmonitored runes and runes with false break conditions,
+the silent wormhole entry is followed by a silent wormhole exit and the
+user perceives no break.
+
+Thus, the penalty for running with brr mode enabled when there are no
+monitored runes is high: a wormhole is entered on every application of
+every rune and the user is simply unware of it.  The user who has
+finally unmonitored all runes is therefore strongly advised to carry
+this information out of the wormhole and to do :brr nil in the external
+state when the next opportunity arises.
+
+
+File: acl2-doc-emacs.info,  Node: WORLD,  Next: WORMHOLE,  Prev: WHY-BRR,  Up: MISCELLANEOUS
+
+WORLD    ACL2 property lists and the ACL2 logical data base
+
+A "world" is a list of triples, each of the form (sym prop . val),
+implementing the ACL2 notion of property lists.  ACL2 permits the
+simultaneous existence of many property list worlds.  "The world" is
+often used as a shorthand for "the ACL2 logical world" which is the
+particular property list world used within the ACL2 system to maintain
+the data base of rules.
+
+Common Lisp provides the notion of "property lists" by which one can
+attach "properties" and their corresponding "values" to symbols.  For
+example, one can arrange for the 'color property of the symbol 'box-14
+to be 'purple and the 'color property of the symbol 'triangle-7 to be
+'yellow.  Access to property lists is given via the Common Lisp
+function get.  Thus, (get 'box-14 'color) might return 'purple.
+Property lists can be changed via the special form setf.  Thus, (setf
+(get 'box-14 'color) 'blue) changes the Common Lisp property list
+configuration so that (get 'box-14 'color) returns 'blue.  It should be
+obvious that ACL2 cannot provide this facility, because Common Lisp's
+get "function" is not a function of its argument, but instead a
+function of some implicit state object representing the property list
+settings for all symbols.
+
+ACL2 provides the functions getprop and putprop which allow one to
+mimic the Common Lisp property list facility.  However, ACL2's getprop
+takes as one of its arguments a list that is a direct encoding of what
+was above called the "state object representing the property list
+settings for all symbols."  Because ACL2 already has a notion of
+"state" that is quite distinct from that used here, we call this
+property list object a "world."  A world is just a true list of
+triples.  Each triple is of the form (sym prop . val).  This world can
+be thought of as a slightly elaborated form of association list and
+getprop is a slightly elaborated form of assoc that takes two keys.
+When getprop is called on a symbol, s, property p, and world, w, it
+scans w for the first triple whose sym is s and prop is p and returns
+the corresponding val. Getprop has two additional arguments, one of
+which that controls what it returns if no such sym and prop exist in w,
+and other other of which allows an extremely efficient implementation.
+To set some property's value for some symbol, ACL2 provides putprop.
+(putprop sym prop val w) merely returns a new world, w', in which (sym
+prop . val) has been consed onto the front of w, thus "overwriting" the
+prop value of sym in w to val and leaving all other properties in w
+unchanged.
+
+One aspect of ACL2's property list arrangment is that it is possible to
+have many different property list worlds.  For example, 'box-14 can
+have 'color 'purple in one world and can have 'color 'yes in another,
+and these two worlds can exist simultaneously because getprop is
+explicitly provided the world from which the property value is to be
+extracted.
+
+The efficiency alluded to above stems from the fact that Common Lisp
+provides property lists.  Using Common Lisp's provisions behind the
+scenes, ACL2 can "install" the properties of a given world into the
+Common Lisp property list state so as to make retrieval via getprop
+very fast in the special case that the world provided to getprop has
+been installed.  To permit more than one installed world, each of which
+is permitted to be changed via putprop, ACL2 requires that worlds be
+named and these names are used to distinquish installed versions of the
+various worlds.  At the moment we do not further document getprop and
+putprop.
+
+However, the ACL2 system uses a property list world, named
+'current-acl2-world, in which to store the succession of user commands
+and their effects on the logic.  This world is often referred to in our
+documentation as "the world" though it should be stressed that the user
+is permitted to have worlds and ACL2's is in no way distinguished
+except that the user is not permitted to modify it except via event
+commands.  The ACL2 world is part of the ACL2 state and may be obtained
+via (w state).
+
+*Warning*: The ACL2 world is very large.  Its length as of this writing
+(Version  2.5) is over 40,000 and it grows with each release.
+Furthermore, some of the values stored in it are pointers to old
+versions of itself.  Printing (w state) is something you should avoid
+because you likely will not have the patience to await its completion.
+For these practical reasons, the only thing you should do with (w
+state) is provide it to getprop, as in the form
+
+       (getprop sym prop default 'current-acl2-world (w state))
+
+to inspect properties within it, or to pass it to ACL2 primitives, such
+as theory functions, where it is expected.
+
+Some ACL2 command forms, such as theory expressions (see *note
+THEORIES::) and the values to be stored in tables (see *note TABLE::),
+are permitted to use the variable symbol world freely with the
+understanding that when these forms are evaluated that variable is
+bound to (w state).  Theoretically, this gives those forms complete
+knowledge of the current logical configuration of ACL2.  However, at
+the moment, few world scanning functions have been documented for the
+ACL2 user.  Instead, supposedly convenient macro forms have been
+created and documented.  For example, (current-theory :here), which is
+the theory expression which returns the currently enabled theory,
+actually macroexpands to (current-theory-fn :here world).  When
+evaluated with world bound to (w state), current-theory-fn scans the
+current ACL2 world and computes the set of runes currently enabled in
+it.
+
+
+File: acl2-doc-emacs.info,  Node: WORMHOLE,  Next: WORMHOLE-P,  Prev: WORLD,  Up: MISCELLANEOUS
+
+WORMHOLE    ld without state --- a short-cut to a parallel universe
+
+     Example Form:
+     (wormhole t 'interactive-break nil '(value 'hi!))
+                                  ; Enters a recursive read-eval-print loop
+                                  ; on a copy of the ``current state'' and
+                                  ; returns nil!
+     
+     General Form:
+     (wormhole pseudo-flg name input form
+       :current-package    ...  ; known package name
+       :ld-skip-proofsp    ...  ; t, nil or 'include-book
+       :ld-redefinition-action  ; nil or '(:a . :b)
+       :ld-prompt          ...  ; nil, t, or some prompt printer fn
+       :ld-keyword-aliases ...  ; an alist pairing keywords to parse info
+       :ld-pre-eval-filter ...  ; :all, :query, or some new name
+       :ld-pre-eval-print  ...  ; nil, t, or :never
+       :ld-post-eval-print ...  ; nil, t, or :command-conventions
+       :ld-evisc-tuple     ...  ; nil or '(alist level length hiding-cars)
+       :ld-error-triples   ...  ; nil or t
+       :ld-error-action    ...  ; :continue, :return, or :error
+       :ld-query-control-alist  ; alist supplying default responses
+       :ld-verbose         ...) ; nil or t
+
+The keyword arguments above are exactly those of ld (see *note LD::)
+except that three of ld's keyword arguments are missing: the three that
+specify the channels standard-oi, standard-co and proofs-co.
+Essentially wormhole is just a call of ld on the current state with the
+given keyword arguments.  Wormhole always returns nil.  The *amazing*
+thing about wormhole is that it calls ld and interacts with the user
+even though state is not available as an argument!
+
+Wormhole does this by manufacturing a "wormhole state," a copy of the
+"current state" (whatever that is) modified so as to contain some of
+the wormhole arguments.  Ld is called on that wormhole state with the
+three ld channels directed to ACL2's "comment window." At the moment,
+the comment window is overlaid on the terminal and you cannot tell when
+output is going to *standard-co* and when it is going to the comment
+window.  But we imagine that eventually a different window will pop up
+on your screen.  In any case, the interaction provided by this call of
+ld does not modify the state "from which" wormhole was called, it
+modifies the copied state.  When ld exits (e.g., in response to :q
+being typed in the comment window) the wormhole state evaporates and
+wormhole returns nil.  Logically and actually (from the perspective of
+the ongoing computation) nothing has happened except that a "no-op"
+function was called and returned nil.
+
+The name wormhole is meant to suggest the idea that the function
+provides easy access to state in situations where it is apparently
+impossible to get state.  Thus, for example, if you define the
+factorial function, say, except that you sprinkled into its body
+appropriate calls of wormhole, then the execution of (factorial 6)
+would cause interactive breaks in the comment window.  During those
+breaks you would apparently be able to inspect the "current state" even
+though factorial does not take state as an argument.  The whole notion
+of there being a "current state" during the evaluation of (factorial 6)
+is logically ill-defined.  And yet, we know from practical experience
+with the sequential computing machines upon which ACL2 is implemented
+that there is a "current state" (to which the factorial function is
+entirely insensitive) and that is the state to which wormhole
+"tunnels." A call of wormhole from within factorial can pass
+factorial-specific information that is embedded in the wormhole state
+and made available for inspection by the user in an interactive
+setting.  But no information ever flows out of a wormhole state:
+wormhole always returns nil.
+
+There are some restrictions about what can be done inside a wormhole.
+As you may imagine, we really do not "copy the current state" but
+rather just keep track of how we modified it and undo those
+modifications upon exit.  An error is signalled if you try to modify
+state in an unsupported way.  For this same reason, wormholes do not
+allow updating of any user-defined single-threaded objects.  See *Note
+STOBJ::.
+
+There are four arguments to wormhole that need further explanation:
+pseudo-flg, name, input, and form.  Roughly speaking, the value of
+pseudo-flg should be t or nil and indicates whether we are actually to
+enter a wormhole or just return nil immediately.  The actual handling
+of pseudo-flg is more sophisticated and is explained in detail at the
+end of this documentation.
+
+Name and input are used as follows.  Recall that wormhole copies the
+"current state" and then modifies it slightly to obtain the state upon
+which ld is called.  We now describe the modifications.  First, the
+state global variable 'wormhole-name is set to name, which may be any
+non-nil ACL2 object but is usually a symbol.  Then, 'wormhole-input is
+set to input, which may be any ACL2 object.  Finally, and inexplicably,
+'wormhole-output is set to the value of 'wormhole-output the last time
+a wormhole named name was exited (or nil if this is the first time a
+wormhole named name was entered).  This last aspect of wormholes,
+namely the preservation of 'wormhole-output, allows all the wormholes
+of a given name to communicate with each other.
+
+We can now explain how form is used.  The modified state described
+above is the state on which ld is called.  However, standard-oi -- the
+input channel from which ld reads commands -- is set so that the first
+command that ld reads and evaluates is form.  If form returns an error
+triple with value :q, i.e., form returns via (value :q), then no
+further commands are read, ld exits, and the wormhole exits and returns
+nil.  But if form returns any other value (or is not an error triple),
+then subsequent commands are read from the comment window.
+
+As usual, the ld-specials affect whether a herald is printed upon
+entry, whether form is printed before evaluation, whether a prompt is
+printed, how errors are handled, etc.  The ld-specials can be specified
+with the corresponding arguments to wormhole.  It is standard practice
+to call wormhole so that the entry to ld and the evaluation of form are
+totally silent.  Then, tests in form can inspect the state and decide
+whether user interaction is desired.  If so, form can appropriately set
+ld-prompt, ld-error-action, etc., print a herald, and then return
+(value :invisible).  Recall (see *note LD::) that (value :invisible)
+causes ld not to print a value for the just executed form.  The result
+of this arrangement is that whether interaction occurs can be based on
+tests that are performed on the wormhole state after (@ wormhole-input)
+and the last (@ wormhole-output) are available for inspection.  This is
+important because outside the wormhole you can access wormhole-input
+(you are passing it into the wormhole) but you may not be able to
+access the current state (because you might be in factorial) and you
+definitely cannot access the wormhole-output of the last wormhole
+because it is not part of the ACL2 state.  Thus, if the condition under
+which you wish to interact depends upon the state or that part of it
+preserved from the last wormhole interaction, that condition can only
+be tested from within the wormhole, via form.
+
+It is via this mechanism that break-rewrite (see *note BREAK-REWRITE::)
+is implemented.  To be more precise, the list of monitored runes is
+maintained as part of the preserved wormhole-output of the
+break-rewrite wormhole.  Because it is not part of the normal state, it
+may be changed by the user during proofs.  That is what allows you to
+install new monitors while debugging proofs.  But that means that the
+list of monitored runes cannot be inspected from outside the wormhole.
+Therefore, to decide whether a break is to occur when a given rule is
+applied, the rewriter must enter the break-rewrite wormhole, supplying
+a form that causes interaction if the given rule's break condition is
+satisfied.  The user perceives this as though the wormhole was
+conditionally entered -- a perception that is happily at odds with the
+informed user's knowledge that the list of monitored runes is not part
+of the state.  In fact, the wormhole was unconditionally entered and
+the condition was checked from within the wormhole, that being the only
+state in which the condition is known.
+
+Another illustrative example is available in the implemention of the
+monitor command.  How can we add a new rune to the list of monitored
+runes while in the normal ACL2 state (i.e., while not in a wormhole)?
+The answer is: by getting into a wormhole.  In particular, when you
+type (monitor rune expr) at the top-level of ACL2, monitor enters the
+break-rewrite wormhole with a cleverly designed first form.  That form
+adds rune and expr to the list of monitored runes -- said list only
+being available in break-rewrite wormhole states.  Then the first form
+returns (value :q), which causes us to exit the wormhole.  By using
+ld-specials that completely suppress all output during the process, it
+does not appear to the user that a wormhole was entered.  The moral
+here is rather subtle: the first form supplied to wormhole may be the
+entire computation you want to perform in the wormhole; it need not
+just be a predicate that decides if interaction is to occur.  Using
+wormholes of different names you can maintain a variety of "hidden"
+data structures that are always accessible (whether passed in or not).
+This appears to violate completely the applicative semantics of ACL2,
+but it does not: because these data structures are only accessible via
+wormholes, it is impossible for them to affect any ACL2 computation
+(except in the comment window).
+
+As one might imagine, there is some overhead associated with entering a
+wormhole because of the need to copy the current state.  This brings us
+back to pseudo-flg.  Ostensibly, wormhole is a function and hence all
+of its argument expressions are evaluated outside the function (and
+hence, outside the wormhole it creates) and then their values are
+passed into the function where an appropriate wormhole is created.  In
+fact, wormhole is a macro that permits the pseudo-flg expression to
+peer dimly into the wormhole that will be created before it is created.
+In particular, pseudo-flg allows the user to access the
+wormhole-output that will be used to create the wormhole state.
+
+This is done by allowing the user to mention the (apparently unbound)
+variable wormhole-output in the first argument to wormhole.  Logically,
+wormhole is a macro that wraps
+
+     (let ((wormhole-output nil)) ...)
+
+around the expression supplied as its first argument.  So logically,
+wormhole-output is always nil when the expression is evaluated.
+However, actually, wormhole-output is bound to the value of (@
+wormhole-output) on the last exit from a wormhole of the given name (or
+nil if this is the first entrance).  Thus, the pseudo-flg expression,
+while having to handle the possibility that wormhole-output is nil,
+will sometimes see non-nil values.  The next question is, of course,
+"But how can you get away with saying that logically wormhole-output is
+always nil but actually it is not?  That doesn't appear to be sound."
+But it is sound because whether pseudo-flg evaluates to nil or non-nil
+doesn't matter, since in either case wormhole returns nil.  To make
+that point slightly more formal, imagine that wormhole did not take
+pseudo-flg as an argument.  Then it could be implemented by writing
+
+     (if pseudo-flg (wormhole name input form ...) nil).
+
+Now since wormhole always returns nil, this expression is equivalent to
+(if pseudo-flg nil nil) and we see that the value of pseudo-flg is
+irrelevant.  So we could in fact allow the user to access arbitrary
+information to decide which branch of this if to take.  We allow access
+to wormhole-output because it is often all that is needed.  We don't
+allow access to state (unless state is available at the level of the
+wormhole call) for technical reasons having to do with the difficulty
+of overcoming translate's prohibition of the sudden appearance of the
+variable state.
+
+We conclude with an example of the use of pseudo-flg.  This example is
+a simplification of our implementation of break-rewrite.  To enter
+break-rewrite at the beginning of the attempted application of a rule,
+rule, we use
+
+     (wormhole
+      (and (f-get-global 'brr-mode state)
+           (member-equal (access rewrite-rule rule :rune)
+                         (cdr (assoc-eq 'monitored-runes wormhole-output))))
+      'break-rewrite
+      ...)
+
+The function in which this call of wormhole occurs has state as a
+formal.  The pseudo-flg expression can therefore refer to state to
+determine whether 'brr-mode is set.  But the pseudo-flg expression
+above mentions the variable wormhole-output; this variable is not bound
+in the context of the call of wormhole; if wormhole were a simple
+function symbol, this expression would be illegal because it mentions a
+free variable.
+
+However, it is useful to think of wormhole as a simple function that
+evaluates all of its arguments but to also imagine that somehow
+wormhole-output is magically bound around the first argument so that
+wormhole-output is the output of the last break-rewrite wormhole.  If
+we so imagine, then the pseudo-flg expression above evaluates either to
+nil or non-nil and we will enter the wormhole named break-rewrite in
+the latter case.
+
+Now what does the pseudo-flg expression above actually test?  We know
+the format of our own wormhole-output because we are responsible for
+maintaining it.  In particular, we know that the list of monitored
+runes can be obtained via
+
+     (cdr (assoc-eq 'monitored-runes wormhole-output)).
+
+Using that knowledge we can design a pseudo-flg expression which tests
+whether (a) we are in brr-mode and (b) the rune of the current rule is
+a member of the monitored runes.  Question (a) is answered by looking
+into the current state.  Question (b) is answered by looking into that
+part of the about-to-be-created wormhole state that will differ from
+the current state.  To reiterate the reason we can make wormhole-output
+available here even though it is not in the current state: logically
+speaking the value of wormhole-output is irrelevant because it is only
+used to choose between two identical alternatives.  This example also
+makes it clear that pseudo-flg provides no additional functionality.
+The test made in the pseudo-flg expression could be moved into the
+first form evaluated by the wormhole -- changing the free variable
+wormhole-output to (@ wormhole-output) and arranging for the first form
+to return (value :q) when the pseudo-flg expression returns nil.  The
+only reason we provide the pseudo-flg feature is because it allows the
+test to be carried out without the overhead of entering the wormhole.
+
+Wormholes can be used not only in :program mode definitions but also in
+:logic mode definitions.  Thus, it is possible (though somewhat
+cumbersome without investing in macro support) to annotate logical
+functions with output facilities that do not require state.  These
+facilities do not complicate proof obligations.  Suppose then that one
+doctored a simple function, e.g., APP, so as to do some printing and
+then proved that APP is associative.  The proof may generate extraneous
+output due to the doctoring.  Furthermore, contrary to the theorem
+proved, execution of the function appears to affect *standard-co*.  To
+see what the function "really" does when evaluated, enter raw lisp and
+set the global variable *inhibit-wormhole-activityp* to t.
+
+
+File: acl2-doc-emacs.info,  Node: WORMHOLE-P,  Next: XARGS,  Prev: WORMHOLE,  Up: MISCELLANEOUS
+
+WORMHOLE-P    predicate to determine if you are inside a wormhole
+
+See *Note WORMHOLE:: for a discussion of wormholes.  (Wormhole-p state)
+returns (mv nil t state) when evaluated inside a wormhole, else (mv nil
+nil state).
+
+
+File: acl2-doc-emacs.info,  Node: XARGS,  Prev: WORMHOLE-P,  Up: MISCELLANEOUS
+
+XARGS    giving hints to defun
+
+Common Lisp's defun function does not easily allow one to pass extra
+arguments such as "hints".  ACL2 therefore supports a peculiar new
+declaration (see *note DECLARE::) designed explicitly for passing
+additional arguments to defun via a keyword-like syntax.
+
+The following declaration is nonsensical but does illustrate all of the
+xargs keywords:
+
+     (declare (xargs :guard (symbolp x)
+                     :guard-hints (("Goal" :in-theory (theory batch1)))
+                     :hints (("Goal" :in-theory (theory batch1)))
+                     :measure (- i j)
+                     :mode :logic
+                     :non-executable t
+                     :normalize nil
+                     :otf-flg t
+                     :stobjs ($s)
+                     :verify-guards t
+                     :well-founded-relation my-wfr))
+     
+     General Form:
+     (xargs :key1 val1 ... :keyn valn)
+
+where the keywords and their respective values are as shown below.
+Note that once "inside" the xargs form, the "extra arguments" to defun
+are passed exactly as though they were keyword arguments.
+
+:GUARD
+Value is a term involving only the formals of the function being
+defined.  The actual guard used for the definition is the conjunction
+of all the guards and types (see *note DECLARE::) declared.
+
+:GUARD-HINTS
+Value:  hints (see *note HINTS::), to be used during the guard
+verification proofs as opposed to the termination proofs of the defun.
+
+:HINTS
+Value:  hints (see *note HINTS::), to be used during the termination
+proofs as opposed to the guard verification proofs of the defun.
+
+:MEASURE
+Value is a term involving only the formals of the function being
+defined.  This term is indicates what is getting smaller in the
+recursion.  The well-founded relation with which successive measures
+are compared is o<.  Also allowed is a special case, (:? v1 ... vk),
+where (v1 ... vk) enumerates a subset of the formal parameters such
+that some valid measure involves only those formal parameters.
+However, this special case is only allowed for definitions that are
+redundant (see *note REDUNDANT-EVENTS::) or are executed when skipping
+proofs (see *note SKIP-PROOFS::).
+
+:MODE
+Value is :program or :logic, indicating the defun mode of the function
+introduced.  See *Note DEFUN-MODE::.  If unspecified, the defun mode
+defaults to the default defun mode of the current world.  To convert a
+function from :program mode to :logic mode, see *note
+VERIFY-TERMINATION::.
+
+:NON-EXECUTABLE
+Value is t or nil (the default).  If t, the function has no executable
+counterpart and is permitted to use single-threaded object names and
+functions arbitrarily, as in theorems rather than as in executable
+definitions.  Such functions are not permitted to declare any names to
+be :stobjs but accessors, etc., may be used, just as in theorems.
+Since the default is nil, the value supplied is only of interest when it
+is t.
+
+:NORMALIZE
+Value is a flag telling defun whether to propagate if tests upward.
+Since the default is to do so, the value supplied is only of interest
+when it is nil.  (See *Note DEFUN::).
+
+:OTF-FLG
+Value is a flag indicating "onward through the fog" (see *note
+OTF-FLG::).
+
+:STOBJS
+Value is either a single stobj name or a true list of stobj names.
+Every stobj name among the formals of the function must be listed, if
+the corresponding actual is to be treated as a stobj.  That is, if a
+function uses a stobj name as a formal parameter but the name is not
+declared among the :stobjs then the corresponding argument is treated
+as ordinary.  The only exception to this rule is state:  whether you
+include it or not, state is always treated as a single-threaded object.
+This declaration has two effects.  One is to enforce the syntactic
+restrictions on single-threaded objects.  The other is to strengthen
+the guard of the function being defined so that it includes conjuncts
+specifying that each declared single-threaded object argument satisfies
+the recognizer for the corresponding single-threaded object.
+
+:VERIFY-GUARDS
+Value is t or nil, indicating whether or not guards are to be verified
+upon completion of the termination proof.  This flag should only be t
+if the :mode is unspecified but the default defun mode is :logic, or
+else the :mode is :logic.
+
+:WELL-FOUNDED-RELATION
+Value is a function symbol that is known to be a well-founded relation
+in the sense that a rule of class :well-founded-relation has been
+proved about it.  See *Note WELL-FOUNDED-RELATION::.
+
+
+File: acl2-doc-emacs.info,  Node: OTHER,  Next: PROGRAMMING,  Prev: MISCELLANEOUS,  Up: Top
+
+OTHER    other commonly used top-level functions
+
+* Menu:
+
+* atsign:: (@) get the value of a global variable in state
+
+* ACL2-DEFAULTS-TABLE:: a table specifying certain defaults, e.g., the default defun-mode
+
+* ACL2-HELP:: the acl2-help mailing list
+
+* ASSIGN:: assign to a global variable in state
+
+* CERTIFY-BOOK!:: a variant of certify-book
+
+* CW-GSTACK:: debug a rewriting loop or stack overflow
+
+* EXIT:: quit entirely out of Lisp
+
+* GOOD-BYE:: quit entirely out of Lisp
+
+* IN-PACKAGE:: select current package
+
+* LD:: the ACL2 read-eval-print loop, file loader, and command processor
+
+* PROPS:: print the ACL2 properties on a symbol
+
+* PSO:: show the most recently saved output
+
+* PSO!:: show the most recently saved output, including proof-tree output
+
+* PSTACK:: seeing what is the prover up to
+
+* Q:: quit ACL2 (type :q) --- reenter with (lp)
+
+* QUIT:: quit entirely out of Lisp
+
+* REBUILD:: a convenient way to reconstruct your old state
+
+* RESET-LD-SPECIALS:: restores initial settings of the ld specials
+
+* SAVE-EXEC:: save an executable image and (for most Common Lisps) a wrapper script
+
+* SET-GUARD-CHECKING:: control checking guards during execution of top-level forms
+
+* SET-INHIBIT-OUTPUT-LST:: control output
+
+* SET-LD-REDEFINITION-ACTION:: See *Note LD-REDEFINITION-ACTION::.
+
+* SET-LD-SKIP-PROOFSP:: See *Note LD-SKIP-PROOFSP::.
+
+* SET-PRINT-CLAUSE-IDS:: cause subgoal numbers to be printed when 'prove output is inhibited
+
+* SET-RAW-MODE:: enter or exit ``raw mode,'' a raw Lisp environment
+
+* SET-RAW-MODE-ON!:: enter ``raw mode,'' a raw Lisp environment
+
+* SET-SAVED-OUTPUT:: save proof output for later display with :pso or :pso!
+
+* SET-TAINTED-OKP:: control output
+
+* SKIP-PROOFS:: skip proofs for a given form --- a quick way to introduce unsoundness
+
+* THM:: prove a theorem
+
+* TIME$:: time a form
+
+* TRANS:: print the macroexpansion of a form
+
+* TRANS!:: print the macroexpansion of a form without single-threadedness concerns
+
+* TRANS1:: print the one-step macroexpansion of a form
+
+* WITH-PROVER-TIME-LIMIT:: limit the time for proofs
+
+
+Related topics other than immediate subtopics:
+* CERTIFY-BOOK:: how to produce a certificate for a book
+
+This section contains an assortment of top-level functions that fit
+into none of the other categories and yet are suffiently useful as to
+merit "advertisement" in the :help command.
+
+
+File: acl2-doc-emacs.info,  Node: atsign,  Next: ACL2-DEFAULTS-TABLE,  Prev: OTHER,  Up: OTHER
+
+@    get the value of a global variable in state
+
+     Examples:
+     (+ (@ y) 1)
+     (assign a (aset1 'ascii-map-array (@ a) 66 'Upper-case-B))
+     
+     General Form:
+     (@ symbol)
+
+where symbol is any symbol to which you have assigned a global value.
+This macro expands into (f-get-global 'symbol state), which retrieves
+the stored value of the symbol.
+
+The macro assign makes it convenient to set the value of a symbol.  The
+:ubt operation has no effect on the global-table of state.  Thus, you
+may use these globals to hang onto useful data structures even though
+you may undo back past where you computed and saved them.
+

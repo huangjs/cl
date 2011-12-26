@@ -1,0 +1,118 @@
+<html>
+<head><title>HIDE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>HIDE</h2>hide a term from the rewriter
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Hide</code> is actually the <a href="IDENTITY.html">identity</a> function:  <code>(hide x) = x</code> for
+all <code>x</code>.  However, terms of the form <code>(hide x)</code> are ignored by the
+ACL2 rewriter, except when explicit <code>:expand</code> <a href="HINTS.html">hints</a> are given
+for such terms (see <a href="HINTS.html">hints</a>) or when rewrite rules explicitly
+about <code>hide</code> are available.  An <code>:expand</code> hint that removes all
+calls of <code>hide</code> is:
+
+<pre>
+:expand ((:free (x) (hide x)))
+</pre>
+
+The above hint can be particularly useful when ACL2's equality heuristics
+apply <code>hide</code> to an equality after substituting it into the rest of the
+goal, if that goal (or a subgoal of it) fails to be proved.<p>
+
+<code>Hide</code> terms are also ignored by the induction heuristics.
+<p>
+Sometimes the ACL2 simplifier inserts <code>hide</code> terms into a proof
+attempt out of the blue, as it were.  Why and what can you do about
+it?  Suppose you have a constrained function, say <code>constrained-fn</code>, and
+you define another function, say <code>another-fn</code>, in terms of it, as in:
+
+<pre>
+(defun another-fn (x y z)
+  (if (big-hairy-test x y z)
+      (constrained-fn x y z)
+      t))
+</pre>
+
+Suppose the term <code>(another-fn 'a 'b 'c)</code> arises in a proof.  Since
+the arguments are all constants, ACL2 will try to reduce such a term
+to a constant by executing the definition of <code>another-fn</code>.
+However, after a possibly extensive computation (because of
+<code>big-hairy-test</code>) the execution fails because of the unevaluable
+call of <code>constrained-fn</code>.  To avoid subsequent attempts to evaluate
+the term, ACL2 embeds it in a <code>hide</code> expression, i.e., rewrites it
+to <code>(hide (another-fn 'a 'b 'c))</code>.<p>
+
+You might think this rarely occurs since all the arguments of
+<code>another-fn</code> must be constants.  You would be right except for one
+special case:  if <code>another-fn</code> takes no arguments, i.e., is a
+constant function, then every call of it fits this case.  Thus, if
+you define a function of no arguments in terms of a constrained
+function, you will often see <code>(another-fn)</code> rewrite to
+<code>(hide (another-fn))</code>.<p>
+
+We do not hide the term if the executable counterpart of the
+function is disabled -- because we do not try to evaluate it in the
+first place.  Thus, to prevent the insertion of a <code>hide</code> term into
+the proof attempt, you can globally disable the executable
+counterpart of the offending defined function, e.g.,
+
+<pre>
+(in-theory (disable (:executable-counterpart another-fn))).
+</pre>
+<p>
+
+It is conceivable that you cannot afford to do this:  perhaps some
+calls of the offending function must be computed while others cannot
+be.  One way to handle this situation is to leave the executable
+counterpart enabled, so that <code>hide</code> terms are introduced on the
+calls that cannot be computed, but prove explicit :<code><a href="REWRITE.html">rewrite</a></code>
+rules for each of those <code>hide</code> terms.  For example, suppose that in
+the proof of some theorem, thm, it is necessary to leave the
+executable counterpart of <code>another-fn</code> enabled but that the call
+<code>(another-fn 1 2 3)</code> arises in the proof and cannot be computed.
+Thus the proof attempt will introduce the term
+<code>(hide (another-fn 1 2 3))</code>.  Suppose that you can show that
+<code>(another-fn 1 2 3)</code> is <code>(contrained-fn 1 2 3)</code> and that such
+a step is necessary to the proof.  Unfortunately, proving the rewrite
+rule
+
+<pre>
+(defthm thm-helper
+  (equal (another-fn 1 2 3) (constrained-fn 1 2 3)))
+</pre>
+
+would not help the proof of thm because the target term is hidden
+inside the <code>hide</code>.  However,
+
+<pre>
+(defthm thm-helper
+  (equal (hide (another-fn 1 2 3)) (constrained-fn 1 2 3)))
+</pre>
+
+would be applied in the proof of thm and is the rule you should 
+prove.<p>
+
+Now to prove <code>thm-helper</code> you need to use the two ``tricks'' which
+have already been discussed.  First, to eliminate the <code>hide</code> term
+in the proof of <code>thm-helper</code> you should include the hint
+<code>:expand</code> <code>(hide (another-fn 1 2 3))</code>.  Second, to prevent the
+<code>hide</code> term from being reintroduced when the system tries and fails
+to evaluate <code>(another-fn 1 2 3)</code> you should include the hint
+<code>:in-theory</code> <code>(disable (:executable-counterpart another-fn))</code>.
+Thus, <code>thm-helper</code> will actually be:
+
+<pre>
+(defthm thm-helper
+  (equal (hide (another-fn 1 2 3)) (constrained-fn 1 2 3))
+  :hints
+  (("Goal" :expand (hide (another-fn 1 2 3))
+           :in-theory (disable (:executable-counterpart another-fn)))))
+</pre>
+<p>
+
+See <a href="EVISCERATE-HIDE-TERMS.html">eviscerate-hide-terms</a> for how to affect the printing of <code>hide</code>
+terms.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

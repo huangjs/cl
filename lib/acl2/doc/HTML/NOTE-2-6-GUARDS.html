@@ -1,0 +1,75 @@
+<html>
+<head><title>NOTE-2-6-GUARDS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-6-GUARDS</h3>ACL2 Version  2.6 Notes on Guard-related Changes
+<pre>Major Section:  <a href="NOTE-2-6.html">NOTE-2-6</a>
+</pre><p>
+
+When you <code><a href="DECLARE.html">declare</a></code> that a function treats certain formals
+as <code>:</code><code><a href="STOBJ.html">stobj</a></code><code>s</code>, the <a href="GUARD.html">guard</a> of the function is automatically
+extended to include the corresponding stobj-recognizer calls.  For example,
+if a definition includes <code>(declare (xargs :stobjs (ST)))</code> then the
+guard of the function is changed by the addition of the conjunct
+<code>(ST-P ST)</code>.<p>
+
+One impact of this is that if you use the built-in ACL2 <code><a href="STATE.html">state</a></code>
+as a formal parameter of a function, <code>(STATE-P STATE)</code> is added to
+the guard.  This may introduce a guard where there was none in
+previous versions of the system.  In older versions, therefore, no
+attempt would be made to <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>, while in the new
+version, we would attempt guard verification.  You may wish to add
+<code>(declare (xargs :verify-guards nil))</code> to such definitions.<p>
+
+A related change affects users who do not use stobjs or <code>state</code>.
+In previous versions of the system -- as now -- a <code>type</code>
+declaration extended the guard you provided explicitly.  Thus, if
+you wrote <code>(declare (type integer n))</code> then <code>(INTEGERP n)</code> was
+added to your guard.  This is still the case and <code>:stobjs</code>
+recognizers are similarly added.  But in older versions of the system
+we ``added'' the conjuncts without checking whether they were already
+present in the guard you provided.  This sometimes produced such
+guards as <code>(and (integerp n) (integerp n))</code> where the first was
+produced by your <code>type</code> declaration and the second was your
+<code>:guard</code>.  We now eliminate redundant conjuncts; this may rearrange
+the order of the conjuncts.<p>
+
+The guard conjectures for functions using <code>stobj</code>s have been simplified
+somewhat by taking advantage of the syntactic restrictions checked for
+single-threaded objects.  <p>
+
+The following functions have been modified so that character and
+string arguments are restricted to standard characters.
+(See <a href="STANDARD-CHAR-P.html">standard-char-p</a> and see <a href="STANDARD-CHAR-LISTP.html">standard-char-listp</a>.)
+<blockquote><p>
+
+<code><a href="UPPER-CASE-P.html">upper-case-p</a></code>
+<code><a href="LOWER-CASE-P.html">lower-case-p</a></code>
+<code><a href="CHAR-UPCASE.html">char-upcase</a></code>
+<code><a href="CHAR-DOWNCASE.html">char-downcase</a></code>
+<code>string-downcase1</code>
+<code><a href="STRING-DOWNCASE.html">string-downcase</a></code>
+<code>string-upcase1</code>
+<code><a href="STRING-UPCASE.html">string-upcase</a></code>
+<code><a href="CHAR-EQUAL.html">char-equal</a></code>
+<code>string-equal1</code>
+<code><a href="STRING-EQUAL.html">string-equal</a></code><p>
+
+</blockquote>
+Also, function <code><a href="STANDARD-STRING-ALISTP.html">standard-string-alistp</a></code> replaces function
+<code>string-alistp</code>, with concomitant changes in the guard to
+<code><a href="ASSOC-STRING-EQUAL.html">assoc-string-equal</a></code>, and in variable <code>*acl2-exports*</code>.
+Also, lemma <code>standard-string-alistp-forward-to-alistp</code> replaces
+lemma <code>string-alistp-forward-to-alistp</code>.  There is a new lemma
+<code>standard-char-p-nth</code>, which has also been added to <code>*acl2-exports*</code>.<p>
+
+The guard had been inadvertently omitted from the definition of the
+function <code><a href="SUBSTITUTE.html">substitute</a></code> (and its subroutine <code>substitute-ac</code>).  This
+omission has been corrected; also, the guard is slightly stronger
+than the documentation had claimed (and that has been corrected).<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

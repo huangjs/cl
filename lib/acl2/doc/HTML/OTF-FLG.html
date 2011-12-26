@@ -1,0 +1,47 @@
+<html>
+<head><title>OTF-FLG.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>OTF-FLG</h2>pushing all the initial subgoals
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+The value of this flag is normally <code>nil</code>.  If you want to prevent the
+theorem prover from abandoning its initial work upon pushing the
+second subgoal, set <code>:otf-flg</code> to <code>t</code>.
+<p>
+Suppose you submit a conjecture to the theorem prover and the system
+splits it up into many subgoals.  Any subgoal not proved by other
+methods is eventually set aside for an attempted induction proof.
+But upon setting aside the second such subgoal, the system chickens
+out and decides that rather than prove n&gt;1 subgoals inductively, it
+will abandon its initial work and attempt induction on the
+originally submitted conjecture.  The <code>:otf-flg</code> (Onward Thru the Fog)
+allows you to override this chickening out. When <code>:otf-flg</code> is <code>t</code>, the
+system will push all the initial subgoals and proceed to try to
+prove each, independently, by induction.<p>
+
+Even when you don't expect induction to be used or to succeed,
+setting the <code>:otf-flg</code> is a good way to force the system to generate
+and display all the initial subgoals.<p>
+
+For <code><a href="DEFTHM.html">defthm</a></code> and <code><a href="THM.html">thm</a></code>, <code>:otf-flg</code> is a keyword argument that is a peer to
+<code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code> and <code>:</code><code><a href="HINTS.html">hints</a></code>.  It may be supplied as in the following
+examples; also see <a href="DEFTHM.html">defthm</a>.
+
+<pre>
+(thm (my-predicate x y) :rule-classes nil :otf-flg t)<p>
+
+(defthm append-assoc
+  (equal (append (append x y) z)
+         (append x (append y z)))
+  :hints (("Goal" :induct t))
+  :otf-flg t)
+</pre>
+
+The <code>:otf-flg</code> may be supplied to <code><a href="DEFUN.html">defun</a></code> via the <code><a href="XARGS.html">xargs</a></code>
+declare option.  When you supply an <code>:otf-flg</code> hint to <code>defun</code>, the
+flag is effective for the termination proofs and the guard proofs, if
+any.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,281 @@
+# Copyright (c) 2000 The Regents of the University of California.
+# All rights reserved. 
+#
+# Permission is hereby granted, without written agreement and without
+# license or royalty fees, to use, copy, modify, and distribute this
+# software and its documentation for any purpose, provided that the
+# above copyright notice and the following two paragraphs appear in all
+# copies of this software.
+#
+# IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY
+# FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+# ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
+# THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE
+# PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+# CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
+# ENHANCEMENTS, OR MODIFICATIONS.
+#
+##########################################################################
+#
+# Process this file with 'make' or 'gmake'.
+#
+##########################################################################
+#
+# $Id: matlisp.mk.in,v 1.10 2005/08/19 15:03:35 rtoy Exp $
+#
+# $Log: matlisp.mk.in,v $
+# Revision 1.10  2005/08/19 15:03:35  rtoy
+# Compile dlamch without optimization because the causes issues with
+# geev and perhaps others.  The LAPACK FAQ recommends this as well.
+#
+# INSTALL:
+#   o Document how to specify the Fortran compiler and flags, espeically
+#     for Solaris
+#   o Add note to make sure dlmach is compiled without optimization.
+#
+# configure.in:
+#   o Add --with-fflags option to allow user to specify flags for the
+#     Fortran compiler.  This is needed so that we can compile dlamch
+#     without optimization.  This also means you shouldn't do things
+#     like --with-f77='f77 -O'.
+#
+# matlisp.mk.in:
+#   o Add speical rule to compile dlamch without optimization.
+#
+# Revision 1.9  2004/03/17 03:38:55  simsek
+# Adding support for MinGW on windows
+#
+# Revision 1.8  2001/10/29 18:00:28  rtoy
+# Updates from M. Koerber to support QR routines with column pivoting:
+#
+# o Add an integer4 type and allocate-integer4-store routine.
+# o Add the necessary Fortran routines
+# o Add Lisp interface to the Fortran routines
+# o Update geqr for the new routines.
+#
+# Revision 1.7  2001/04/28 13:28:51  rtoy
+# Added TOMS 715 (SPECFUN) objects.
+#
+# Revision 1.6  2001/04/25 18:04:09  rtoy
+# o Add some comments
+# o Add cpoly
+# o SHARED_LIB_LDFLAGS contains the flags for building shared libs.
+# o Use srcdir instead of prefix.  (Is this right?)
+#
+# Revision 1.5  2001/03/19 17:07:47  rtoy
+# Allow the user to specify using ATLAS libraries.
+#
+# Revision 1.4  2001/03/08 14:46:18  rtoy
+# Rename libmatlispshared.so to libmatlisp.so
+#
+# Revision 1.3  2001/03/06 18:22:03  rtoy
+# Forgot to add a dependency on lazy-loader.o
+#
+# Revision 1.2  2001/03/06 17:54:16  rtoy
+# o configure can specify the lisp system, so let's use the config'ed
+#   values.
+# o Added target all as the default target.  We always build the shared
+#   lib version now for ACL and CMUCL.  (But left the static library
+#   rules there.)
+# o For make clean, show the files that are being deleted.
+#
+# Revision 1.1  2000/07/11 02:03:13  simsek
+# o Initial revision
+# o Derived from obsolete Makefile.in
+#
+#
+##########################################################################
+prefix=/usr/local
+srcdir=.
+FC = f95
+F77 = f95
+FFLAGS = -g -O2
+FLIBS =   -L/usr/lib/gcc/x86_64-linux-gnu/4.3.3 -L/usr/lib/gcc/x86_64-linux-gnu/4.3.3/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.3.3/../../.. -lgfortranbegin -lgfortran -lm -lgcc_s
+CC = gcc
+CLIBS = 
+LIBS = 
+LD = ld
+LDFLAGS = 
+SHARED_LIB_LDFLAGS = -shared
+AR = ar
+ARFLAGS = rv
+LISPEXEC = 
+LISPEVAL = 
+
+# BLAS objects, if using our copy of BLAS
+BLAS_OBJS =  dgemm.o dswap.o dtrmv.o lsame.o zdotu.o zhemv.o ztrmv.o dgemv.o  dsymv.o  dtrsm.o  zher2.o   ztrsm.o dasum.o  dger.o   dsyr.o   dtrsv.o   zdscal.o zher2k.o ztrsv.o daxpy.o  dsyr2.o  dzasum.o xerbla.o  zgemm.o  zherk.o dcabs1.o dnrm2.o  dsyr2k.o dznrm2.o  zaxpy.o  zgemv.o  zscal.o dcopy.o  drot.o   dsyrk.o  idamax.o  zcopy.o  zgerc.o  zswap.o ddot.o	 dscal.o  dtrmm.o  izamax.o  zdotc.o  zgeru.o  ztrmm.o dsymm.o
+
+# Additional objects from LAPACK when we're not using ATLAS
+NO_ATLAS_LAPACK_OBJS = dgetrf.o zgetrf.o dgetrs.o zgetrs.o dlaswp.o zlaswp.o dgesv.o zgesv.o
+
+LAPACK_OBJS =  dlasq5.o dlasq6.o ieeeck.o zdrot.o dlabad.o \
+	dlarf.o   dorglq.o  zhetd2.o  zlatrs.o \
+	dbdsqr.o  dlabrd.o  dlarfb.o  dorgql.o	 zhetrd.o  zpotf2.o \
+	dgebak.o  dlacon.o  dlarfg.o  dorgqr.o	 zhseqr.o  zpotrf.o \
+	dgebal.o  dlacpy.o  dlarft.o  dorgtr.o	 zbdsqr.o  zlabrd.o  zrot.o \
+	dgebd2.o  dladiv.o  dlarfx.o  dorm2r.o	 zdrscl.o  zlacgv.o  zsteqr.o \
+	dgebrd.o  dlae2.o   dlartg.o  dormbr.o	 zgebak.o  zlacon.o  ztrevc.o \
+	dgeesx.o  dlaev2.o  dlas2.o   dorml2.o	 zgebal.o  zlacpy.o  ztrexc.o \
+	dgeev.o	  dlaexc.o  dlascl.o  dormlq.o	 zgebd2.o  zladiv.o  ztrsen.o \
+	dgehd2.o  dlag2.o   dlaset.o  dormqr.o	 zgebrd.o  zlahqr.o  ztrsyl.o \
+	dgehrd.o  dlahqr.o  dlasq1.o  drscl.o	 zgeesx.o  zlahrd.o  zung2l.o \
+	dgelq2.o  dlahrd.o  dlasq2.o  dsteqr.o	 zgeev.o   zlange.o  zung2r.o \
+	dgelqf.o  dlaln2.o  dlasq3.o  dsterf.o	 zgehd2.o  zlanhe.o  zungbr.o \
+	dgelss.o  dlasq4.o  dsyev.o   zgehrd.o   zlanhs.o  zunghr.o \
+	dgeqp3.o  dlaqp2.o  dlaqps.o  zgeqp3.o   zlaqp2.o  zlaqps.o \
+	dgeqpf.o  dlasr.o   dsytd2.o  zgelq2.o   zlarf.o   zungl2.o \
+	dgeqr2.o  dlasrt.o  dsytrd.o  zgelqf.o   zlarfb.o  zunglq.o \
+	dgeqrf.o  dlassq.o  dtrevc.o  zgelss.o   zlarfg.o  zungql.o \
+	dlasv2.o  dtrexc.o  zgeqpf.o   zlarft.o  zungqr.o \
+	dgesvd.o  dlamch.o  dtrsen.o	 zgeqr2.o  zlarfx.o  zungtr.o \
+	dgetf2.o  dlange.o  dlasy2.o  dtrsyl.o	 zgeqrf.o  zlartg.o  zunm2r.o \
+	dlanhs.o  dlatrd.o  dzsum1.o  zlascl.o  zunmbr.o \
+	dlanst.o  dorg2l.o  ilaenv.o	 zgesvd.o  zlaset.o  zunml2.o \
+	dggbal.o  dlansy.o  dorg2r.o  izmax1.o	 zgetf2.o  zlasr.o   zunmlq.o \
+	dgghrd.o  dlanv2.o  dorgbr.o  zlassq.o  zunmqr.o \
+	dhgeqz.o  dlapy2.o  dorghr.o  \
+	dhseqr.o  dlapy3.o  dorgl2.o  zheev.o    zlatrd.o $(NO_ATLAS_LAPACK_OBJS)
+
+# The FFT package
+DFFTPACK_OBJS = zfftb.o \
+	cfftb1.o \
+	zfftf.o \
+	cfftf1.o \
+	zffti.o \
+	cffti1.o \
+	dcosqb.o \
+	cosqb1.o \
+	dcosqf.o \
+	cosqf1.o \
+	dcosqi.o \
+	dcost.o \
+	dcosti.o \
+	ezfft1.o \
+	dzfftb.o \
+	dzfftf.o \
+	dzffti.o \
+	passb.o \
+	passb2.o \
+	passb3.o \
+	passb4.o \
+	passb5.o \
+	passf.o \
+	passf2.o \
+	passf3.o \
+	passf4.o \
+	passf5.o \
+	radb2.o \
+	radb3.o \
+	radb4.o \
+	radb5.o \
+	radbg.o \
+	radf2.o \
+	radf3.o \
+	radf4.o \
+	radf5.o \
+	radfg.o \
+	dfftb.o \
+	rfftb1.o \
+	dfftf.o \
+	rfftf1.o \
+	dffti.o \
+	rffti1.o \
+	dsinqb.o \
+	dsinqf.o \
+	dsinqi.o \
+	dsint.o \
+	sint1.o \
+	dsinti.o
+
+# Special functions from TOMS 715
+SPECFUN_OBJS = \
+	anorm.o \
+	besei0.o \
+	besei1.o \
+	besek0.o \
+	besek1.o \
+	besi0.o \
+	besi1.o \
+	besj0.o \
+	besj1.o \
+	besk0.o \
+	besk1.o \
+	besy0.o \
+	besy1.o \
+	calcei.o \
+	calci0.o \
+	calci1.o \
+	calck0.o \
+	calck1.o \
+	calerf.o \
+	caljy0.o \
+	caljy1.o \
+	daw.o \
+	derf.o \
+	derfc.o \
+	derfcx.o \
+	dgamma.o \
+	dlgama.o \
+	dsubn.o \
+	ei.o \
+	eone.o \
+	expei.o \
+	machar.o \
+	psi.o \
+	ribesl.o \
+	rjbesl.o \
+	rkbesl.o \
+	rybesl.o
+
+# The cpoly (polynomial root) package
+CPOLY_OBJS = cpoly.o
+
+OBJS = $(BLAS_OBJS:%=$(srcdir)/LAPACK/BLAS/SRC/%) \
+	$(LAPACK_OBJS:%=$(srcdir)/LAPACK/SRC/%) \
+	$(DFFTPACK_OBJS:%=$(srcdir)/dfftpack/%) \
+	$(CPOLY_OBJS:%=$(srcdir)/lib-src/cpoly/%) \
+	$(SPECFUN_OBJS:%=$(srcdir)/lib-src/toms715/%)
+
+MATLIB = $(srcdir)/lib/libmatlisp.so
+LAZY_LOADER=$(srcdir)/lib/lazy-loader.o
+
+.f.o:
+	$(F77) $(FFLAGS) -o $@ -c $<
+
+.c.o:
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+all : $(MATLIB) lib/lazy-loader.o
+	@echo ===============================================
+	@echo Required fortran libraries have been built.
+	@echo The following statement will sometimes fail.
+	@echo If it fails, manually start your lisp and
+	@echo load the file start.lisp.
+	@echo
+	@echo ==============================================
+	$(LISPEXEC) $(LISPEVAL) '(progn (load "start.lisp"))'
+
+# The LAPACK FAQ says dlamch needs to be compiled without optimizations.
+$(srcdir)/LAPACK/SRC/dlamch.o : $(srcdir)/LAPACK/SRC/dlamch.f
+	$(F77) -g -c -o $*.o $^ 
+
+$(srcdir)/lib/libmatlisp.so: $(OBJS)
+	$(LD) $(SHARED_LIB_LDFLAGS) $(LDFLAGS) -o $(MATLIB) $(OBJS) $(FLIBS)
+
+$(srcdir)/lib/libmatlisp.dll: $(OBJS)
+	$(AR) $(ARFLAGS) $(srcdir)/lib/libmatlisp.a $(OBJS)
+	a2dll $(srcdir)/lib/libmatlisp.a -o $(srcdir)/lib/libmatlisp.dll $(FLIBS)
+
+clean:
+	\rm -f $(OBJS)
+
+distclean:
+	\rm -f $(LIB)shared.so
+	\rm -f $(LIB)static.a
+	\rm -f $(LAZY_LOADER)
+

@@ -1,0 +1,341 @@
+<html>
+<head><title>RULE-CLASSES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h1>RULE-CLASSES</h1>adding rules to the data base
+<pre>Major Section:  <a href="acl2-doc-major-topics.html">ACL2 Documentation</a>
+</pre><p>
+
+
+<pre>
+General Form:
+a true list of rule class objects as defined below<p>
+
+Special Cases:
+a symbol abbreviating a single rule class object
+</pre>
+
+ACL2 provides users with the ability to create a number of
+different kinds of rules, including (conditional) rewrite rules but
+also including others.  Don't be put off by the long description to
+follow; usually, you'll probably want to use rewrite rules.  More on
+this below.<p>
+
+A rule class object is either one of the <code>:class</code> keywords or else is
+a list of the form shown below.  Those fields marked with ``(!)''
+are required when the <code>:class</code> is as indicated.
+
+<pre>
+(:class 
+  :COROLLARY term
+  :TRIGGER-FNS (fn1 ... fnk) ; provided :class = :META (!)
+  :TRIGGER-TERMS (t1 ... tk) ; provided :class = :FORWARD-CHAINING
+                             ;       or :class = :LINEAR
+  :TYPE-SET n                ; provided :class = :TYPE-SET-INVERTER
+  :TYPED-TERM term           ; provided :class = :TYPE-PRESCRIPTION
+  :CLIQUE (fn1 ... fnk)      ; provided :class = :DEFINITION
+  :CONTROLLER-ALIST alist    ; provided :class = :DEFINITION
+  :INSTALL-BODY directive    ; provided :class = :DEFINITION
+  :LOOP-STOPPER alist        ; provided :class = :REWRITE
+  :PATTERN term              ; provided :class = :INDUCTION (!)
+  :CONDITION term            ; provided :class = :INDUCTION
+  :SCHEME term               ; provided :class = :INDUCTION (!)
+  :MATCH-FREE all-or-once    ; provided :class = :REWRITE
+                                     or :class = :LINEAR
+                                     or :class = :FORWARD-CHAINING
+  :BACKCHAIN-LIMIT-LST limit ; provided :class = :REWRITE
+                                     or :class = :META
+                                     or :class = :LINEAR
+  :HINTS hints               ; provided instrs = nil
+  :INSTRUCTIONS instrs       ; provided  hints = nil
+  :OTF-FLG flg)
+</pre>
+
+When rule class objects are provided by the user, most of the
+fields are optional and their values are computed in a context
+sensitive way.  When a <code>:class</code> keyword is used as a rule class
+object, all relevant fields are determined contextually.  Each rule
+class object in <code>:rule-classes</code> causes one or more rules to be added
+to the data base.  The <code>:class</code> keywords are documented individually
+under the following names.  Note that when one of these names is used
+as a <code>:class</code>, it is expected to be in the keyword package (i.e., the
+names below should be preceded by a colon but the ACL2 <a href="DOCUMENTATION.html">documentation</a>
+facilities do not permit us to use keywords below).<p>
+
+
+<p>
+<ul>
+<li><h3><a href="BUILT-IN-CLAUSES.html">BUILT-IN-CLAUSES</a> -- to build a clause into the simplifier
+</h3>
+</li>
+
+<li><h3><a href="COMPOUND-RECOGNIZER.html">COMPOUND-RECOGNIZER</a> -- make a rule used by the typing mechanism
+</h3>
+</li>
+
+<li><h3><a href="CONGRUENCE.html">CONGRUENCE</a> -- the relations to maintain while simplifying arguments
+</h3>
+</li>
+
+<li><h3><a href="DEFINITION.html">DEFINITION</a> -- make a rule that acts like a function definition
+</h3>
+</li>
+
+<li><h3><a href="ELIM.html">ELIM</a> -- make a destructor elimination rule
+</h3>
+</li>
+
+<li><h3><a href="EQUIVALENCE.html">EQUIVALENCE</a> -- mark a relation as an equivalence relation
+</h3>
+</li>
+
+<li><h3><a href="FORWARD-CHAINING.html">FORWARD-CHAINING</a> -- make a rule to forward chain when a certain trigger arises
+</h3>
+</li>
+
+<li><h3><a href="FREE-VARIABLES.html">FREE-VARIABLES</a> -- free variables in rules
+</h3>
+</li>
+
+<li><h3><a href="GENERALIZE.html">GENERALIZE</a> -- make a rule to restrict generalizations
+</h3>
+</li>
+
+<li><h3><a href="INDUCTION.html">INDUCTION</a> -- make a rule that suggests a certain induction
+</h3>
+</li>
+
+<li><h3><a href="LINEAR.html">LINEAR</a> -- make some arithmetic inequality rules
+</h3>
+</li>
+
+<li><h3><a href="META.html">META</a> -- make a <code>:meta</code> rule (a hand-written simplifier)
+</h3>
+</li>
+
+<li><h3><a href="REFINEMENT.html">REFINEMENT</a> -- record that one equivalence relation refines another
+</h3>
+</li>
+
+<li><h3><a href="REWRITE.html">REWRITE</a> -- make some <code>:rewrite</code> rules (possibly conditional ones)
+</h3>
+</li>
+
+<li><h3><a href="TYPE-PRESCRIPTION.html">TYPE-PRESCRIPTION</a> -- make a rule that specifies the type of a term
+</h3>
+</li>
+
+<li><h3><a href="TYPE-SET-INVERTER.html">TYPE-SET-INVERTER</a> -- exhibit a new decoding for an ACL2 type-set
+</h3>
+</li>
+
+<li><h3><a href="WELL-FOUNDED-RELATION.html">WELL-FOUNDED-RELATION</a> -- show that a relation is well-founded on a set
+</h3>
+</li>
+
+</ul>
+
+Before we get into the discussion of rule classes, let us return to
+an important point.  In spite of the large variety of rule classes
+available, at present we recommend that new ACL2 users rely almost
+exclusively on (conditional) rewrite rules.  A reasonable but
+slightly bolder approach is to use <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> and
+<code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules for ``type-theoretic'' rules, especially
+ones whose top-level function symbol is a common one like
+<code><a href="TRUE-LISTP.html">true-listp</a></code> or <code><a href="CONSP.html">consp</a></code>; see <a href="TYPE-PRESCRIPTION.html">type-prescription</a> and
+see <a href="FORWARD-CHAINING.html">forward-chaining</a>.  However, the rest of the rule classes
+are really not intended for widespread use, but rather are mainly
+for experts.<p>
+
+We expect that we will write more about the question of which kind
+of rule to use.  For now:  when in doubt, use a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule.<p>
+
+<code>:Rule-classes</code> is an optional keyword argument of the <code><a href="DEFTHM.html">defthm</a></code> (and
+<code><a href="DEFAXIOM.html">defaxiom</a></code>) event.  In the following, let <code>name</code> be the name of the
+event and let <code>thm</code> be the formula to be proved or added as an axiom.<p>
+
+If <code>:rule-classes</code> is not specified in a <code><a href="DEFTHM.html">defthm</a></code> (or <code><a href="DEFAXIOM.html">defaxiom</a></code>) event,
+it is as though <code>:rule-classes</code> <code>((:rewrite))</code> had been used.  Use
+<code>:rule-classes</code> <code>nil</code> to specify that no rules are to be generated.<p>
+
+If <code>:rule-classes</code> class is specified, where class is a non-<code>nil</code>
+symbol, it is as though <code>:rule-classes</code> <code>((class))</code> had been used.
+Thus, <code>:rule-classes</code> <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> is equivalent to <code>:rule-classes</code>
+<code>((:forward-chaining))</code>.<p>
+
+We therefore now consider <code>:rule-classes</code> as a true list.  If any
+element of that list is a keyword, replace it by the singleton list
+containing that keyword.  Thus, <code>:rule-classes</code> <code>(:rewrite :elim)</code> is
+the same as <code>:rule-classes</code> <code>((:rewrite) (:elim))</code>.<p>
+
+Each element of the expanded value of <code>:rule-classes</code> must be a true
+list whose <code><a href="CAR.html">car</a></code> is one of the rule class keyword tokens listed above,
+e.g., <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="ELIM.html">elim</a></code>, etc., and whose <code><a href="CDR.html">cdr</a></code> is a ``keyword alist''
+alternately listing keywords and values.  The keywords in this alist
+must be taken from those shown below.  They may be listed in any
+order and most may be omitted, as specified below.
+<blockquote><p>
+
+<code>:</code><code><a href="COROLLARY.html">Corollary</a></code> -- its value, <code>term</code>, must be a term.  If omitted, this
+field defaults to <code>thm</code>.  The <code>:</code><code><a href="COROLLARY.html">corollary</a></code> of a rule class object is the
+formula actually used to justify the rule created and thus
+determines the form of the rule.  Nqthm provided no similar
+capability: each rule was determined by <code>thm</code>, the theorem or axiom
+added.  ACL2 permits <code>thm</code> to be stated ``elegantly'' and then allows
+the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> of a rule class object to specify how that elegant
+statement is to be interpreted as a rule.  For the rule class object
+to be well-formed, its (defaulted) <code>:</code><code><a href="COROLLARY.html">corollary</a></code>, <code>term</code>, must follow
+from <code>thm</code>.  Unless <code>term</code> is trivially implied by <code>thm</code>, using little
+more than propositional logic, the formula <code>(implies thm term)</code> is
+submitted to the theorem prover and the proof attempt must be
+successful.  During that proof attempt the values of <code>:</code><code><a href="HINTS.html">hints</a></code>,
+<code>:</code><code><a href="INSTRUCTIONS.html">instructions</a></code>, and <code>:</code><code><a href="OTF-FLG.html">otf-flg</a></code>, as provided in the rule class object,
+are provided as arguments to the prover.  Such auxiliary proofs give
+the sort of output that one expects from the prover.  However, as
+noted above, corollaries that follow trivially are not submitted to
+the prover; thus, such corollaries cause no prover output.<p>
+
+Note that before <code>term</code> is stored, all calls of macros in it are
+expanded away.  See <a href="TRANS.html">trans</a>.<p>
+
+<code>:</code><code><a href="HINTS.html">Hints</a></code>, <code>:</code><code><a href="INSTRUCTIONS.html">instructions</a></code>, <code>:</code><code><a href="OTF-FLG.html">otf-flg</a></code> -- the values of these fields must
+satisfy the same restrictions placed on the fields of the same names
+in <code><a href="DEFTHM.html">defthm</a></code>.  These values are passed to the recursive call of the
+prover used to establish that the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> of the rule class
+object follows from the theorem or axiom <code>thm</code>.<p>
+
+<code>:</code><code><a href="TYPE-SET.html">Type-set</a></code> -- this field may be supplied only if the <code>:class</code> is
+<code>:</code><code><a href="TYPE-SET-INVERTER.html">type-set-inverter</a></code>.  When provided, the value must be a type-set, an
+integer in a certain range.  If not provided, an attempt is made to
+compute it from the corollary.  See <a href="TYPE-SET-INVERTER.html">type-set-inverter</a>.<p>
+
+<code>:Typed-term</code> -- this field may be supplied only if the <code>:class</code> is
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code>.  When provided, the value is the term for which
+the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> is a type-prescription lemma.  If no <code>:typed-term</code> is
+provided in a <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule class object, we try to
+compute heuristically an acceptable term.
+See <a href="TYPE-PRESCRIPTION.html">type-prescription</a>.<p>
+
+<code>:Trigger-terms</code> -- this field may be supplied only if the <code>:class</code> is
+<code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> or <code>:</code><code><a href="LINEAR.html">linear</a></code>.  When provided, the value is a list of
+terms, each of which is to trigger the attempted application of the
+rule.  If no <code>:trigger-terms</code> is provided, we attempt to compute
+heuristically an appropriate set of triggers.
+See <a href="FORWARD-CHAINING.html">forward-chaining</a> or see <a href="LINEAR.html">linear</a>.<p>
+
+<code>:Trigger-fns</code> -- this field must (and may only) be supplied if the
+<code>:class</code> is <code>:</code><code><a href="META.html">meta</a></code>.  Its value must be a list of function symbols.
+Terms with these symbols trigger the application of the rule.
+See <a href="META.html">meta</a>.<p>
+
+<code>:Clique</code> and <code>:controller-alist</code> -- these two fields may only
+be supplied if the <code>:class</code> is <code>:</code><code><a href="DEFINITION.html">definition</a></code>.  If they are omitted,
+then ACL2 will attempt to guess them.  Suppose the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> of
+the rule is <code>(implies hyp (equiv (fn a1 ... an) body))</code>.  The value of
+the <code>:clique</code> field should be a true list of function symbols, and if
+non-<code>nil</code> must include <code>fn</code>.  These symbols are all the members of the
+mutually recursive clique containing this definition of <code>fn</code>.  That
+is, a call of any function in <code>:clique</code> is considered a ``recursive
+call'' for purposes of the expansion heuristics.  The value of the
+<code>:controller-alist</code> field should be an alist that maps each function
+symbol in the <code>:clique</code> to a list of <code>t</code>'s and <code>nil</code>'s of length equal to
+the arity of the function.  For example, if <code>:clique</code> consists of just
+two symbols, <code>fn1</code> and <code>fn2</code>, of arities <code>2</code> and <code>3</code> respectively, then
+<code>((fn1 t nil) (fn2 nil t t))</code> is a legal value of <code>:controller-alist</code>.
+The value associated with a function symbol in this alist is a
+``mask'' specifying which argument slots of the function ``control''
+the recursion for heuristic purposes.  Sloppy choice of <code>:clique</code> or
+<code>:controller-alist</code> can result in infinite expansion and stack
+overflow.<p>
+
+<code>:Install-body</code> -- this field may only be supplied if the <code>:class</code> is
+<code>:</code><code><a href="DEFINITION.html">definition</a></code>.  Its value must be <code>t</code>, <code>nil</code>, or the default,
+<code>:normalize</code>.  A value of <code>t</code> or <code>:normalize</code> will cause ACL2 to
+install this rule as the new body of the function being ``defined'' (<code>fn</code>
+in the paragraph just above); hence this definition will be installed for
+future <code>:expand</code> <a href="HINTS.html">hints</a>.  Furthermore, if this field is omitted or the
+value is <code>:normalize</code>, then this definition will be simplified using the
+so-called ``normalization'' procedure that is used when processing
+definitions made with <code><a href="DEFUN.html">defun</a></code>.  You must explicitly specify
+<code>:install-body nil</code> in the following cases: <code>fn</code> (as above) is a member
+of the value of constant <code>*definition-minimal-theory*</code>, the arguments are
+not a list of distinct variables, <code>equiv</code> (as above) is not <code><a href="EQUAL.html">equal</a></code>, or
+there are free variables in the hypotheses or right-hand side
+(see <a href="FREE-VARIABLES.html">free-variables</a>).  However, supplying <code>:install-body nil</code> will not
+affect the rewriter's application of the <code>:definition</code> rule, other than to
+avoid using the rule to apply <code>:expand</code> hints.  If a definition rule
+equates <code>(f a1 ... ak)</code> with <code>body</code> but there are hypotheses, <code>hyps</code>,
+then <code>:expand</code> <a href="HINTS.html">hints</a> will replace terms <code>(f term1 ... termk)</code> by
+corresponding terms <code>(if hyps body (hide (f term1 ... termk)))</code>.<p>
+
+<code>:</code><code><a href="LOOP-STOPPER.html">Loop-stopper</a></code> -- this field may only be supplied if the class is
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code>.  Its value must be a list of entries each consisting of
+two variables followed by a (possibly empty) list of functions, for
+example <code>((x y binary-+) (u v foo bar))</code>.  It will be used to restrict
+application of rewrite rules by requiring that the list of instances
+of the second variables must be ``smaller'' than the list of
+instances of the first variables in a sense related to the
+corresponding functions listed; see <a href="LOOP-STOPPER.html">loop-stopper</a>.  The list as
+a whole is allowed to be <code>nil</code>, indicating that no such restriction
+shall be made.  Note that any such entry that contains a variable
+not being instantiated, i.e., not occurring on the left side of the
+rewrite rule, will be ignored.  However, for simplicity we merely
+require that every variable mentioned should appear somewhere in the
+corresponding <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula.<p>
+
+<code>:Pattern</code>, <code>:Condition</code>, <code>:Scheme</code> -- the first and last of these fields
+must (and may only) be supplied if the class is <code>:</code><code><a href="INDUCTION.html">induction</a></code>.
+<code>:Condition</code> is optional but may only be supplied if the class is
+<code>:</code><code><a href="INDUCTION.html">induction</a></code>.  The values must all be terms and indicate,
+respectively, the pattern to which a new induction scheme is to be
+attached, the condition under which the suggestion is to be made,
+and a term which suggests the new scheme.  See <a href="INDUCTION.html">induction</a>.<p>
+
+<code>:Match-free</code> -- this field must be <code>:all</code> or <code>:once</code> and may be
+supplied only if the <code>:class</code> is either <code>:</code><code><a href="REWRITE.html">rewrite</a></code>,
+<code>:</code><code><a href="LINEAR.html">linear</a></code>, or <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code>.  See <a href="FREE-VARIABLES.html">free-variables</a> for a
+description of this field.  Note: Although this field is intended to be used
+for controlling retries of matching free variables in hypotheses, it is
+legal to supply it even if there are no such free variables.  This can
+simplify the automated generation of rules, but note that when
+<code>:match-free</code> is supplied, the warning otherwise provided for the presence
+of free variables in hypotheses will be suppressed.<p>
+
+<code>Backchain-limit-lst</code> -- this field may be supplied only if
+the <code>:class</code> is either <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="META.html">meta</a></code>, or
+<code>:</code><code><a href="LINEAR.html">linear</a></code> and only one rule is generated from the formula.  Its
+value must be <code>nil</code>; a non-negative integer; or, except in the case of
+<code>:</code><code><a href="META.html">meta</a></code> rules, a true list each element of which is either <code>nil</code>
+or a non-negative integer.  If it is a list, its length must be equal to the
+number of hypotheses of the rule and each item in the list is the
+``backchain limit'' associated with the corresponding hypothesis.  If
+<code>backchain-limit-lst</code> is a non-negative integer, it is defaulted to a list
+of the appropriate number of repetions of that integer.  The backchain limit
+of a hypothesis is used to limit the effort that ACL2 will expend when
+relieving the hypothesis.  If it is <code>NIL</code>, no new limits are imposed; if
+it is an integer, the hypothesis will be limited to backchaining at most
+that many times.  Note that backchaining may be further limited by a global
+<code>backchain-limit</code>; see <a href="BACKCHAIN-LIMIT.html">backchain-limit</a> for details.  For a different way
+to reign in the rewriter, see <a href="REWRITE-STACK-LIMIT.html">rewrite-stack-limit</a>.  Jared Davis has pointed
+out that you can set this field to 0 to avoid any attempt to relieve
+<code><a href="FORCE.html">force</a></code>d hypotheses, which can lead to a significant speed-up in some cases.<p>
+
+</blockquote>
+Once <code>thm</code> has been proved (in the case of <code><a href="DEFTHM.html">defthm</a></code>) and each rule
+class object has been checked for well-formedness (which might
+require additional proofs), we consider each rule class object in
+turn to generate and add rules.  Let <code>:class</code> be the class keyword
+token of the <code>i</code>th class object (counting from left to right).
+Generate the <a href="RUNE.html">rune</a> <code>(:class name . x)</code>, where <code>x</code> is <code>nil</code> if there is only
+one class and otherwise <code>x</code> is <code>i</code>.  Then, from the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> of that
+object, generate one or more rules, each of which has the name
+<code>(:class name . x)</code>.  See the <code>:</code><code><a href="DOC.html">doc</a></code> entry for each rule class to see
+how formulas determine rules.  Note that it is in principle possible
+for several rules to share the same name; it happens whenever a
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> determines more than one rule.  This in fact only occurs
+for <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="LINEAR.html">linear</a></code>, and <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> class rules and only
+then if the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> is essentially a conjunction.  (See the
+documentation for <a href="REWRITE.html">rewrite</a>, <a href="LINEAR.html">linear</a>, or
+<a href="FORWARD-CHAINING.html">forward-chaining</a> for details.)
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

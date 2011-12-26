@@ -1,0 +1,169 @@
+<html>
+<head><title>DEFINITION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFINITION</h2>make a rule that acts like a function definition
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and how they are
+used to build rules from formulas.  An example <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula
+from which a <code>:definition</code> rule might be built is:
+
+<pre>
+Example:
+(implies (true-listp x)
+         (equal (len x)
+                (if (null x)
+                    0
+                    (if (null (cdr x))
+                        1
+                        (+ 2 (len (cddr x)))))))
+<p>
+General Form:
+(implies hyp (equiv (fn a1 ... an) body))
+</pre>
+
+where <code>equiv</code> is an equivalence relation and <code>fn</code> is a function
+symbol other than <code><a href="IF.html">if</a></code>, <code><a href="HIDE.html">hide</a></code>, <code><a href="FORCE.html">force</a></code> or <code><a href="CASE-SPLIT.html">case-split</a></code>.  Such
+rules allow ``alternative'' definitions of <code>fn</code> to be proved as
+theorems but used as definitions.  These rules are not true
+``definitions'' in the sense that they (a) cannot introduce new
+function symbols and (b) do not have to be terminating recursion
+schemes.  They are just conditional rewrite rules that are
+controlled the same way we control recursive definitions.  We call
+these ``definition rules'' or ``generalized definitions''.<p>
+
+Consider the general form above.  Generalized definitions are stored
+among the <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules for the function ``defined,'' <code>fn</code> above, but
+the procedure for applying them is a little different.  During
+rewriting, instances of <code>(fn a1 ... an)</code> are replaced by corresponding
+instances of <code>body</code> provided the <code>hyp</code>s can be established as for a
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule and the result of rewriting <code>body</code> satisfies the
+criteria for function expansion.  There are two primary criteria,
+either of which permits expansion.  The first is that the
+``recursive'' calls of <code>fn</code> in the rewritten body have arguments that
+already occur in the goal conjecture.  The second is that the
+``controlling'' arguments to <code>fn</code> are simpler in the rewritten body.<p>
+
+The notions of ``recursive call'' and ``controllers'' are
+complicated by the provisions for mutually recursive definitions.
+Consider a ``clique'' of mutually recursive definitions.  Then a
+``recursive call'' is a call to any function defined in the clique
+and an argument is a ``controller'' if it is involved in the measure
+that decreases in all recursive calls.  These notions are precisely
+defined by the definitional principle and do not necessarily make
+sense in the context of generalized definitional equations as
+implemented here.<p>
+
+But because the heuristics governing the use of generalized
+definitions require these notions, it is generally up to the user to
+specify which calls in body are to be considered recursive and what
+the controlling arguments are.  This information is specified in the
+<code>:clique</code> and <code>:controller-alist</code> fields of the <code>:definition</code> rule class.<p>
+
+The <code>:clique</code> field is the list of function symbols to be considered
+recursive calls of <code>fn</code>.  In the case of a non-recursive definition,
+the <code>:clique</code> field is empty; in a singly recursive definition, it
+should consist of the singleton list containing <code>fn</code>; otherwise it
+should be a list of all of the functions in the mutually recursive
+clique with this definition of <code>fn</code>.<p>
+
+If the <code>:clique</code> field is not provided it defaults to <code>nil</code> if <code>fn</code> does
+not occur as a function symbol in <code>body</code> and it defaults to the
+singleton list containing <code>fn</code> otherwise.  Thus, <code>:clique</code> must be
+supplied by the user only when the generalized definition rule is to
+be treated as one of several in a mutually recursive clique.<p>
+
+The <code>:controller-alist</code> is an alist that maps each function symbol in
+the <code>:clique</code> to a mask specifying which arguments are considered
+controllers.  The mask for a given member of the clique, <code>fn</code>, must be
+a list of <code>t</code>'s and <code>nil</code>'s of length equal to the arity of <code>fn</code>.  A <code>t</code>
+should be in each argument position that is considered a
+``controller'' of the recursion.  For a function admitted under the
+principle of definition, an argument controls the recursion if it is
+one of the arguments measured in the termination argument for the
+function.  But in generalized definition rules, the user is free to
+designate any subset of the arguments as controllers.  Failure to
+choose wisely may result in the ``infinite expansion'' of
+definitional rules but cannot render ACL2 unsound since the rule
+being misused is a theorem.<p>
+
+If the <code>:controller-alist</code> is omitted it can sometimes be defaulted
+automatically by the system.  If the <code>:clique</code> is <code>nil</code>, the
+<code>:controller-alist</code> defaults to <code>nil</code>.  If the <code>:clique</code> is a singleton
+containing <code>fn</code>, the <code>:controller-alist</code> defaults to the controller
+alist computed by <code>(defun fn args body)</code>.  If the <code>:clique</code> contains
+more than one function, the user must supply the <code>:controller-alist</code>
+specifying the controllers for each function in the clique.  This is
+necessary since the system cannot determine and thus cannot analyze
+the other definitional equations to be included in the clique.<p>
+
+For example, suppose <code>fn1</code> and <code>fn2</code> have been defined one way and it is
+desired to make ``alternative'' mutually recursive definitions
+available to the rewriter.  Then one would prove two theorems and
+store each as a <code>:definition</code> rule.  These two theorems would exhibit
+equations ``defining'' <code>fn1</code> and <code>fn2</code> in terms of each other.  No
+provision is here made for exhibiting these two equations as a
+system of equations.  One is proved and then the other.  It just so
+happens that the user intends them to be treated as mutually
+recursive definitions.  To achieve this end, both <code>:definition</code> rules
+should specify the <code>:clique</code> <code>(fn1 fn2)</code> and should specify a suitable
+<code>:controller-alist</code>.  If, for example, the new definition of <code>fn1</code> is
+controlled by its first argument and the new definition of <code>fn2</code> is
+controlled by its second and third (and they each take three
+arguments) then a suitable <code>:controller-alist</code> would be
+<code>((fn1 t nil nil) (fn2 nil t t))</code>.  The order of the pairs in the
+alist is unimportant, but there must be a pair for each function in
+the clique.<p>
+
+Inappropriate heuristic advice via <code>:clique</code> and <code>:controller-alist</code> can
+cause ``infinite expansion'' of generalized definitions, but cannot
+render ACL2 unsound.<p>
+
+Note that the actual definition of <code>fn1</code> has the runic name
+<code>(:definition fn1)</code>.  The runic name of the alternative definition is
+<code>(:definition lemma)</code>, where <code>lemma</code> is the name given to the event that
+created the generalized <code>:definition</code> rule.  This allows theories to
+switch between various ``definitions'' of the functions.<p>
+
+By default, a <code>:definition</code> rule establishes the so-called ``body'' of a
+function.  The body is used by <code>:expand</code> <a href="HINTS.html">hints</a>, and it is also used
+heuristically by the theorem prover's preprocessing (the initial
+simplification using ``simple'' rules that is controlled by the
+<code>preprocess</code> symbol in <code>:do-not</code> <a href="HINTS.html">hints</a>), induction analysis, and the
+determination for when to warn about non-recursive functions in rules.  The
+body is also used by some heuristics involving whether a function is
+recursively defined, and by the <code>expand</code>, <code>x</code>, and <code>x-dumb</code> commands of
+the <a href="PROOF-CHECKER.html">proof-checker</a>.<p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a discussion of the optional field <code>:install-body</code> of
+<code>:definition</code> rules, which controls whether a <code>:definition</code> rule is used
+as described in the paragraph above.  Note that even if <code>:install-body nil</code>
+is supplied, the rewriter will still rewrite with the <code>:definition</code> rule;
+in that case, ACL2 just won't install a new body for the top function symbol
+of the left-hand side of the rule, which for example affects the application
+<code>:expand</code> hints as described in the preceding paragraph.  Also
+see <a href="SET-BODY.html">set-body</a> and see <a href="SHOW-BODIES.html">show-bodies</a> for how to change the body of a function
+symbol.<p>
+
+Note only that if you prove a definition rule for function <code>foo</code>, say,
+<code>foo-new-def</code>, you will need to refer to that definition as <code>foo-new-def</code>
+or as <code>(:DEFINITION foo-new-def)</code>.  That is because a <code>:definition</code> rule
+does not change the meaning of the symbol <code>foo</code> for <code>:use</code> <a href="HINTS.html">hints</a>,
+nor does it change the meaning of the symbol <code>foo</code> in theory expressions;
+see <a href="THEORIES.html">theories</a>, in particular the discussion there of runic designators.
+Similarly <code>:</code><code><a href="PE.html">pe</a></code> <code>foo</code> and <code>:</code><code><a href="PF.html">pf</a></code> <code>foo</code> will still show the
+original definition of <code>foo</code>.<p>
+
+The definitional principle, <code><a href="DEFUN.html">defun</a></code>, actually adds <code>:definition</code>
+rules.  Thus the handling of generalized definitions is exactly the
+same as for ``real'' definitions because no distinction is made in
+the implementation.  Suppose <code>(fn x y)</code> is <code><a href="DEFUN.html">defun</a></code>'d to be
+<code>body</code>.  Note that <code><a href="DEFUN.html">defun</a></code> (or <code><a href="DEFUNS.html">defuns</a></code> or <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code>)
+can compute the clique for <code>fn</code> from the syntactic presentation and
+it can compute the controllers from the termination analysis.
+Provided the definition is admissible, <code><a href="DEFUN.html">defun</a></code> adds the
+<code>:definition</code> rule <code>(equal (fn x y) body)</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

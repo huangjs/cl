@@ -1,0 +1,446 @@
+<html>
+<head><title>CONSERVATIVITY-OF-DEFCHOOSE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>CONSERVATIVITY-OF-DEFCHOOSE</h3>proof of conservativity of <code><a href="DEFCHOOSE.html">defchoose</a></code>
+<pre>Major Section:  <a href="DEFCHOOSE.html">DEFCHOOSE</a>
+</pre><p>
+
+This documentation topic provides underlying theory.  It is of theoretical
+interest only; it has no relationship to the effective use of ACL2.
+<p>
+The argument below for the conservativity of <a href="DEFCHOOSE.html">defchoose</a> replaces the
+terse and somewhat misleading reference to a forcing argument in Appendix B
+of the paper by ACL2 authors Kaufmann and Moore, ``Structured Theory
+Development for a Mechanized Logic'' (Journal of Automated Reasoning 26,
+no. 2 (2001), pp. 161-203).<p>
+
+Our basic idea is to to take a (countable) first-order structure for ACL2, M,
+together with a function symbol, f, introduced by <a href="DEFCHOOSE.html">defchoose</a>, and find a
+way to expand M with an interpretation of f (without changing the universe of
+M) so that e0-induction continues to hold in the expansion.  A remark at the
+end of this documentation topic shows why care is necessary.  A concept
+called ``forcing'', originally introduced by Paul Cohen for set theory, has
+long since been adapted by logicians (in a simplified form) to model theory.
+This simplified model-theoretic forcing provides the means for making our
+careful expansion.<p>
+
+The forcing argument presented below is intended to be completely
+self-contained for those familiar with basic first-order logic and ACL2.  No
+background in forcing (model-theoretic or otherwise) is expected, though we
+do expect a rudimentary background in first-order logic and familiarity with
+the following.<p>
+
+Preliminaries.  We write s[p&lt;-p0] to denote the result of extending or
+modifying the assignment s by binding p to p0.  Now let A be a subset of the
+universe U of a first-order structure M.  A is said to be ``first-order
+definable with parameters'' in M if for some formula phi, variable x, and
+assignment s binding the free variables of phi except perhaps for x, A = {a
+\in U: M |= phi[s[x&lt;-a]].  Note that we are writing ``\in'' to denote set
+membership.  Finally, we indicate the end of a proof (or of a theorem
+statement, when the proof is omitted) with the symbol ``-|''.<p>
+
+We gratefully acknowledge very helpful feedback from John Cowles, who found
+several errors in a draft of this note and suggested the exercises.  We also
+thank Ruben Gamboa for helpful feedback, and we thank Jim Schmerl for an
+observation that led us directly to this proof in the first place.<p>
+
+We are given a consistent first-order theory T, extending the ACL2
+ground-zero theory, that satisfies the e0-induction scheme.  We wish to show
+that the extension of T by the following arbitrary defchoose event is
+conservative, where g is a new function symbol.
+
+<pre>
+     (defchoose g &lt;bound-vars&gt; &lt;free-vars&gt; &lt;body&gt;)
+</pre>
+
+Note that by ``the extension of T'' here we mean the extension of T by not
+only the new defchoose axiom displayed just below, but also the addition of
+e0-induction axioms for formulas in the language with the new defchoose
+function symbol, g.
+
+<pre>
+     &lt;body&gt; -&gt; (LET &lt;free-vars&gt; = g(&lt;bound-vars&gt;) in &lt;body&gt;)
+</pre>
+  
+By definition of conservativity, since proofs are finite, it clearly suffices
+to consider an arbitrary finite subset of T.  Then by the completeness,
+soundness, and downward Lowenheim-Skolem theorems of first-order logic, it
+suffices to show that an arbitrary countable model of T can be expanded
+(i.e., by interpreting the new symbol g without changing the universe of the
+model) to a model of the corresponding defchoose axiom above, in which all
+e0-induction axioms hold in the language of that model.<p>
+
+Below, we will carry out a so-called <em>forcing</em> construction, which
+allows us to expand any countable model M of T to a model M[G] that satisfies
+e0-induction and also satisfies the above axiom generated from the above
+defchoose event.  The ideas in this argument are standard in model theory; no
+novelty is claimed here.<p>
+
+Fix a countable model M of a theory T that satisfies e0-induction and extends
+the ACL2 ground-zero theory.  Also fix the above defchoose axiom, where g is
+not in the language of T.<p>
+
+We start by defining a partial order P as follows.  Let Nb and Nf be the
+lengths of &lt;bound-vars&gt; and &lt;free-vars&gt;, respectively.  P consists of all fn in
+M such that the following formula is true in M.  Roughly speaking, it says that
+fn is a finite function witnessing the above requirement for g.
+
+<pre>
+       alistp(fn) &amp;
+       no-duplicatesp-equal(strip-cars(fn)) &amp;
+       (forall &lt;bound-vars&gt;, &lt;free-vars&gt; .
+          (member-equal(cons(&lt;bound-vars&gt;,&lt;free-vars&gt;), fn) -&gt;
+           (length(&lt;bound-vars&gt;) = Nb &amp;
+            length(&lt;free-vars&gt;)  = Nf &amp;
+            ((exists &lt;free-vars&gt; . &lt;body&gt;) -&gt; &lt;body&gt;))))
+</pre>
+
+P is ordered by subset, i.e., we say that p2 <em>extends</em> p1 if p1 is a
+subset (not necessarily proper) of p2 (more precisely, M |=
+subsetp-equal(p1,p2)).<p>
+
+Remark.  The original argument in Appendix B of the aforementioned paper can
+essentially be salvaged, as we now show.  The key observation is that the
+particular choice of P is nearly irrelevant for the argument that follows
+below.  In particular, we can instead define P to consist of finite one-one
+functions with domain contained in the set of natural numbers.  More
+precisely, consider the following definitions.
+
+<pre>
+     (defun function-p (fn)
+       (declare (xargs :guard t))
+       (and (alistp fn)
+            (no-duplicatesp-equal (strip-cars fn))))<p>
+
+     (defun nat-listp (x)
+       (declare (xargs :guard t))
+       (cond ((atom x)
+              (equal x nil))
+             (t (and (natp (car x))
+                     (nat-listp (cdr x))))))<p>
+
+     (defun nat-function-p (x)
+       (and (function-p x)
+            (nat-listp (strip-cars x))))
+</pre>
+
+and define inverse as follows.
+
+<pre>
+     (defun inverse (fn)
+       (declare (xargs :guard (alistp fn)))
+       (if (endp fn)
+           nil
+         (cons (cons (cdar fn) (caar fn))
+               (inverse (cdr fn)))))
+</pre>
+
+Then P may instead be defined to consist of those fn for which
+nat-function-p(fn) &amp; function-p(inverse(fn)).  With this alternate definition
+of P, the argument below then goes through virtually unchanged, and we get an
+expansion M[G] of M in which there is a definable enumeration of the
+universe.  The conservativity of defchoose then follows easily because the
+function being introduced can be defined explicitly using that enumeration
+(namely, always pick the least witness in the sense of the enumeration).<p>
+
+End of Remark.<p>
+
+Next we present the relevant forcing concepts from model theory.<p>
+
+A <em>dense</em> subset of P is a subset D of P such that for every p \in P,
+there is d \in D such that d extends p.  A subset G of P is <em>generic</em>
+with respect to a collection Ds of dense subsets of P, also written ``G is
+Ds-generic,'' if G is closed under subset (if p2 \in G and p2 extends p1
+then p1 \in G), G is pairwise compatible (the union-equal of any two
+elements of G is in G), and every set in Ds has non-empty intersection with
+G.<p>
+
+For p \in P, we say that a subset D of P is <em>dense beyond</em> p if for all
+p1 extending p there exists p2 extending p1 such that p2 \in D.  This notion
+makes sense even for D not a subset of P if we treat elements of D not in P
+as nil.<p>
+
+Proposition 1.  For any partial order P and countable collection Ds of dense
+subsets of P, there is a Ds-generic subset of P.<p>
+
+Proof.  Let Ds = {D0,D1,D2,...}.  Define a sequence &lt;p_0,p_1,...&gt; such that
+for all i, p_i \in Di and p_(i+1) extends p_i.  Let G = {p \in P: for some
+i, pi extends p}.  Then G is Ds-generic. -|<p>
+
+Note that P is first-order definable (with parameters) in M.  Let Df be the
+set of dense subsets of P that are first-order definable (with parameters) in
+M.  A standard argument shows there are only countably many first-order
+definitions with parameters in a countable model M -- for example, we can
+Goedel number all terms and then all formulas -- hence, Df is countable.<p>
+
+By Proposition 1, let G be Df-generic.  Notice that for any list x of length
+Nb in M, the set of elements f of P for which x is in the domain of f is
+dense and first-order definable.  We may thus define a function g0 as
+follows: g0(x_1,...,x_Nb) = y if there is some element of G containing the
+pair ((x_1 ... x_Nb) . y).  It is easy to see that g0 is a total function on
+M.  Let L be the language of T and let L[g] be the union of L with a set
+containing a single new function symbol, g.  Let M[G] be the expansion of M
+to L[g] obtained by interpreting g to be g0 (see also Proposition 5 below).<p>
+
+So now we have fixed M, P, Df, G, and g0, where G is Df-generic.<p>
+
+Proposition 2.  Let Df be the set of dense subsets of P that are first-order
+definable (with parameters) in M.  Suppose that p \in G and D \in Df.  Then for
+some q \in G extending p, q \in D.<p>
+
+Proof.  Let D0 be the set of p' \in D that either extend p or have no
+extension in D that extends p.  We leave it as a straightforward exercise to
+show that D0 is dense, and D0 is clearly first-order definable (with
+parameters) in M.  So by genericity of G, we may pick q \in D0 such that q
+\in G.  Thus q \in D.  By definition of generic, some extension q1 of both
+p and q belongs to G.  Pick q2 \in D extending q1; thus q has an extension
+in D that extends p (namely, q2), so by definition of D0, q extends p. -|<p>
+
+Definition of forcing.  Let phi(x1,...,xk) be a first-order formula in L[g]
+and let p \in P.  We define a formula of L, denoted ``p ||- phi'' (``p
+forces phi''), by recursion on phi (in the metatheory) as follows.  (Here, we
+view ``or'' and ``forall'' as abbreviations.)<p>
+
+
+<blockquote>
+  If phi is atomic, then let phi'(A) be the result of replacing, inside-out,
+  each subterm of the form g(x_1,...,x_Nb) with the term (cdr (assoc-equal
+  (list x_1 ... x_Nb) A)), where A is neither p nor a variable occurring in
+  phi.  Then p ||- phi is defined as follows: ``The set {A \in P: A extends
+  p and phi'(A)} is dense beyond p''.  That is, p ||- phi is the following
+  formula:
+
+<pre>
+    (forall p1 \in P extending p)
+     (exists p2 \in P extending p1) phi'(p2).
+</pre>
+
+  p ||- ~phi is:  (forall p' \in P extending p) ~(p' ||- phi)<p>
+
+  p ||- phi_1 &amp; phi_2 is: (p ||- phi_1) &amp; (p ||- phi_2)<p>
+
+  p ||- (exists x) phi is:  (exists x) (p ||- phi)
+</blockquote>
+<p>
+
+We will need the following definition later.<p>
+
+Definition.  p ||-w phi (p <em>weakly forces</em> phi) is an abbreviation for p
+||- ~~phi.<p>
+
+The following exercises were suggested by John Cowles as a means for gaining
+familiarity with the definition of forcing.<p>
+
+Exercise 1. Consider the formula (phi_1 OR phi_2) as an abbreviation for
+~(~phi_1 &amp; ~phi_2), Show that p ||- (phi_1 OR phi_2) is equivalent to the
+following.
+
+<pre>
+     (forall p' \in P extending p) (exists p'' \in P extending p')
+      ((p'' ||- phi_1) OR (p'' ||- phi_2))
+</pre>
+<p>
+
+Exercise 2. Consider the formula (forall x)phi as an abbreviation for
+~(exists x)~phi, Show that p ||- (forall x)phi is equivalent to the following.
+
+<pre>
+     (forall x)
+      (forall p1 \in P extending p)
+       (exists p2 \in P extending p1) (p2 ||- phi).
+</pre>
+
+
+Exercise 3. Prove that p ||-w phi is equivalent to the following.
+
+<pre>
+     (forall p' \in P extending p)
+      (exists p'' \in P extending p') (p'' ||- phi).
+</pre>
+<p>
+
+Exercise 4. Let phi be a formula of L[g].  Prove:
+     M |= (p ||-  phi)[s[p&lt;-p0]] implies
+     M |= (p ||-w phi)[s[p&lt;-p0]].<p>
+
+Exercise 5. Let phi be a formula of L[g].  Prove:
+     M |= (p ||-  ~phi)[s[p&lt;-p0]] iff
+     M |= (p ||-w ~phi)[s[p&lt;-p0]].<p>
+
+[End of exercises.]<p>
+
+The definition of forcing stipulates how to view ``p ||- phi(x1,...,xk)'' as
+a new formula theta(p,x1,...,xk).  That is, ``||-'' transforms formulas, so
+for any first-order formula phi, ``p ||- phi'' is just another first-order
+formula.  That observation shows that a formula such as ((p ||- phi) OR (p
+||- ~phi)) is really just another first-order formula.  The following
+proposition thus follows easily.<p>
+
+Proposition 3. For any formula phi of L[g], {p0: M |= ((p ||- phi) OR (p ||-
+~phi))[s[p&lt;-p0]]]} is a dense subset of P, which (since it is first-order
+definable with parameters in M) intersects G. -|<p>
+
+The following proposition is easily proved by a structural induction on phi,
+and is left to the reader.<p>
+
+Proposition 4. Let phi be a formula of L[g].  Suppose <code>p0 in P</code>,
+<code>p1 in P</code>,<br>
+
+M |= (p ||- phi)[s[p&lt;-p0]] and p1 extends p0.  Then<br>
+
+M |= (p ||- phi)[s[p&lt;-p1]]. -|<p>
+
+We will also need the following.<p>
+
+Proposition 5. The following is dense for any finite set S of Nb-tuples: {p
+\in P: for some &lt;x_1 ... x_Nb&gt; \in S, (list x_1 ... x_Nb) \in
+strip-cars(p)}.  Thus, the function g0 is a total function. -|<p>
+
+The next lemma tells us that the sentences true in M[G] are those that are
+forced by an element of G.<p>
+
+Truth Lemma.  Let phi be a formula in L[g], let s be an assignment to the
+free variables of phi, and let p be a variable not in the domain of s.  Then
+M[G] |= phi[s] iff for some p0 \in G, M |= (p ||- phi)[s[p&lt;-p0]].<p>
+
+Proof.  The proof is by induction on the structure of phi.  First suppose phi
+is atomic.  Let D* be the set of elements p0 \in P such that every
+assoc-equal evaluation from the definition of forcing phi returns a pair when
+A is bound to p0.  (Intuitively, this means that p0 is a sufficiently large
+approximation from any G containing p0 to make sense of phi in M[G].)  We
+make the following claim.
+
+<pre>
+(*)   For all p0 \in G such that p0 \in D*,
+      M[G] |= phi[s] iff M |= (p ||- phi)[s[p&lt;-p0]].
+</pre>
+<p>
+
+To prove the claim, fix p0 in both G and D*, and recall the function g0
+constructed from G in the definition of M[G].  Suppose that t_1, ..., t_Nb
+are terms and g(t_1, ..., t_Nb) is a subterm of phi.  Then s assigns a value
+in M to each of the t_i.  Let a_i be the value assigned by s to t_i.  Then
+g0(a_1, ..., a_Nb) = (cdr (assoc-equal (list a_1 ... a_Nb) p0)), as the
+assoc-equal is a pair (since p0 \in D*) and has the indicated value (because
+p0 \in G).  It follows by the definition of formula phi' in the definition
+of forcing:
+
+<pre>
+     M[G] |= phi[s]  iff  M |= phi'(p)[s[p&lt;-p0]] 
+</pre>
+
+Moreover, because p0 \in D* it is clear that this holds if p0 is replaced by
+an arbitrary extension of p0.  Then (*) easily follows.<p>
+
+By Proposition 5, D* is dense, so there is some p0 in the intersection of D*
+and G.  The forward direction of the conclusion then follows by (*).  The
+reverse direction is clear from (*) by application of Proposition 2 to D* and
+Proposition 4.<p>
+
+Next, suppose M[G] |= ~phi[x].  Then it is not the case that M[G] |= phi, so
+by the inductive hypothesis, there is no p0 \in G for which M |= (p ||-
+phi)[s[p&lt;-p0]].  By Proposition 3, there is p0 \in G for which M |= (p ||-
+~phi)[s[p&lt;-p0]].  For the other direction, suppose it is not the case that
+M[G] |= ~phi[s].  So M[G] |= phi[s], and by the inductive hypothesis, there
+is p0 \in G for which M |= (p ||- phi)[s[p&lt;-p0]].  It follows that there is
+no p1 \in G for which M |= (p ||- ~phi)[s[p&lt;-p1]], since from such p1 we can
+find a common extension p2 of p0 and p1 (since G is generic), and since p2
+extends p0 then by Proposition 4, M |= (p ||- phi)[s[p&lt;-p2]], contradicting
+(by definition of forcing) M |= (p ||- ~phi)[s[p&lt;-p1]] since p2 extends p1.<p>
+
+The case (phi_1 &amp; phi_2) follows easily from the inductive hypothesis.  For
+the forward direction, apply Proposition 4 and the observation that by
+genericity, if p0 \in G and p1 \in G then p0 and p1 they have a common
+extension in G.<p>
+
+Finally, the case (exists x) phi follows trivially from the inductive
+hypothesis. -|<p>
+
+Truth Lemma Corollary.  The Truth Lemma holds with ||-w replacing ||-.<p>
+
+Proof.  This is clear by applying the Truth Lemma to ~~phi. -|<p>
+
+Here is our main theorem.  Recall that all first-order theories in our ACL2
+context satisfy the e0-induction scheme.<p>
+
+Theorem.  M[G] satisfies e0-induction.<p>
+
+Proof.  We consider an arbitrary instance of e0-induction in L[g], stated
+using a strict well-founded relation &lt;| and a formula phi.  We write phi(y)
+to indicate that y may be among the free variables of phi, and phi(y&lt;-x) to
+denote the result of substituting x for y in phi.
+
+<pre>
+  theta(y):   (forall y) [((forall x &lt;| y) phi(y&lt;-x)) -&gt; phi(y)]
+           -&gt; (forall y) phi(y)
+</pre>
+
+Our goal is to prove that theta holds in M[G].<p>
+
+Below, we abuse notation by leaving assignments implicit and by writing ``p
+||- phi(y0)'' to signify that the formula (p ||- phi(y)) is true in M under
+the extension of the explicit assignment that binds y to y0.  We believe that
+the intended meaning will be clear.<p>
+
+Consider the following set D.
+
+<pre>
+  D = {p \in P: either p ||-w phi(y0) for all y0,
+                or else
+                for some y0, p ||- ~phi(y0) and
+                             for all y1 &lt;| y0 p ||-w phi(y1)}.
+</pre>
+
+The set D is clearly first-order definable (with parameters) in M.  We claim
+that D is a dense subset of P.  For suppose p0 \in P; we find p1 \in D
+extending p0, as follows.  If p0 ||-w phi(y0) for all y0, then we may take p1
+to be p0.  Otherwise, by definition of ||-w and ||-, there is some y0 such
+that for some extension p0' of p0, p0' ||- ~phi(y0).  Pick a &lt;|-minimal such
+y0, and correspondingly pick p1 so that p1 extends p0 and p1 ||- ~phi(y0).
+In order to show that p1 \in D, it remains to show that for all y1 &lt;| y0,
+p1 ||-w phi(y1), i.e., there is no q extending p1 such that q ||- ~phi(y1).
+This is indeed the case since otherwise q and y1 would contradict the
+&lt;|-minimality of y0.<p>
+
+Applying the genericity of G and just-proved density of D, pick p0 \in G
+such that p0 \in D.  If p0 ||-w phi(y0) for all y0, then by the Truth Lemma
+Corollary, M[G] |= phi(y0) for all y0, and thus M[G] |= theta.  Otherwise,
+since p0 \in D we may choose y0 such that p0 ||- ~phi(y0) and for all y1 &lt;|
+y0, p0 ||-w phi(y1).  By the Truth Lemma and its corollary, since p0 \in G
+we have:
+
+<pre>
+(1)   M[G] |= ~phi(y0).
+(2)   For all y1 &lt;| y0, M[G] |= phi(y1).
+</pre>
+
+It follows that the antecedent of theta is false in M[G], as witnessed by y =
+y0; thus M[G] |= theta. -|<p>
+
+Remark.  We close by returning, as promised above, to the question of why so
+much care is necessary in constructing an expansion of M.  We assume
+familiarity here with the notion of a ``non-standard'' natural number of M,
+i.e., one that is greater than the interpretation of any term that has the
+form (+ 1 1 1 ... 1).  Here is a very simple example that illustrates the
+need for some care.  Consider the following event, which introduces a
+function foo with the following property: for all x, if natp(x) then
+natp(foo(x)).
+
+<pre>
+     (defchoose foo (y) (x)
+       (implies (natp x) (natp y)))
+</pre>
+
+Certainly we can build a model of the above property from a model M of the
+ground-zero theory, by interpreting foo so that for all x for which M
+satisfies natp(x), foo(x) is also a natp in M.  But suppose we start with a
+non-standard model M of the ground-zero theory, and we happen to define
+foo(x) to be 1 for all non-standard natural numbers x and 0 for all other x.
+The resulting expansion of M will not satisfy the e0-induction scheme or even
+the ordinary natural number induction scheme: foo(0)=0 holds in that
+expansion as does the implication foo(n)=0 =&gt; foo(n+1)=0 for every natural
+number n of M, standard or not; and yet foo(k)=0 fails for every non-standard
+natural number k of M.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

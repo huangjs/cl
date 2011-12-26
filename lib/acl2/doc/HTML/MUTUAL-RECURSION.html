@@ -1,0 +1,121 @@
+<html>
+<head><title>MUTUAL-RECURSION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MUTUAL-RECURSION</h2>define some mutually recursive functions
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(mutual-recursion
+ (defun evenlp (x)
+   (if (consp x) (oddlp (cdr x)) t))
+ (defun oddlp (x)
+   (if (consp x) (evenlp (cdr x)) nil)))
+<p>
+General Form:
+(mutual-recursion def1 ... defn)
+where each defi is a <code><a href="DEFUN.html">defun</a></code> form or a <code><a href="DEFUND.html">defund</a></code> form.
+</pre>
+
+When mutually recursive functions are introduced it is necessary
+to do the termination analysis on the entire clique of definitions.
+Each <code><a href="DEFUN.html">defun</a></code> form specifies its own measure, either with the <code>:measure</code>
+keyword <code>xarg</code> (see <a href="XARGS.html">xargs</a>) or by default to <code><a href="ACL2-COUNT.html">acl2-count</a></code>.  When a
+function in the clique calls a function in the clique, the measure
+of the callee's actuals must be smaller than the measure of the
+caller's formals -- just as in the case of a simply recursive
+function.  But with mutual recursion, the callee's actuals are
+measured as specified by the callee's <code><a href="DEFUN.html">defun</a></code> while the caller's
+formals are measured as specified by the caller's <code><a href="DEFUN.html">defun</a></code>.  These two
+measures may be different but must be comparable in the sense that
+<code><a href="O_lt_.html">o&lt;</a></code> decreases through calls.<p>
+
+If you want to specify <code>:</code><code><a href="HINTS.html">hints</a></code> or <code>:guard-hints</code> (see <a href="XARGS.html">xargs</a>), you
+can put them in the <code><a href="XARGS.html">xargs</a></code> declaration of any of the <code><a href="DEFUN.html">defun</a></code> forms,
+as the <code>:</code><code><a href="HINTS.html">hints</a></code> from each form will be appended together, as will the
+<code><a href="GUARD-HINTS.html">guard-hints</a></code> from each form.<p>
+
+You may find it helpful to use a lexicographic order, the idea being to have
+a measure that returns a list of two arguments, where the first takes
+priority over the second.  Here is an example.
+
+<pre>
+(include-book "ordinals/lexicographic-ordering" :dir :system)<p>
+
+(encapsulate
+ ()
+ (set-well-founded-relation l&lt;) ; will be treated as LOCAL<p>
+
+ (mutual-recursion
+  (defun foo (x)
+    (declare (xargs :measure (list (acl2-count x) 1)))
+    (bar x))
+  (defun bar (y)
+    (declare (xargs :measure (list (acl2-count y) 0)))
+    (if (zp y) y (foo (1- y))))))
+</pre>
+<p>
+
+The <code><a href="GUARD.html">guard</a></code> analysis must also be done for all of the functions at
+the same time.  If any one of the <code><a href="DEFUN.html">defun</a></code>s specifies the
+<code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> <code>xarg</code> to be <code>nil</code>, then <a href="GUARD.html">guard</a> verification is
+omitted for all of the functions.<p>
+
+Technical Note: Each <code>defi</code> above must be of the form <code>(defun ...)</code>.  In
+particular, it is not permitted for a <code>defi</code> to be a form that will
+macroexpand into a <code><a href="DEFUN.html">defun</a></code> form.  This is because <code>mutual-recursion</code> is
+itself a macro, and since macroexpansion occurs from the outside in,
+at the time <code>(mutual-recursion def1 ... defk)</code> is expanded the <code>defi</code>
+have not yet been.  But <code>mutual-recursion</code> must decompose the <code>defi</code>.
+We therefore insist that they be explicitly presented as <code><a href="DEFUN.html">defun</a></code>s or
+<code><a href="DEFUND.html">defund</a></code>s (or a mixture of these).<p>
+
+Suppose you have defined your own <code><a href="DEFUN.html">defun</a></code>-like macro and wish to use
+it in a <code>mutual-recursion</code> expression.  Well, you can't.  (!)  But you
+can define your own version of <code>mutual-recursion</code> that allows your
+<code><a href="DEFUN.html">defun</a></code>-like form.  Here is an example.  Suppose you define
+
+<pre>
+(defmacro my-defun (&amp;rest args) (my-defun-fn args))
+</pre>
+
+where <code>my-defun-fn</code> takes the arguments of the <code>my-defun</code> form and
+produces from them a <code><a href="DEFUN.html">defun</a></code> form.  As noted above, you are not
+allowed to write <code>(mutual-recursion (my-defun ...) ...)</code>.  But you can
+define the macro <code>my-mutual-recursion</code> so that
+
+<pre>
+(my-mutual-recursion (my-defun ...) ... (my-defun ...))
+</pre>
+
+expands into <code>(mutual-recursion (defun ...) ... (defun ...))</code> by
+applying <code>my-defun-fn</code> to each of the arguments of
+<code>my-mutual-recursion</code>.
+
+<pre>
+(defun my-mutual-recursion-fn (lst) 
+  (declare (xargs :guard (alistp lst)))<p>
+
+; Each element of lst must be a consp (whose car, we assume, is always
+; MY-DEFUN).  We apply my-defun-fn to the arguments of each element and
+; collect the resulting list of DEFUNs.<p>
+
+  (cond ((atom lst) nil)
+        (t (cons (my-defun-fn (cdr (car lst)))
+                 (my-mutual-recursion-fn (cdr lst))))))<p>
+
+(defmacro my-mutual-recursion (&amp;rest lst)<p>
+
+; Each element of lst must be a consp (whose car, we assume, is always
+; MY-DEFUN).  We obtain the DEFUN corresponding to each and list them
+; all inside a MUTUAL-RECURSION form.<p>
+
+  (declare (xargs :guard (alistp lst)))
+  (cons 'mutual-recursion (my-mutual-recursion-fn lst))).
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

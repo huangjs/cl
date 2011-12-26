@@ -1,0 +1,132 @@
+<html>
+<head><title>STOBJ.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h1>STOBJ</h1>single-threaded objects or ``von Neumann bottlenecks''
+<pre>Major Section:  <a href="acl2-doc-major-topics.html">ACL2 Documentation</a>
+</pre><p>
+
+In ACL2, a ``single-threaded object'' is a data structure whose use
+is so syntactically restricted that only one instance of the object
+need ever exist and its fields can be updated by destructive
+assignments.<p>
+
+The documentation in this section is laid out in the form of a tour
+that visits the documented topics in a reasonable order.  We
+recommend that you follow the tour the first time you read about
+stobjs.  The list of all stobj topics is shown below.  The tour
+starts immediately afterwards.
+<p>
+<ul>
+<li><h3><a href="DECLARE-STOBJS.html">DECLARE-STOBJS</a> -- declaring a formal parameter name to be a single-threaded object
+</h3>
+</li>
+
+<li><h3><a href="RESIZE-LIST.html">RESIZE-LIST</a> -- list resizer in support of stobjs
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-1.html">STOBJ-EXAMPLE-1</a> -- an example of the use of single-threaded objects
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-1-DEFUNS.html">STOBJ-EXAMPLE-1-DEFUNS</a> -- the defuns created by the <code>counters</code> stobj
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-1-IMPLEMENTATION.html">STOBJ-EXAMPLE-1-IMPLEMENTATION</a> -- the implementation of the <code>counters</code> stobj
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-1-PROOFS.html">STOBJ-EXAMPLE-1-PROOFS</a> -- some proofs involving the <code>counters</code> stobj
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-2.html">STOBJ-EXAMPLE-2</a> -- an example of the use of arrays in single-threaded objects
+</h3>
+</li>
+
+<li><h3><a href="STOBJ-EXAMPLE-3.html">STOBJ-EXAMPLE-3</a> -- another example of a single-threaded object
+</h3>
+</li>
+
+<li><h3><a href="WITH-LOCAL-STOBJ.html">WITH-LOCAL-STOBJ</a> -- locally bind a single-threaded object
+</h3>
+</li>
+
+</ul>
+
+As noted, a ``single-threaded object'' is a data structure whose use
+is so syntactically restricted that only one instance of the object
+need ever exist.  Updates to the object must be sequentialized.
+This allows us to update its fields with destructive assignments
+without wrecking the axiomatic semantics of update-by-copy.  For
+this reason, single-threaded objects are sometimes called ``von
+Neumann bottlenecks.''<p>
+
+From the logical perspective, a single-threaded object is an
+ordinary ACL2 object, e.g., composed of integers and conses.
+Logically speaking, ordinary ACL2 functions are defined to allow the
+user to ``access'' and ``update'' its fields.  Logically speaking,
+when fields in the object, obj, are ``updated'' with new values, a
+new object, obj', is constructed.<p>
+
+But suppose that by syntactic means we could ensure that there were
+no more references to the ``old'' object, obj.  Then we could
+create obj' by destructively modifying the memory locations
+involved in the representation of obj.  The syntactic means is
+pretty simple but draconian: the only reference to obj is in
+the variable named <code>OBJ</code>.<p>
+
+The consequences of this simple rule are far-reaching and require
+some getting used to.  For example, if <code>OBJ</code> has been declared as a
+single-threaded object name, then:<p>
+
+* <code>OBJ</code> is a top-level global variable that contains the current
+  object, obj.<p>
+
+* If a function uses the formal parameter <code>OBJ</code>, the only 
+  ``actual expression'' that can be passed into that slot is the variable
+  <code>OBJ</code>, not merely a term that ``evaluates to an obj'';
+  thus, such functions can only operate on the current object.  So for
+  example, instead of <code>(FOO (UPDATE-FIELD1 3 ST))</code> write
+  <code>(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))</code>.<p>
+
+* The accessors and updaters have a formal parameter named <code>OBJ</code>,
+  thus, those functions can only be applied to the current object.<p>
+
+* The ACL2 primitives, such as <code>CONS</code>, <code>CAR</code> and <code>CDR</code>, may not
+  be applied to the variable <code>OBJ</code>.  Thus, for example, obj may not
+  be consed into a list (which would create another pointer to it) or
+  accessed or copied via ``unapproved'' means.<p>
+
+* The updaters return a ``new <code>OBJ</code> object'', i.e., obj'; thus, when
+  an updater is called, the only variable which can hold its result is
+  <code>OBJ</code>.<p>
+
+* If a function calls an <code>OBJ</code> updater, it must return an <code>OBJ</code> object
+  (either as the sole value returned, or in <code>(mv ... OBJ ...)</code>; see <a href="MV.html">mv</a>).<p>
+
+* When a top-level expression involving <code>OBJ</code> returns an <code>OBJ</code>
+  object, that object becomes the new current value of <code>OBJ</code>.<p>
+
+What makes ACL2 different from other functional languages supporting
+such operations (e.g., Haskell's ``monads'' and Clean's ``uniqueness
+type system'') is that ACL2 also gives single-threaded objects an
+explicit axiomatic semantics so that theorems can be proved about
+them.  In particular, the syntactic restrictions noted above are
+enforced only when single-threaded objects are used in function
+definitions (which might be executed outside of the ACL2
+read-eval-print loop in Common Lisp).  The accessor and update
+functions for single-threaded objects may be used without
+restriction in formulas to be proved.  Since function evaluation is
+sometimes necessary during proofs, ACL2 must be able to evaluate
+these functions on logical constants representing the object, even
+when the constant is not ``the current object.''  Thus, ACL2
+supports both the efficient von Neumann semantics and the clean
+applicative semantics, and uses the first in contexts where
+execution speed is paramount and the second during proofs.<p>
+
+To start the stobj tour, see <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

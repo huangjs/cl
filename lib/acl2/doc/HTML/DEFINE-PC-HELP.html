@@ -1,0 +1,38 @@
+<html>
+<head><title>DEFINE-PC-HELP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFINE-PC-HELP</h2>define a macro command whose purpose is to print something
+<pre>Major Section:  <a href="PROOF-CHECKER.html">PROOF-CHECKER</a>
+</pre><p>
+
+
+<pre>
+Example:
+(define-pc-help pp () 
+  (if (goals t)
+      (io? proof-checker nil state
+           (state-stack)
+           (fms0 "~|~y0~|"
+                 (list (cons #0 
+                             (fetch-term (conc t)
+                                         (current-addr t))))))
+    (print-all-goals-proved-message state)))
+<p>
+General Form:
+(define-pc-help name args &amp;rest body)
+</pre>
+
+This defines a macro command named <code>name</code>, as explained further below.
+The <code>body</code> should (after removing optional declarations) be a form
+that returns <code>state</code> as its single value.   Typically, it will just
+print something.<p>
+
+What <code>(define-pc-help name args &amp;rest body)</code> really does is to create
+a call of <code>define-pc-macro</code> that defines <code>name</code> to take arguments <code>args</code>,
+to have the declarations indicated by all but the last form in <code>body</code>,
+and to have a body that (via <code>pprogn</code>) first executes the form in the
+last element of body and then returns a call to the command <code>skip</code>
+(which will return <code>(mv nil t state)</code>).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

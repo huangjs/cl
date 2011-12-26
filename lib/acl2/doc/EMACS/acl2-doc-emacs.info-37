@@ -1,0 +1,1334 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SUCCEED,  Next: ACL2-PC||TH,  Prev: ACL2-PC||SR,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SUCCEED    (macro)
+run the given instructions, and ``succeed''
+
+     Example:
+     (succeed induct p prove)
+     
+     General Form:
+     (succeed &rest instruction-list)
+
+Run the indicated instructions until there is a hard "failure", and
+"succeed".  (See the documentation for sequence for an explanation of
+"success" and "failure".)
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||TH,  Next: ACL2-PC||THEN,  Prev: ACL2-PC||SUCCEED,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||TH    (macro)
+print the top-level hypotheses and the current subterm
+
+     Examples:
+     th               -- print all (top-level) hypotheses and the current
+                         subterm
+     (th (1 3) (2 4)) -- print hypotheses 1 and 3 and governors 2 and 4,
+                         and the current subterm
+     (th (1 3) t)     -- print hypotheses 1 and 3 and all governors, and
+                         the current subterm
+     
+     General Form:
+     (th &optional hyps-indices govs-indices)
+
+Print hypotheses and the current subterm.  The printing of hypotheses
+(and perhaps governors) are controlled as in the hyps command; see its
+documentation.
+
+Historical note:  The name th is adapted from the Gypsy Verification
+Environment, where th abbreviates the command theorem, which says to
+print information on the current goal.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||THEN,  Next: ACL2-PC||TOP,  Prev: ACL2-PC||TH,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||THEN    (macro)
+apply one instruction to current goal and another to new subgoals
+
+     Example:
+     (then induct prove)
+     
+     General Form:
+     (then first-instruction &optional completion must-succeed-flg)
+
+Run first-instruction, and then run completion (another instruction) on
+each subgoal created by first-instruction.  If must-succeed-flg is
+supplied and not nil, then immediately remove the effects of each
+invocation of completion that "fails".
+
+The default for completion is reduce.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||TOP,  Next: ACL2-PC||TYPE-ALIST,  Prev: ACL2-PC||THEN,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||TOP    (atomic macro)
+move to the top of the goal
+
+     Example and General Form:
+     top
+
+For example, if the conclusion is (= x (* (- y) z)) and the current
+subterm is y, then after executing top, the current subterm will be the
+same as the conclusion, i.e., (= x (* (- y) z)).
+
+Top is the same as (up n), where n is the number of times one needs to
+execute up in order to get to the top of the conclusion.  The top
+command fails if one is already at the top of the conclusion.
+
+See also up, dive, nx, and bk.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||TYPE-ALIST,  Next: ACL2-PC||UNDO,  Prev: ACL2-PC||TOP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||TYPE-ALIST    (macro)
+display the type-alist from the current context
+
+     Examples:
+     (type-alist t t) ; display type-alist based on both conclusion and governors
+     type-alist       ; same as (type-alist nil t) -- governors only
+     (type-alist nil) ; same as (type-alist nil t) -- governors only
+     (type-alist t)   ; same as (type-alist t nil) -- conclusion only
+     (type-alist nil nil) ; display type-alist without considering
+                          ; conclusion or governors
+     
+     General Form:
+     (type-alist &optional concl-flg govs-flg)
+
+where if govs-flg is omitted, it defaults to (not concl-flg).
+
+Display the current assumptions as a type-alist.  Note that this
+display includes the result of forward chaining.
+
+There are two basic reasons contemplated for using this command.
+
+1. The theorem prover has failed (either outside the proof-checker or
+using a proof-checker command such as bash or reduce and you want to
+debug by getting an idea of what the prover knows about the context.
+
+     a. You really are interested in the context for the current term.
+     Include hypotheses and governors (i.e., accounting for tests of
+     surrounding if-expressions that must be true or false) but not the
+     current conclusion (which the theorem prover's heuristics would
+     generally ignore for contextual information).  Command:
+     (type-alist nil t) ; equivalently, type-alist or (type-alist nil)
+
+     b. You are not thinking in particular about the current term; you
+     just want to get an idea of the context that the prover would
+     build at the top-level, for forward-chaining.  Incorporate the
+     conclusion but not the governors.  Command:
+     (type-alist t nil) ; equivalently, (type-alist t)
+
+2. You intend to use one of the proof-checker-commands that does
+simplification, such as s or x, and you want to see the context.  Then
+include the surrounding if-term governors but not the goal's
+conclusion.  Command:
+(type-alist nil t) ; equivalently, type-alist or (type-alist nil)
+
+See *Note TYPE-SET:: (also see *note TYPE-PRESCRIPTION::) for
+information about ACL2's type system, which can assist in understanding
+the output of the type-alist command.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||UNDO,  Next: ACL2-PC||UNSAVE,  Prev: ACL2-PC||TYPE-ALIST,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||UNDO    (meta)
+undo some instructions
+
+     Examples:
+     (undo 7)
+     undo
+     
+     General Forms:
+     
+     (undo n) -- Undo the last n instructions.  The argument n should be
+                 a positive integer.
+     
+     undo     -- Same as (undo 1).
+
+*Note:*  To remove the effect of an undo command, use restore.  See the
+documentation for details.
+
+*Note:*  If the argument n is greater than the total number of
+interactive instructions in the current session, then (undo n) will
+simply take you back to the start of the session.
+
+The undo meta command always "succeeds"; it returns (mv nil t state)
+unless its optional argument is supplied and of the wrong type (i.e.
+not a positive integer) or there are no instructions to undo.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||UNSAVE,  Next: ACL2-PC||UP,  Prev: ACL2-PC||UNDO,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||UNSAVE    (macro)
+remove a proof-checker state
+
+     Example:
+     (unsave assoc-of-append)
+     
+     General Form:
+     (unsave &optional name)
+
+Eliminates the association of a proof-checker state with name, if name
+is supplied and not nil.  The name may be nil or not supplied, in which
+case it defaults to the event name supplied with the original call to
+verify (if there is one -- otherwise, the instruction "fails" and there
+is no change).  The ACL2 function unsave may also be executed outside
+the interactive loop, with the same syntax.
+
+See also documentation for save and retrieve.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||UP,  Next: ACL2-PC||USE,  Prev: ACL2-PC||UNSAVE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||UP    (primitive)
+move to the parent (or some ancestor) of the current subterm
+
+     Examples:  if the conclusion is (= x (* (- y) z)) and the
+                current subterm is y, then we have:
+     up or (up 1) -- the current subterm becomes (- y)
+     (up 2)       -- the current subterm becomes (* (- y) z)
+     (up 3)       -- the current subterm becomes the entire conclusion
+     (up 4)       -- no change; can't go up that many levels
+     
+     General Form:
+     (up &optional n)
+
+Move up n levels in the conclusion from the current subterm, where n is
+a positive integer.  If n is not supplied or is nil, then move up 1
+level, i.e., treat the instruction as (up 1).
+
+See also dive, top, nx, and bk.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||USE,  Next: ACL2-PC||WRAP,  Prev: ACL2-PC||UP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||USE    (atomic macro)
+use a lemma instance
+
+     Example:
+     (USE true-listp-append
+          (:instance assoc-of-append (x a) (y b) (z c)))
+     -- Add two top-level hypotheses, one the lemma called
+        true-listp-append, and the other an instance of the lemma called
+        assoc-of-append by the substitution in which x is assigned a, y
+        is assigned b, and z is assigned c.
+     
+     General Form:
+     (use &rest args)
+
+Add the given lemma instances to the list of top-level hypotheses.  See
+*Note HINTS:: for the syntax of :use hints in defthm, which is
+essentially the same as the syntax here (see the example above).
+
+This command calls the prove command, and hence should only be used at
+the top of the conclusion.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||WRAP,  Next: ACL2-PC||WRAP-INDUCT,  Prev: ACL2-PC||USE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||WRAP    (atomic macro)
+execute the indicated instructions and combine all the new goals
+
+     Example:
+     (wrap induct) ; induct, then replace first new goal by the conjunction of all
+                   ; the new goals, and drop all new goals after the first
+     
+     General Form:
+     (wrap &rest instrs)
+
+First the instructions in instrs are executed, as in do-all.  If this
+"fails" then no additional action is taken.  Otherwise, the current goal
+after execution of instrs is conjoined with all "new" goals, in the
+sense that their names are not among the names of goals at the time
+instrs was begun.  This conjunction becomes the new current goal and
+those "new" goals are dropped.
+
+See the code for the proof-checker command wrap-induct for an example
+of the use of wrap.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||WRAP-INDUCT,  Next: ACL2-PC||WRAP1,  Prev: ACL2-PC||WRAP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||WRAP-INDUCT    (atomic macro)
+same as induct, but create a single goal
+
+     Examples:
+     wrap-induct
+     (wrap-induct t)
+     (wrap-induct (append (reverse x) y))
+     
+     General Form:
+     (wrap-induct &optional term)
+
+The wrap-induct command is identical to the proof-checker induct
+command, except that only a single goal is created:  the conjunction of
+the base and induction steps.
+
+Note:  The output will generally indicate that more than goal has been
+created, e.g.:
+
+     Creating two new goals:  (MAIN . 1) and (MAIN . 2).
+
+However, wrap-induct always creates a unique goal (when it succeeds).  A
+subsequent message clarifies this, for example:
+
+     NOTE: Created ONLY one new goal, which is the current goal:
+       (MAIN . 1)
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||WRAP1,  Next: ACL2-PC||X,  Prev: ACL2-PC||WRAP-INDUCT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||WRAP1    (primitive)
+combine goals into a single goal
+
+     Examples:
+     ; Keep (main . 1) and (main . 2) if they exist, as well as the current goal;
+     ; and for each other goal, conjoin it into the current goal and delete it:
+     (wrap1 ((main . 1) (main . 2)))
+     
+     ; As explained below, conjoin all subsequent siblings of the current goal
+     ; into the current goal, and then delete them:
+     (wrap1)
+     
+     General Form:
+     (wrap1 &optional kept-goal-names)
+
+If kept-goal-names is not nil, the current goal is replaced by
+conjoining it with all goals other than the current goal and those
+indicated by kept-goal-names, and those other goals are deleted.  If
+kept-goal-names is omitted, then the the current goal must be of the
+form (name . n), and the goals to conjoin into the current goal (and
+delete) are those with names of the form (name . k) for k >= n.
+
+NOTE: Wrap1 always "succeeds", even if there are no other goals to
+conjoin into the current goal (a message is printed in that case), and
+it always leaves you with no hypotheses at the top of the current goal's
+conclusion (as though top and demote had been executed, if necessary).
+
+Also see proof-checker documentation for wrap (see *note
+PROOF-CHECKER-COMMANDS::).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||X,  Next: ACL2-PC||X-DUMB,  Prev: ACL2-PC||WRAP1,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||X    (atomic macro)
+expand and (maybe) simplify function call at the current subterm
+
+     Examples:
+     x --  expand and simplify.
+
+For example, if the current subterm is (append a b), then after x the
+current subterm will probably be (cons (car a) (append (cdr a) b)) if
+(consp a) and (true-listp a) are among the top-level hypotheses and
+governors.  If there are no top-level hypotheses and governors, then
+after x the current subterm will probably be:
+
+     (if (true-listp x)
+         (if x
+             (cons (car x) (append (cdr x) y))
+           y)
+       (apply 'binary-append (list x y))).
+     
+     General Form:
+     (X &key
+        rewrite normalize backchain-limit in-theory hands-off expand)
+
+Expand the function call at the current subterm, and simplify using the
+same conventions as with the s command (see documentation for s).
+
+Unlike s, it is permitted to set both :rewrite and :normalize to nil,
+which will result in no simplification; see x-dumb.
+
+*Note* (obscure):  On rare occasions the current address may be
+affected by the use of x.  For example, suppose we have the definition
+
+     (defun g (x) (if (consp x) x 3))
+
+and then we enter the proof-checker with
+
+     (verify (if (integerp x) (equal (g x) 3) t)) .
+
+Then after invoking the instruction (dive 2 1), so that the current
+subterm is (g x), followed by the instruction x, we would expect the
+conclusion to be (if (integerp x) (equal 3 3) t).  However, the system
+actually replaces (equal 3 3) with t (because we use the ACL2
+term-forming primitives), and hence the conclusion is actually (if
+(integerp x) (equal 3 3) t).  Therefore, the current address is put at
+(2) rather than (2 1).  In such cases, a warning "NOTE" will be printed
+to the terminal.
+
+The other primitive commands to which the above "truncation" note
+applies are equiv, rewrite, and s.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||X-DUMB,  Prev: ACL2-PC||X,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||X-DUMB    (atomic macro)
+expand function call at the current subterm, without simplifying
+
+     General Form:
+     x-dumb:  expand without simplification.
+
+Same as (expand t new-goals-flg keep-all-guards-flg).  See
+documentation for expand.
+
+See also x, which allows simplification.
+
+
+File: acl2-doc-emacs.info,  Node: RETRIEVE,  Next: TOGGLE-PC-MACRO,  Prev: PROOF-CHECKER-COMMANDS,  Up: PROOF-CHECKER
+
+RETRIEVE    re-enter a (specified) proof-checker state
+
+     Examples:
+     (retrieve associativity-of-permutationp)
+     retrieve
+     
+     General Form:
+     (retrieve &optional name)
+
+See *Note ACL2-PC||RETRIEVE::, or use (help retrieve) inside the
+interactive proof-checker loop.  Also see *note UNSAVE::.
+
+
+File: acl2-doc-emacs.info,  Node: TOGGLE-PC-MACRO,  Next: UNSAVE,  Prev: RETRIEVE,  Up: PROOF-CHECKER
+
+TOGGLE-PC-MACRO    change an ordinary macro command to an atomic macro, or vice-versa
+
+     Example:
+     (toggle-pc-macro pro)
+
+Change pro from an atomic macro command to an ordinary one (or
+vice-versa, if pro happens to be an ordinary macro command)
+
+     General Form:
+     (toggle-pc-macro name &optional new-tp)
+
+If name is an atomic macro command then this turns it into an ordinary
+one, and vice-versa.  However, if new-tp is supplied and not nil, then
+it should be the new type (the symbol macro or atomic-macro, in any
+package), or else there is no change.
+
+
+File: acl2-doc-emacs.info,  Node: UNSAVE,  Next: VERIFY,  Prev: TOGGLE-PC-MACRO,  Up: PROOF-CHECKER
+
+UNSAVE    remove a proof-checker state
+
+     Example:
+     (unsave assoc-of-append)
+     
+     General Form:
+     (unsave name)
+
+Eliminates the association of a proof-checker state with name.  See
+*Note UNSAVE:: or see *note ACL2-PC||UNSAVE::.
+
+Also see *note ACL2-PC||SAVE:: and see *note RETRIEVE::.
+
+
+File: acl2-doc-emacs.info,  Node: VERIFY,  Prev: UNSAVE,  Up: PROOF-CHECKER
+
+VERIFY    enter the interactive proof checker
+
+For proof-checker command summaries, see *note PROOF-CHECKER::.
+
+     Examples:
+     (VERIFY (implies (and (true-listp x) (true-listp y))
+                           (equal (append (append x y) z)
+                                  (append x (append y z)))))
+        -- Attempt to prove the given term interactively.
+     
+     (VERIFY (p x)
+             :event-name p-always-holds
+             :rule-classes (:rewrite :generalize)
+             :instructions ((rewrite p-always-holds-lemma)
+                            change-goal))
+        -- Attempt to prove (p x), where the intention is to call the
+           resulting DEFTHM event by the name p-always-holds, with
+           rule-classes as indicated.  The two indicated instructions
+           will be run immediately to start the proof.
+     
+     (VERIFY)
+        -- Re-enter the proof-checker in the state at which is was last
+           left.
+     
+     General Form:
+     (VERIFY &OPTIONAL raw-term
+             &KEY
+             event-name
+             rule-classes
+             instructions)
+
+Verify is the function used for entering the proof-checker's
+interactive loop.
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-TREE,  Next: Pages Written Especially for the Tours,  Prev: PROOF-CHECKER,  Up: Top
+
+PROOF-TREE    proof tree displays
+
+A view of ACL2 proofs may be obtained by way of "proof tree displays."
+The emacs environment is easily customized to provide window-based
+proof tree displays that assist in traversing and making sense of the
+proof transcript; see *note PROOF-TREE-EMACS::.  Proof tree displays
+may be turned on with the command :start-proof-tree and may be turned
+off with the command :stop-proof-tree; see *note START-PROOF-TREE:: and
+see *note STOP-PROOF-TREE::.
+
+* Menu:
+
+* CHECKPOINT-FORCED-GOALS:: Cause forcing goals to be checkpointed in proof trees
+
+* PROOF-TREE-DETAILS:: proof tree details not covered elsewhere
+
+* PROOF-TREE-EMACS:: using emacs with proof trees
+
+* PROOF-TREE-EXAMPLES:: proof tree example
+
+* START-PROOF-TREE:: start displaying proof trees during proofs
+
+* STOP-PROOF-TREE:: stop displaying proof trees during proofs
+
+Here is an example of a proof tree display, with comments.  Lines
+marked with "c" are considered "checkpoints," i.e., goals whose
+scrutiny may be of particular value.
+
+     ( DEFTHM PLUS-TREE-DEL ...)    ;currently proving PLUS-TREE-DEL
+        1 Goal preprocess   ;"Goal" creates 1 subgoal by preprocessing
+        2 |  Goal' simp     ;"Goal'" creates 2 subgoals by simplification
+     c  0 |  |  Subgoal 2 PUSH *1   ;"Subgoal 2" pushes "*1" for INDUCT
+     ++++++++++++++++++++++++++++++ ;first pass thru waterfall completed
+     c  6 *1 INDUCT                 ;Proof by induction of "*1" has
+          |  <5 more subgoals>      ; created 6 top-level subgoals.  At
+                                    ; this point, one of those 6 has been
+                                    ; proved, and 5 remain to be proved.
+                                    ; We are currently working on the
+                                    ; first of those 5 remaining goals.
+
+See *Note PROOF-TREE-EXAMPLES:: for many examples that contain proof
+tree displays.  But first, we summarize the kinds of lines that may
+appear in a proof tree display.  The simplest form of a proof tree
+display is a header showing the current event, followed by list of
+lines, each having one of the following forms.
+
+         n <goal> <process> ...
+
+Says that the indicated goal created n subgoals using the indicated
+process.  Here "..." refers to possible additional information.
+
+     c   n <goal> <process> ...
+
+As above, but calls attention to the fact that this goal is a
+"checkpoint" in the sense that it may be of particular interest.  Some
+displays may overwrite "c" with ">" to indicate the current checkpoint
+being shown in the proof transcript.
+
+          |  <goal> ...
+          |  |  <k subgoals>
+
+Indicates that the goal just above this line, which is pointed to by
+the rightmost vertical bar ("|"), has k subgoals, none of which have
+yet been processed.
+
+          |  <goal> ...
+          |  |  <k more subgoals>
+
+As above, except that some subgoals have already been processed.
+
+     ++++++++++++++++++++++++++++++
+
+Separates successive passes through the "waterfall".  Thus, this
+"fencepost" mark indicates the start of a new proof by induction or of
+a new forcing round.
+
+See *Note PROOF-TREE-EXAMPLES:: for detailed examples.  To learn how to
+turn off proof tree displays or to turn them back on again, see *note
+STOP-PROOF-TREE:: and see *note START-PROOF-TREE::, respectively. See
+*Note CHECKPOINT-FORCED-GOALS:: to learn how to mark goals as
+checkpoints that force the creation of goals in forcing rounds.
+Finally, see *note PROOF-TREE-DETAILS:: for some points not covered
+elsewhere.
+
+
+File: acl2-doc-emacs.info,  Node: CHECKPOINT-FORCED-GOALS,  Next: PROOF-TREE-DETAILS,  Prev: PROOF-TREE,  Up: PROOF-TREE
+
+CHECKPOINT-FORCED-GOALS    Cause forcing goals to be checkpointed in proof trees
+
+     Example forms:
+     (checkpoint-forced-goals t)
+     (checkpoint-forced-goals nil)
+
+Also see *note PROOF-TREE::.
+
+By default, goals are not marked as checkpoints by a proof tree display
+(as described elsewhere; see *note PROOF-TREE::) merely because they
+force some hypotheses, thus possibly contributing to a forcing round.
+However, some users may want such behavior, which will occur once the
+command (checkpoint-forced-goals t) has been executed.  To return to
+the default behavior, use the command (checkpoint-forced-goals nil).
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-TREE-DETAILS,  Next: PROOF-TREE-EMACS,  Prev: CHECKPOINT-FORCED-GOALS,  Up: PROOF-TREE
+
+PROOF-TREE-DETAILS    proof tree details not covered elsewhere
+
+See *Note PROOF-TREE:: for an introduction to proof trees, and for a
+list of related topics.  Here we present some details not covered
+elsewhere.
+
+1.  When proof tree display is enabled (because the command
+:stop-proof-tree has not been executed, or has been superseded by a
+later :start-proof-tree command), then time summaries will include the
+time for proof tree display.  This time includes the time spent
+computing with proof trees, such as the pruning process described
+briefly above.  Even when proof trees are not displayed, such as when
+their display is turned off in the middle of a proof, this time will be
+printed if it is not 0.
+
+2.  When a goal is given a :bye in a proof (see *note HINTS::), it is
+treated for the purpose of proof tree display just as though it had
+been proved.
+
+3.  Several state global variables affect proof tree display.  (@
+proof-tree-indent) is initially the string "| ":  it is the string that
+is laid down the appropriate number of times to effect indentation.  (@
+proof-tree-buffer-width) is initially the value of
+(fmt-soft-right-margin state), and is used to prevent printing of the
+annotation "(forced ...)" in any greater column than this value.
+However, (assign proof-tree-buffer-width nil) to avoid any such
+suppression.  Finally, (@ checkpoint-processors) is a list of
+processors from the constant list *preprocess-clause-ledge*, together
+with :induct.  You may remove elements of (@ checkpoint-processors) to
+limit which processes are considered checkpoints.
+
+4.  When :otf-flg is not set to t in a proof, and the prover then
+decides to revert to the original goal and prove it by induction, the
+proof tree display will reflect this fact as shown here:
+
+     c  0 |  |  Subgoal 2 PUSH (reverting)
+
+5.  Proof-tree display is turned off during calls of certify-book.
+
+6. The usual failure message is printed as part of the prooftree
+display when a proof has failed.
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-TREE-EMACS,  Next: PROOF-TREE-EXAMPLES,  Prev: PROOF-TREE-DETAILS,  Up: PROOF-TREE
+
+PROOF-TREE-EMACS    using emacs with proof trees
+
+Within emacs, proof trees provide a sort of structure for the linear
+proof transcript output by the ACL2 prover.  Below we explain how to
+get proof trees set up in your emacs environment.
+
+* Menu:
+
+* PROOF-TREE-BINDINGS:: using emacs with proof trees
+
+To get started you add a single autoload form to your .emacs file and
+then issue the corresponding M-x command.  The file emacs/emacs-acl2.el
+under the ACL2 distribution contains everything you need to get
+started, and more.  Alternatively put the following into your .emacs
+file, first replacing `v2-x' in order to point to the current ACL2
+release.
+
+     (setq *acl2-interface-dir*
+           "/projects/acl2/v2-x/acl2-sources/interface/emacs/")
+     
+     (autoload 'start-proof-tree
+       (concat *acl2-interface-dir* "top-start-shell-acl2")
+       "Enable proof tree logging in a prooftree buffer."
+       t)
+
+Once the above is taken care of, then to start using proof trees you do
+two things.  In emacs, evaluate:
+
+        M-x start-proof-tree
+
+Also, in your ACL2, evaluate
+
+       :start-proof-tree
+
+If you want to turn off proof trees, evaluate this in emacs
+
+        M-x stop-proof-tree
+
+and evaluate this in your ACL2 session:
+
+       :stop-proof-tree
+
+When you do meta-x start-proof-tree for the first time in your emacs
+session, you will be prompted for some information.  You can avoid the
+prompt by putting the following in your .emacs file.  The defaults are
+as shown, but you can of course change them.
+
+      (setq *acl2-proof-tree-height* 17)
+      (setq *checkpoint-recenter-line* 3)
+      (setq *mfm-buffer* "*shell*")
+
+Proof tree support has been tested in Emacs 18, 19, and 20 as well as
+in Lemacs 19.
+
+Once you start proof trees (meta-x start-proof-tree), you will have
+defined the following key bindings.
+
+        C-z z               Previous C-z key binding
+        C-z c               Go to checkpoint
+        C-z s               Suspend proof tree
+        C-z r               Resume proof tree
+        C-z a               Mfm abort secondary buffer
+        C-z g               Goto subgoal
+        C-z h               help
+        C-z ?               help
+
+Ordinary emacs help describes these in more detail; for example, you
+can start with:
+
+       C-h k C-z h
+
+Also see *note PROOF-TREE-BINDINGS:: for that additional documentation.
+
+The file interface/emacs/README.doc discusses an extension of ACL2
+proof trees that allows the mouse to be used with menus.  That
+extension may well work, but it is no longer supported.  The basic
+proof tree interface, however, is supported and is what is described in
+detail elsewhere; see *note PROOF-TREE::.  Thanks to Mike Smith for his
+major role in providing emacs support for proof trees.
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-TREE-BINDINGS,  Prev: PROOF-TREE-EMACS,  Up: PROOF-TREE-EMACS
+
+PROOF-TREE-BINDINGS    using emacs with proof trees
+
+The key bindings set up when you start proof trees are shown below.
+See *Note PROOF-TREE-EMACS:: for how to get started with proof trees.
+
+        C-z h               help
+        C-z ?               help
+
+Provides information about proof-tree/checkpoint tool.  Use `C-h d' to
+get more detailed information for specific functions.
+
+        C-z c               Go to checkpoint
+
+Go to a checkpoint, as displayed in the "prooftree" buffer with the
+character c in the first column.  With non-zero prefix argument:  move
+the point in the ACL2 buffer (emacs variable *mfm-buffer*) to the first
+checkpoint displayed in the "prooftree" buffer, suspend the proof tree
+(see suspend-proof-tree), and move the cursor below that checkpoint in
+the "prooftree" buffer.  Without a prefix argument, go to the first
+checkpoint named below the point in the "prooftree" buffer (or if there
+is none, to the first checkpoint).  Note however that unless the proof
+tree is suspended or the ACL2 proof is complete or interrupted, the
+cursor will be generally be at the bottom of the "prooftree" buffer
+each time it is modified, which causes the first checkpoint to be the
+one that is found.
+
+If the prefix argument is 0, move to the first checkpoint but do not
+keep suspended.
+
+        C-z g               Goto subgoal
+
+Go to the specified subgoal in the ACL2 buffer (emacs variable
+*mfm-buffer*) that lies closest to the end of that buffer - except if
+the current buffer is "prooftree" when this command is invoked, the
+subgoal is the one from the proof whose tree is displayed in that
+buffer.  A default is obtained, when possible, from the current line of
+the current buffer.
+
+        C-z r               Resume proof tree
+
+Resume original proof tree display, re-creating buffer "prooftree" if
+necessary.  See also suspend-proof-tree.  With prefix argument:  push
+the mark, do not modify the windows, and move point to end of
+*mfm-buffer*.
+
+        C-z s               Suspend proof tree
+
+Freeze the contents of the "prooftree" buffer, until resume-proof-tree
+is invoked.  Unlike stop-proof-tree, the only effect of
+suspend-proof-tree is to stop putting characters into the "prooftree"
+buffer; in particular, strings destined for that buffer continue NOT to
+be put into the primary buffer, which is the value of the emacs
+variable *mfm-buffer*.
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-TREE-EXAMPLES,  Next: START-PROOF-TREE,  Prev: PROOF-TREE-EMACS,  Up: PROOF-TREE
+
+PROOF-TREE-EXAMPLES    proof tree example
+
+See *Note PROOF-TREE:: for an introduction to proof trees, and for a
+list of related topics.  Here we present a detailed example followed by
+a shorter example that illustrates proof by induction.
+
+Consider the guard proof for the definition of a function
+cancel_equal_plus; the body of this definition is of no importance
+here.  The first proof tree display is:
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+          |  <18 subgoals>
+
+This is to be read as follows.
+
+      At this stage of the proof we have encountered the top-level goal,
+     named "Goal", which generated 18 subgoals using the  "preprocess"
+     process.  We have not yet begun to work on those  subgoals.
+
+
+The corresponding message from the ordinary prover output is:
+
+      By case analysis we reduce the conjecture to the following 18
+     conjectures.
+
+
+Note that the field just before the name of the goal ("Goal"), which
+here contains the number 18, indicates the number of cases (children)
+created by the goal using the indicated process.  This number will
+remain unchanged as long as this goal is displayed.
+
+The next proof tree display is:
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        1 |  Subgoal 18 simp
+          |  |  <1 subgoal>
+          |  <17 more subgoals>
+
+which indicates that at this point, the prover has used the
+simplification ("simp") process on Subgoal 18 to create one subgoal
+("<1 subgoal>").  The vertical bar ("|") below "Subgoal 18",
+accompanied by the line below it, signifies that there are 17 siblings
+of Subgoal 18 that remain to be processed.
+
+The next proof tree displayed is:
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        1 |  Subgoal 18 simp
+     c  2 |  |  Subgoal 18' ELIM
+          |  |  |  <2 subgoals>
+          |  <17 more subgoals>
+
+Let us focus on the fourth line of this display:
+
+     c  2 |  |  Subgoal 18' ELIM
+
+The "c" field marks this goal as a "checkpoint", i.e., a goal worthy of
+careful scrutiny.  In fact, any goal that creates children by a process
+other than "preprocess" or "simp" is marked as a checkpoint.  In this
+case, the destructor-elimination ("ELIM") process has been used to
+create subgoals of this goal.  The indentation shows that this goal,
+Subgoal 18', is a child of Subgoal 18.  The number "2" indicates that 2
+subgoals have been created (by ELIM).  Note that this information is
+consistent with the line just below it, which says "<2 subgoals>".
+
+Finally, the last line of this proof tree display,
+
+          |  <17 more subgoals>
+
+is connected by vertical bars ("|") up to the string "Subgoal 18",
+which suggests that there are 17 immediate subgoals of Goal remaining
+to process after Subgoal 18.  Note that this line is indented one level
+from the second line, which is the line for the goal named "Goal".  The
+display is intended to suggest that the subgoals of Goal that remain to
+be proved consist of Subgoal 18 together with 17 more subgoals.
+
+The next proof tree display differs from the previous one only in that
+now, Subgoal 18' has only one more subgoal to be processed.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        1 |  Subgoal 18 simp
+     c  2 |  |  Subgoal 18' ELIM
+          |  |  |  <1 more subgoal>
+          |  <17 more subgoals>
+
+Note that the word "more" in "<1 more subgoal>" tells us that there was
+originally more than one subgoal of Subgoal 18.  In fact that
+information already follows from the line above, which (as previously
+explained) says that Subgoal 18' originally created 2 subgoals.
+
+The next proof tree display occurs when the prover completes the proof
+of that "1 more subgoal" referred to above.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+          |  <17 more subgoals>
+
+Then, Subgoal 17 is processed and creates one subgoal, by
+simplification:
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        1 |  Subgoal 17 simp
+          |  |  <1 subgoal>
+          |  <16 more subgoals>
+
+... and so on.
+
+Later in the proof one might find the following successive proof tree
+displays.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+          |  <9 more subgoals>
+     
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+     
+       18 Goal preprocess
+        0 |  Subgoal 9 simp (FORCED)
+          |  <8 more subgoals>
+
+These displays tell us that Subgoal 9 simplified to t (note that the
+"0" shows clearly that no subgoals were created), but that some rule's
+hypotheses were forced.  Although this goal is not checkpointed (i.e.,
+no "c" appears on the left margin), one can cause such goals to be
+checkpointed; see *note CHECKPOINT-FORCED-GOALS::.
+
+In fact, the proof tree displayed at the end of the "main proof" (the
+0-th forcing round) is as follows.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        0 |  Subgoal 9 simp (FORCED)
+        0 |  Subgoal 8 simp (FORCED)
+        0 |  Subgoal 7 simp (FORCED)
+        0 |  Subgoal 6 simp (FORCED)
+        0 |  Subgoal 4 simp (FORCED)
+        0 |  Subgoal 3 simp (FORCED)
+
+This is followed by the following proof tree display at the start of
+the forcing round.
+
+       18 Goal preprocess
+        0 |  Subgoal 9 simp (FORCED [1]Subgoal 4)
+        0 |  Subgoal 8 simp (FORCED [1]Subgoal 6)
+        0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+        0 |  Subgoal 6 simp (FORCED [1]Subgoal 3)
+        0 |  Subgoal 4 simp (FORCED [1]Subgoal 5)
+        0 |  Subgoal 3 simp (FORCED [1]Subgoal 2)
+     ++++++++++++++++++++++++++++++
+        6 [1]Goal FORCING-ROUND
+        2 |  [1]Subgoal 6 preprocess
+          |  |  <2 subgoals>
+          |  <5 more subgoals>
+
+This display shows which goals to "blame" for the existence of each
+goal in the forcing round.  For example, Subgoal 9 is to blame for the
+creation of [1]Subgoal 4.
+
+Actually, there is no real goal named "[1]Goal".  However, the line
+
+        6 [1]Goal FORCING-ROUND
+
+appears in the proof tree display to suggest a "parent" of the six
+top-level goals in that forcing round.  As usual, the numeric field
+before the goal name contains the original number of children of that
+(virtual, in this case) goal -- in this case, 6.
+
+In our example proof, Subgoal 6 eventually gets proved, without doing
+any further forcing.  At that point, the proof tree display looks as
+follows.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        0 |  Subgoal 9 simp (FORCED [1]Subgoal 4)
+        0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+        0 |  Subgoal 6 simp (FORCED [1]Subgoal 3)
+        0 |  Subgoal 4 simp (FORCED [1]Subgoal 5)
+        0 |  Subgoal 3 simp (FORCED [1]Subgoal 2)
+     ++++++++++++++++++++++++++++++
+        6 [1]Goal FORCING-ROUND
+          |  <5 more subgoals>
+
+Notice that the line for Subgoal 8,
+
+        0 |  Subgoal 8 simp (FORCED [1]Subgoal 6)
+
+no longer appears.  That is because the goal [1]Subgoal 6 has been
+proved, along with all its children; and hence, the proof of Subgoal 8
+no longer depends on any further reasoning.
+
+The final two proof tree displays in our example are as follows.
+
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+       18 Goal preprocess
+        0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+     ++++++++++++++++++++++++++++++
+        6 [1]Goal FORCING-ROUND
+        2 |  [1]Subgoal 1 preprocess
+        1 |  |  [1]Subgoal 1.1 preprocess
+        1 |  |  |  [1]Subgoal 1.1' simp
+     c  3 |  |  |  |  [1]Subgoal 1.1'' ELIM
+          |  |  |  |  |  <1 more subgoal>
+     
+     ( DEFUN CANCEL_EQUAL_PLUS ...)
+     <<PROOF TREE IS EMPTY>>
+
+The explanation for the empty proof tree is simple:  once [1]Subgoal
+1.1.1 was proved, nothing further remained to be proved.  In fact, the
+much sought-after "Q.E.D." appeared shortly after the final proof tree
+was displayed.
+
+Let us conclude with a final, brief example that illustrates proof by
+induction.  Partway through the proof one might come across the
+following proof tree display.
+
+     ( DEFTHM PLUS-TREE-DEL ...)
+        1 Goal preprocess
+        2 |  Goal' simp
+     c  0 |  |  Subgoal 2 PUSH *1
+          |  |  <1 more subgoal>
+
+This display says that in the attempt to prove a theorem called
+plus-tree-del, preprocessing created the only child Goal' from Goal,
+and Goal' simplified to two subgoals.  Subgoal 2 is immediately pushed
+for proof by induction, under the name "*1".  In fact if Subgoal 1
+simplifies to t, then we see the following successive proof tree
+displays after the one shown above.
+
+     ( DEFTHM PLUS-TREE-DEL ...)
+        1 Goal preprocess
+        2 |  Goal' simp
+     c  0 |  |  Subgoal 2 PUSH *1
+     
+     ( DEFTHM PLUS-TREE-DEL ...)
+        1 Goal preprocess
+        2 |  Goal' simp
+     c  0 |  |  Subgoal 2 PUSH *1
+     ++++++++++++++++++++++++++++++
+     c  6 *1 INDUCT
+          |  <5 more subgoals>
+
+The separator "+++++..." says that we are beginning another trip
+through the waterfall.  In fact this trip is for a proof by induction
+(as opposed to a forcing round), as indicated by the word "INDUCT".
+Apparently *1.6 was proved immediately, because it was not even
+displayed; a goal is only displayed when there is some work left to do
+either on it or on some goal that it brought (perhaps indirectly) into
+existence.
+
+Once a proof by induction is completed, the "PUSH" line that refers to
+that proof is eliminated ("pruned").  So for example, when the present
+proof by induction is completed, the line
+
+     c  0 |  |  Subgoal 2 PUSH *1
+
+is eliminated, which in fact causes the lines above it to be eliminated
+(since they no longer refer to unproved children).  Hence, at that
+point one might expect to see:
+
+     ( DEFTHM PLUS-TREE-DEL ...)
+     <<PROOF TREE IS EMPTY>>
+
+However, if the proof by induction of *1 necessitates further proofs by
+induction or a forcing round, then this "pruning" will not yet be done.
+
+
+File: acl2-doc-emacs.info,  Node: START-PROOF-TREE,  Next: STOP-PROOF-TREE,  Prev: PROOF-TREE-EXAMPLES,  Up: PROOF-TREE
+
+START-PROOF-TREE    start displaying proof trees during proofs
+
+Also see *note PROOF-TREE:: and see *note STOP-PROOF-TREE::.  Note that
+:start-proof-tree works by removing 'proof-tree from the
+inhibit-output-lst; see *note SET-INHIBIT-OUTPUT-LST::.
+
+Proof tree displays are explained in the documentation for proof-tree.
+:start-proof-tree causes proof tree display to be turned on, once it
+has been turned off by :stop-proof-tree.
+
+Do not attempt to invoke start-proof-tree during an interrupt in the
+middle of a proof.
+
+
+File: acl2-doc-emacs.info,  Node: STOP-PROOF-TREE,  Prev: START-PROOF-TREE,  Up: PROOF-TREE
+
+STOP-PROOF-TREE    stop displaying proof trees during proofs
+
+Also see *note PROOF-TREE:: and see *note START-PROOF-TREE::.  Note that
+:stop-proof-tree works by adding 'proof-tree to the inhibit-output-lst;
+see *note SET-INHIBIT-OUTPUT-LST::.
+
+Proof tree displays are explained in the documentation for proof-tree.
+:Stop-proof-tree causes proof tree display to be turned off.
+
+It is permissible to submit the form (stop-proof-tree) during a break.
+Thus, you can actually turn off proof tree display in the middle of a
+proof by interrupting ACL2 and submitting the form (stop-proof-tree) in
+raw Lisp.
+
+
+File: acl2-doc-emacs.info,  Node: Pages Written Especially for the Tours,  Next: REAL,  Prev: PROOF-TREE,  Up: Top
+
+Pages Written Especially for the Tours    Pages Written Especially for the Tours
+
+The ACL2 Home Page is generated from ACL2's online documentation
+strings.  (How else could we achieve the total integration of ACL2's
+online documentation with the home page?)  This page is just an
+artifact of the structure of our documentation strings:  each string
+must belong to a "major section" of the documentation database.  This
+page is not structured to be used by a person browsing via the Web.  It
+contains, in an arbitrary order, the pages written specificially for
+the Web user.
+
+Furthermore, browsing the pages below via the ACL2 :DOC command or via
+TexInfo is often unsatisfying because those browsers do not support gif
+files and the notion of going "back" to a node just visited.  If you
+wish to look at the pages below, we strongly recommend that you do so
+via a HTML-based Web browser.  Indeed, you should simply visit ACL2's
+Home Page and take one of the Tours.
+
+* Menu:
+
+* A Flying Tour of ACL2:: A Flying Tour of ACL2
+
+* A Sketch of How the Rewriter Works:: A Sketch of How the Rewriter Works
+
+* A Tiny Warning Sign:: A Tiny Warning Sign
+
+* A Trivial Proof:: A Trivial Proof
+
+* A Typical State:: A Typical State
+
+* A Walking Tour of ACL2:: A Walking Tour of ACL2
+
+* ACL2 Characters:: ACL2 Characters
+
+* ACL2 Conses or Ordered Pairs:: ACL2 Conses or Ordered Pairs
+
+* ACL2 Strings:: ACL2 Strings
+
+* ACL2 Symbols:: ACL2 Symbols
+
+* ACL2 System Architecture:: ACL2 System Architecture
+
+* ACL2 as an Interactive Theorem Prover:: ACL2 as an Interactive Theorem Prover
+
+* ACL2 as an Interactive Theorem Prover (cont):: ACL2 as an Interactive Theorem Prover (cont)
+
+* ACL2 is an Untyped Language:: ACL2 is an Untyped Language
+
+* About Models:: About Models
+
+* About Types:: About Types
+
+* About the ACL2 Home Page:: About the ACL2 Home Page
+
+* About the Admission of Recursive Definitions:: About the Admission of Recursive Definitions
+
+* About the Prompt:: About the Prompt
+
+* An Example Common Lisp Function Definition:: An Example Common Lisp Function Definition
+
+* An Example of ACL2 in Use:: An Example of ACL2 in Use
+
+* Analyzing Common Lisp Models:: Analyzing Common Lisp Models
+
+* Common Lisp:: Common Lisp
+
+* Common Lisp as a Modeling Language:: Common Lisp as a Modeling Language
+
+* Conversion:: Conversion to Uppercase
+
+* Corroborating Models:: Corroborating Models
+
+* Evaluating App on Sample Input:: Evaluating App on Sample Input
+
+* Flawed Induction Candidates in App Example:: Flawed Induction Candidates in App Example
+
+* Free Variables in Top-Level Input:: Free Variables in Top-Level Input
+
+* Functions for Manipulating these Objects:: Functions for Manipulating these Objects
+
+* Guards:: Guards
+
+* Guessing the Type of a Newly Admitted Function:: Guessing the Type of a Newly Admitted Function
+
+* Guiding the ACL2 Theorem Prover:: Guiding the ACL2 Theorem Prover
+
+* Hey Wait!  Is ACL2 Typed or Untyped(Q):: Hey Wait!  Is ACL2 Typed or Untyped?
+
+* How Long Does It Take to Become an Effective User(Q):: How Long Does It Take to Become an Effective User?
+
+* How To Find Out about ACL2 Functions:: How To Find Out about ACL2 Functions
+
+* How To Find Out about ACL2 Functions (cont):: How To Find Out about ACL2 Functions (cont)
+
+* Modeling in ACL2:: Modeling in ACL2
+
+* Models in Engineering:: Models in Engineering
+
+* Models of Computer Hardware and Software:: Models of Computer Hardware and Software
+
+* Name the Formula Above:: Name the Formula Above
+
+* Nontautological Subgoals:: Prover output omits some details
+
+* Numbers in ACL2:: Numbers in ACL2
+
+* On the Naming of Subgoals:: On the Naming of Subgoals
+
+* Other Requirements:: Other Requirements
+
+* Overview of the Expansion of ENDP in the Base Case:: Overview of the Expansion of ENDP in the Base Case
+
+* Overview of the Expansion of ENDP in the Induction Step:: Overview of the Expansion of ENDP in the Induction Step
+
+* Overview of the Final Simplification in the Base Case:: Overview of the Final Simplification in the Base Case
+
+* Overview of the Proof of a Trivial Consequence:: Overview of the Proof of a Trivial Consequence
+
+* Overview of the Simplification of the Base Case to T:: Overview of the Simplification of the Base Case to T
+
+* Overview of the Simplification of the Induction Conclusion:: Overview of the Simplification of the Induction Conclusion
+
+* Overview of the Simplification of the Induction Step to T:: Overview of the Simplification of the Induction Step to T
+
+* Perhaps:: Perhaps
+
+* Popping out of an Inductive Proof:: Popping out of an Inductive Proof
+
+* Proving Theorems about Models:: Proving Theorems about Models
+
+* Revisiting the Admission of App:: Revisiting the Admission of App
+
+* Rewrite Rules are Generated from DEFTHM Events:: Rewrite Rules are Generated from DEFTHM Events
+
+* Running Models:: Running Models
+
+* Subsumption of Induction Candidates in App Example:: Subsumption of Induction Candidates in App Example
+
+* Suggested Inductions in the Associativity of App Example:: Suggested Inductions in the Associativity of App Example
+
+* Symbolic Execution of Models:: Symbolic Execution of Models
+
+* The Admission of App:: The Admission of App
+
+* The Associativity of App:: The Associativity of App
+
+* The Base Case in the App Example:: The Base Case in the App Example
+
+* The End of the Flying Tour:: The End of the Flying Tour
+
+* The End of the Proof of the Associativity of App:: The End of the Proof of the Associativity of App
+
+* The End of the Walking Tour:: The End of the Walking Tour
+
+* The Event Summary:: The Event Summary
+
+* The Expansion of ENDP in the Induction Step (Step 0):: The Expansion of ENDP in the Induction Step (Step 0)
+
+* The Expansion of ENDP in the Induction Step (Step 1):: The Expansion of ENDP in the Induction Step (Step 1)
+
+* The Expansion of ENDP in the Induction Step (Step 2):: The Expansion of ENDP in the Induction Step (Step 2)
+
+* The Falling Body Model:: The Falling Body Model
+
+* The Final Simplification in the Base Case (Step 0):: the Final Simplification in the Base Case (Step 0)
+
+* The Final Simplification in the Base Case (Step 1):: the Final Simplification in the Base Case (Step 1)
+
+* The Final Simplification in the Base Case (Step 2):: the Final Simplification in the Base Case (Step 2)
+
+* The Final Simplification in the Base Case (Step 3):: the Final Simplification in the Base Case (Step 3)
+
+* The First Application of the Associativity Rule:: The First Application of the Associativity Rule
+
+* The Induction Scheme Selected for the App Example:: The Induction Scheme Selected for the App Example
+
+* The Induction Step in the App Example:: The Induction Step in the App Example
+
+* The Instantiation of the Induction Scheme:: The Instantiation of the Induction Scheme
+
+* The Justification of the Induction Scheme:: The Justification of the Induction Scheme
+
+* The Proof of the Associativity of App:: The Proof of the Associativity of App
+
+* The Q.E.D. Message:: The Q.E.D. Message
+
+* The Rules used in the Associativity of App Proof:: The Rules used in the Associativity of App Proof
+
+* The Simplification of the Induction Conclusion (Step 0):: the Simplification of the Induction Conclusion (Step 0)
+
+* The Simplification of the Induction Conclusion (Step 1):: the Simplification of the Induction Conclusion (Step 1)
+
+* The Simplification of the Induction Conclusion (Step 10):: the Simplification of the Induction Conclusion (Step 10)
+
+* The Simplification of the Induction Conclusion (Step 11):: the Simplification of the Induction Conclusion (Step 11)
+
+* The Simplification of the Induction Conclusion (Step 12):: the Simplification of the Induction Conclusion (Step 12)
+
+* The Simplification of the Induction Conclusion (Step 2):: the Simplification of the Induction Conclusion (Step 2)
+
+* The Simplification of the Induction Conclusion (Step 3):: the Simplification of the Induction Conclusion (Step 3)
+
+* The Simplification of the Induction Conclusion (Step 4):: the Simplification of the Induction Conclusion (Step 4)
+
+* The Simplification of the Induction Conclusion (Step 5):: the Simplification of the Induction Conclusion (Step 5)
+
+* The Simplification of the Induction Conclusion (Step 6):: the Simplification of the Induction Conclusion (Step 6)
+
+* The Simplification of the Induction Conclusion (Step 7):: the Simplification of the Induction Conclusion (Step 7)
+
+* The Simplification of the Induction Conclusion (Step 8):: the Simplification of the Induction Conclusion (Step 8)
+
+* The Simplification of the Induction Conclusion (Step 9):: the Simplification of the Induction Conclusion (Step 9)
+
+* The Summary of the Proof of the Trivial Consequence:: The Summary of the Proof of the Trivial Consequence
+
+* The Theorem that App is Associative:: The Theorem that App is Associative
+
+* The Time Taken to do the Associativity of App Proof:: The Time Taken to do the Associativity of App Proof
+
+* The Tours:: The Tours
+
+* The WARNING about the Trivial Consequence:: The WARNING about the Trivial Consequence
+
+* Undocumented Topic:: Undocumented Topic
+
+* Using the Associativity of App to Prove a Trivial Consequence:: Using the Associativity of App to Prove a Trivial Consequence
+
+* What Is ACL2(Q):: What Is ACL2?
+
+* What is Required of the User(Q):: What is Required of the User?
+
+* What is a Mathematical Logic(Q):: What is a Mathematical Logic?
+
+* What is a Mechanical Theorem Prover(Q):: What is a Mechanical Theorem Prover?
+
+* What is a Mechanical Theorem Prover(Q) (cont):: What is a Mechanical Theorem Prover? (cont)
+
+* You Must Think about the Use of a Formula as a Rule:: You Must Think about the Use of a Formula as a Rule
+
+Generally, the topics listed above will not be of use to the ACL2 user.
+

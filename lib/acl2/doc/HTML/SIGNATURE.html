@@ -1,0 +1,108 @@
+<html>
+<head><title>SIGNATURE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SIGNATURE</h2>how to specify the arity of a constrained function
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+((hd *) =&gt; *)
+((printer * state) =&gt; (mv * * state))
+((mach * mach-state * state) =&gt; (mv * mach-state)<p>
+
+General Form:
+((fn ...) =&gt; *)
+((fn ...) =&gt; stobj)
+or
+((fn ...) =&gt; (mv ...))
+</pre>
+<p>
+
+where <code>fn</code> is the constrained function symbol, <code>...</code> is a list
+of asterisks and/or the names of single-threaded objects and
+<code>stobj</code> is a single-threaded object name.  ACL2 also supports an
+older style of signature described below after we describe the
+preferred style.
+<p>
+Signatures specify three syntactic aspects of a function symbol: (1)
+the ``arity'' or how many arguments the function takes, (2) the
+``multiplicity'' or how many results it returns via <code>MV</code>, and (3)
+which of those arguments and results are single-threaded objects and
+which objects they are.<p>
+
+For a discussion of single-threaded objects, see <a href="STOBJ.html">stobj</a>.  For
+the current purposes it is sufficient to know that every single-
+threaded object has a unique symbolic name and that <code><a href="STATE.html">state</a></code> is
+the name of the only built-in single-threaded object.  All other
+stobjs are introduced by the user via <code><a href="DEFSTOBJ.html">defstobj</a></code>.  An object that
+is not a single-threaded object is said to be ``ordinary.''<p>
+
+The general form of a signature is <code>((fn x1 ... xn) =&gt; val)</code>.  So
+a signature has two parts, separated by the symbol ``=&gt;''.  The
+first part, <code>(fn x1 ... xn)</code>, is suggestive of a call of the
+constrained function.  The number of ``arguments,'' <code>n</code>, indicates
+the arity of <code>fn</code>.  Each <code>xi</code> must be a symbol.  If a given
+<code>xi</code> is the symbol ``*'' then the corresponding argument must be
+ordinary.  If a given <code>xi</code> is any other symbol, that symbol must
+be the name of a single-threaded object and the corresponding
+argument must be that object.  No stobj name may occur twice among the
+<code>xi</code>.<p>
+
+The second part, <code>val</code>, of a signature is suggestive of a term and
+indicates the ``shape'' of the output of <code>fn</code>.  If <code>val</code> is a
+symbol then it must be either the symbol ``*'' or the name of a
+single-threaded object.  In either case, the multiplicity of <code>fn</code>
+is 1 and <code>val</code> indicates whether the result is ordinary or a
+stobj.  Otherwise, <code>val</code> is of the form <code>(mv y1 ... yk)</code>, where
+<code>k</code> &gt; 1.  Each <code>yi</code> must be either the symbol ``*'' or the name
+of a stobj.  Such a <code>val</code> indicates that <code>fn</code> has multiplicity
+<code>k</code> and the <code>yi</code> indicate which results are ordinary and which
+are stobjs.  No stobj name may occur twice among the <code>yi</code>.<p>
+
+Finally, a stobj name may appear in <code>val</code> only if appears among the
+<code>xi</code>.<p>
+
+Before ACL2 supported user-declared single-threaded objects there
+was only one single-threaded object: ACL2's built-in notion of
+<code><a href="STATE.html">state</a></code>.  The notion of signature supported then gave a special
+role to the symbol <code>state</code> and all other symbols were considered
+to denote ordinary objects.  ACL2 still supports the old form of
+signature, but it is limited to functions that operate on ordinary
+objects or ordinary objects and <code>state</code>.<p>
+
+
+<pre>
+Old-Style General Form:
+(fn formals result)
+</pre>
+<p>
+
+where <code>fn</code> is the constrained function symbol, <code>formals</code> is a
+suitable list of formal parameters for it, and <code>result</code> is either
+a symbol denoting that the function returns one result or else
+<code>result</code> is an <code><a href="MV.html">mv</a></code> expression, <code>(mv s1 ... sn)</code>, where
+<code>n&gt;1</code>, each <code>si</code> is a symbol, indicating that the function
+returns <code>n</code> results.  At most one of the formals may be the symbol
+<code>STATE</code>, indicating that corresponding argument must be ACL2's
+built-in <code><a href="STATE.html">state</a></code>.  If <code>state</code> appears in <code>formals</code> then
+<code>state</code> may appear once in <code>result</code>.  All ``variable symbols''
+other than <code>state</code> in old style signatures denote ordinary
+objects, regardless of whether the symbol has been defined to be a
+single-threaded object name!<p>
+
+We also support a variation on old style signatures allowing the user
+to declare which symbols (besides <code>state</code>) are to be considered
+single-threaded object names.  This form is
+
+<pre>
+(fn formals result :stobjs names)
+</pre>
+
+where <code>names</code> is either the name of a single-threaded object or else
+is a list of such names.  Every name in <code>names</code> must have been
+previously defined as a stobj via <code>defstobj</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

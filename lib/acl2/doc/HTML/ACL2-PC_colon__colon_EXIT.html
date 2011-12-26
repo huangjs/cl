@@ -1,0 +1,75 @@
+<html>
+<head><title>ACL2-PC_colon__colon_EXIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::EXIT</h3>(meta)
+<code>   </code>exit the interactive proof-checker
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+exit                        -- exit the interactive proof-checker
+(exit append-associativity) -- exit and create a defthm
+                               event named append-associativity
+<p>
+General Forms:<p>
+
+exit --  Exit without storing an event.<p>
+
+(exit event-name &amp;optional rule-classes do-it-flg)
+Exit, and store an event.
+</pre>
+
+The command <code>exit</code> returns you to the ACL2 loop.  At a later time,
+<code>(verify)</code> may be executed to get back into the same proof-checker
+state, as long as there hasn't been an intervening use of the
+proof-checker (otherwise see <code>save</code>).<p>
+
+When given one or more arguments as shown above, <code>exit</code> still returns
+you to the ACL2 loop, but first, if the interactive proof is
+complete, then it attempts create a <code>defthm</code> event with the specified
+<code>event-name</code> and <code>rule-classes</code> (which defaults to <code>(:rewrite)</code> if not
+supplied).  The event will be printed to the terminal, and then
+normally the user will be queried whether an event should really be
+created.  However, if the final optional argument <code>do-it-flg</code> is
+supplied and not <code>nil</code>, then an event will be made without a query.<p>
+
+For example, the form
+
+<pre>
+(exit top-pop-elim (:elim :rewrite) t)
+</pre>
+
+causes a <code>defthm</code> event named <code>top-pop-elim</code> to be created with
+rule-classes <code>(:elim :rewrite)</code>, without a query to the user (because
+of the argument <code>t</code>).<p>
+
+<strong>Note:</strong>  it is permitted for <code>event-name</code> to be <code>nil</code>.  In that case, the
+name of the event will be the name supplied during the original call
+of <code>verify</code>.  (See the documentation for <code>verify</code> and <code>commands</code>.)  Also
+in that case, if <code>rule-classes</code> is not supplied then it defaults to
+the rule-classes supplied in the original call of <code>verify</code>.<p>
+
+<code>Comments</code> on ``success'' and ``failure''.  An <code>exit</code> instruction will
+always ``fail'', so for example, if it appears as an argument of a
+<code>do-strict</code> instruction then none of the later (instruction) arguments
+will be executed.  Moreover, the ``failure'' will be ``hard'' if an
+event is successfully created or if the instruction is simply <code>exit</code>;
+otherwise it will be ``soft''.  See the documentation for <code>sequence</code>
+for an explanation of hard and soft ``failures''.  An obscure but
+potentially important fact is that if the ``failure'' is hard, then
+the error signal is a special signal that the top-level interactive
+loop can interpret as a request to exit.  Thus for example, a
+sequencing command that turns an error triple <code>(mv erp val state)</code>
+into <code>(mv t val state)</code> would never cause an exit from the interactive
+loop.<p>
+
+If the proof is not complete, then <code>(exit event-name ...)</code> will not
+cause an exit from the interactive loop.  However, in that case it
+will print out the original user-supplied goal (the one that was
+supplied with the call to <code>verify</code>) and the current list of
+instructions.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

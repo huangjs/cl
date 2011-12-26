@@ -1,0 +1,304 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-6.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-6</h2>Using the computed-hint-replacement feature
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+So far none of our computed hints have used the
+<code>:COMPUTED-HINT-REPLACEMENT</code> feature.  We now illustrate that.<p>
+
+The <code>:computed-hint-replacement</code> feature can easily lead to loops.
+So as you experiment with the examples in this section and your own
+hints using this feature, be ready to interrupt the theorem prover
+and abort!<p>
+
+A non-looping use of the <code>:computed-hint-replacement</code> feature 
+would be a hint like this:
+
+<pre>
+(if (certain-terms-present clause)
+    '(:computed-hint-replacement t
+      :in-theory (enable lemma25))
+    '(:computed-hint-replacement t
+      :in-theory (disable lemma25)))
+</pre>
+
+In this hint, if certain terms are present in <code>clause</code>, as determined
+by the function with the obvious name (here undefined), then this
+hint enables <code>lemma25</code> and otherwise disables it.  <code>Lemma25</code> might be
+a very expensive lemma, e.g., one that matches frequently and has an
+expensive and rarely established hypothesis.  One might wish it enabled
+only under certain conditions.  Recall that theories are inherited by
+children.  So once <code>lemma25</code> is enabled it ``stays'' enabled for the
+children, until disabled; and vice versa.  If the
+<code>:computed-hint-replacement</code> feature were not present and computed 
+hints were always deleted after they had been used, then <code>lemma25</code>
+would be left enabled (or disabled) for all the childen produced by the
+first firing of the hint.  But with the arrangement here, every subgoal
+gets a theory deemed suitable by the hint, and the hint persists.<p>
+
+Now we will set up a toy to allow us to play with computed hints to
+understand them more deeply.  To follow the discussion it is best
+to execute the following events.
+
+<pre>
+(defstub wrapper (x) t)
+(defaxiom wrapper-axiom (wrapper x) :rule-classes nil)
+</pre>
+
+Now submit the following event and watch what happens.
+
+<pre>
+(thm (equal u v)
+  :hints (`(:use (:instance wrapper-axiom (x a)))))
+</pre>
+
+The theorem prover adds <code>(wrapper a)</code> to the goal
+and then abandons the proof attempt because it cannot prove the
+subgoal.  Since the computed hint is deleted upon use, the 
+hint is not applied to the subgoal (i.e., the child of the goal).<p>
+
+What happens if we do the following?
+
+<pre>
+(thm (equal u v)
+  :hints (`(:computed-hint-replacement t
+            :use (:instance wrapper-axiom (x a)))))
+</pre>
+
+One might expect this to loop forever: The hint is applied to the
+child and adds the hypothesis again.  However, when the hint fires,
+nothing is actually changed, since <code>(wrapper a)</code> is already in the
+subgoal.  The theorem prover detects this and stops.  (Careful
+inspection of the output will reveal that the hint actually did fire
+a second time without apparent effect.)<p>
+
+So let's change the experiment a little.  Let's make the hint
+add the hypothesis <code>(wrapper p)</code> where <code>p</code> is the first literal
+of the clause.  This is silly but it allows us to explore the
+behavior of computed hints a little more.
+
+<pre>  
+(thm (equal u v)
+  :hints (`(:use (:instance wrapper-axiom (x ,(car clause))))))
+</pre>
+
+So in this case, the theorem prover changes the goal to
+
+<pre>
+(IMPLIES (WRAPPER (EQUAL U V)) (EQUAL U V))
+</pre>
+
+which then simplifies to
+
+<pre>
+(IMPLIES (WRAPPER NIL) (EQUAL U V))
+</pre>
+
+because the concluding equality can be assumed false in the hypothesis
+(e.g., think of the contrapositive version).  Nothing else happens because
+the hint has been removed and so is not applicable to the child.<p>
+
+Now consider the following -- and be ready to interrupt it and abort!
+
+<pre>  
+(thm (equal u v)
+  :hints (`(:computed-hint-replacement t
+            :use (:instance wrapper-axiom (x ,(car clause))))))
+</pre>
+
+This time the hint is not removed and so is applied to the child.
+So from <code>Goal</code> we get
+
+<pre>
+Goal'
+(IMPLIES (WRAPPER (EQUAL U V))
+         (EQUAL U V))
+</pre>
+
+and then
+
+<pre>
+Goal''
+(IMPLIES (AND (WRAPPER (NOT (WRAPPER (EQUAL U V))))
+              (WRAPPER (EQUAL U V)))
+         (EQUAL U V))
+</pre>
+
+etc.<p>
+
+First, note that the hint is repeatedly applied to its children.
+That is because we wrote <code>:computed-hint-replacement t</code>.
+But second, note that <code>Goal'</code> is not even being simplified
+before <code>Goal''</code> is produced from it.  If it were being simplified,
+the <code>(equal u v)</code>'s in the hypotheses would be replaced by <code>nil</code>.
+This is a feature.  It means after a computed hint has fired, other
+hints are given a chance at the result, even the hint itself unless
+it is removed from the list of hints.<p>
+
+As an exercise, let's arrange for the hint to stay around and be
+applied indefinitely but with a simplification between each use of the
+the hint.  To do this we need to pass information from one application
+of the hint to the next, essentially to say ``stay around but don't fire.''<p>
+
+First, we will define a function to use in the hint.  This is more
+than a mere convenience; it allows the hint to ``reproduce itself''
+in the replacement.<p>
+
+
+<pre>
+(defun wrapper-challenge (clause parity)
+  (if parity
+      `(:computed-hint-replacement ((wrapper-challenge clause nil))
+        :use (:instance wrapper-axiom (x ,(car clause))))
+      `(:computed-hint-replacement ((wrapper-challenge clause t)))))
+</pre>
+
+
+Note that this function is not recursive, even though it uses its
+own name.  That is because the occurrence of its name is in a quoted
+constant.<p>
+
+Now consider the following.  What will it do?<p>
+
+
+<pre>
+(thm (equal u v)
+  :hints ((wrapper-challenge clause t)))
+</pre>
+<p>
+
+First, observe that this is a legal hint because it is a term that
+mentions only the free variable <code>CLAUSE</code>.  When defining hint functions
+you may sometimes think their only arguments are the four variables
+<code>id</code>, <code>clause</code>, <code>world</code>, and <code>stable-under-simplificationp</code>.
+That is not so.  But in your hints you must call those functions so that
+those are the only free variables.  Note also that the occurrence of
+<code>clause</code> inside the <code>:computed-hint-replacement</code> is not an occurrence
+of the variable clause but just a constant.  Just store this note
+away for a moment.  We'll return to it momentarily.<p>
+
+Second, the basic cleverness of this hint is that every time it fires
+it reproduces itself with the opposite parity.  When the parity is
+<code>t</code> it actually changes the goal by adding a hypothesis.  When
+the parity is <code>nil</code> it doesn't change the goal and so allows
+simplification to proceed -- but it swaps the parity back to <code>t</code>.
+What you can see with this simple toy is that we can use the computed
+hints to pass information from parent to child.<p>
+
+Ok, so what happens when the event above is executed?  Try it.  You will
+see that ACL2 applied the hint the first time.  It doesn't get around to
+printing the output because an error is caused before it can print.
+But here is a blow-by-blow description of what happens.  The hint is
+evaluated on <code>Goal</code> with the <code>clause</code> <code>((equal u v))</code>.  It produces
+a hint exactly as though we had typed:
+
+<pre>
+("Goal" :use (:instance wrapper-axiom (x (equal u v))))
+</pre>
+
+which is applied to this goal. In addition, it produces the new hints
+argument
+
+<pre>
+:hints ((wrapper-challenge clause nil)).
+</pre>
+
+By applying the <code>"Goal"</code> hint we get the new subgoal
+
+<pre>
+Goal'
+(implies (wrapper (equal u v))
+         (equal u v))
+</pre>
+
+but this is not printed because, before printing it, the theorem prover
+looks for hints to apply to it and finds
+
+<pre>
+(wrapper-challenge clause nil)
+</pre>
+
+That is evaluated and produces a hint exactly as though we had typed:
+
+<pre>
+("Goal'" )
+</pre>
+
+and the new hints argument:
+
+<pre>
+:hints ((wrapper-challenge clause nil)).
+</pre>
+
+But if you supply the hint <code>("Goal'" )</code>, ACL2 will signal an error
+because it does not allow you to specify an empty hint!
+
+So the definition of <code>wrapper-challenge</code> above is almost correct
+but fatally flawed.  We need a non-empty ``no-op'' hint.  One such
+hint is to tell the system to expand a term that will always be expanded
+anyway.  So undo <code>wrapper-challenge</code>, redefine it, and try
+the proof again.  Now remember the observation about <code>clause</code> that
+we asked you to ``store'' above.  The new definition of <code>wrapper-challenge</code>
+illustrates what we meant.  Note that the first formal parameter of 
+<code>wrapper-challenge</code>, below, is no longer named <code>clause</code> but is called
+<code>cl</code> instead.  But the ``call'' of <code>wrapper-challenge</code> in the
+replacements is on <code>clause</code>.  This may seem to violate the rule that
+a function definition cannot use variables other than the formals.
+But the occurrences of <code>clause</code> below are not variables but constants
+in an object that will eventually be treated as hint term.
+
+<pre>
+:ubt wrapper-challenge<p>
+
+(defun wrapper-challenge (cl parity)
+  (if parity
+      `(:computed-hint-replacement ((wrapper-challenge clause nil))
+        :use (:instance wrapper-axiom (x ,(car cl))))
+      `(:computed-hint-replacement ((wrapper-challenge clause t))
+        :expand ((atom zzz)))))<p>
+
+(thm (equal u v)
+  :hints ((wrapper-challenge clause t)))
+</pre>
+<p>
+
+This time, things go as you might have expected!  <code>Goal'</code> is produced
+and simplified, to 
+
+<pre>
+Goal''
+(implies (wrapper nil)
+         (equal u v)).
+</pre>
+
+Simplification gets a chance because when the new hint
+<code>(wrapper-challenge clause nil)</code> is fired it does not change the
+goal.  But it does change the parity in the hints argument so that
+before <code>Goal''</code> is simplified again, the hint fires and adds the
+hypothesis:
+
+<pre>
+Goal'''
+(IMPLIES (AND (WRAPPER (NOT (WRAPPER NIL)))
+              (WRAPPER NIL))
+         (EQUAL U V)).
+</pre>
+
+This simplifies, replacing the first <code>(NOT (WRAPPER NIL))</code> by <code>NIL</code>,
+since <code>(WRAPPER NIL)</code> is known to be true here.  Thus the goal
+simplifies to
+
+<pre>
+Goal'4'
+(IMPLIES (WRAPPER NIL) (EQUAL U V)).
+</pre>
+
+The process repeats indefinitely.<p>
+
+So we succeeded in getting a hint to fire indefinitely but allow a
+full simplification between rounds.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

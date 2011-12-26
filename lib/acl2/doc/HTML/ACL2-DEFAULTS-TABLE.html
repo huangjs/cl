@@ -1,0 +1,331 @@
+<html>
+<head><title>ACL2-DEFAULTS-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ACL2-DEFAULTS-TABLE</h2>a <a href="TABLE.html">table</a> specifying certain defaults, e.g., the default <a href="DEFUN-MODE.html">defun-mode</a>
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(table acl2-defaults-table :defun-mode) ; current default defun-mode
+(table acl2-defaults-table :defun-mode :program)
+           ; set default defun-mode to :program
+</pre>
+
+<p>
+See <a href="TABLE.html">table</a> for a discussion of tables in general.  The legal
+keys for this <a href="TABLE.html">table</a> are shown below.  They may be accessed and
+changed via the general mechanisms provided by <a href="TABLE.html">table</a>s.  However,
+there are often more convenient ways to access and/or change the
+defaults.  (See also the note below.)
+
+<pre>
+:defun-mode
+</pre>
+
+the default <a href="DEFUN-MODE.html">defun-mode</a>, which must be <code>:</code><code><a href="PROGRAM.html">program</a></code> or <code>:</code><code><a href="LOGIC.html">logic</a></code>.
+See <a href="DEFUN-MODE.html">defun-mode</a> for a general discussion of <a href="DEFUN-MODE.html">defun-mode</a>s.  The
+<code>:</code><code><a href="DEFUN-MODE.html">defun-mode</a></code> key may be conveniently set by keyword commands
+naming the new <a href="DEFUN-MODE.html">defun-mode</a>, <code>:</code><code><a href="PROGRAM.html">program</a></code> and <code>:</code><code><a href="LOGIC.html">logic</a></code>.
+See <a href="PROGRAM.html">program</a> and see <a href="LOGIC.html">logic</a>.
+
+<pre>
+:enforce-redundancy
+</pre>
+
+if <code>t</code>, cause ACL2 to insist that most events are redundant
+(see <a href="REDUNDANT-EVENTS.html">redundant-events</a>); if <code>:warn</code>, cause a warning instead of an error
+for such non-redundant events; else, <code>nil</code>.  See <a href="SET-ENFORCE-REDUNDANCY.html">set-enforce-redundancy</a>.
+
+<pre>
+:verify-guards-eagerness
+</pre>
+
+an integer between 0 and 2 indicating how eager the system is to
+verify the <a href="GUARD.html">guard</a>s of a <a href="DEFUN.html">defun</a> event.  See <a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a>.
+
+<pre>
+:compile-fns
+</pre>
+
+When this key's value is <code>t</code>, functions are compiled when they are
+<code><a href="DEFUN.html">defun</a></code>'d; otherwise, the value is <code>nil</code>.  To set the flag,
+see <a href="SET-COMPILE-FNS.html">set-compile-fns</a>.
+
+<pre>
+:measure-function
+</pre>
+
+the default measure function used by <code><a href="DEFUN.html">defun</a></code> when no <code>:measure</code> is
+supplied in <code><a href="XARGS.html">xargs</a></code>.  The default measure function must be a function
+symbol of one argument. Let <code>mfn</code> be the default measure function and
+suppose no <code>:measure</code> is supplied with some recursive function
+definition.  Then <code><a href="DEFUN.html">defun</a></code> finds the first formal, <code>var</code>, that is tested
+along every branch and changed in each recursive call.  The system
+then ``guesses'' that <code>(mfn var)</code> is the <code>:measure</code> for that <code><a href="DEFUN.html">defun</a></code>.
+
+<pre>
+:well-founded-relation
+</pre>
+
+the default well-founded relation used by <code><a href="DEFUN.html">defun</a></code> when no
+<code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code> is supplied in <code><a href="XARGS.html">xargs</a></code>.  The default
+well-founded relation must be a function symbol, <code>rel</code>, of two
+arguments about which a <code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code> rule has been
+proved.  See <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>.
+
+<pre>
+:bogus-mutual-recursion-ok
+</pre>
+
+When this key's value is <code>t</code>, ACL2 skips the check that every function
+in a <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> (or <code><a href="DEFUNS.html">defuns</a></code>) ``clique'' calls at least
+one other function in that ``clique.''  Otherwise, the value is the keyword
+<code>nil</code> (the default) or <code>:warn</code> (which makes the check but merely warns
+when the check fails).  See <a href="SET-BOGUS-MUTUAL-RECURSION-OK.html">set-bogus-mutual-recursion-ok</a>.
+
+<pre>
+:irrelevant-formals-ok
+</pre>
+
+When this key's value is <code>t</code>, the check for irrelevant formals is
+bypassed; otherwise, the value is the keyword <code>nil</code> (the default)
+or <code>:warn</code> (which makes the check but merely warns when the check
+fails).  See <a href="IRRELEVANT-FORMALS.html">irrelevant-formals</a> and see <a href="SET-IRRELEVANT-FORMALS-OK.html">set-irrelevant-formals-ok</a>.
+
+<pre>
+:ignore-ok
+</pre>
+
+When this key's value is <code>t</code>, the check for ignored variables is
+bypassed; otherwise, the value is the keyword <code>nil</code> (the default)
+or <code>:warn</code> (which makes the check but merely warns when the check
+fails).  See <a href="SET-IGNORE-OK.html">set-ignore-ok</a>.
+
+<pre>
+:inhibit-warnings
+</pre>
+
+ACL2 prints warnings that may, from time to time, seem excessive to
+experienced users.  Each warning is ``labeled'' with a string
+identifying the type of warning.  Consider for example
+
+<pre>
+ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE ....
+</pre>
+
+Here, the label is "Use".  The value of the key
+<code>:inhibit-warnings</code> is a list of such labels, where case is
+ignored.  Any warning whose label is a member of this list (where
+again, case is ignored) is suppressed.
+See <a href="SET-INHIBIT-WARNINGS.html">set-inhibit-warnings</a> and also
+see <a href="SET-INHIBIT-OUTPUT-LST.html">set-inhibit-output-lst</a>.
+
+<pre>
+:bdd-constructors
+</pre>
+
+This key's value is a list of function symbols used to define the
+notion of ``BDD normal form.''  See <a href="BDD-ALGORITHM.html">bdd-algorithm</a> and
+see <a href="HINTS.html">hints</a>.
+
+<pre>
+:ttag
+</pre>
+
+This key's value, when non-<code>nil</code>, allows certain operations that
+extend the trusted code base beyond what is provided by ACL2.  See <a href="DEFTTAG.html">defttag</a>.
+See <a href="DEFTTAG.html">defttag</a>.
+
+<pre>
+:state-ok
+</pre>
+
+This key's value is either <code>t</code> or <code>nil</code> and indicates whether the user
+is aware of the syntactic restrictions on the variable symbol <code>STATE</code>.
+See <a href="SET-STATE-OK.html">set-state-ok</a>.
+
+<pre>
+:backchain-limit
+</pre>
+
+This key's value is either nil or a non-negative integer.  It is
+used to set the backchain limit upon starting rewriting.
+See <a href="BACKCHAIN-LIMIT.html">backchain-limit</a>.
+
+<pre>
+:default-backchain-limit
+</pre>
+
+This key's value is either nil or a non-negative integer.  It is
+used to set the backchain limit of a rule if one has not been
+specified.  See <a href="BACKCHAIN-LIMIT.html">backchain-limit</a>.
+
+<pre>
+:rewrite-stack-limit
+</pre>
+
+This key's value is a nonnegative integer less than <code>(expt 2 28)</code>.  It is
+used to limit the depth of calls of ACL2 rewriter functions.
+See <a href="REWRITE-STACK-LIMIT.html">rewrite-stack-limit</a>.
+
+<pre>
+:let*-abstractionp
+</pre>
+
+This key affects how the system displays subgoals.  The value is either
+<code>t</code> or <code>nil</code>.  When t, let* expressions are introduced before printing to
+eliminate common subexpressions.  The actual goal being worked on is
+unchanged.
+
+<pre>
+:nu-rewriter-mode
+</pre>
+
+This key's value is <code>nil</code>, <code>t</code>, or <code>:literals</code>.  When the value is
+non-<code>nil</code>, the rewriter gives special treatment to expressions and
+functions defined in terms of <code><a href="NTH.html">nth</a></code> and <code><a href="UPDATE-NTH.html">update-nth</a></code>.  See
+<code><a href="SET-NU-REWRITER-MODE.html">set-nu-rewriter-mode</a></code>.
+
+<pre>
+:case-split-limitations
+</pre>
+
+This key's value is a list of two ``numbers.''  Either ``number'' may
+optionally be <code>nil</code>, which is treated like positive infinity.  The
+numbers control how the system handles case splits in the simplifier.
+See <a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a>.
+
+<pre>
+:include-book-dir-alist
+</pre>
+
+This key's value is used by <code><a href="INCLUDE-BOOK.html">include-book</a></code>'s <code>:DIR</code> argument to
+associate a directory with a keyword.  An exception is the keyword
+<code>:SYSTEM</code> for the distributed ACL2 <code>books/</code> directory; see <a href="INCLUDE-BOOK.html">include-book</a>,
+in particular the section on ``Books Directory.''
+
+<pre>
+:match-free-default
+</pre>
+
+This key's value is either <code>:all</code>, <code>:once</code>, or <code>nil</code>.
+See <a href="SET-MATCH-FREE-DEFAULT.html">set-match-free-default</a>.
+
+<pre>
+:match-free-override
+</pre>
+
+This key's value is a list of runes.  See <a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a>.
+
+<pre>
+:match-free-override-nume
+</pre>
+
+This key's value is an integer used in the implementation of
+<a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a>, so that only existing runes are affected by
+that event.
+
+<pre>
+:non-linearp
+</pre>
+
+This key's value is either <code>t</code> or <code>nil</code> and indicates whether the user
+wishes ACL2 to extend the linear arithmetic decision procedure to include
+non-linear reasoning.  See <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>.<p>
+
+Note: Unlike all other <a href="TABLE.html">table</a>s, <code>acl2-defaults-table</code> can affect the
+soundness of the system.  The <a href="TABLE.html">table</a> mechanism therefore enforces on
+it a restriction not imposed on other <a href="TABLE.html">table</a>s: when <code><a href="TABLE.html">table</a></code> is used to
+update the <code>acl2-defaults-table</code>, the key and value must be
+variable-free forms.  Thus, while
+
+<pre>
+(table acl2-defaults-table :defun-mode :program),<p>
+
+(table acl2-defaults-table :defun-mode ':program), and<p>
+
+(table acl2-defaults-table :defun-mode (compute-mode *my-data*))
+</pre>
+
+are all examples of legal <a href="EVENTS.html">events</a> (assuming <code>compute-mode</code> is a
+function of one non-<code><a href="STATE.html">state</a></code> argument that produces a <a href="DEFUN-MODE.html">defun-mode</a> as
+its single value),
+
+<pre>
+(table acl2-defaults-table :defun-mode (compute-mode (w state)))
+</pre>
+
+is not legal because the value form is <code><a href="STATE.html">state</a></code>-sensitive.<p>
+
+Consider for example the following three <a href="EVENTS.html">events</a> which one might make
+into the text of a book.
+
+<pre>
+(in-package "ACL2")<p>
+
+(table acl2-defaults-table
+  :defun-mode
+  (if (ld-skip-proofsp state) :logic :program))<p>
+
+(defun crash-and-burn (x) (car x))
+</pre>
+
+The second event is illegal because its value form is
+<code><a href="STATE.html">state</a></code>-sensitive.  If it were not illegal, then it would set the
+<code>:</code><code><a href="DEFUN-MODE.html">defun-mode</a></code> to <code>:</code><code><a href="PROGRAM.html">program</a></code> when the book was being certified but
+would set the <a href="DEFUN-MODE.html">defun-mode</a> to <code>:</code><code><a href="LOGIC.html">logic</a></code> when the book was being loaded
+by <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  That is because during certification,
+<code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is <code>nil</code> (proof obligations are generated and
+proved), but during book inclusion <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is non-<code>nil</code>
+(those obligations are assumed to have been satisfied.)  Thus, the
+above book, when loaded, would create a function in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode that
+does not actually meet the conditions for such status.<p>
+
+For similar reasons, <code><a href="TABLE.html">table</a></code> <a href="EVENTS.html">events</a> affecting <code>acl2-defaults-table</code> are
+illegal within the scope of <code><a href="LOCAL.html">local</a></code> forms.  That is, the text
+
+<pre>
+(in-package "ACL2")<p>
+
+(local (table acl2-defaults-table :defun-mode :program))<p>
+
+(defun crash-and-burn (x) (car x))
+</pre>
+
+is illegal because <code>acl2-defaults-table</code> is changed locally.  If
+this text were acceptable as a book, then when the book was
+certified, <code>crash-and-burn</code> would be processed in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode,
+but when the certified book was included later, <code>crash-and-burn</code>
+would have <code>:</code><code><a href="LOGIC.html">logic</a></code> mode because the <code><a href="LOCAL.html">local</a></code> event would be skipped.<p>
+
+The text
+
+<pre>
+(in-package "ACL2")<p>
+
+(program) ;which is (table acl2-defaults-table :defun-mode :program)<p>
+
+(defun crash-and-burn (x) (car x))
+</pre>
+
+is acceptable and defines <code>crash-and-burn</code> in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode, both
+during certification and subsequent inclusion.<p>
+
+We conclude with an important observation about the relation between
+<code>acl2-defaults-table</code> and <code><a href="INCLUDE-BOOK.html">include-book</a></code>, <code><a href="CERTIFY-BOOK.html">certify-book</a></code>, and <code><a href="ENCAPSULATE.html">encapsulate</a></code>.
+Including or certifying a book never has an effect on the
+<code>acl2-defaults-table</code>, nor does executing an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event; we
+always restore the value of this <a href="TABLE.html">table</a> as a final act.  (Also
+see <a href="INCLUDE-BOOK.html">include-book</a>, see <a href="ENCAPSULATE.html">encapsulate</a>, and
+see <a href="CERTIFY-BOOK.html">certify-book</a>.)  That is, no matter how a book fiddles with
+the <code>acl2-defaults-table</code>, its value immediately after including that
+book is the same as immediately before including that book.  If you
+want to set the <code>acl2-defaults-table</code> in a way that persists, you need
+to do so using <a href="COMMAND.html">command</a>s that are not inside <a href="BOOKS.html">books</a>.  It may be useful
+to set your favorite defaults in your <code><a href="ACL2-CUSTOMIZATION.html">acl2-customization</a></code> file;
+see <a href="ACL2-CUSTOMIZATION.html">acl2-customization</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

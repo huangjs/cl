@@ -1,0 +1,70 @@
+<html>
+<head><title>LP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LP</h2>the Common Lisp entry to ACL2
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+To enter the ACL2 <a href="COMMAND.html">command</a> loop from Common Lisp, call the Common
+Lisp program <code>lp</code> (which stands for ``loop,'' as in ``read-eval-print
+loop'' or ``<a href="COMMAND.html">command</a> loop.'')  The ACL2 <a href="COMMAND.html">command</a> loop is actually
+coded in ACL2 as the function <code><a href="LD.html">ld</a></code> (which stands for ``load'').  The
+<a href="COMMAND.html">command</a> loop is just what you get by loading from the standard
+object input channel, <code><a href="_star_STANDARD-OI_star_.html">*standard-oi*</a></code>.  Calling <code><a href="LD.html">ld</a></code> directly from
+Common Lisp is possible but fragile because hard lisp errors or
+aborts throw you out of <code><a href="LD.html">ld</a></code> and back to the top-level of Common Lisp.
+<code>Lp</code> calls <code><a href="LD.html">ld</a></code> in such a way as to prevent this and is thus the
+standard way to get into the ACL2 <a href="COMMAND.html">command</a> loop.  Also
+see <a href="ACL2-CUSTOMIZATION.html">acl2-customization</a> for information on the loading of an
+initialization file.
+<p>
+All of the visible functionality of <code>lp</code> is in fact provided by <code><a href="LD.html">ld</a></code>,
+which is written in ACL2 itself.  Therefore, you should see <a href="LD.html">ld</a>
+for detailed <a href="DOCUMENTATION.html">documentation</a> of the ACL2 <a href="COMMAND.html">command</a> loop.  We sketch it
+below, for novice users.<p>
+
+Every expression typed to the ACL2 top-level must be an ACL2
+expression.<p>
+
+Any ACL2 expression may be submitted for evaluation.  Well-formedness is checked.
+Some well-formed expressions cannot be evaluated because they involve (at some level)
+undefined constrained functions (see <a href="ENCAPSULATE.html">encapsulate</a>).  In addition, ACL2 does not
+allow ``global variables'' in expressions to be evaluated.  Thus, <code>(car '(a b c))</code>
+is legal and evaluates to <code>A</code>, but <code>(car x)</code> is not, because there is no
+``global context'' or binding environment that gives meaning to the variable symbol
+<code>x</code>.<p>
+
+There is an exception to the global variable rule outlined above:
+single-threaded objects (see <a href="STOBJ.html">stobj</a>) may be used as global variables
+in top-level expressions.  The most commonly used such object is the
+ACL2 ``current state,'' which is the value of the variable symbol
+<code><a href="STATE.html">state</a></code>.  This variable may occur in the top-level form to be
+evaluated, but must be passed only to ACL2 functions ``expecting'' <code>state</code>
+as described in the documentation for <code><a href="STATE.html">state</a></code> and for <code><a href="STOBJ.html">stobj</a></code>s in general.
+If the form returns a new <a href="STATE.html">state</a> object as one of its
+values, then that is considered the new ``current'' <a href="STATE.html">state</a> for
+the evaluation of the subsequent form.  See <a href="STATE.html">state</a>.  <p>
+
+ACL2 provides some support for the functionality usually provided by
+global variables in a read-eval-print loop, namely the saving of the
+result of a computation for subsequent re-use in another expression.
+See <a href="ASSIGN.html">assign</a> and see <a href="_at_.html">@</a>.<p>
+
+If the form read is a single keyword, e.g., <code>:</code><code><a href="PE.html">pe</a></code> or <code>:</code><code><a href="UBT.html">ubt</a></code>, then
+special procedures are followed.  See <a href="KEYWORD-COMMANDS.html">keyword-commands</a>.<p>
+
+The <a href="COMMAND.html">command</a> loop keeps track of the <a href="COMMAND.html">command</a>s you have typed and
+allows you to review them, display them, and roll the logical <a href="STATE.html">state</a>
+back to that created by any <a href="COMMAND.html">command</a>.  See <a href="HISTORY.html">history</a>.<p>
+
+ACL2 makes the convention that if a top-level form returns three
+values, the last of which is an ACL2 <a href="STATE.html">state</a>, then the first is
+treated as a flag that means ``an error occurred,'' the second is
+the value to be printed if no error occurred, and the third is (of
+course) the new <a href="STATE.html">state</a>.  When ``an error occurs'' no value is
+printed.  Thus, if you execute a top-level form that happens to
+return three such values, only the second will be printed (and that
+will only happen if the first is <code>nil</code>!).  See <a href="LD.html">ld</a> for details.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

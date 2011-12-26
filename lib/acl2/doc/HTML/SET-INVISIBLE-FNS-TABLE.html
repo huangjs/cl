@@ -1,0 +1,72 @@
+<html>
+<head><title>SET-INVISIBLE-FNS-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-INVISIBLE-FNS-TABLE</h2>set the invisible functions table
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(set-invisible-fns-table ((binary-+ unary--)
+                          (binary-* unary-/)
+                          (unary-- unary--)
+                          (unary-/ unary-/)))
+(set-invisible-fns-table t) ; restore original invisible-fns-table
+</pre>
+
+Among other things, the setting above has the effect of making
+<code><a href="UNARY--.html">unary--</a></code> ``invisible'' for the purposes of applying permutative
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules to <code><a href="BINARY-+.html">binary-+</a></code> trees.  Thus, <code>arg</code> and <code>(unary-- arg)</code> will
+be given the same weight and will be permuted so as to be adjacent.
+The form <code>(invisible-fns-table (w state))</code> returns the current value
+of the invisible functions table.<p>
+
+Also see <a href="ADD-INVISIBLE-FNS.html">add-invisible-fns</a> and see <a href="REMOVE-INVISIBLE-FNS.html">remove-invisible-fns</a> for events that add
+to and remove from the invisible functions table.
+<p>
+
+<pre>
+General Form:
+(set-invisible-fns-table alist)
+</pre>
+
+where <code>alist</code> is either <code>t</code> or a true list of pairs, each element of
+which is of the form <code>(fn ufn1 ... ufnk)</code>, where <code>fn</code> is a function
+symbol and each <code>ufni</code> is a unary function symbol.  When alist is <code>t</code>,
+the initial value of this table is used in its place.  Modulo the
+replacement of <code>alist</code> by the default setting when <code>alist</code> is <code>t</code>, this
+macro is equivalent to
+
+<pre>
+(table invisible-fns-table nil 'alist :clear)
+</pre>
+
+which is also an event (see <a href="TABLE.html">table</a>).<p>
+
+Note that <code>set-invisible-fns-table</code> does not evaluate its argument.
+However, you can call <code><a href="TABLE.html">table</a></code> directly for that purpose.  For example,
+
+<pre>
+(set-invisible-fns-table ((binary-+ unary--)
+                          (binary-* unary-/)
+                          (unary-- unary--)
+                          (unary-/ unary-/)))
+</pre>
+
+ie equivalent to the following; see <a href="TABLE.html">table</a>.
+
+<pre>  
+(table invisible-fns-table nil
+       (quote ((binary-+ unary--)
+               (binary-* unary-/)
+               (unary-- unary--)
+               (unary-/ unary-/)))
+       :clear)
+</pre>
+<p>
+
+See <a href="INVISIBLE-FNS-TABLE.html">invisible-fns-table</a> for a description of the invisible functions table.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

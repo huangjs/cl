@@ -1,0 +1,390 @@
+<html>
+<head><title>META.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>META</h2>make a <code>:meta</code> rule (a hand-written simplifier)
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  Meta rules extend
+the ACL2 simplifier with hand-written code to transform certain
+terms to equivalent ones.  To add a meta rule, the <code>:</code><code><a href="COROLLARY.html">corollary</a></code>
+formula must establish that the hand-written ``metafunction''
+preserves the meaning of the transformed term.<p>
+
+Example <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formulas from which <code>:meta</code> rules might be
+built are:
+
+<pre>
+Examples:
+(equal (evl x a)                  ; Modify the rewriter to use fn to
+       (evl (fn x) a))            ; transform terms.  The :trigger-fns
+                                  ; of the :meta rule-class specify
+                                  ; the top-most function symbols of
+                                  ; those x that are candidates for
+                                  ; this transformation.<p>
+
+(implies (and (pseudo-termp x)    ; As above, but this illustrates
+              (alistp a))         ; that without loss of generality we
+         (equal (evl x a)         ; may restrict x to be shaped like a
+                (evl (fn x) a)))  ; term and a to be an alist.<p>
+
+(implies (and (pseudo-termp x)    ; As above (with or without the
+              (alistp a)          ; hypotheses on x and a) with the
+              (evl (hyp-fn x) a)) ; additional restriction that the
+         (equal (evl x a)         ; meaning of (hyp-fn x) is true in
+                (evl (fn x) a)))  ; the current context.  That is, the
+                                  ; applicability of the transforma-
+                                  ; tion may be dependent upon some
+                                  ; computed hypotheses.
+</pre>
+
+A non-<code>nil</code> list of function symbols must be supplied as the value
+of the <code>:trigger-fns</code> field in a <code>:meta</code> rule class object.
+<p>
+
+<pre>
+General Forms:
+(implies (and (pseudo-termp x)        ; this hyp is optional
+              (alistp a)              ; this hyp is optional
+              (ev (hyp-fn x ...) a))  ; this hyp is optional
+         (equiv (ev x a)
+                (ev (fn x ...) a)))
+</pre>
+
+where <code>equiv</code> is a known <a href="EQUIVALENCE.html">equivalence</a> relation, <code>x</code> and
+<code>a</code> are distinct variable names, and <code>ev</code> is an evaluator
+function (see below), and <code>fn</code> is a function symbol, as is
+<code>hyp-fn</code> when provided.  The arguments to <code>fn</code> and <code>hyp-fn</code>
+should be identical.  In the most common case, both take a single
+argument, <code>x</code>, which denotes the term to be simplified.  If <code>fn</code>
+and/or <code>hyp-fn</code> are <a href="GUARD.html">guard</a>ed, their <a href="GUARD.html">guard</a>s should be
+(implied by) <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code>.  See <a href="PSEUDO-TERMP.html">pseudo-termp</a>.  We say the
+theorem above is a ``metatheorem'' or ``metalemma'' and <code>fn</code> is a
+``metafunction'', and <code>hyp-fn</code> is a ``hypothesis metafunction''.<p>
+
+If ``<code>...</code>'' is empty, i.e., the metafunctions take just one argument,
+we say they are ``vanilla flavored.''  If ``<code>...</code>'' is non-empty,
+we say the metafunctions are ``extended.''  Extended
+metafunctions can access <code><a href="STATE.html">state</a></code> and context sensitive information
+to compute their results, within certain limits.  We discuss vanilla
+metafunctions here and recommend a thorough understanding of them
+before proceeding (at which time
+see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>).<p>
+
+We defer discussion of the case in which there is a hypothesis
+metafunction and for now address the case in which the other two
+hypotheses are present.<p>
+
+In the discussion below, we refer to the argument, <code>x</code>, of <code>fn</code>
+and <code>hyp-fn</code> as a ``term.''  When these metafunctions are executed
+by the simplifier, they will be applied to (the quotations of)
+terms.  But during the proof of the metatheorem itself, <code>x</code> may not
+be the quotation of a term.  If the <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> hypothesis is
+omitted, <code>x</code> may be any object.  Even with the <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code>
+hypothesis, <code>x</code> may merely ``look like a term'' but use
+non-function symbols or function symbols of incorrect arity.  In any
+case, the metatheorem is stronger than necessary to allow us to
+apply the metafunctions to terms, as we do in the discussion below.
+We return later to the question of proving the metatheorem.<p>
+
+Suppose the general form of the metatheorem above is proved with the
+<code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> and <code><a href="ALISTP.html">alistp</a></code> hypotheses.  Then when the simplifier
+encounters a term, <code>(h t1 ... tn)</code>, that begins with a function
+symbol, <code>h</code>, listed in <code>:trigger-fns</code>, it applies the
+metafunction, <code>fn</code>, to the quotation of the term, i.e., it
+evaluates <code>(fn '(h t1 ... tn))</code> to obtain some result, which can be
+written as <code>'val</code>.  If <code>'val</code> is different from <code>'(h t1 ... tn)</code>
+and <code>val</code> is a term, then <code>(h t1 ... tn)</code> is replaced by <code>val</code>,
+which is then passed along for further rewriting.  Because the
+metatheorem establishes the correctness of <code>fn</code> for all terms (even
+non-terms!), there is no restriction on which function symbols are
+listed in the <code>:trigger-fns</code>.  Generally, of course, they should be
+the symbols that head up the terms simplified by the metafunction
+<code>fn</code>.  See <a href="TERM-TABLE.html">term-table</a> for how one obtains some assistance
+towards guaranteeing that <code>val</code> is indeed a term.<p>
+
+The ``evaluator'' function, <code>ev</code>, is a function that can evaluate a
+certain class of expressions, namely, all of those composed of
+variables, constants, and applications of a fixed, finite set of
+function symbols, <code>g1</code>, ..., <code>gk</code>.  Generally speaking, the set of
+function symbols handled by <code>ev</code> is chosen to be exactly the
+function symbols recognized and manipulated by the metafunctions
+being introduced.  For example, if <code>fn</code> manipulates expressions in
+which <code>'</code><code><a href="EQUAL.html">equal</a></code> and <code>'</code><code><a href="BINARY-APPEND.html">binary-append</a></code> occur as function
+symbols, then <code>ev</code> is generally specified to handle <code><a href="EQUAL.html">equal</a></code> and
+<code><a href="BINARY-APPEND.html">binary-append</a></code>.  The actual requirements on <code>ev</code> become clear
+when the metatheorem is proved.  The standard way to introduce an
+evaluator is to use the ACL2 macro <code><a href="DEFEVALUATOR.html">defevaluator</a></code>, though this is
+not strictly necessary.  See <a href="DEFEVALUATOR.html">defevaluator</a> for details.<p>
+
+Why are we justified in using metafunctions this way?  Suppose
+<code>(fn 'term1)</code> is <code>'term2</code>.  What justifies replacing <code>term1</code> by
+<code>term2</code>?  The first step is to assert that <code>term1</code> is
+<code>(ev 'term1 a)</code>, where <code>a</code> is an alist that maps <code>'var</code> to
+<code>var</code>, for each variable <code>var</code> in <code>term1</code>.  This step is
+incorrect, because <code>'term1</code> may contain function symbols other than
+the ones, <code>g1</code>, ..., <code>gk</code>, that <code>ev</code> knows how to handle.  But we
+can grow <code>ev</code> to a ``larger'' evaluator, <code>ev*</code>, an evaluator for
+all of the symbols that occur in <code>term1</code> or <code>term2</code>.  We can prove
+that <code>ev*</code> satisfies the <a href="CONSTRAINT.html">constraint</a>s on <code>ev</code>.  Hence, the
+metatheorem holds for <code>ev*</code> in place of <code>ev</code>, by functional
+instantiation.  We can then carry out the proof of the
+<a href="EQUIVALENCE.html">equivalence</a> of <code>term1</code> and <code>term2</code> as follows: Fix <code>a</code> to be
+an alist that maps the quotations of the variables of <code>term1</code> and
+<code>term2</code> to themselves.  Then,
+
+<pre>
+term1 = (ev* 'term1 a)      ; (1) by construction of ev* and a
+      = (ev* (fn 'term1) a) ; (2) by the metatheorem for ev*
+      = (ev* 'term2 a)      ; (3) by evaluation of fn
+      = term2               ; (4) by construction of ev* and a
+</pre>
+
+Note that in line (2) above, where we appeal to the (functional
+instantiation of the) metatheorem, we can relieve its (optional)
+<code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> and <code><a href="ALISTP.html">alistp</a></code> hypotheses by appealing to the facts
+that <code>term1</code> is a term and <code>a</code> is an alist by construction.<p>
+
+Finally, we turn to the second case, in which there is a hypothesis
+metafunction.  In that case, consider as before what happens when
+the simplifier encounters a term, <code>(h t1 ... tn)</code>, where <code>h</code> is
+listed in <code>:trigger-fns</code>.  This time, after it applies <code>fn</code> to
+<code>'(h t1 ... tn)</code> to obtain the quotation of some new term, <code>'val</code>,
+it then applies the hypothesis metafunction, <code>hyp-fn</code>.  That is, it
+evaluates <code>(hyp-fn '(h t1 ... tn))</code> to obtain some result, which
+can be written as <code>'hyp-val</code>.  If <code>hyp-val</code> is not in fact a term,
+the metafunction is not used.  Provided <code>hyp-val</code> is a term, the
+simplifier attempts to establish (by conventional backchaining) that
+this term is non-<code>nil</code> in the current context.  If this attempt
+fails, then the meta rule is not applied.  Otherwise, <code>(h t1...tn)</code>
+is replaced by <code>val</code> as in the previous case (where there was no
+hypothesis metafunction).<p>
+
+Why is it justified to make this extension to the case of hypothesis
+metafunctions?  First, note that the rule
+
+<pre>
+(implies (and (pseudo-termp x)
+              (alistp a)
+              (ev (hyp-fn x) a))
+         (equal (ev x a)
+                (ev (fn x) a)))
+</pre>
+
+is logically equivalent to the rule
+
+<pre>
+(implies (and (pseudo-termp x)
+              (alistp a))
+         (equal (ev x a)
+                (ev (new-fn x) a)))
+</pre>
+
+where <code>(new-fn x)</code> is defined to be 
+<code>(list 'if (hyp-fn x) (fn x) x)</code>.  (If we're careful, we realize
+that this argument depends on making an extension of <code>ev</code> to an
+evaluator <code>ev*</code> that handles <code><a href="IF.html">if</a></code> and the functions manipulated by
+<code>hyp-fn</code>.)  If we write <code>'term</code> for the quotation of the present
+term, and if <code>(hyp-fn 'term)</code> and <code>(fn 'term)</code> are both terms, say
+<code>hyp1</code> and <code>term1</code>, then by the previous argument we know it is
+sound to rewrite term to <code>(if hyp1 term1 term)</code>.  But since we have
+established in the current context that <code>hyp1</code> is non-<code>nil</code>, we
+may simplify <code>(if hyp1 term1 term)</code> to <code>term1</code>, as desired.<p>
+
+We now discuss the role of the <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> hypothesis.
+<code>(Pseudo-termp x)</code> checks that <code>x</code> has the shape of a term.
+Roughly speaking, it ensures that <code>x</code> is a symbol, a quoted
+constant, or a true list consisting of a <code>lambda</code> expression or
+symbol followed by some pseudo-terms.  Among the properties of terms
+not checked by <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> are that variable symbols never begin
+with ampersand, <code>lambda</code> expressions are closed, and function
+symbols are applied to the correct number of arguments.
+See <a href="PSEUDO-TERMP.html">pseudo-termp</a>.<p>
+
+There are two possible roles for <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> in the development
+of a metatheorem:  it may be used as the <a href="GUARD.html">guard</a> of the
+metafunction and/or hypothesis metafunction and it may be used as a
+hypothesis of the metatheorem.  Generally speaking, the
+<code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> hypothesis is included in a metatheorem only if it
+makes it easier to prove.  The choice is yours.  (An extreme example
+of this is when the metatheorem is invalid without the hypothesis!)
+We therefore address ourselves the question:  should a metafunction
+have a <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> <a href="GUARD.html">guard</a>?  A <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> <a href="GUARD.html">guard</a> for
+a metafunction, in connection with other considerations described
+below, improves the efficiency with which the metafunction is used
+by the simplifier.<p>
+
+To make a metafunction maximally efficient you should (a) provide it
+with a <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> <a href="GUARD.html">guard</a> and exploit the <a href="GUARD.html">guard</a> when
+possible in coding the body of the function
+(see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>, especially the section on
+efficiency issues), (b) verify the <a href="GUARD.html">guard</a>s of the metafunction
+(see <a href="VERIFY-GUARDS.html">verify-guards</a>), and (c) compile the metafunction
+(see <a href="COMP.html">comp</a>).  When these three steps have been taken the simplifier
+can evaluate <code>(fn 'term1)</code> by running the compiled ``primary code''
+(see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>) for <code>fn</code> directly in Common Lisp.<p>
+
+Before discussing efficiency issues further, let us review for a
+moment the general case in which we wish to evaluate <code>(fn `obj)</code>
+for some <code>:</code><code><a href="LOGIC.html">logic</a></code> function.  We must first ask whether the
+<a href="GUARD.html">guard</a>s of <code>fn</code> have been verified.  If not, we must evaluate
+<code>fn</code> by executing its logic definition.  This effectively checks
+the <a href="GUARD.html">guard</a>s of every subroutine and so can be slow.  If, on the
+other hand, the <a href="GUARD.html">guard</a>s of <code>fn</code> have been verified, then we can
+run the primary code for <code>fn</code>, provided <code>'obj</code> satisfies the
+<a href="GUARD.html">guard</a> of <code>fn</code>.  So we must next evaluate the <a href="GUARD.html">guard</a> of
+<code>fn</code> on <code>'obj</code>.  If the <a href="GUARD.html">guard</a> is met, then we run the primary
+code for <code>fn</code>, otherwise we run the logic code.<p>
+
+Now in the case of a metafunction for which the three steps above
+have been followed, we know the <a href="GUARD.html">guard</a> is (implied by)
+<code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> and that it has been verified.  Furthermore, we know
+without checking that the <a href="GUARD.html">guard</a> is met (because <code>term1</code> is a
+term and hence <code>'term1</code> is a <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code>).  Hence, we can use
+the compiled primary code directly.<p>
+
+We strongly recommend that you compile your metafunctions, as well
+as all their subroutines.  Guard verification is also recommended.<p>
+
+Finally, we present a very simple example of the use of <code>:meta</code>
+rules, based on one provided by Robert Krug.  This example
+illustrates a trick for avoiding undesired rewriting after applying
+a metafunction or any other form of rewriting.  To elaborate: in
+general, the term <code>t2</code> obtained by applying a metafunction to a
+term <code>t1</code> is then handed immediately to the rewriter, which
+descends recursively through the arguments of function calls to
+rewrite <code>t2</code> completely.  But if <code>t2</code> shares a lot of structure
+with <code>t1</code>, then it might not be worthwhile to rewrite <code>t2</code>
+immediately.  (A rewrite of <code>t2</code> will occur anyhow the next time a
+goal is generated.)  The trick involves avoiding this rewrite by
+wrapping <code>t2</code> inside a call of <code><a href="HIDE.html">hide</a></code>, which in turn is inside
+a call of a user-defined ``unhiding'' function, <code>unhide</code>.<p>
+
+
+<pre>
+(defun unhide (x)
+  (declare (xargs :guard t))
+  x)<p>
+
+(defthm unhide-hide
+  (equal (unhide (hide x))
+         x)
+  :hints (("Goal" :expand ((hide x)))))<p>
+
+(in-theory (disable unhide))<p>
+
+(defun my-plus (x y)
+  (+ x y))<p>
+
+(in-theory (disable my-plus))<p>
+
+(defevaluator evl evl-list
+  ((my-plus x y)
+   (binary-+ x y)
+   (unhide x)
+   (hide x)))<p>
+
+(defun meta-fn (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (consp term)
+           (equal (length term) 3)
+           (equal (car term) 'my-plus))
+      `(UNHIDE (HIDE (BINARY-+ ,(cadr term) ,(caddr term))))
+    term))<p>
+
+(defthm my-meta-lemma
+  (equal (evl term a)
+         (evl (meta-fn term) a))
+  :hints (("Goal" :in-theory (enable my-plus)))
+  :rule-classes ((:meta :trigger-fns (my-plus))))<p>
+
+</pre>
+<p>
+
+Notice that in the following (silly) conjectre, ACL2 initially does
+only does the simplification directed by the metafunction; a second
+goal is generated before the commuativity of addition can be
+applied.  If the above calls of <code>UNHIDE</code> and <code>HIDE</code> had been
+stripped off, then <code>Goal'</code> would have been the term printed in
+<code>Goal''</code> below.<p>
+
+
+<pre>
+ACL2 !&gt;(thm
+        (equal (my-plus b a)
+               ccc))<p>
+
+This simplifies, using the :meta rule MY-META-LEMMA and the :rewrite
+rule UNHIDE-HIDE, to<p>
+
+Goal'
+(EQUAL (+ B A) CCC).<p>
+
+This simplifies, using the :rewrite rule COMMUTATIVITY-OF-+, to<p>
+
+Goal''
+(EQUAL (+ A B) CCC).
+</pre>
+<p>
+
+The discussion above probably suffices to make good use of this
+<code>(UNHIDE (HIDE ...))</code> trick.  However, we invite the reader who
+wishes to understand the trick in depth to evaluate the following
+form before submitting the <code><a href="THM.html">thm</a></code> form above.
+
+<pre>
+(trace$ (rewrite :entry (list (take 2 arglist))
+                 :exit (list (car values)))
+        (rewrite-with-lemma :entry (list (take 2 arglist))
+                            :exit (take 2 values)))
+</pre>
+
+The following annotated subset of the trace output (which may appear
+a bit different depending on the underlying Common Lisp
+implementation) explains how the trick works.<p>
+
+
+<pre>
+    2&gt; (REWRITE ((MY-PLUS B A) NIL))&gt;
+      3&gt; (REWRITE-WITH-LEMMA
+              ((MY-PLUS B A)
+               (REWRITE-RULE (:META MY-META-LEMMA)
+                             1822
+                             NIL EQUAL META-FN NIL META NIL NIL)))&gt;<p>
+
+We apply the meta rule, then recursively rewrite the result, which is the
+(UNHIDE (HIDE ...)) term shown just below.<p>
+
+        4&gt; (REWRITE ((UNHIDE (HIDE (BINARY-+ B A)))
+                     ((A . A) (B . B))))&gt;
+          5&gt; (REWRITE ((HIDE (BINARY-+ B A))
+                       ((A . A) (B . B))))&gt;<p>
+
+The HIDE protects its argument from being touched by the rewriter.<p>
+
+          &lt;5 (REWRITE (HIDE (BINARY-+ B A)))&gt;
+          5&gt; (REWRITE-WITH-LEMMA
+                  ((UNHIDE (HIDE (BINARY-+ B A)))
+                   (REWRITE-RULE (:REWRITE UNHIDE-HIDE)
+                                 1806 NIL EQUAL (UNHIDE (HIDE X))
+                                 X ABBREVIATION NIL NIL)))&gt;<p>
+
+Now we apply UNHIDE-HIDE, then recursively rewrite its right-hand
+side in an environment where X is bound to (BINARY-+ B A).<p>
+
+            6&gt; (REWRITE (X ((X BINARY-+ B A))))&gt;<p>
+
+Notice that at this point X is cached, so REWRITE just returns
+(BINARY-+ B A).<p>
+
+            &lt;6 (REWRITE (BINARY-+ B A))&gt;
+          &lt;5 (REWRITE-WITH-LEMMA T (BINARY-+ B A))&gt;
+        &lt;4 (REWRITE (BINARY-+ B A))&gt;
+      &lt;3 (REWRITE-WITH-LEMMA T (BINARY-+ B A))&gt;
+    &lt;2 (REWRITE (BINARY-+ B A))&gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

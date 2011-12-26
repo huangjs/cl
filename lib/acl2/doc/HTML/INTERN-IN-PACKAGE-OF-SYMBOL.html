@@ -1,0 +1,71 @@
+<html>
+<head><title>INTERN-IN-PACKAGE-OF-SYMBOL.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INTERN-IN-PACKAGE-OF-SYMBOL</h2>create a symbol with a given name
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+Completion Axiom:
+
+<pre>
+(equal (intern-in-package-of-symbol x y)
+       (if (and (stringp x)
+                (symbolp y))
+           (intern-in-package-of-symbol x y)
+         nil))
+</pre>
+
+<p>
+<a href="GUARD.html">Guard</a> for <code>(intern-in-package-of-symbol x y)</code>:
+
+<pre>
+(and (stringp x) (symbolp y))
+</pre>
+<p>
+
+Intuitively, <code>(intern-in-package-of-symbol x y)</code> creates a symbol
+with <code><a href="SYMBOL-NAME.html">symbol-name</a></code> <code>x</code> <a href="INTERN.html">intern</a>ed in the package containing <code>y</code>.
+More precisely, suppose <code>x</code> is a string, <code>y</code> is a symbol with
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> pkg and that the <code><a href="DEFPKG.html">defpkg</a></code> event creating pkg
+had the list of symbols imports as the value of its second argument.
+Then <code>(intern-in-package-of-symbol x y)</code> returns a symbol, ans, the
+<code><a href="SYMBOL-NAME.html">symbol-name</a></code> of ans is <code>x</code>, and the <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> of ans
+is pkg, unless <code>x</code> is the <code><a href="SYMBOL-NAME.html">symbol-name</a></code> of some member of imports
+with <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> ipkg, in which case the
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> of ans is ipkg.  Because <code><a href="DEFPKG.html">defpkg</a></code> requires
+that there be no duplications among the <code><a href="SYMBOL-NAME.html">symbol-name</a></code>s of the
+imports, <code>intern-in-package-of-symbol</code> is uniquely defined.<p>
+
+For example, suppose <code>"MY-PKG"</code> was created by
+
+<pre>
+(defpkg "MY-PKG" '(ACL2::ABC LISP::CAR)).
+</pre>
+
+Let <code>w</code> be <code>'my-pkg::witness</code>.  Observe that
+
+<pre>
+(symbolp w) is t                     ; w is a symbol
+(symbol-name w) is "WITNESS"         ; w's name is "WITNESS"
+(symbol-package-name w) is "MY-PKG"  ; w is in the package "MY-PKG"
+</pre>
+
+The construction of <code>w</code> illustrates one way to obtain a symbol in a given
+package:  write it down as a constant using the double-colon notation.<p>
+
+But another way to obtain a symbol in a given package is to create it with
+<code>intern-in-package-of-symbol</code>.
+
+<pre>
+(intern-in-package-of-symbol "XYZ" w) is MY-PKG::XYZ<p>
+
+(intern-in-package-of-symbol "ABC" w) is ACL2::ABC<p>
+
+(intern-in-package-of-symbol "CAR" w) is LISP::CAR<p>
+
+(intern-in-package-of-symbol "car" w) is MY-PKG::|car|
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

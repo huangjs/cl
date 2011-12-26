@@ -1,0 +1,160 @@
+<html>
+<head><title>TERM-ORDER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TERM-ORDER</h2>the ordering relation on terms used by ACL2
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+ACL2 must occasionally choose which of two terms is syntactically
+smaller.  The need for such a choice arises, for example, when using
+equality hypotheses in conjectures (the smaller term is substituted
+for the larger elsewhere in the formula), in stopping loops in
+permutative rewrite rules (see <a href="LOOP-STOPPER.html">loop-stopper</a>), and in choosing
+the order in which to try to cancel the addends in linear arithmetic
+inequalities.  When this notion of syntactic size is needed, ACL2
+uses ``term order.''  Popularly speaking, term order is just a
+lexicographic ordering on terms.  But the situation is actually more
+complicated.
+<p>
+We define term order only with respect to terms in translated form.
+See <a href="TRANS.html">trans</a>.  Constants are viewed as built up by <em>pseudo-function</em>
+applications, as described at the end of this documentation.<p>
+
+<code>Term1</code> comes before <code>term2</code> in the term order iff
+<blockquote><p>
+
+(a) the number of variable occurrences in <code>term1</code> is less than that in
+<code>term2</code>, or<p>
+
+(b) the numbers of variable occurrences in the two terms are equal
+but the number of function applications in <code>term1</code> is less than that
+in <code>term2</code>, or<p>
+
+(c) the numbers of variable occurrences in the two terms are equal,
+the numbers of functions applications in the two terms are equal,
+but the number of pseudo-function applications in <code>term1</code> is less
+than that in <code>term2</code>, or<p>
+
+(d) the numbers of variable occurrences in the two terms are equal,
+the numbers of functions applications in the two terms are equal,
+the numbers of pseudo-function applications in the two terms are equal,
+and <code>term1</code> comes before <code>term2</code> in a lexicographic ordering, <code><a href="LEXORDER.html">lexorder</a></code>,
+based their structure as Lisp objects:  see <a href="LEXORDER.html">lexorder</a>.<p>
+
+</blockquote>
+The function <code>term-order</code>, when applied to the translations of two
+ACL2 terms, returns <code>t</code> iff the first is ``less than or equal'' to the
+second in the term order.<p>
+
+By ``number of variable occurrences'' we do not mean ``number of
+distinct variables'' but ``number of times a variable symbol is
+mentioned.''  <code>(cons x x)</code> has two variable occurrences, not one.
+Thus, perhaps counterintuitively, a large term that contains only
+one variable occurrence, e.g., <code>(standard-char-p (car (reverse x)))</code>
+comes before <code>(cons x x)</code> in the term order.<p>
+
+Since constants contain no variable occurrences and non-constant
+expressions must contain at least one variable occurrence, constants
+come before non-constants in the term order, no matter how large the
+constants.  For example, the list constant
+
+<pre>
+'(monday tuesday wednesday thursday friday)
+</pre>
+
+comes before <code>x</code> in the term order.  Because term order is involved
+in the control of permutative rewrite rules and used to shift
+smaller terms to the left, a set of permutative rules designed to
+allow the permutation of any two tips in a tree representing the
+nested application of some function will always move the constants
+into the left-most tips.  Thus,
+
+<pre>
+(+ x 3 (car (reverse klst)) (dx i j)) ,
+</pre>
+
+which in translated form is
+
+<pre>
+(binary-+ x
+          (binary-+ '3
+                    (binary-+ (dx i j)
+                              (car (reverse klst))))),
+</pre>
+
+will be permuted under the built-in commutativity rules to
+
+<pre>
+(binary-+ '3
+          (binary-+ x
+                    (binary-+ (car (reverse klst))
+                              (dx i j))))
+</pre>
+
+or
+
+<pre>
+(+ 3 x (car (reverse klst)) (dx i j)).
+</pre>
+
+Two terms with the same numbers of variable occurrences, function
+applications, and pseudo-function applications are ordered by
+lexicographic means, based on their structures.  See <a href="LEXORDER.html">lexorder</a>.
+Thus, if two terms <code>(member ...)</code> and <code>(reverse ...)</code> contain the same
+numbers of variable occurrences and function applications, then the
+<code><a href="MEMBER.html">member</a></code> term is first in the term order because <code><a href="MEMBER.html">member</a></code> comes before
+<code><a href="REVERSE.html">reverse</a></code> in the term order (which is here reduced to alphabetic
+ordering).<p>
+
+It remains to discuss the notion of <em>pseudo-function</em> applications.<p>
+
+Clearly, two constants are ordered using cases (c) and (d) of term
+order, since they each contain 0 variable occurrences and no
+function calls.  This raises the question ``How many function
+applications are in a constant?''  Because we regard the number of
+function applications as a more fundamental measure of the size of a
+constant than lexicographic considerations, we decided that for the
+purposes of term order, constants would be seen as being built by
+primitive constructor functions.  These constructor functions are
+not actually defined in ACL2 but merely imagined for the purposes of
+term order.  We here use suggestive names for these imagined
+functions, ignoring entirely the prior use of these names within
+ACL2.  The imagined applications of these functions are what we
+refer to as <em>pseudo-function</em> applications.<p>
+
+The constant function <code>z</code> constructs <code>0</code>.  Positive integers are
+constructed from <code>(z)</code> by the successor function, <code>s</code>.  Thus <code>2</code> is
+<code>(s (s (z)))</code> and contains three function applications.  <code>100</code>
+contains one hundred and one applications.  Negative integers are
+constructed from their positive counterparts by <code><a href="_hyphen_.html">-</a></code>.  Thus, <code>-2</code>
+is <code>(- (s (s (z))))</code> and has four applications.  Ratios are
+constructed by the dyadic function <code><a href="_slash_.html">/</a></code>.  Thus, <code>-1/2</code> is
+
+<pre>
+(/ (- (s (z))) (s (s (z))))
+</pre>
+
+and contains seven applications.  Complex rationals are similarly
+constructed from rationals.  All character objects are considered
+primitive and are constructed by constant functions of the same
+name.  Thus <code>#\a</code> and <code>#\b</code> both contain one application.
+Strings are built from the empty string, <code>(o)</code> by the
+``string-cons'' function written <code>cs</code>.  Thus <code>"AB"</code> is
+<code>(cs (#\a) (cs (#\b) (o)))</code> and contains five applications.
+Symbols are obtained from strings by ``packing'' the <code><a href="SYMBOL-NAME.html">symbol-name</a></code>
+with the unary function <code>p</code>.  Thus <code>'ab</code> is
+
+<pre>
+(p (cs (#\a) (cs (#\b) (o))))
+</pre>
+
+and has six applications.  Note that packages are here ignored and
+thus <code>'acl2::ab</code> and <code>'my-package::ab</code> each contain just six
+applications.  Finally, <a href="CONS.html">cons</a>es are built with <code><a href="CONS.html">cons</a></code>, as usual.
+So <code>'(1 . 2)</code> is <code>(cons '1 '2)</code> and contains six applications,
+since <code>'1</code> contains two and <code>'2</code> contains three.  This, for better
+or worse, answers the question ``How many function applications are
+in a constant?''
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

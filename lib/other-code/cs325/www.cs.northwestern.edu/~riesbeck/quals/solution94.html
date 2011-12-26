@@ -1,0 +1,59 @@
+<html>
+<head>
+   <title>94 Programming Solution</title>
+</head>
+<body bgcolor="#ffffff">
+
+<h1>A Non-Theorem Proving Solution</h1>
+
+<p>There's a useful <strong>often overlooked</strong> solution to the
+problem of implementing a complex dynamic process: <strong>table
+lookup</strong>. The trick is to build a table ahead of time of all
+possible answers, and then just look them up at run-time.</p>
+
+<p>This technique works whenever there is a finite number of possible
+answers, and works well when the number of table entries relatively
+small or searching the table is cheap.</p>
+
+<p>At the very least, significant time can be saved. In this
+situation, however, the programming complexity is also greatly
+reduced, because it's almost trivial to generate all possible
+answers. The hard part is working backwards.</p>
+
+<p>Therefore, one simple solution to implement does the following:
+</p>
+
+<ul>
+   <li>Build a table of all possible scenarios and the test results
+   they generate. It's easy to generate all possible scenarios with a
+   simple loop over the fact sets, and easy to generate the results
+   by calling <code>do-probe</code></li>
+   
+   <li>At run-time, to see if a fact is consistent with some partial
+   set of results, look to see if there's at least one line of the
+   table containing both the fact in question and the results given.
+   This is a simple loop with a simple match function.</li>
+</ul>
+
+<p>Note that this solution easily supports asking whether some
+conjunction of facts is consistent with the current set of results.
+It's feasible in any GBS-Lite kind of situation, because there are
+never more than a handful of internal states to discover, or more
+than a handful of tests to run. In addition, if the states and test
+results are put in the table in a canonical order, as the
+implementation does, then the match function is very simple and
+efficient.</p>
+
+<h1>The Implementation</h1>
+
+<p>This <a href="code94.html">implementation</a> is much cleaner than
+anyone would be expected to write in an hour, with everything divided
+up into simple subfunctions. However, if you look at
+<code><a href="code94.html#do-probe">do-probe</a></code>,
+<code><a href="code94.html#consistent-p">consistent-p</a></code>, and
+<code><a href="code94.html#generate-scenario-results">generate-scenario-results</a></code>,
+you'll see that all three are fairly simple.</p>
+
+<hr>
+</body>
+</html>

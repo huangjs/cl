@@ -1,0 +1,58 @@
+<html>
+<head><title>DECLARE-STOBJS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DECLARE-STOBJS</h2>declaring a formal parameter name to be a single-threaded object
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+When a <code><a href="DEFUN.html">defun</a></code> uses one of its formals as a single-threaded object
+(<a href="STOBJ.html">stobj</a>), the <code>defun</code> <em>must</em> include a declaration that the
+formal is to be so used.  An exception is the formal ``<code><a href="STATE.html">state</a></code>,'' which
+if not declared as explained below, may still be used provided an
+appropriate global ``declaration'' is issued:
+see <a href="SET-STATE-OK.html">set-state-ok</a>.
+<p>
+If the formal in question is <code>counters</code> then an appropriate declaration
+is
+
+<pre>
+(declare (xargs :stobjs counters))
+</pre>
+
+or, more generally,
+
+<pre>
+(declare (xargs :stobjs (... counters ...)))
+</pre>
+
+where all the single-threaded formals are listed.<p>
+
+For such a declaration to be legal it must be the case that all the names
+have previously been defined as single-threaded objects with <code><a href="DEFSTOBJ.html">defstobj</a></code>.<p>
+
+When an argument is declared to be single-threaded the guard of the
+function is augmented by conjoining to it the condition that the
+argument satisfy the recognizer for the single-threaded object.
+Furthermore, the syntactic checks done to enforce the legal use of
+single-threaded objects are also sufficient to allow these guard
+conjuncts to be automatically proved.<p>
+
+The obvious question arises:  Why does ACL2 insist that you declare
+stobj names before using them in <code>defun</code>s if you can only declare names
+that have already been defined with <code>defstobj</code>?  What would go wrong if
+a formal were treated as a single-threaded object if and only if it had
+already been so defined?<p>
+
+Suppose that one user, say Jones, creates a book in which <code>counters</code>
+is defined as a single-threaded object.  Suppose another user, Smith,
+creates a book in which <code>counters</code> is used as an ordinary formal
+parameter.  Finally, suppose a third user, Brown, wishes to use both
+books.  If Brown includes Jones' book first and then Smith's, then
+Smith's function treats <code>counters</code> as single-threaded.  But if Brown
+includes Smith's book first, the argument is treated as ordinary.<p>
+
+ACL2 insists on the declaration to ensure that the definition is
+processed the same way no matter what the context.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

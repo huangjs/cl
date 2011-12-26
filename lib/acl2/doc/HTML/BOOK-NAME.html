@@ -1,0 +1,103 @@
+<html>
+<head><title>BOOK-NAME.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BOOK-NAME</h2>conventions associated with book names
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+"list-processing"
+"/usr/home/smith/my-arith"
+</pre>
+
+Book names are string constants that can be elaborated into file
+names.  We elaborate book names by concatenating the ``connected
+book directory'' (see <a href="CBD.html">cbd</a>) string on the left and some
+``extension,'' such as <code>".lisp"</code>, on the right.  However, the
+connected book directory is not added if the book name itself
+already represents an absolute file name.  Furthermore,
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> and <code><a href="CERTIFY-BOOK.html">certify-book</a></code> temporarily reset the connected
+book directory to be the directory of the book being processed.
+This allows <code><a href="INCLUDE-BOOK.html">include-book</a></code> forms to use file names without explicit
+mention of the enclosing book's directory.  This in turn allows
+<a href="BOOKS.html">books</a> (together with those that they include, using
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>) to be moved between directories while maintaining
+their certification and utility.<p>
+
+You may wish to read elsewhere for details of ACL2 file name
+conventions (see <a href="PATHNAME.html">pathname</a>), for a discussion of the filename
+that is the result of the elaboration described here
+(see <a href="FULL-BOOK-NAME.html">full-book-name</a>), and for details of the concept of the
+connected book directory (see <a href="CBD.html">cbd</a>).  For details of how
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> (see <a href="INCLUDE-BOOK.html">include-book</a>) and <code><a href="CERTIFY-BOOK.html">certify-book</a></code>
+(see <a href="CERTIFY-BOOK.html">certify-book</a>) use these concepts, see below.
+<p>
+Often a book name is simply the familiar name of the file.
+(See <a href="FULL-BOOK-NAME.html">full-book-name</a> for discussion of the notions of
+``directory string,'' ``familiar name,'' and ``extension''.  These
+concepts are not on the guided tour through <a href="BOOKS.html">books</a> and you
+should read them separately.)  However, it is permitted for book
+names to include a directory or part of a directory name.  Book
+names never include the extension, since ACL2 must routinely tack
+several different extensions onto the name during <code><a href="INCLUDE-BOOK.html">include-book</a></code>.
+For example, <code><a href="INCLUDE-BOOK.html">include-book</a></code> uses the <code>".lisp"</code>, <code>".cert"</code> and
+possibly the <code>".o"</code> or <code>".lbin"</code> extensions of the book name.<p>
+
+Book names are elaborated into full file names by <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+and <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.  This elaboration is sensitive to the
+``connected book directory.'' The connected book directory is an
+absolute filename string (see <a href="PATHNAME.html">pathname</a>) that is part of the
+ACL2 <code><a href="STATE.html">state</a></code>.  (You may wish to see <a href="CBD.html">cbd</a> and to
+see <a href="SET-CBD.html">set-cbd</a> -- note that these are not on the guided tour).
+If a book name is an absolute filename string, ACL2 elaborates it
+simply by appending the desired extension to the right.
+If a book name is a relative filename string, ACL2 appends the
+connected book directory on the left and the desired extension on
+the right.<p>
+
+Note that it is possible that the book name includes some partial
+specification of the directory.  For example, if the connected book
+directory is <code>"/usr/home/smith/"</code> then the book name
+<code>"project/task-1/arith"</code> is a book name that will be elaborated
+to
+
+<pre>
+"/usr/home/smith/project/task-1/arith.lisp".
+</pre>
+<p>
+
+Observe that while the <a href="EVENTS.html">events</a> in this <code>"arith"</code> book are being
+processed the connected book directory will temporarily be set to
+
+<pre>
+"/usr/home/smith/project/task-1/".
+</pre>
+
+Thus, if the book requires other <a href="BOOKS.html">books</a>, e.g.,
+
+<pre>
+(include-book "naturals")
+</pre>
+
+then it is not necessary to specify the directory on which they
+reside provided that directory is the same as the superior book.<p>
+
+This inheritance of the connected book directory and its use to
+elaborate the names of inferior <a href="BOOKS.html">books</a> makes it possible to move
+<a href="BOOKS.html">books</a> and their inferiors to new directories, provided they maintain
+the same relative relationship.  It is even possible to move with
+ease whole collections of <a href="BOOKS.html">books</a> to different filesystems that use
+a different operating system than the one under which the original
+certification was performed.<p>
+
+The <code>".cert"</code> extension of a book, if it exists, is presumed to
+contain the most recent <a href="CERTIFICATE.html">certificate</a> for the book.
+See <a href="CERTIFICATE.html">certificate</a> (or, if you are on the guided tour, wait until
+the tour gets there).<p>
+
+See <a href="BOOK-CONTENTS.html">book-contents</a> to continue the guided tour.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

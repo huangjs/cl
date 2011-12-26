@@ -1,0 +1,984 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: IF*,  Next: SHOW-BDD,  Prev: BDD-INTRODUCTION,  Up: BDD
+
+IF*    for conditional rewriting with BDDs
+
+The function IF* is defined to be IF, but it is used in a special way
+by ACL2's BDD package.
+
+As explained elsewhere (see *note BDD-ALGORITHM::), ACL2's BDD
+algorithm gives special treatment to terms of the form (IF* TEST TBR
+FBR).  In such cases, the algorithm simplifies TEST first, and the
+result of that simplification must be a constant (normally t or nil,
+but any non-nil explicit value is treated like t here).  Otherwise, the
+algorithm aborts.
+
+Thus, IF* may be used to implement a sort of conditional rewriting for
+ACL2's BDD package, even though this package only nominally supports
+unconditional rewriting.  The following contrived example should make
+this point clear.
+
+Suppose that we want to prove that (nthcdr (length x) (append x y)) is
+equal to y, but that we would be happy to prove this only for lists
+having length 4.  We can state such a theorem as follows.
+
+     (let ((x (list x0 x1 x2 x3)))
+       (equal (nthcdr (length x) (append x y))
+              y))
+
+If we want to prove this formula with a :BDD hint, then we need to have
+appropriate rewrite rules around.  First, note that LENGTH is defined
+as follows (try :PE LENGTH):
+
+     (length x)
+      =
+     (if (stringp x)
+         (len (coerce x 'list))
+         (len x))
+
+Since BDD-based rewriting is merely very simple unconditional rewriting
+(see *note BDD-ALGORITHM::), we expect to have to prove a rule reducing
+STRINGP of a CONS:
+
+     (defthm stringp-cons
+       (equal (stringp (cons x y))
+              nil))
+
+Now we need a rule to compute the LEN of X, because the definition of
+LEN is recursive and hence not used by the BDD package.
+
+     (defthm len-cons
+       (equal (len (cons a x))
+              (1+ (len x))))
+
+We imagine this rule simplifying (LEN (LIST X0 X1 X2 X3)) in terms of
+(LEN (LIST X1 X2 X3)), and so on, and then finally (LEN nil) should be
+computed by execution (see *note BDD-ALGORITHM::).
+
+We also need to imagine simplifying (APPEND X Y), where still X is
+bound to (LIST X0 X1 X2 X3).  The following two rules suffice for this
+purpose (but are needed, since APPEND, actually BINARY-APPEND, is
+recursive).
+
+     (defthm append-cons
+       (equal (append (cons a x) y)
+              (cons a (append x y))))
+     
+     (defthm append-nil
+       (equal (append nil x)
+              x))
+
+Finally, we imagine needing to simplify calls of NTHCDR, where the the
+first argument is a number (initially, the length of (LIST X0 X1 X2
+X3), which is 4).  The second lemma below is the traditional way to
+accomplish that goal (when not using BDDs), by proving a conditional
+rewrite rule.  (The first lemma is only proved in order to assist in
+the proof of the second lemma.)
+
+     (defthm fold-constants-in-+
+       (implies (and (syntaxp (quotep x))
+                     (syntaxp (quotep y)))
+                (equal (+ x y z)
+                       (+ (+ x y) z))))
+     
+     (defthm nthcdr-add1-conditional
+       (implies (not (zp (1+ n)))
+                (equal (nthcdr (1+ n) x)
+                       (nthcdr n (cdr x)))))
+
+The problem with this rule is that its hypothesis makes it a
+conditional rewrite rule, and conditional rewrite rules are not used by
+the BDD package.  (See *Note BDD-ALGORITHM:: for a discussion of "BDD
+rules.")  (Note that the hypothesis cannot simply be removed; the
+resulting formula would be false for n = -1 and x = '(a), for example.)
+We can solve this problem by using IF*, as follows; comments follow.
+
+     (defthm nthcdr-add1
+       (equal (nthcdr (+ 1 n) x)
+              (if* (zp (1+ n))
+                   x
+                   (nthcdr n (cdr x)))))
+
+How is nthcdr-add1 applied by the BDD package?  Suppose that the BDD
+computation encounters a term of the form (NTHCDR (+ 1 N) X).  Then the
+BDD package will apply the rewrite rule nthcdr-add1.  The first thing
+it will do when attempting to simplify the right hand side of that rule
+is to attempt to simplify the term (ZP (1+ N)).  If N is an explicit
+number (which is the case in the scenario we envision), this test will
+reduce (assuming the executable counterparts of ZP and BINARY-+ are
+enabled) to t or to nil.  In fact, the lemmas above (not including the
+lemma nthcdr-add1-conditional) suffice to prove our goal:
+
+     (thm (let ((x (list x0 x1 x2 x3)))
+            (equal (nthcdr (length x) (append x y))
+                   y))
+          :hints (("Goal" :bdd (:vars nil))))
+
+If we execute the following form that disables the definition and
+executable counterpart of the function ZP
+
+     (in-theory (disable zp (zp)))
+
+before attempting the proof of the theorem above, we can see more
+clearly the point of using IF*.  In this case, the prover makes the
+following report.
+
+     ACL2 Error in ( THM ...):  Unable to resolve test of IF* for term
+     
+     (IF* (ZP (+ 1 N)) X (NTHCDR N (CDR X)))
+     
+     under the bindings
+     
+     ((X (CONS X0 (CONS X1 (CONS X2 #)))) (N '3))
+     
+     -- use SHOW-BDD to see a backtrace.
+
+If we follow the advice above, we can see rather clearly what happened.
+See *Note SHOW-BDD::.
+
+     ACL2 !>(show-bdd)
+     
+     BDD computation on Goal yielded 21 nodes.
+     ==============================
+     
+     BDD computation was aborted on Goal, and hence there is no
+     falsifying assignment that can be constructed.  Here is a backtrace
+     of calls, starting with the top-level call and ending with the one
+     that led to the abort.  See :DOC show-bdd.
+     
+     (LET ((X (LIST X0 X1 X2 X3)))
+          (EQUAL (NTHCDR (LENGTH X) (APPEND X Y)) Y))
+       alist: ((Y Y) (X3 X3) (X2 X2) (X1 X1) (X0 X0))
+     
+     (NTHCDR (LENGTH X) (APPEND X Y))
+       alist: ((X (LIST X0 X1 X2 X3)) (Y Y))
+     
+     (IF* (ZP (+ 1 N)) X (NTHCDR N (CDR X)))
+       alist: ((X (LIST* X0 X1 X2 X3 Y)) (N 3))
+     ACL2 !>
+
+Each of these term-alist pairs led to the next, and the test of the
+last one, namely (ZP (+ 1 N)) where N is bound to 3, was not simplified
+to t or to nil.
+
+What would have happened if we had used IF in place of IF* in the rule
+nthcdr-add1?  In that case, if ZP and its executable counterpart were
+disabled then we would be put into an infinite loop!  For, each time a
+term of the form (NTHCDR k V) is encountered by the BDD package (where
+k is an explicit number), it will be rewritten in terms of (NTHCDR k-1
+(CDR V)).  We would prefer that if for some reason the term (ZP (+ 1
+N)) cannot be decided to be t or to be nil, then the BDD computation
+should simply abort.
+
+Even if there were no infinite loop, this kind of use of IF* is useful
+in order to provide feedback of the form shown above whenever the test
+of an IF term fails to simplify to t or to nil.
+
+
+File: acl2-doc-emacs.info,  Node: SHOW-BDD,  Prev: IF*,  Up: BDD
+
+SHOW-BDD    inspect failed BDD proof attempts
+
+Attempts to use BDDs (see *note BDD::), using :bdd hints, can fail for
+various reasons.  Sometimes it is useful to explore such failures.  To
+do so, one may simply execute the form
+
+     (show-bdd)
+
+inside the ACL2 loop.  The system's response is generally
+self-explanatory.  Perhaps you have already seen show-bdd used in some
+examples (see *note BDD-INTRODUCTION:: and see *note IF*::).  Here we
+give some details about show-bdd.
+
+(Show-bdd) prints the goal to which the BDD procedure was applied and
+reports the number of nodes created during the BDD computation,
+followed by additional information depending on whether or not the
+computation ran to completion or aborted (for reasons explained
+elsewhere; see *note BDD-ALGORITHM::).  If the computation did abort, a
+backtrace is printed that should be useful in understanding where the
+problem lies.  Otherwise, (show-bdd) prints out "falsifying
+constraints."  This list of pairs associates terms with values and
+suggests how to construct a binding list for the variables in the
+conjecture that will falsify the conjecture.  It also prints out the
+term that is the result of simplifying the input term.  In each of
+these cases, parts of the object may be hidden during printing, in
+order to avoid creating reams of uninteresting output.  If so, the user
+will be queried about whether he wishes to see the entire object (alist
+or term), which may be quite large.  The following responses are legal:
+
+       w -- Walk around the object with a structure editor
+
+     t -- Print the object in full
+
+     nil -- Do not print any more of the object
+
+
+Show-bdd actually has four optional arguments, probably rarely used.
+The general form is
+
+     (show-bdd goal-name goal-ans falsifying-ans term-ans)
+
+where goal-name is the name of the goal on which the :bdd hint was used
+(or, nil if the system should find such a goal), goal-ans is the answer
+to be used in place of the query for whether to print the input goal in
+full, falsifying-ans is the answer to be used in place of the query for
+whether to print the falsifying constraints in full, and term-ans is
+the answer to be used in place of the query for whether to print the
+resulting term in full.
+
+
+File: acl2-doc-emacs.info,  Node: BOOKS,  Next: BREAK-REWRITE,  Prev: BDD,  Up: Top
+
+BOOKS    files of ACL2 event forms
+
+This documentation topic is about ACL2 input files.  However, there are
+two traditional (paper) books published about ACL2:  a textbook and a
+case studies book.  Further information is available by following links
+from the ACL2 home page, http://www.cs.utexas.edu/users/moore/acl2/.
+Now, on to the real content of this topic:
+
+A "book" is a file of ACL2 events that have been certified as
+admissible.  Using include-book you can construct a new logical world
+by assuming the events in any number of mutually compatible books.
+Relevant documented topics are listed below.  Following this list is a
+"guided tour" through the topics.
+
+* Menu:
+
+* BOOK-CONTENTS:: restrictions on the forms inside books
+
+* BOOK-EXAMPLE:: how to create, certify, and use a simple book
+
+* BOOK-MAKEFILES:: makefile support provided with the ACL2 distribution
+
+* BOOK-NAME:: conventions associated with book names
+
+* CBD:: connected book directory string
+
+* CERTIFICATE:: how a book is known to be admissible and where its defpkgs reside
+
+* CERTIFY-BOOK:: how to produce a certificate for a book
+
+* FULL-BOOK-NAME:: book naming conventions assumed by ACL2
+
+* KEEP:: how we know if include-book read the correct files
+
+* MAKEFILES:: See *Note BOOK-MAKEFILES::.
+
+* PATHNAME:: introduction to filename conventions in ACL2
+
+* PORTCULLIS:: the gate guarding the entrance to a certified book
+
+* SET-CBD:: to set the connected book directory
+
+* UNCERTIFIED-BOOKS:: invalid certificates and uncertified books
+
+
+Related topics other than immediate subtopics:
+* INCLUDE-BOOK:: load the events in a file
+
+_Introduction._
+
+A "book" is a file of ACL2 forms.  Books are prepared entirely by the
+user of the system, i.e., they are "source" files not "object" files.
+Some of the forms in a book are marked local and the others are
+considered "non-local."
+
+Include-book lets you load a book into any ACL2 world.  If completed
+without error, the inclusion of a book extends the logic of the host
+world by the addition of just the non-local events in the book.  You
+may extend the world by successively including a variety of books to
+obtain the desired collection of definitions and rules.  Unless name
+conflicts occur (which are detected and signalled) inclusion of a book
+is consistency preserving provided the book itself is consistent as
+discussed later.  However, include-book merely assumes the validity of
+the events in a book; if you include a book that contains an
+inconsistency (e.g., an inadmissible definition) then the resulting
+theory is inconsistent.
+
+It is possible to "certify" a book, with certify-book, guaranteeing
+that the error-free inclusion of the certified forms will produce a
+consistent extension of a consistent logic.  Certification processes
+both the local and non-local forms, so you can mark as local those
+events you need for certification that you want to hide from users of
+the book (e.g., hacks, crocks, and kludges on the way to a good set of
+:rewrite rules).  Certification can also "compile" a book, thereby
+speeding up the execution of the functions defined within it.  The
+desire to compile books is largely responsible for the restrictions we
+put on the forms allowed in books.
+
+Extensive documentation is available on the various aspects of books.
+We recommend that you read it all before using books.  It has been
+written so as to make sense when read in a certain linear sequence,
+called the "guided tour", though in general you may browse through it
+randomly.  If you are on the guided tour, you should next read the
+documentation on book-example (see *note BOOK-EXAMPLE::).
+
+
+File: acl2-doc-emacs.info,  Node: BOOK-CONTENTS,  Next: BOOK-EXAMPLE,  Prev: BOOKS,  Up: BOOKS
+
+BOOK-CONTENTS    restrictions on the forms inside books
+
+     Example Book:
+     
+     ; This book defines my app function and the theorem that it is
+     ; associative.  One irrelevant help lemma is proved first but
+     ; it is local and so not seen by include-book.  I depend on the
+     ; inferior book "weird-list-primitives" from which I get
+     ; definitions of hd and tl.
+     
+     (in-package "MY-PKG")
+     
+     (include-book "weird-list-primitives")
+     
+     (defun app (x y) (if (consp x) (cons (hd x) (app (tl x) y)) y))
+     
+     (local
+      (defthm help-lemma
+        (implies (true-listp x) (equal (app x nil) x))))
+     
+     (defthm app-is-associative
+       (equal (app (app a b) c) (app a (app b c))))
+
+The first form in a book must be (in-package "pkg") where "pkg" is some
+package name known to ACL2 whenever the book is certified.  The rest of
+the forms in a book are embedded event forms, i.e., defuns, defthms,
+etc., some of which may be marked local.  See *Note
+EMBEDDED-EVENT-FORM::.  The usual Common Lisp commenting conventions
+are provided.  Note that since a book consists of embedded event forms,
+we can talk about the "local" and "non-local" events of a book.
+
+Because in-package is not an embedded event form, the only in-package
+in a book is the initial one.  Because defpkg is not an embedded event
+form, a book can never contain a defpkg form.  Because include-book is
+an embedded event form, books may contain references to other books.
+This makes books structured objects.
+
+When the forms in a book are read from the file, they are read with
+current-package set to the package named in the in-package form at the
+top of the file.  The effect of this is that all symbols are interned
+in that package, except those whose packages are given explicitly with
+the "::" notation.  For example, if a book begins with (in-package
+"ACL2-X") and then contains the form
+
+       (defun fn (x)
+         (acl2::list 'car x))
+
+then defun, fn, x, and car are all interned in the "ACL2-X" package.
+I.e., it is as though the following form were read instead:
+
+       (acl2-x::defun acl2-x::fn (acl2-x::x)
+           (acl2::list 'acl2-x::car acl2-x::x)).
+
+Of course, acl2-x::defun would be the same symbol as acl2::defun if the
+"ACL2-X" package imported acl2::defun.
+
+If each book has its own unique package name and all the names defined
+within the book are in that package, then name clashes between books
+are completely avoided.  This permits the construction of useful
+logical worlds by the successive inclusion of many books.  Although it
+is often too much trouble to manage several packages, their judicious
+use is a way to minimize name clashes.  Often, a better way is to use
+local; see *note LOCAL::.
+
+How does include-book know the definitions of the packages used in a
+book, since defpkgs cannot be among the forms?  More generally, how do
+we know that the forms in a book will be admissible in the host logical
+world of an include-book?  See *Note CERTIFICATE:: for answers to these
+questions.
+
+
+File: acl2-doc-emacs.info,  Node: BOOK-EXAMPLE,  Next: BOOK-MAKEFILES,  Prev: BOOK-CONTENTS,  Up: BOOKS
+
+BOOK-EXAMPLE    how to create, certify, and use a simple book
+
+Suppose you have developed a sequence of admissible events which you
+want to turn into a book.  We call this "publishing" the book.  This
+note explains how to do that.
+
+A key idea of books is that they are "incremental" in the sense that
+when you include a book in a host logical world, the world is
+incrementally extended by the results established in that book.  This
+is allowed only if every name defined by the incoming book is either
+new or is already identically defined.  See *Note REDUNDANT-EVENTS::.
+This is exactly the same problem faced by a programmer who wishes to
+provide a utility to other people: how can he make sure he doesn't
+create name conflicts?  The solution, in Common Lisp, is also the same:
+use packages.  While books and packages have a very tenuous formal
+connection (every book must start with an in-package), the creation of
+a book is intimately concerned with the package issue.  Having
+motivated what would otherwise appear as an unnecessary fascination
+with packages below, we now proceed with a description of how to
+publish a book.
+
+Just to be concrete, let's suppose you have already gotten ACL2 to
+accept the following sequence of commands, starting in the ACL2 initial
+state.
+
+        (defpkg "ACL2-MY-BOOK"
+                (union-eq *common-lisp-symbols-from-main-lisp-package*
+                          *acl2-exports*))
+        (in-package "ACL2-MY-BOOK")
+        (defun app (x y)
+          (if (consp x) (cons (car x) (app (cdr x) y)) y))
+        (defun rev (x)
+          (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
+        (defthm rev-app-hack
+          (equal (rev (app a (list x))) (cons x (rev a))))
+        (defthm rev-rev
+          (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
+
+Observe that the first form above defines a package (which imports the
+symbols defined in CLTL such as if and cons and the symbols used to
+command ACL2 such as defun and defthm).  The second form selects that
+package as the current one.  All subsequent forms are read into that
+package.  The remaining forms are just event forms: defuns and defthms
+in this case.
+
+Typically you would have created a file with Emacs containing these
+forms and you will have submitted each of them interactively to ACL2 to
+confirm that they are all admissible.  That interactive verification
+should start in ACL2's initial world -- although you might, of course,
+start your sequence of events with some include-books to build a more
+elaborate world.
+
+The first step towards publishing a book containing the results above
+is to create a file that starts with the in-package and then contains
+the rest of the forms.  Let's call that file "my-book.lisp".  The name
+is unimportant, except it must end with ".lisp".  If there are events
+that you do not wish to be available to the user of the book -- e.g.,
+lemmas you proved on your way toward proving the main ones -- you may
+so mark them by enclosing them in local forms.  See *Note LOCAL::.  Let
+us suppose you wish to hide rev-app-hack above.  You may also add
+standard Lisp comments to the file.  The final content of "my-book.lisp"
+might be:
+
+      ; This book contains my app and rev functions and the theorem
+      ; that rev is its own inverse.
+     
+        (in-package "ACL2-MY-BOOK")
+        (defun app (x y)
+          (if (consp x) (cons (car x) (app (cdr x) y)) y))
+        (defun rev (x)
+          (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
+     
+      ; The following hack is not exported.
+        (local (defthm rev-app-hack
+          (equal (rev (app a (list x))) (cons x (rev a)))))
+     
+        (defthm rev-rev
+          (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
+
+The file shown above *is* the book.  By the time this note is done you
+will have seen how to certify that the book is correct, how to compile
+it, and how to use it in other host worlds.  Observe that the defpkg is
+not in the book.  It cannot be: Common Lisp compilers disagree on how
+to treat new package definitions appearing in files to be compiled.
+
+Since a book is just a source file typed by the user, ACL2 provides a
+mechanism for checking that the events are all admissible and then
+marking the file as checked.  This is called certification.  To certify
+"my-book.lisp" you should first get into ACL2 with an initial world.
+Then, define the package needed by the book, by typing the following
+defpkg to the ACL2 prompt:
+
+     ACL2 !>(defpkg "ACL2-MY-BOOK"
+                    (union-eq *common-lisp-symbols-from-main-lisp-package*
+                              *acl2-exports*))
+
+Then execute the command:
+
+     ACL2 !>(certify-book "my-book" 1 t) ; the `t' is in fact the default
+
+Observe that you do not type the ".lisp" part of the file name.  For
+purposes of books, the book's name is "my-book" and by the time all is
+said and done, there will be several extensions in addition to the
+".lisp" extension associated with it.
+
+The 1 tells certify-book that you acknowledge that there is one command
+in this "certification world" (namely the defpkg).  To use the book,
+any prospective host world must be extended by the addition of whatever
+commands occurred before certification.  It would be a pity to certify
+a book in a world containing junk because that junk will become the
+"portcullis" guarding entrance to the book.  The t above tells
+certify-book that you wish to compile "my-book.lisp" also.
+Certify-book makes many checks but by far the most important and
+time-consuming one is that it "proves" every event in the file.
+
+When certify-book is done it will have created two new files.  The
+first will be called "my-book.cert" and contains the "certificate"
+attesting to the admissibility of the events in "my-book.lisp".  The
+certificate contains the defpkg and any other forms necessary to
+construct the certification world.  It also contains various check sums
+used to help you keep track of which version of "my-book.lisp" was
+certified.
+
+The second file created by certify-book is the compiled version of
+"my-book.lisp" and will have a name that is assigned by the host
+compiler (e.g., "my-book.o" in AKCL, "my-book.lbin" or "my-book.sbin"
+in Lucid).  Certify-book will also load this object file.  When
+certify-book is done, you may throw away the logical world it created,
+for example by executing the command :u.
+
+To use the book later in any ACL2 session, just execute the event
+(include-book "my-book").  This will do the necessary defpkg, load the
+non-local events in "my-book.lisp" and then load the compiled code for
+the non-local functions defined in that file.  Checks are made to
+ensure that the certificate file exists and describes the version of
+"my-book.lisp" that is read.  The compiled code is loaded if and only
+if it exists and has a later write date than the source file.
+
+Since include-book is itself an event, you may put such forms into
+other books.  Thus it is possible for the inclusion of a single book to
+lead to the inclusion of many others.  The check sum information
+maintained in certificates helps deal with the version control problem
+of the referenced books.  I.e., if this version of "my-book" is used
+during the certification of "your-book", then the certificate for
+"your-book" includes the check sum of this version of "my-book".  If a
+later (include-book "your-book") finds a version of "my-book" with a
+different check sum, an error is signalled.  But check sums are not
+perfect and the insecurity of the host file system prevents ACL2 from
+guaranteeing the logical soundness of an include-book event, even for a
+book that appears to have a valid certificate (they can be forged,
+after all).  (See *Note CERTIFICATE:: for further discussion.)
+
+This concludes the example of how to create, certify and use a book.
+If you wish, you could now review the documentation for book-related
+topics (see *note BOOKS::) and browse through them.  They'll probably
+make sense in this context.  Alternatively, you could continue the
+"guided tour" through the rest of the documentation of books.  See
+*Note BOOK-NAME::, following the pointer given at the conclusion.
+
+
+File: acl2-doc-emacs.info,  Node: BOOK-MAKEFILES,  Next: BOOK-NAME,  Prev: BOOK-EXAMPLE,  Up: BOOKS
+
+BOOK-MAKEFILES    makefile support provided with the ACL2 distribution
+
+This topic describes the ACL2 methodology for using makefiles to assist
+in the automation of the certification of collections of ACL2 books.  We
+assume here a familiarity with Unix/Linux make.  We also assume that you
+are using GNU make rather than some other flavor of make.
+
+ACL2's regression suite is run using Makefiles that include
+books/Makefile-generic.  You can look at existing Makefiles to
+understand how to create your own Makefiles.  Here are the seven steps
+to follow to create a Makefile for a directory that contains books to be
+certified, and certify them using that Makefile.  Below these steps we
+conclude with discussion of other capabilties provided by
+books/Makefile-generic.
+
+1. Include the file books/Makefile-generic.  For example, if you look at
+books/misc/Makefile then you'll see that it starts with this line:
+
+     include ../Makefile-generic
+
+Note that ../ should be replaced by the appropriate path to
+books/Makefile-generic.  AND PLEASE NOTE:  This include line should
+precede the lines mentioned below.
+
+2. Define the ACL2 variable.  For example, file
+books/arithmetic-3/pass1/Makefile starts as follows.
+
+     include ../../Makefile-generic
+     ACL2 = ../../../saved_acl2
+
+Note that you will need to provide the appropriate path to your ACL2
+executable.
+
+3. (Optional; usually skipped.)  Set the INHIBIT variable if you want to
+see more than the summary output.  For example, if you want to see the
+same output as you would normally see at the terminal, put this line in
+your Makefile after the include and ACL2 lines.
+
+     INHIBIT = (assign inhibit-output-lst (list (quote proof-tree)))
+
+For other values to use for INHIBIT, see *note SET-INHIBIT-OUTPUT-LST::
+and see the original setting of INHIBIT in books/Makefile-generic.
+
+4. Specify the books to be certified.  If every file with extension
+.lisp is a book that you want to certify, you can skip this step.
+Otherwise, put a line in your Makefile after the ones above that
+specifies the books to be certified.  The following example, from
+books/finite-set-theory/osets/Makefile, should make this clear.
+
+     BOOKS = computed-hints fast instance map membership outer primitives \
+             quantify set-order sets sort
+
+5. Create .acl2 files for books that are to be certified in other than
+the initial ACL2 world (see *note PORTCULLIS::).  For example, if you
+look in books/arithmetic/equalities.acl2 you will see defpkg forms
+followed by a certify-book command, because it was determined that
+defpkg forms were necessary in the certification world in order to
+certify the equalities book.  In general, for each <book-name>.lisp
+whose certification requires a non-initial certification world, you
+will need a corresponding <book-name>.acl2 file that ends with the
+appropriate certify-book command.  Of course, you can also use .acl2
+files with initial certification worlds, for example if you want to
+pass optional arguments to certify-book.
+
+You also have the option of creating a file cert.acl2 that has a special
+role.  When file <book-name>.lisp is certified, if there is no file
+<book-name>.acl2 but there is a file cert.acl2, then cert.acl2 will be
+used as <book-name>.acl2 would have been used, as described in the
+preceding paragraph, except that the appropriate certify-book command
+will be generated automatically -- no certify-book command should occur
+in cert.acl2.
+
+It is actually allowed to put raw lisp forms in a .acl2 file (presumably
+preceded by :q or (value :q) and followed by (lp)).  But this is not
+recommended; we make no guarantees about certification performed any
+time after raw Lisp has been entered in the ACL2 session.
+
+6. Run the following command:
+
+     make dependencies
+
+This will generate dependency information.  If you try it in
+books/misc/, the result should agree with what you find in
+books/misc/Makefile.  If you run this in the directory you are
+developing, you will want to insert the output at the end of your
+Makefile.
+
+7. Run make.  This will generate a <book-name>.out file for each
+<book-name>.lisp file being certified, which is the result of
+redirecting ACL2's standard output.  Note that make will stop at the
+first failure, but you can use make -i to force make to continue past
+failures.  You can also use the -j option to speed things up if you
+have a multi-core machine.
+
+That concludes the basic instructions for creating a Makefile in a
+directory including books.  Here are some other capabilities offered by
+books/Makefile-subdirs.
+
+*Subdirectory support.*  There is support for the case that there are no
+books in the current directory, but there are subdirectories that
+include books (or themselves have no books but contain subdirectories
+with books, etc.)  For example, file books/arithmetic-3/Makefile has
+the following contents.
+
+     DIRS = pass1 bind-free floor-mod
+     include ../Makefile-subdirs
+
+This indicates that we are to run make in subdirectories pass1/,
+bind-free/, and floor-mod of the current directory (namely,
+books/arithmetic-3/).  Use Makefile-psubdirs instead of
+Makefile-subdirs if certitification of a book in a subdirectory never
+depends on certification of a book in a different subdirectory, because
+then make's -j option can allow subdirectories to be processed in
+parallel.
+
+*Cleaning up.*  We note that there is a clean target.  Thus,
+
+     make clean
+
+will remove all .cert files, files resulting from compilation, and other
+"junk"; see the full list under "clean:" in books/Makefile-generic.
+
+*Compilation support.*  Finally, books/Makefile-generic provides
+support for compiling books that are already certified.  For example,
+suppose that you have certified books in GCL, resulting in compiled
+files with the .o extension.  Now suppose you would like to compile the
+books for Allegro Common Lisp, whose compiled files have the .fasl
+extension.  The following command will work if you have included
+books/Makefile-generic in your Makefile.
+
+     make fasl
+
+In general, the compiled file extension for a Lisp supported by ACL2
+will be a target name for building compiled files for all your books
+(after certifying the books, if not already up-to-date on
+certification).
+
+
+File: acl2-doc-emacs.info,  Node: BOOK-NAME,  Next: CBD,  Prev: BOOK-MAKEFILES,  Up: BOOKS
+
+BOOK-NAME    conventions associated with book names
+
+     Examples:
+     "list-processing"
+     "/usr/home/smith/my-arith"
+
+Book names are string constants that can be elaborated into file names.
+We elaborate book names by concatenating the "connected book
+directory" (see *note CBD::) string on the left and some "extension,"
+such as ".lisp", on the right.  However, the connected book directory
+is not added if the book name itself already represents an absolute
+file name.  Furthermore, include-book and certify-book temporarily
+reset the connected book directory to be the directory of the book
+being processed.  This allows include-book forms to use file names
+without explicit mention of the enclosing book's directory.  This in
+turn allows books (together with those that they include, using
+include-book) to be moved between directories while maintaining their
+certification and utility.
+
+You may wish to read elsewhere for details of ACL2 file name
+conventions (see *note PATHNAME::), for a discussion of the filename
+that is the result of the elaboration described here (see *note
+FULL-BOOK-NAME::), and for details of the concept of the connected book
+directory (see *note CBD::).  For details of how include-book (see
+*note INCLUDE-BOOK::) and certify-book (see *note CERTIFY-BOOK::) use
+these concepts, see below.
+
+Often a book name is simply the familiar name of the file.  (See *Note
+FULL-BOOK-NAME:: for discussion of the notions of "directory string,"
+"familiar name," and "extension".  These concepts are not on the guided
+tour through books and you should read them separately.)  However, it
+is permitted for book names to include a directory or part of a
+directory name.  Book names never include the extension, since ACL2
+must routinely tack several different extensions onto the name during
+include-book.  For example, include-book uses the ".lisp", ".cert" and
+possibly the ".o" or ".lbin" extensions of the book name.
+
+Book names are elaborated into full file names by include-book and
+certify-book.  This elaboration is sensitive to the "connected book
+directory." The connected book directory is an absolute filename string
+(see *note PATHNAME::) that is part of the ACL2 state.  (You may wish
+to see *note CBD:: and to see *note SET-CBD:: -- note that these are
+not on the guided tour).  If a book name is an absolute filename
+string, ACL2 elaborates it simply by appending the desired extension to
+the right.  If a book name is a relative filename string, ACL2 appends
+the connected book directory on the left and the desired extension on
+the right.
+
+Note that it is possible that the book name includes some partial
+specification of the directory.  For example, if the connected book
+directory is "/usr/home/smith/" then the book name
+"project/task-1/arith" is a book name that will be elaborated to
+
+     "/usr/home/smith/project/task-1/arith.lisp".
+
+Observe that while the events in this "arith" book are being processed
+the connected book directory will temporarily be set to
+
+     "/usr/home/smith/project/task-1/".
+
+Thus, if the book requires other books, e.g.,
+
+     (include-book "naturals")
+
+then it is not necessary to specify the directory on which they reside
+provided that directory is the same as the superior book.
+
+This inheritance of the connected book directory and its use to
+elaborate the names of inferior books makes it possible to move books
+and their inferiors to new directories, provided they maintain the same
+relative relationship.  It is even possible to move with ease whole
+collections of books to different filesystems that use a different
+operating system than the one under which the original certification
+was performed.
+
+The ".cert" extension of a book, if it exists, is presumed to contain
+the most recent certificate for the book.  See *Note CERTIFICATE:: (or,
+if you are on the guided tour, wait until the tour gets there).
+
+See *Note BOOK-CONTENTS:: to continue the guided tour.
+
+
+File: acl2-doc-emacs.info,  Node: CBD,  Next: CERTIFICATE,  Prev: BOOK-NAME,  Up: BOOKS
+
+CBD    connected book directory string
+
+     Example:
+     ACL2 !>:cbd
+     "/usr/home/smith/"
+
+The connected book directory is a nonempty string that specifies a
+directory as an absolute pathname.  (See *Note PATHNAME:: for a
+discussion of file naming conventions.)  When include-book is given a
+relative book name it elaborates it into a full book name, essentially
+by appending the connected book directory string to the left and
+".lisp" to the right.  (For details, see *note BOOK-NAME:: and also see
+*note FULL-BOOK-NAME::.)  Furthermore, include-book temporarily sets
+the connected book directory to the directory string of the resulting
+full book name so that references to inferior books in the same
+directory may omit the directory.  See *Note SET-CBD:: for how to set
+the connected book directory string.
+
+     General Form:
+     (cbd)
+
+This is a macro that expands into a term involving the single free
+variable state.  It returns the connected book directory string.
+
+The connected book directory (henceforth called the "cbd") is used by
+include-book to elaborate the supplied book name into a full book name
+(see *note FULL-BOOK-NAME::).  For example, if the cbd is
+"/usr/home/smith/" then the elaboration of the book-name
+"project/task-1/arith" (to the ".lisp" extension) is
+"/usr/home/smith/project/task-1/arith.lisp".  That full-book-name is
+what include-book opens to read the source text for the book.
+
+The cbd may be changed using set-cbd (see *note SET-CBD::).
+Furthermore, during the processing of the events in a book,
+include-book sets the cbd to be the directory string of the
+full-book-name of the book.  Thus, if the cbd is "/usr/home/smith/"
+then during the processing of events by
+
+     (include-book "project/task-1/arith")
+
+the cbd will be set to "/usr/home/smith/project/task-1/".  Note that if
+"arith" recursively includes a subbook, say "naturals", that resides on
+the same directory, the include-book event for it may omit the
+specification of that directory.  For example, "arith" might contain
+the event
+
+       (include-book "naturals").
+
+In general, suppose we have a superior book and several inferior books
+which are included by events in the superior book.  Any inferior book
+residing on the same directory as the superior book may be referenced
+in the superior without specification of the directory.
+
+We call this a "relative" as opposed to "absolute" naming.  The use of
+relative naming is preferred because it permits books (and their
+accompanying inferiors) to be moved between directories while
+maintaining their certificates and utility.  Certified books that
+reference inferiors by absolute file names are unusable (and rendered
+uncertified) if the inferiors are moved to new directories.
+
+_Technical Note and a Challenge to Users:_
+
+After elaborating the book name to a full book name, include-book opens
+a channel to the file to process the events in it.  In some host Common
+Lisps, the actual file opened depends upon a notion of "connected
+directory" similar to our connected book directory.  Our intention in
+always elaborating book names into absolute filename strings (see *note
+PATHNAME:: for terminology) is to circumvent the sensitivity to the
+connected directory.  But we may have insufficient control over this
+since the ultimate file naming conventions are determined by the host
+operating system rather than Common Lisp (though, we do check that the
+operating system "appears" to be one that we "know" about).  Here is a
+question, which we'll pose assuming that we have an operating system
+that calls itself "Unix."  Suppose we have a file name, filename, that
+begins with a slash, e.g., "/usr/home/smith/...".  Consider two
+successive invocations of CLTL's
+
+     (open filename :direction :input)
+
+separated only by a change to the operating system's notion of
+connected directory.  Must these two invocations produce streams to the
+same file?  A candidate string might be something like
+"/usr/home/smith/*/usr/local/src/foo.lisp" which includes some
+operating system-specific special character to mean "here insert the
+connected directory" or, more generally, "here make the name dependent
+on some non-ACL2 aspect of the host's state."  If such "tricky" name
+strings beginning with a slash exist, then we have failed to isolate
+ACL2 adequately from the operating system's file naming conventions.
+Once upon a time, ACL2 did not insist that the cbd begin with a slash
+and that allowed the string "foo.lisp" to be tricky because if one were
+connected to "/usr/home/smith/" then with the empty cbd "foo.lisp" is a
+full book name that names the same file as "/usr/home/smith/foo.lisp".
+If the actual file one reads is determined by the operating system's
+state then it is possible for ACL2 to have two distinct "full book
+names" for the same file, the "real" name and the "tricky" name.  This
+can cause ACL2 to include the same book twice, not recognizing the
+second one as redundant.
+
+
+File: acl2-doc-emacs.info,  Node: CERTIFICATE,  Next: CERTIFY-BOOK,  Prev: CBD,  Up: BOOKS
+
+CERTIFICATE    how a book is known to be admissible and where its defpkgs reside
+
+A book, say "arith", is said to have a "certificate" if there is a file
+named "arith.cert".  Certificates are created by the function
+certify-book and inspected by include-book.  Check sums are used to
+help ensure that certificates are legitimate and that the corresponding
+book has not been modified since certification.  But because the file
+system is insecure and check sums are not perfect it is possible for
+the inclusion of a book to cause inconsistency even though the book
+carries an impeccable certificate.
+
+The certificate includes the version number of the certifying ACL2.  A
+book is considered uncertified if it is included in an ACL2 with a
+different version number.
+
+The presence of a "valid" certificate file for a book attests to two
+things: all of the events of the book are admissible in a certain
+extension of the initial ACL2 logic, and the non-local events of the
+book are independent of the local ones (see *note
+LOCAL-INCOMPATIBILITY::).  In addition, the certificate contains the
+commands used to construct the world in which certification occurred.
+Among those commands, of course, are the defpkgs defining the packages
+used in the book.  When a book is included into a host world, that
+world is first extended by the commands listed in the certificate for
+the book.  Unless that causes an error due to name conflicts, the
+extension ensures that all the packages used by the book are
+identically defined in the host world.
+
+_Security:_
+
+Because the host file system is insecure, there is no way ACL2 can
+guarantee that the contents of a book remain the same as when its
+certificate was written.  That is, between the time a book is certified
+and the time it is used, it may be modified.  Furthermore, certificates
+can be counterfeited.  Check sums (see *note CHECK-SUM::) are used to
+help detect such problems.  But check sums provide imperfect security:
+two different files can have the same check sum.
+
+Therefore, from the strictly logical point of view, one must consider
+even the inclusion of certified books as placing a burden on the user:
+
+     The non-erroneous inclusion of a certified book is consistency
+     preserving provided (a) the objects read by include-book from the
+     certificate were the objects written there by a certify-book and
+     (b) the forms read by include-book from the book itself are the
+     forms read by the corresponding certify-book.
+
+We say that a given execution of include-book is "certified" if a
+certificate file for the book is present and well-formed and the check
+sum information contained within it supports the conclusion that the
+events read by the include-book are the ones checked by certify-book.
+When an uncertified include-book occurs, warnings are printed or errors
+are caused.  But even if no warning is printed, you must accept burdens
+(a) and (b) if you use books.  These burdens are easier to live with if
+you protect your books so that other users cannot write to them, you
+abstain from running concurrent ACL2 jobs, and you abstain from
+counterfeiting certificates.  But even on a single user uniprocessor,
+you can shoot yourself in the foot by using the ACL2 io primitives to
+fabricate an inconsistent book and the corresponding certificate.
+
+Note that part (a) of the burden described above implies, in
+particular, that there are no guarantees when a certificate is copied.
+When books are renamed (as by copying them), it is recommended that
+their certificates be removed and the books be recertified.  The
+expectation is that recertification will go through without a hitch if
+relative pathnames are used.  See *Note PATHNAME::, which is not on the
+guided tour.
+
+Certificates essentially contain two parts, a portcullis and a keep.
+There is a third part, an expansion-alist, in order to record
+expansions if make-event has been used, but the user need not be
+concerned with that level of detail.
+
+See *Note PORTCULLIS:: to continue the guided tour through books.
+

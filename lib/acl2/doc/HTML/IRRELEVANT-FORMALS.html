@@ -1,0 +1,87 @@
+<html>
+<head><title>IRRELEVANT-FORMALS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>IRRELEVANT-FORMALS</h2>formals that are used but only insignificantly
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+Let <code>fn</code> be a function of <code>n</code> arguments.  Let <code>x</code> be the <code>i</code>th formal of <code>fn</code>.
+We say <code>x</code> is ``irrelevant in <code>fn</code>'' if <code>x</code> is not involved in either the
+<a href="GUARD.html">guard</a> or the measure for <code>fn</code>, <code>x</code> is used in the body, but the value of
+<code>(fn a1...ai...an)</code> is independent of <code>ai</code>.
+<p>
+The easiest way to define a function with an irrelevant formal is
+simply not to use the formal in the body of the
+function.  Such formals are said to be ``ignored'' by Common Lisp
+and a special declaration is provided to allow ignored formals.
+ACL2 makes a distinction between ignored and irrelevant formals.  Note
+however that if a variable is <code><a href="DECLARE.html">declare</a></code>d <code>ignore</code>d or <code>ignorable</code>,
+then it will not be reported as irrelevant.<p>
+
+An example of an irrelevant formal is <code>x</code> in the definition of <code>fact</code>
+below.
+
+<pre>
+(defun fact (i x) 
+  (declare (xargs :guard (and (integerp i) (&lt;= 0 i))))
+  (if (zerop i) 0 (* i (fact (1- i) (cons i x))))).
+</pre>
+
+Observe that <code>x</code> is only used in recursive calls of <code>fact</code>; it never
+``gets out'' into the result.  ACL2 can detect some irrelevant
+formals by a closure analysis on how the formals are used.  For
+example, if the <code>i</code>th formal is only used in the <code>i</code>th argument position
+of recursive calls, then it is irrelevant.  This is how <code>x</code> is used
+above.<p>
+
+It is possible for a formal to appear only in recursive calls but
+still be relevant.  For example, <code>x</code> is <strong>not</strong> irrelevant below, even
+though it only appears in the recursive call.
+
+<pre>
+(defun fn (i x) (if (zerop i) 0 (fn x (1- i))))
+</pre>
+
+The key observation above is that while <code>x</code> only appears in a
+recursive call, it appears in an argument position, namely <code>i</code>'s, that
+is relevant.  (The function above can be admitted with a <code>:</code><code><a href="GUARD.html">guard</a></code>
+requiring both arguments to be nonnegative integers and the <code>:measure</code>
+<code>(+ i x)</code>.)<p>
+
+Establishing that a formal is irrelevant, in the sense defined
+above, can be an arbitrarily hard problem because it requires
+theorem proving.  For example, is <code>x</code> irrelevant below?
+
+<pre>
+(defun test (i j k x) (if (p i j k) x 0))
+</pre>
+
+Note that the value of <code>(test i j k x)</code> is independent of <code>x</code> -- thus
+making <code>x</code> irrelevant -- precisely if <code>(p i j k)</code> is a theorem.
+ACL2's syntactic analysis of a definition does not guarantee to
+notice all irrelevant formals.<p>
+
+We regard the presence of irrelevant formals as an indication that
+something is wrong with the definition.  We cause an error on such
+definitions and suggest that you recode the definition so as to
+eliminate the irrelevant formals.  If you must have an irrelevant
+formal, one way to ``trick'' ACL2 into accepting the definition,
+without slowing down the execution of your function, is to use the
+formal in an irrelevant way in the <a href="GUARD.html">guard</a>.  For example, to admit
+fact, above, with its irrelevant <code>x</code> one might use
+
+<pre>
+(defun fact (i x) 
+  (declare (xargs :guard (and (integerp i) (&lt;= 0 i) (equal x x))))
+  (if (zerop i) 0 (* i (fact (1- i) (cons i x)))))
+</pre>
+
+For those who really want to turn off this feature, we have
+provided a way to use the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> for this purpose;
+see <a href="SET-IRRELEVANT-FORMALS-OK.html">set-irrelevant-formals-ok</a>.<p>
+
+If you need to introduce a function with an irrelevant formal,
+please explain to the authors why this should be allowed.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<html>
+<head><title>NOTE8.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE8</h2>ACL2 Version 1.8 (May, 1995) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+See <a href="NOTE8-UPDATE.html">note8-update</a> for yet more recent changes.<p>
+
+<a href="GUARD.html">Guard</a>s have been eliminated from the ACL2 logic.  A summary is
+contained in this brief note.  Also see <a href="DEFUN-MODE.html">defun-mode</a> and
+see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.<p>
+
+<a href="GUARD.html">Guard</a>s may be included in <a href="DEFUNS.html">defuns</a> as usual but are ignored from the
+perspective of admission to the logic: functions must terminate on
+all arguments.<p>
+
+As in Nqthm, primitive functions, e.g., <code><a href="+.html">+</a></code> and <code><a href="CAR.html">car</a></code>, logically
+default unexpected arguments to convenient values.  Thus, <code>(+ 'abc 3)</code>
+is <code>3</code> and <code>(car 'abc)</code> is <code>nil</code>.  See <a href="PROGRAMMING.html">programming</a>, and see
+the <a href="DOCUMENTATION.html">documentation</a> for the individual primitive functions.<p>
+
+In contrast to earlier versions of ACL2, Version 1.8 logical
+functions are executed at Nqthm speeds even when <a href="GUARD.html">guard</a>s have not
+been verified.  In versions before 1.8, such functions were
+interpreted by ACL2.<p>
+
+Colors have been eliminated.  Two ``<a href="DEFUN-MODE.html">defun-mode</a>s'' are supported,
+<code>:</code><code><a href="PROGRAM.html">program</a></code> and <code>:</code><code><a href="LOGIC.html">logic</a></code>.  Roughly speaking, <code>:</code><code><a href="PROGRAM.html">program</a></code> does what <code>:red</code> used
+to do, namely, allow you to prototype functions for execution
+without any proof burdens.  <code>:</code><code><a href="LOGIC.html">Logic</a></code> mode does what <code>:blue</code> used to do,
+namely, allow you to add a new definitional axiom to the logic.  A
+global <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a> is comparable to the old default color.
+The system comes up in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode.  To change the global
+<a href="DEFUN-MODE.html">defun-mode</a>, type <code>:</code><code><a href="PROGRAM.html">program</a></code> or <code>:</code><code><a href="LOGIC.html">logic</a></code> at the top-level.  To specify
+the <a href="DEFUN-MODE.html">defun-mode</a> of a <code><a href="DEFUN.html">defun</a></code> locally use
+
+<pre>
+<code>(declare (xargs :mode mode))</code>.
+</pre>
+<p>
+
+The <a href="PROMPT.html">prompt</a> has changed.  The initial <a href="PROMPT.html">prompt</a>, indicating <code>:</code><code><a href="LOGIC.html">logic</a></code> mode,
+is
+
+<pre>
+ACL2 !&gt;
+</pre>
+
+If you change to <code>:</code><code><a href="PROGRAM.html">program</a></code> mode the <a href="PROMPT.html">prompt</a> becomes
+
+<pre>
+ACL2 p!&gt;
+</pre>
+<p>
+
+<a href="GUARD.html">Guard</a>s can be seen as having either of two roles: (a) they are a
+specification device allowing you to characterize the kinds of
+inputs a function ``should'' have, or (b) they are an efficiency
+device allowing logically defined functions to be executed directly
+in Common Lisp.  If a <a href="GUARD.html">guard</a> is specified, as with <code><a href="XARGS.html">xargs</a></code> <code>:</code><code><a href="GUARD.html">guard</a></code>, then
+it is ``verified'' at defun-time (unless you also specify <code><a href="XARGS.html">xargs</a></code>
+<code>:verify-guards nil</code>).  <a href="GUARD.html">Guard</a> verification means what it always has:
+the input <a href="GUARD.html">guard</a> is shown to imply the <a href="GUARD.html">guard</a>s on all subroutines in
+the body.  If the <a href="GUARD.html">guard</a>s of a function are verified, then a call of
+the function on inputs satisfying the <a href="GUARD.html">guard</a> can be computed directly
+by Common Lisp.  Thus, verifying the <a href="GUARD.html">guard</a>s on your functions will
+allow them to execute more efficiently.  But it does not affect
+their logical behavior and since you will automatically get Nqthm
+speeds on unverified logical definitions, most users will probably
+use <a href="GUARD.html">guard</a>s either as a specification device or only use them when
+execution efficiency is extremely important.<p>
+
+Given the presence of <a href="GUARD.html">guard</a>s in the system, two issues are unavoidable.
+Are <a href="GUARD.html">guard</a>s verified as part of the <code><a href="DEFUN.html">defun</a></code> process?  And are <a href="GUARD.html">guard</a>s checked
+when terms are evaluated?  We answer both of those questions below.<p>
+
+Roughly speaking, in its initial <a href="STATE.html">state</a> the system will try to verify
+the <a href="GUARD.html">guard</a>s of a <code><a href="DEFUN.html">defun</a></code> if a <code>:</code><code><a href="GUARD.html">guard</a></code> is supplied in the <code><a href="XARGS.html">xargs</a></code>
+and will not try otherwise.  However, <a href="GUARD.html">guard</a> verification in <code><a href="DEFUN.html">defun</a></code>
+can be inhibited ``locally'' by supplying the <code><a href="XARGS.html">xargs</a></code>
+<code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> <code>nil</code>.  ``Global'' inhibition can be obtained via
+the <code>:</code><code><a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a></code>.  If you do not use the
+<code>:</code><code><a href="GUARD.html">guard</a></code> <code><a href="XARGS.html">xargs</a></code>, you will not need to think about <a href="GUARD.html">guard</a>
+verification.<p>
+
+We now turn to the evaluation of expressions.  Even if your functions contain
+no <a href="GUARD.html">guard</a>s, the primitive functions do and hence you have the choice: when you
+submit an expression for evaluation do you mean for <a href="GUARD.html">guard</a>s to be checked at
+runtime or not?  Put another way, do you mean for the expression to be
+evaluated in Common Lisp (if possible) or in the logic?  Note: If Common Lisp
+delivers an answer, it will be the same as in the logic, but it might be
+erroneous to execute the form in Common Lisp.  For example, should
+<code>(car 'abc)</code> cause a <a href="GUARD.html">guard</a> violation error or return <code>nil</code>?<p>
+
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  To turn ``<a href="GUARD.html">guard</a> checking on,'' by which we
+mean that <a href="GUARD.html">guard</a>s are checked at runtime, execute the top-level form
+<code>:set-guard-checking t</code>.  To turn it off, do <code>:set-guard-checking nil</code>.
+The status of this variable is reflected in the <a href="PROMPT.html">prompt</a>.
+
+<pre>
+ACL2 !&gt;
+</pre>
+
+means <a href="GUARD.html">guard</a> checking is on and
+
+<pre>
+ACL2 &gt;
+</pre>
+
+means <a href="GUARD.html">guard</a> checking is off.  The exclamation mark can be thought of
+as ``barring'' certain computations.  The absence of the mark
+suggests the absence of error messages or unbarred access to the
+logical axioms.  Thus, for example
+
+<pre>
+ACL2 !&gt;(car 'abc)
+</pre>
+
+will signal an error, while
+
+<pre>
+ACL2 &gt;(car 'abc)
+</pre>
+
+will return <code>nil</code>.<p>
+
+Note that whether or not <a href="GUARD.html">guard</a>s are checked at runtime is
+independent of whether you are operating in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode or
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode and whether theorems are being proved or not.
+(Although it must be added that functions defined in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode cannot help but check their <a href="GUARD.html">guard</a>s because no logical
+definition exists.)<p>
+
+Version 1.8 permits the verification of the <a href="GUARD.html">guard</a>s of theorems, thus
+insuring that all instances of the theorem will evaluate without
+error in Common Lisp.  To verify the <a href="GUARD.html">guard</a>s of a theorem named
+<code>name</code> execute the event
+
+<pre>
+(verify-guards name).
+</pre>
+
+If a theorem's <a href="GUARD.html">guard</a>s have been verified, the theorem is guaranteed
+to evaluate without error to non-<code>nil</code> in Common Lisp (provided
+resource errors do not arise).<p>
+
+Caveat about <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>: <code><a href="IMPLIES.html">implies</a></code> is a function symbol, so in the
+term <code>(implies p q)</code>, <code>p</code> cannot be assumed true when <code>q</code> is evaluated;
+they are both evaluated ``outside.''  Hence, you cannot generally
+verify the <a href="GUARD.html">guard</a>s on a theorem if <code><a href="IMPLIES.html">implies</a></code> is used to state the
+hypotheses.  Use <code><a href="IF.html">if</a></code> instead.  In a future version of ACL2, <code><a href="IMPLIES.html">implies</a></code>
+will likely be a macro.<p>
+
+See sum-list-example.lisp for a nice example of the use of Version
+1.8.  This is roughly the same as the documentation for
+<a href="GUARD-EXAMPLE.html">guard-example</a>.<p>
+
+We have removed the capability to do ``old-style-forcing'' as
+existed before Version 1.5.  See <a href="NOTE5.html">note5</a>.<p>
+
+NOTE:  Some low level details have, of course, changed.  One such
+change is that there are no longer two distinct type prescriptions
+stored when a function is admitted with its <a href="GUARD.html">guard</a>s verified.  So for
+example, the type prescription <a href="RUNE.html">rune</a> for <code><a href="BINARY-APPEND.html">binary-append</a></code> is now
+
+<pre>
+(:type-prescription binary-append)
+</pre>
+
+while in Versions 1.7 and earlier, there were two such <a href="RUNE.html">rune</a>s:
+
+<pre>
+(:type-prescription binary-append . 1)
+(:type-prescription binary-append . 2)
+</pre>
+<p>
+
+Nqthm-style forcing on <a href="LINEAR.html">linear</a> arithmetic assumptions is no longer
+executed when forcing is <a href="DISABLE.html">disable</a>d.<p>
+
+Functional instantiation now benefits from a trick also used in
+Nqthm:  once a <a href="CONSTRAINT.html">constraint</a> generated by a <code>:functional-instance</code>
+lemma instance (see <a href="LEMMA-INSTANCE.html">lemma-instance</a>) has been proved on behalf
+of a successful event, it will not have to be re-proved on behalf of
+a later event.<p>
+
+<code><a href="1+.html">1+</a></code> and <code><a href="1-.html">1-</a></code> are now macros in the logic, not functions.  Hence, for
+example, it is ``safe'' to use them on left-hand sides of rewrite
+rules, without invoking the common warning about the presence of
+nonrecursive function symbols.<p>
+
+A new <a href="DOCUMENTATION.html">documentation</a> section <a href="FILE-READING-EXAMPLE.html">file-reading-example</a> illustrates how to
+process forms in a file.<p>
+
+A new <a href="PROOF-CHECKER.html">proof-checker</a> command <code>forwardchain</code> has been added;
+see <a href="ACL2-PC_colon__colon_FORWARDCHAIN.html">acl2-pc::forwardchain</a>.<p>
+
+It is now possible to use quantifiers.  See <a href="DEFUN-SK.html">defun-sk</a> and
+see <a href="DEFCHOOSE.html">defchoose</a>.<p>
+
+There is a new event <code><a href="SET-INHIBIT-WARNINGS.html">set-inhibit-warnings</a></code>, which allows the user
+to turn off warnings of various types.
+see <a href="SET-INHIBIT-WARNINGS.html">set-inhibit-warnings</a>.<p>
+
+An unsoundness relating <code><a href="ENCAPSULATE.html">encapsulate</a></code> and <code>:functional-instance</code>
+<a href="HINTS.html">hints</a> has been remedied, with a few small effects visible at the
+user level.  The main observable effect is that <code><a href="DEFAXIOM.html">defaxiom</a></code> and
+non-local <code><a href="INCLUDE-BOOK.html">include-book</a></code> <a href="EVENTS.html">events</a> are no longer allowed in the scope
+of any <code><a href="ENCAPSULATE.html">encapsulate</a></code> event that has a non-empty <a href="SIGNATURE.html">signature</a>.<p>
+
+When <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is called, we now require that the default
+<a href="DEFUN-MODE.html">defun-mode</a> (see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) be <code>:</code><code><a href="LOGIC.html">logic</a></code>.  On a related
+note, the default <a href="DEFUN-MODE.html">defun-mode</a> is irrelevant to <code><a href="INCLUDE-BOOK.html">include-book</a></code>; the
+mode is always set to <code>:</code><code><a href="LOGIC.html">logic</a></code> initially, though it may be changed
+within the book and reverts to its original value at the conclusion
+of the <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  A bug in <code><a href="INCLUDE-BOOK.html">include-book</a></code> prevented it from
+acting this way even though the <a href="DOCUMENTATION.html">documentation</a> said otherwise.<p>
+
+The <a href="DOCUMENTATION.html">documentation</a> has been substantially improved.  A new
+section ``Programming'' contains <a href="DOCUMENTATION.html">documentation</a> of many useful
+functions provided by ACL2; see <a href="PROGRAMMING.html">programming</a>.  Also, the
+<a href="DOCUMENTATION.html">documentation</a> has been ``marked up'' extensively.  Thus in
+particular, users of Mosaic will find many links in the
+<a href="DOCUMENTATION.html">documentation</a>.<p>
+
+The symbols <code><a href="FORCE.html">force</a></code>, <code><a href="MV-NTH.html">mv-nth</a></code>, and <code>acl2-count</code> have been added
+to the list <code>*acl2-exports*</code>.<p>
+
+We now permit most names from the main Lisp package to be used as
+names, except for names that define functions, macros, or constants.
+See <a href="NAME.html">name</a>.<p>
+
+We have changed the list of imports from the Common Lisp package to
+ACL2, i.e., the list <code>*common-lisp-symbols-from-main-lisp-package*</code>,
+to be exactly those external symbols of the Common Lisp package as
+specified by the draft Common Lisp standard.  In order to
+accommodate this change, we have renamed some ACL2 functions as
+shown below, but these and other ramifications of this change should
+be transparent to most ACL2 users.
+
+<pre>
+warning      --&gt; warning$
+print-object --&gt; print-object$
+</pre>
+<p>
+
+Proof trees are no longer enabled by default.  To start them up,
+<code>:</code><code><a href="START-PROOF-TREE.html">start-proof-tree</a></code>.<p>
+
+We have added the capability of building smaller images.  The
+easiest way to do this on a Unix (trademark of AT&amp;T) system is:
+<code>make small</code>.<p>
+
+
+<p>
+Here we will put some less important changes, additions, and so on.<p>
+
+We have added definitions for the Common Lisp function <code><a href="POSITION.html">position</a></code>
+(for the test <code><a href="EQL.html">eql</a></code>), as well as corresponding versions
+<code><a href="POSITION-EQUAL.html">position-equal</a></code> and <code><a href="POSITION-EQ.html">position-eq</a></code> that use tests <code><a href="EQUAL.html">equal</a></code> and
+<code><a href="EQ.html">eq</a></code>, respectively.  See <a href="POSITION.html">position</a>, see <a href="POSITION-EQUAL.html">position-equal</a>,
+and see <a href="POSITION-EQ.html">position-eq</a>.<p>
+
+The <code><a href="DEFTHM.html">defthm</a></code> event <code>rational-listp-implies-rationalp-car</code> no
+longer exists.<p>
+
+We fixed a bug in the hint mechanism that applied <code>:by</code>, <code>:cases</code>, and
+<code>:use</code> <a href="HINTS.html">hints</a> to the first induction goal when the prover reverted to
+proving the original goal by induction.<p>
+
+We fixed a bug in the handling of <code>(set-irrelevant-formals-ok :warn)</code>.<p>
+
+In support of removing the old-style forcing capability, we deleted
+the initialization of <a href="STATE.html">state</a> global <code>old-style-forcing</code> and deleted the
+definitions of <code>recover-assumptions</code>, <code>recover-assumptions-from-goal</code>,
+<code>remove-assumptions1</code>, <code>remove-assumptions</code>, and <code>split-on-assumptions</code>,
+and we renamed <code>split-on-assumptions1</code> to <code>split-on-assumptions</code>.<p>
+
+The special value <code>'none</code> in the <a href="PROOF-CHECKER.html">proof-checker</a> commands <code>claim</code> and <code><a href="=.html">=</a></code>
+has been replaced by <code>:none</code>.<p>
+
+A bug in the handling of <a href="HINTS.html">hints</a> by subgoals has been fixed.  For
+example, formerly a <code>:do-not</code> hint could be ``erased'' by a <code>:use</code> hint
+on a subgoal.  Thanks go to Art Flatau for noticing the bug.<p>
+
+The functions <code>weak-termp</code> and <code>weak-term-listp</code> have been
+deleted, and their calls have been replaced by corresponding calls
+of <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> and <code>pseudo-term-listp</code>.  The notion of
+<code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> has been slightly strenthened by requiring that
+terms of the form <code>(quote ...)</code> have length 2.<p>
+
+Performance has been improved in various ways.  At the prover level,
+backchaining through the recognizer alist has been eliminated in
+order to significantly speed up ACL2's rewriter.  Among the other
+prover changes (of which there are several, all technical):  we no
+longer clausify the input term when a proof is interrupted in favor
+of inducting on the input term.  At the <a href="IO.html">IO</a> level, we have improved
+performance somewhat by suitable declarations and proclamations.
+These include technical modifications to the macros <code><a href="MV.html">mv</a></code> and
+<code><a href="MV-LET.html">mv-let</a></code>, and introduction of a macro <code>the-mv</code> analogous to the
+macro <code><a href="THE.html">the</a></code> but for forms returning multiple values.<p>
+
+The function <code>spaces</code> now takes an extra argument, the current column.<p>
+
+A bug in the <a href="PROOF-CHECKER.html">proof-checker</a> <code>equiv</code> command was fixed.<p>
+
+The function <code>intersectp</code> has been deleted, because it was
+essentially duplicated by the function <code><a href="INTERSECTP-EQUAL.html">intersectp-equal</a></code>.<p>
+
+We now proclaim functions in AKCL and GCL before compiling <a href="BOOKS.html">books</a>.
+This should result in somewhat increased speed.<p>
+
+The function <code>repeat</code> has been eliminated; use <code><a href="MAKE-LIST.html">make-list</a></code>
+instead.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> command <code>expand</code> has been fixed so that it
+eliminates <code><a href="LET.html">let</a></code> (lambda) expressions when one would expect it to.<p>
+
+A new primitive function, <code><a href="MV-NTH.html">mv-nth</a></code>, has been introduced.  <code><a href="MV-NTH.html">Mv-nth</a></code>
+is equivalent to <code><a href="NTH.html">nth</a></code> and is used in place of <code><a href="NTH.html">nth</a></code> in the
+translation of <code><a href="MV-LET.html">mv-let</a></code> expressions.  This allows the user to
+control the simplification of <code><a href="MV-LET.html">mv-let</a></code> expressions without
+affecting how <code><a href="NTH.html">nth</a></code> is treated.  In that spirit, the rewriter has
+been modified so that certain <code><a href="MV-NTH.html">mv-nth</a></code> expressions, namely those
+produced in the translation of <code>(mv-let (a b c)(mv x y z) p)</code>, are
+given special treatment.<p>
+
+A minor bug in <code>untranslate</code> has been fixed, which for example will
+fix the printing of conjunctions.<p>
+
+<code>Translate</code> now takes a <code>logicp</code> argument, which indicates whether it
+enforces the restriction that <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions do not occur
+in the result.<p>
+
+The modified version of <code>trace</code> provided by ACL2, for use in raw Lisp,
+has been modified so that the lisp special variable <code>*trace-alist*</code>
+has a slightly different functionality.  This alist associates,
+using <code><a href="EQ.html">eq</a></code>, symbols with the print representations of their values.
+For example, initially <code>*trace-alist*</code> is a one-element list
+containing the pair <code>(cons 'state '|*the-live-state*|)</code>.  Thus, one
+may cons the pair <code>(cons '*foo* "It's a FOO!")</code> on to <code>*trace-alist*</code>;
+then until <code>*foo*</code> is defined, this change will have no effect, but
+after for example
+
+<pre>
+(defconst *foo* 17)
+</pre>
+
+then <code>trace</code> will print <code>17</code> as <code>"It's a FOO!"</code>.<p>
+
+<code>Trace</code> also traces the corresponding logic function.<p>
+
+<a href="PROOF-TREE.html">Proof-tree</a> display has been improved slightly in the case of
+successful proofs and certain event failures.<p>
+
+The function <code>positive-integer-log2</code> has been deleted.<p>
+
+The macro <code><a href="SKIP-PROOFS.html">skip-proofs</a></code> now prints a warning message when it is
+encountered in the context of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event or a book.
+See <a href="SKIP-PROOFS.html">skip-proofs</a>.<p>
+
+Some functions related to <code>the-fn</code> and <code>wormhole1</code> now have
+<a href="DEFUN-MODE.html">defun-mode</a> <code>:</code><code><a href="PROGRAM.html">program</a></code>, but this change is almost certain to
+be inconsequential to all users.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

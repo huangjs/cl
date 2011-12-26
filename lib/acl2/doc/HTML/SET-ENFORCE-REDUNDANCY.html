@@ -1,0 +1,80 @@
+<html>
+<head><title>SET-ENFORCE-REDUNDANCY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-ENFORCE-REDUNDANCY</h2>require most events to be redundant
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+General Forms:
+(set-enforce-redundancy nil)   ; do not require redundancy (default)
+(set-enforce-redundancy t)     ; most events (see below) must be redundant
+(set-enforce-redundancy :warn) ; warn for most non-redundant events
+</pre>
+
+Note: This is an event!  It does not print the usual event summary
+but nevertheless changes the ACL2 logical <a href="WORLD.html">world</a> and is so recorded.
+<p>
+
+<pre>
+General Form:
+(set-enforce-redundancy flag)
+</pre>
+
+where <code>flag</code> is <code>nil</code>, <code>t</code>, or <code>:warn</code>, as indicated above.
+This macro is essentially equivalent to
+
+<pre>
+(table acl2-defaults-table :enforce-redundancy flag)
+</pre>
+
+and hence is <code><a href="LOCAL.html">local</a></code> to any <a href="BOOKS.html">books</a> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>
+in which it occurs; see <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.  However, unlike the above
+simple call of the <code><a href="TABLE.html">table</a></code> event function (see <a href="TABLE.html">table</a>), no output results
+from a <code>set-enforce-redundancy</code> event.<p>
+
+<code>Set-enforce-redundancy</code> may be thought of as an event that merely sets a
+flag as indicated above, which determines whether most <a href="EVENTS.html">events</a>, including
+<code><a href="DEFUN.html">defun</a></code> and <code><a href="DEFTHM.html">defthm</a></code> events, are allowed to be redundant;
+see <a href="REDUNDANT-EVENTS.html">redundant-events</a>.  The exceptions are <code><a href="DEFLABEL.html">deflabel</a></code>, <code><a href="DEFPKG.html">defpkg</a></code>,
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>, <code><a href="INCLUDE-BOOK.html">include-book</a></code>, <code><a href="PUSH-UNTOUCHABLE.html">push-untouchable</a></code>,
+<code><a href="REMOVE-UNTOUCHABLE.html">remove-untouchable</a></code>, <code><a href="SET-BODY.html">set-body</a></code>, and <code><a href="TABLE.html">table</a></code> <a href="EVENTS.html">events</a>.  Any
+other type of non-redundant event will cause an error if <code>flag</code> is <code>t</code>
+and a warning if <code>flag</code> is <code>nil</code>, <em>except</em> in the course of carrying
+out an <code><a href="INCLUDE-BOOK.html">include-book</a></code> form.<p>
+
+Note that because <code><a href="TABLE.html">table</a></code> <a href="EVENTS.html">events</a> that set the
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> are implicitly <code><a href="LOCAL.html">local</a></code>,
+<code>set-enforce-redundancy</code> events are ignored when including books.  However,
+the presence of the event <code>(set-enforce-redundancy t)</code> in a book guarantees
+that its subsequent definitions and theorems are redundant.  This can be a
+useful property to maintain in library development, as we now describe.<p>
+
+An example of the use of this form can be found in the distributed <a href="BOOKS.html">books</a>
+under directory <code>books/rtl/rel4/</code>.  The intention in that directory has
+been to put all the gory details in subdirectories <code>support/</code> and
+<code>arithmetic/</code>, so that the books in subdirectory <code>lib/</code> contain only the
+``exported'' definitions and theorems.  This approach is useful for human
+readability.  Moreover, suppose we want to prove new theorems in <code>lib/</code>.
+Typically we wish to prove the new theorems using the existing books in
+<code>lib/</code>; however, our methodology demands that the proofs go into books in
+<code>support/</code>.  If every theorem in <code>lib/</code> is redundant, then we can
+<em>develop</em> the proofs in <code>lib/</code> but then when we are done, <em>move</em> each
+book with such proofs into <code>support/</code> as follows.  In any such book, we
+first replace <code><a href="INCLUDE-BOOK.html">include-book</a></code> forms referring to books in <code>lib/</code> by
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> forms referring to corresponding books in <code>support/</code>
+and/or <code>arithmetic/</code>.  Then, we add suitable <code><a href="IN-THEORY.html">in-theory</a></code> events to get
+us back into the original <code>lib/</code> proof environment.<p>
+
+The default behavior of the system is as though the <code>:enforce-redundancy</code>
+value is <code>nil</code>.  The current behavior can be ascertained by evaluating the
+following form.
+
+<pre>
+(cdr (assoc-eq :enforce-redundancy (table-alist 'acl2-defaults-table wrld)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

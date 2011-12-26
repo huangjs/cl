@@ -1,0 +1,71 @@
+<html>
+<head><title>ACL2-PC_colon__colon_IN-THEORY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::IN-THEORY</h3>(primitive)
+<code>   </code>set the current proof-checker theory
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(in-theory 
+   (union-theories (theory 'minimal-theory) '(true-listp binary-append)))
+<p>
+General Form:
+(in-theory &amp;optional atom-or-theory-expression)
+</pre>
+
+If the argument is not supplied, then this command sets the
+current proof-checker theory (see below for explanation) to agree
+with the current ACL2 theory.  Otherwise, the argument should be a
+theory expression, and in that case the proof-checker theory is set
+to the value of that theory expression.<p>
+
+The current proof-checker theory is used in all calls to the ACL2 theorem
+prover and rewriter from inside the proof-checker.  Thus, the most recent
+<code>in-theory</code> instruction in the current <code>state-stack</code> has an effect in the
+proof-checker totally analogous to the effect caused by an <code>in-theory</code> hint
+or event in ACL2.  All <code>in-theory</code> instructions before the last are
+ignored, because they refer to the current theory in the ACL2 <code><a href="STATE.html">state</a></code>,
+not to the existing proof-checker theory.  For example:
+
+<pre>
+   ACL2 !&gt;:trans1 (enable bar)
+    (UNION-THEORIES (CURRENT-THEORY :HERE)
+                    '(BAR))
+   ACL2 !&gt;:trans1 (CURRENT-THEORY :HERE)
+    (CURRENT-THEORY-FN :HERE WORLD)
+   ACL2 !&gt;
+</pre>
+
+Thus <code>(in-theory (enable bar))</code> modifies the current theory of the current
+ACL2 world.  So for example, suppose that <code>foo</code> is disabled outside the
+proof checker and you execute the following instructions, in this order.
+
+<pre>
+   (in-theory (enable foo))
+   (in-theory (enable bar))
+</pre>
+  
+Then after the second of these, <code>bar</code> will be enabled in the proof-checker,
+but <code>foo</code> will be disabled.  The reason is that
+<code>(in-theory (enable bar))</code> instructs the proof-checker to modify the
+current theory (from outside the proof-checker, not from inside the
+proof-checker) by enabling <code>bar</code>.<p>
+
+Note that <code>in-theory</code> instructions in the proof-checker have no effect
+outside the proof-checker's interactive loop.<p>
+
+If the most recent <code>in-theory</code> instruction in the current state of the
+proof-checker has no arguments, or if there is no <code>in-theory</code>
+instruction in the current state of the proof-checker, then the
+proof-checker will use the current ACL2 theory.  This is true even
+if the user has interrupted the interactive loop by exiting and
+changing the global ACL2 theory.  However, if the most recent
+<code>in-theory</code> instruction in the current state of the proof-checker had
+an argument, then global changes to the current theory will have no
+effect on the proof-checker state.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

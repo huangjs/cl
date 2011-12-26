@@ -1,0 +1,168 @@
+<html>
+<head><title>CERTIFY-BOOK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CERTIFY-BOOK</h2>how to produce a <a href="CERTIFICATE.html">certificate</a> for a book
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(certify-book "my-arith" 3)      ;certify in a world with 3 commands
+(certify-book "my-arith")        ;certify in a world with 0 commands
+(certify-book "my-arith" 0 nil)  ;as above, but do not compile
+(certify-book "my-arith" 0 t)    ;as above, but compile
+(certify-book "my-arith" 0 :all) ;as above, but compile exececutable
+                                   ;  counterparts too
+(certify-book "my-arith" t)      ;certify from world of old certificate
+<p>
+General Form:
+(certify-book book-name k compile-flg
+              :defaxioms-okp t/nil        ; [default nil]
+              :skip-proofs-okp t/nil      ; [default nil]
+              :save-expansion :save/t/nil ; [default nil]
+              :ttags ttags                ; [default nil]
+              )
+</pre>
+
+where <code>book-name</code> is a book name (see <a href="BOOK-NAME.html">book-name</a>), <code>k</code> is
+either <code>t</code> or an integer used to indicate your approval of the
+``certification <a href="WORLD.html">world</a>.''  <code>Compile-flg</code> indicates whether you
+wish to compile the (functions in the) book.  <code>Compile-flg</code>
+defaults to <code>t</code>, meaning to compile; <code>nil</code> means do not compile.<p>
+
+The second argument <code>k</code> is optional as well; it defaults to <code>0</code>.<p>
+
+Two keyword arguments, <code>:defaxioms-okp</code> and <code>:skip-proofs-okp</code>, determine
+how the system handles the inclusion of <code><a href="DEFAXIOM.html">defaxiom</a></code> events and
+<code><a href="SKIP-PROOFS.html">skip-proofs</a></code> events, respectively, in the book.  The value <code>t</code> allows
+such events, but prints a warning message.  The value <code>nil</code> is the default,
+and causes an error if such an event is found.<p>
+
+The keyword argument <code>:ttags</code> may normally be omitted.  A few constructs,
+used for example if you are building your own system based on ACL2, may
+require it.  See <a href="DEFTTAG.html">defttag</a> for an explanation of this argument.<p>
+
+To advanced users only: in the rare case that you are willing to add to
+compilation time in return for compiling the executable counterparts of
+functions defined in the book, you may supply a value of <code>:all</code> for
+<code>compile-flg</code>.  This setting is useful for compiling a book whose functions
+are called during macroexpansion, because evaluation during macroexpansion is
+done in a ``safe mode'' that avoids calling raw Lisp functions
+(see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>).<p>
+
+The keyword argument <code>:save-expansion</code> controls whether or not a so-called
+``book expansion'' file is written, obtained by appending the string
+"@expansion.lsp" to the end of the book name.  See <a href="MAKE-EVENT.html">make-event</a> for
+discussion of the book expansion; in a nutshell, <code><a href="MAKE-EVENT.html">make-event</a></code> calls
+generate forms that replace them in the book expansion.  Book expansion is
+skipped if <code>compile-flg</code> and <code>:save-expansion</code> are both <code>nil</code>.
+Otherwise, the values of <code>nil</code> and <code>t</code> for <code>:save-expansion</code> cause the
+book expansion to be created only when a <code><a href="MAKE-EVENT.html">make-event</a></code> form occurs in a
+book (i.e., only if there is some expansion), or if at least one executable
+counterpart is to be compiled (see preceding paragraph).  If the book
+expansion is created, then it is deleted after compilation if
+<code>:save-expansion</code> is <code>nil</code>.  Finally, if <code>:save-expansion</code> is
+<code>:save</code>, then the book expansion file is created in all cases, and is not
+deleted.<p>
+
+For a general discussion of books, see <a href="BOOKS.html">books</a>.  <code>Certify-book</code>
+is akin to what we have historically called a ``proveall'': all the
+forms in the book are ``proved'' to guarantee their admissibility.
+More precisely, <code>certify-book</code> (1) reads the forms in the book,
+confirming that the appropriate packages are defined in the
+certification <a href="WORLD.html">world</a>; (2) does the full admissibility checks on
+each form (proving termination of recursive functions, proving
+theorems, etc.), checking as it goes that each form is an embedded
+event form (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>); (3) rolls the <a href="WORLD.html">world</a>
+back to the initial certification <a href="WORLD.html">world</a> and does an
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> of the book to check for <code><a href="LOCAL.html">local</a></code> incompatibilities
+(see <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a>); (4) writes a <a href="CERTIFICATE.html">certificate</a>
+recording not only that the book was certified but also recording
+the <a href="COMMAND.html">command</a>s necessary to recreate the certification <a href="WORLD.html">world</a> (so
+the appropriate packages can be defined when the book is included in
+other <a href="WORLD.html">world</a>s) and the check sums of all the <a href="BOOKS.html">books</a> involved
+(see <a href="CERTIFICATE.html">certificate</a>); (5) compiles the book if so directed (and
+then loads the object file in that case).  The result of executing a
+<code>certify-book</code> <a href="COMMAND.html">command</a> is the creation of a single new event, which
+is actually an <code><a href="INCLUDE-BOOK.html">include-book</a></code> event.  If you don't want its
+included <a href="EVENTS.html">events</a> in your present <a href="WORLD.html">world</a>, simply execute <code>:</code><code><a href="UBT.html">ubt</a></code>
+<code>:here</code> afterwards.<p>
+
+<code>Certify-book</code> requires that the default <a href="DEFUN-MODE.html">defun-mode</a>
+(see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) be <code>:</code><code><a href="LOGIC.html">logic</a></code> when certification is
+attempted.  If the mode is not <code>:</code><code><a href="LOGIC.html">logic</a></code>, an error is signalled.<p>
+
+An error will occur if <code>certify-book</code> has to deal with any
+uncertified book other than the one on which it was called.  For
+example, if the book being certified includes another book, that
+subbook must already have been certified.<p>
+
+Certification occurs in some logical <a href="WORLD.html">world</a>, called the
+``certification <a href="WORLD.html">world</a>.'' That <a href="WORLD.html">world</a> must contain the <code><a href="DEFPKG.html">defpkg</a></code>s
+needed to read and execute the forms in the book.  The <a href="COMMAND.html">command</a>s
+necessary to recreate that <a href="WORLD.html">world</a> from the ACL2 initial
+<a href="WORLD.html">world</a> will be copied into the <a href="CERTIFICATE.html">certificate</a> created for the
+book.  Those <a href="COMMAND.html">command</a>s will be re-executed whenever the book is
+included, to ensure that the appropriate packages (and all other
+names used in the certification <a href="WORLD.html">world</a>) are correctly defined.  The
+certified book will be more often usable if the certification
+<a href="WORLD.html">world</a> is kept to a minimal extension of the ACL2 initial
+<a href="WORLD.html">world</a>.  Thus, before you call <code>certify-book</code> for the first
+time on a book, you should get into the initial ACL2 <a href="WORLD.html">world</a>
+(e.g., with <code>:ubt 1</code> or just starting a new version of ACL2),
+<code><a href="DEFPKG.html">defpkg</a></code> the desired packages, and then invoke <code>certify-book</code>.<p>
+
+The <code>k</code> argument to <code>certify-book</code> must be either a nonnegative integer
+or else one of the symbols <code>t</code> or <code>?</code> in the <code>ACL2</code> package.  If <code>k</code>
+is an integer, then it must be the number of <a href="COMMAND.html">command</a>s that have been
+executed after the initial ACL2 <a href="WORLD.html">world</a> to create the <a href="WORLD.html">world</a> in which
+<code>certify-book</code> was called.  One way to obtain this number is by doing
+<code>:pbt :start</code> to see all the <a href="COMMAND.html">command</a>s back to the first one.<p>
+
+If <code>k</code> is <code>t</code> it means that <code>certify-book</code> should use the same
+<a href="WORLD.html">world</a> used in the last certification of this book.  <code>K</code> may be <code>t</code>
+only if you call <code>certify-book</code> in the initial ACL2 <a href="WORLD.html">world</a> and there is
+a <a href="CERTIFICATE.html">certificate</a> on file for the book being certified.  (Of course, the
+<a href="CERTIFICATE.html">certificate</a> is probably invalid.)  In this case, <code>certify-book</code> reads
+the old <a href="CERTIFICATE.html">certificate</a> to obtain the <a href="PORTCULLIS.html">portcullis</a> <a href="COMMAND.html">command</a>s and
+executes them to recreate the certification <a href="WORLD.html">world</a>.<p>
+
+Finally, <code>k</code> may be <code>?</code>, in which case there is no check made on the
+certification world.  That is, if <code>k</code> is <code>?</code> then no action related to
+the preceding two paragraphs is performed, which can be a nice convenience
+but at the cost of eliminating a potentially valuable check that the
+certification <a href="WORLD.html">world</a> may be as expected.<p>
+
+If you have a certified book that has remained unchanged for some
+time you are unlikely even to remember the appropriate <code><a href="DEFPKG.html">defpkg</a></code>s
+for it.  If you begin to change the book, don't throw away its
+<a href="CERTIFICATE.html">certificate</a> file just because it has become invalid!  It is an
+important historical document until the book is re-certified.<p>
+
+When <code>certify-book</code> is directed to produce a compiled file, it
+calls the Common Lisp function <code>compile-file</code> on the original source
+file.  This creates a compiled file with an extension known to ACL2,
+e.g., if the book is named <code>"my-book"</code> then the source file is
+<code>"my-book.lisp"</code> and the compiled file under AKCL will be
+<code>"my-book.o"</code> while under Lucid it will be <code>"my-book.lbin"</code> or
+<code>"my-book.sbin".</code>  The compiled file is then loaded.  When
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> is used later on <code>"my-book"</code> it will
+automatically load the compiled file, provided the compiled file has
+a later write date than the source file.  The only effect of such
+<a href="COMPILATION.html">compilation</a> and loading is that the functions defined in the
+book execute faster.  See <a href="GUARD.html">guard</a> for a discussion of the issues.<p>
+
+When <code>certify-book</code> is directed not to produce a compiled file, it
+will delete any existing compiled file for the book, so as not to
+mislead <code><a href="INCLUDE-BOOK.html">include-book</a></code> into loading the now outdated compiled file.<p>
+
+After execution of a <code>certify-book</code> form, the value of
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> is restored to what it was immediately before
+that <code>certify-book</code> form was executed.
+See <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.<p>
+
+This completes the tour through the <a href="DOCUMENTATION.html">documentation</a> of <a href="BOOKS.html">books</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

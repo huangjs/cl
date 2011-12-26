@@ -1,0 +1,319 @@
+<html>
+<head><title>GUARD-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>GUARD-EXAMPLE</h4>a brief transcript illustrating <a href="GUARD.html">guard</a>s in ACL2
+<pre>Major Section:  <a href="TUTORIAL5-MISCELLANEOUS-EXAMPLES.html">TUTORIAL5-MISCELLANEOUS-EXAMPLES</a>
+</pre><p>
+
+This note addresses the question:  what is the use of <a href="GUARD.html">guard</a>s in
+ACL2?  Although we recommend that beginners try to avoid <a href="GUARD.html">guard</a>s for
+a while, we hope that the summary here is reasonably self-contained
+and will provide a reasonable introduction to guards in ACL2.  For a
+more systematic discussion, see <a href="GUARD.html">guard</a>.  For a summary of that
+topic, see <a href="GUARD-QUICK-REFERENCE.html">guard-quick-reference</a>.<p>
+
+Before we get into the issue of <a href="GUARD.html">guard</a>s, let us note that there are
+two important ``modes'':<p>
+
+<a href="DEFUN-MODE.html">defun-mode</a> -- ``Does this <a href="DEFUN.html">defun</a> add an axiom (`:logic mode') or not
+(`:program mode')?''  (See <a href="DEFUN-MODE.html">defun-mode</a>.)  Only <code>:</code><code><a href="LOGIC.html">logic</a></code> mode
+functions can have their ``<a href="GUARD.html">guard</a>s verified'' via mechanized proof;
+see <a href="VERIFY-GUARDS.html">verify-guards</a>.<p>
+
+<code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code> -- ``Should runtime <a href="GUARD.html">guard</a> violations signal an
+error (<code>:all</code>, and usually with <code>t</code> or <code>:nowarn</code>) or go undetected
+(<code>nil</code>, <code>:none</code>)?  Equivalently, are expressions evaluated in Common Lisp
+or in the logic?''  (See <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.)
+<p>
+<em>Prompt examples</em><p>
+
+Here some examples of the relation between the ACL2 <a href="PROMPT.html">prompt</a> and the
+``modes'' discussed above.  Also see <a href="DEFAULT-PRINT-PROMPT.html">default-print-prompt</a>.  The
+first examples all have <code>ld-skip-proofsp nil</code>; that is, proofs are
+<em>not</em> skipped.
+
+<pre><p>
+
+  ACL2 !&gt;    ; logic mode with guard checking on
+  ACL2 &gt;     ; logic mode with guard checking off
+  ACL2 p!&gt;   ; program mode with guard checking on
+  ACL2 p&gt;    ; program mode with guard checking off<p>
+
+</pre>
+
+Here are some examples with <code><a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a></code> of <code>:</code><code><a href="LOGIC.html">logic</a></code>.
+
+<pre><p>
+
+  ACL2 &gt;     ; guard checking off, ld-skip-proofsp nil
+  ACL2 s&gt;    ; guard checking off, ld-skip-proofsp t
+  ACL2 !&gt;    ; guard checking on, ld-skip-proofsp nil
+  ACL2 !s&gt;   ; guard checking on, ld-skip-proofsp t<p>
+
+</pre>
+<p>
+
+<em>Sample session</em><p>
+
+
+<pre>
+ACL2 !&gt;(+ 'abc 3)<p>
+
+ACL2 Error in TOP-LEVEL: The guard for the function symbol
+BINARY-+, which is (AND (ACL2-NUMBERP X) (ACL2-NUMBERP Y)),
+is violated by the arguments in the call (+ 'ABC 3).<p>
+
+ACL2 !&gt;:set-guard-checking nil
+;;;; verbose output omitted here
+ACL2 &gt;(+ 'abc 3)
+3
+ACL2 &gt;(&lt; 'abc 3)
+T
+ACL2 &gt;(&lt; 3 'abc)
+NIL
+ACL2 &gt;(&lt; -3 'abc)
+T
+ACL2 &gt;:set-guard-checking t<p>
+
+Turning guard checking on, value T.<p>
+
+ACL2 !&gt;(defun sum-list (x)
+        (declare (xargs :guard (integer-listp x)
+                        :verify-guards nil))
+        (cond ((endp x) 0)
+              (t (+ (car x) (sum-list (cdr x))))))<p>
+
+The admission of SUM-LIST is trivial, using the relation
+O&lt; (which is known to be well-founded on the domain
+recognized by O-P) and the measure (ACL2-COUNT X).
+We observe that the type of SUM-LIST is described by the
+theorem (ACL2-NUMBERP (SUM-LIST X)).  We used primitive type
+reasoning.<p>
+
+Summary
+Form:  ( DEFUN SUM-LIST ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Warnings:  None
+Time:  0.03 seconds
+   (prove: 0.00, print: 0.00, proof tree: 0.00, other: 0.03)
+ SUM-LIST
+ACL2 !&gt;(sum-list '(1 2 3))<p>
+
+ACL2 Warning [Guards] in TOP-LEVEL:  Guard-checking will be inhibited
+on recursive calls of the executable counterpart (i.e., in the ACL2
+logic) of SUM-LIST.  To check guards on all recursive calls:
+  (set-guard-checking :all)
+To leave behavior unchanged except for inhibiting this message:
+  (set-guard-checking :nowarn)<p>
+
+6
+ACL2 !&gt;(sum-list '(1 2 abc 3))<p>
+
+ACL2 Error in TOP-LEVEL: The guard for the function symbol
+BINARY-+, which is (AND (ACL2-NUMBERP X) (ACL2-NUMBERP Y)),
+is violated by the arguments in the call (+ 'ABC 3).<p>
+
+ACL2 !&gt;:set-guard-checking nil
+;;;; verbose output omitted here
+ACL2 &gt;(sum-list '(1 2 abc 3))
+6
+ACL2 &gt;(defthm sum-list-append
+       (equal (sum-list (append a b))
+              (+ (sum-list a) (sum-list b))))<p>
+
+&lt;&lt; Starting proof tree logging &gt;&gt;<p>
+
+Name the formula above *1.<p>
+
+Perhaps we can prove *1 by induction.  Three induction
+schemes are suggested by this conjecture.  Subsumption
+reduces that number to two.  However, one of these is flawed
+and so we are left with one viable candidate.<p>
+
+...<p>
+
+That completes the proof of *1.<p>
+
+Q.E.D.
+</pre>
+<p>
+
+<em>Guard verification vs. defun</em><p>
+
+
+<pre><p>
+
+      Declare Form                        Guards Verified?<p>
+
+  (declare (xargs :mode :program ...))          no
+  (declare (xargs :guard g))                    yes
+  (declare (xargs :guard g :verify-guards nil)) no
+  (declare (xargs ...&lt;no :guard&gt;...))           no<p>
+
+ACL2 &gt;:pe sum-list
+ l        8  (DEFUN SUM-LIST (X)
+              (DECLARE (XARGS :GUARD (INTEGER-LISTP X)
+                              :VERIFY-GUARDS NIL))
+              (COND ((ENDP X) 0)
+                    (T (+ (CAR X) (SUM-LIST (CDR X))))))
+ACL2 &gt;(verify-guards sum-list)
+The non-trivial part of the guard conjecture for SUM-LIST,
+given the :type-prescription rule SUM-LIST, is<p>
+
+Goal
+(AND (IMPLIES (AND (INTEGER-LISTP X) (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (INTEGER-LISTP X) (NOT (ENDP X)))
+              (INTEGER-LISTP (CDR X)))
+     (IMPLIES (AND (INTEGER-LISTP X) (NOT (ENDP X)))
+              (ACL2-NUMBERP (CAR X)))).<p>
+
+...<p>
+
+ACL2 &gt;:pe sum-list
+ lv       8  (DEFUN SUM-LIST (X)
+              (DECLARE (XARGS :GUARD (INTEGER-LISTP X)
+                              :VERIFY-GUARDS NIL))
+ACL2 &gt;:set-guard-checking t
+
+Turning guard checking on, value T.
+
+ACL2 !&gt;(sum-list '(1 2 abc 3))<p>
+
+ACL2 Error in TOP-LEVEL: The guard for the function symbol
+SUM-LIST, which is (INTEGER-LISTP X), is violated by the
+arguments in the call (SUM-LIST '(1 2 ABC ...)).  See :DOC wet
+for how you might be able to get an error backtrace.<p>
+
+ACL2 !&gt;:set-guard-checking nil
+;;;; verbose output omitted here
+ACL2 &gt;(sum-list '(1 2 abc 3))
+6
+ACL2 &gt;:comp sum-list
+Compiling gazonk0.lsp.
+End of Pass 1.
+End of Pass 2.
+Finished compiling gazonk0.lsp.
+Loading gazonk0.o
+start address -T 1bbf0b4 Finished loading gazonk0.o
+Compiling gazonk0.lsp.
+End of Pass 1.
+End of Pass 2.
+Finished compiling gazonk0.lsp.
+Loading gazonk0.o
+start address -T 1bc4408 Finished loading gazonk0.o
+ SUM-LIST
+ACL2 &gt;:q<p>
+
+Exiting the ACL2 read-eval-print loop.
+ACL2&gt;(trace sum-list)
+(SUM-LIST)<p>
+
+ACL2&gt;(lp)<p>
+
+ACL2 Version 1.8.  Level 1.  Cbd "/slocal/src/acl2/v1-9/".
+Type :help for help.
+ACL2 &gt;(sum-list '(1 2 abc 3))
+6
+ACL2 &gt;(sum-list '(1 2 3))
+  1&gt; (SUM-LIST (1 2 3))&gt;
+    2&gt; (SUM-LIST (2 3))&gt;
+      3&gt; (SUM-LIST (3))&gt;
+        4&gt; (SUM-LIST NIL)&gt;
+        &lt;4 (SUM-LIST 0)&gt;
+      &lt;3 (SUM-LIST 3)&gt;
+    &lt;2 (SUM-LIST 5)&gt;
+  &lt;1 (SUM-LIST 6)&gt;
+6
+ACL2 &gt;:pe sum-list-append
+          9  (DEFTHM SUM-LIST-APPEND
+                     (EQUAL (SUM-LIST (APPEND A B))
+                            (+ (SUM-LIST A) (SUM-LIST B))))
+ACL2 &gt;(verify-guards sum-list-append)<p>
+
+The non-trivial part of the guard conjecture for
+SUM-LIST-APPEND, given the :type-prescription rule SUM-LIST,
+is<p>
+
+Goal
+(AND (TRUE-LISTP A)
+     (INTEGER-LISTP (APPEND A B))
+     (INTEGER-LISTP A)
+     (INTEGER-LISTP B)).<p>
+
+...<p>
+
+****** FAILED ******* See :DOC failure ****** FAILED ******
+ACL2 &gt;(defthm common-lisp-sum-list-append
+         (if (and (integer-listp a)
+                  (integer-listp b))
+             (equal (sum-list (append a b))
+                    (+ (sum-list a) (sum-list b)))
+             t)
+         :rule-classes nil)<p>
+
+&lt;&lt; Starting proof tree logging &gt;&gt;<p>
+
+By the simple :rewrite rule SUM-LIST-APPEND we reduce the
+conjecture to<p>
+
+Goal'
+(IMPLIES (AND (INTEGER-LISTP A)
+              (INTEGER-LISTP B))
+         (EQUAL (+ (SUM-LIST A) (SUM-LIST B))
+                (+ (SUM-LIST A) (SUM-LIST B)))).<p>
+
+But we reduce the conjecture to T, by primitive type
+reasoning.<p>
+
+Q.E.D.
+;;;; summary omitted here
+ACL2 &gt;(verify-guards common-lisp-sum-list-append)<p>
+
+The non-trivial part of the guard conjecture for
+COMMON-LISP-SUM-LIST-APPEND, given the :type-prescription
+rule SUM-LIST, is<p>
+
+Goal
+(AND (IMPLIES (AND (INTEGER-LISTP A)
+                   (INTEGER-LISTP B))
+              (TRUE-LISTP A))
+     (IMPLIES (AND (INTEGER-LISTP A)
+                   (INTEGER-LISTP B))
+              (INTEGER-LISTP (APPEND A B)))).<p>
+
+...<p>
+
+Q.E.D.<p>
+
+That completes the proof of the guard theorem for
+COMMON-LISP-SUM-LIST-APPEND.  COMMON-LISP-SUM-LIST-APPEND
+is compliant with Common Lisp.
+;;;; Summary omitted here.
+ACL2 &gt;(defthm foo (consp (mv x y)))<p>
+
+...<p>
+
+Q.E.D.<p>
+
+</pre>
+
+
+<pre>
+ACL2 &gt;(verify-guards foo)<p>
+
+ACL2 Error in (VERIFY-GUARDS FOO): The number of values we
+need to return is 1 but the number of values returned by the
+call (MV X Y) is 2.<p>
+
+&gt; (CONSP (MV X Y))<p>
+
+
+ACL2 Error in (VERIFY-GUARDS FOO): The guards for FOO cannot
+be verified because the theorem has the wrong syntactic
+form.  See :DOC verify-guards.
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

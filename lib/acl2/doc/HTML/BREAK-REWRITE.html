@@ -1,0 +1,297 @@
+<html>
+<head><title>BREAK-REWRITE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h1>BREAK-REWRITE</h1>the read-eval-print loop entered to <a href="MONITOR.html">monitor</a> rewrite rules
+<pre>Major Section:  <a href="acl2-doc-major-topics.html">ACL2 Documentation</a>
+</pre><p>
+
+ACL2 allows the user to <a href="MONITOR.html">monitor</a> the application of rewrite rules.
+When <a href="MONITOR.html">monitor</a>ed rules are about to be tried by the rewriter, an
+interactive break occurs and the user is allowed to watch and, in a
+limited sense, control the attempt to apply the rule.  This
+interactive loop, which is technically just a call of the standard
+top-level ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>, on a ``<a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>''
+(see <a href="WORMHOLE.html">wormhole</a>), is called ``break-rewrite.''  While in
+break-rewrite, certain keyword commands are available for accessing
+information about the context in which the lemma is being tried.
+These keywords are called break-rewrite ``commands.''<p>
+
+To abort from inside break-rewrite at any time, execute
+sharpsign-period (<code>#.</code>).<p>
+
+For further information, see the related <code>:</code><code><a href="DOC.html">doc</a></code> topics listed below.
+
+<p>
+<ul>
+<li><h3><a href="BREAK-LEMMA.html">BREAK-LEMMA</a> -- a quick introduction to breaking rewrite rules in ACL2
+</h3>
+</li>
+
+<li><h3><a href="BRR.html">BRR</a> -- to enable or disable the breaking of rewrite rules
+</h3>
+</li>
+
+<li><h3><a href="BRR-COMMANDS.html">BRR-COMMANDS</a> -- <a href="BREAK-REWRITE.html">Break-Rewrite</a> Commands
+</h3>
+</li>
+
+<li><h3><a href="BRR_at_.html">BRR@</a> -- to access context sensitive information within <code><a href="BREAK-REWRITE.html">break-rewrite</a></code>
+</h3>
+</li>
+
+<li><h3><a href="MONITOR.html">MONITOR</a> -- to monitor the attempted application of a rule name
+</h3>
+</li>
+
+<li><h3><a href="MONITORED-RUNES.html">MONITORED-RUNES</a> -- print the <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s and their break conditions
+</h3>
+</li>
+
+<li><h3><a href="OK-IF.html">OK-IF</a> -- conditional exit from <code>break-rewrite</code>
+</h3>
+</li>
+
+<li><h3><a href="SET-BRR-TERM-EVISC-TUPLE.html">SET-BRR-TERM-EVISC-TUPLE</a> -- controls printing of terms inside the <a href="BREAK-REWRITE.html">break-rewrite</a> loop
+</h3>
+</li>
+
+<li><h3><a href="UNMONITOR.html">UNMONITOR</a> -- to stop monitoring a rule name
+</h3>
+</li>
+
+</ul>
+
+As explained in the documentation for <code><a href="MONITOR.html">monitor</a></code>, it is possible to
+cause the ACL2 rewriter to <a href="MONITOR.html">monitor</a> the attempted application of
+selected rules.  When such a rule is about to be tried, the rewriter
+evaluates its break condition and if the result is non-<code>nil</code>,
+break-rewrite is entered.<p>
+
+Break-rewrite permits the user to inspect the current <a href="STATE.html">state</a> by
+evaluating break-rewrite commands.  Type <code>:</code><code><a href="HELP.html">help</a></code> in break-rewrite to
+see what the break-rewrite commands are.  However, break-rewrite is
+actually just a call of the general ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>,
+on a certain <a href="STATE.html">state</a> and the break-rewrite commands are simply aliases
+provided by the <code><a href="LD.html">ld</a></code>-special <code><a href="LD-KEYWORD-ALIASES.html">ld-keyword-aliases</a></code>.  See <a href="LD.html">ld</a> for
+details about this read-eval-print loop.  Thus, with a few
+exceptions, anything you can do at the ACL2 top-level can be done
+within break-rewrite.  For example, you can evaluate arbitrary
+expressions, use the keyword command hack, access <a href="DOCUMENTATION.html">documentation</a>,
+print <a href="EVENTS.html">events</a>, and even define functions and prove theorems.
+However, the ``certain <a href="STATE.html">state</a>'' upon which <code><a href="LD.html">ld</a></code> was called is a
+``<a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>'' (see <a href="WORMHOLE.html">wormhole</a>) because break-rewrite is not
+allowed to have any effect upon the behavior of rewrite.  What this
+means, very roughly but understandably, is that break-rewrite
+operates on a copy of the <a href="STATE.html">state</a> being used by rewrite and when
+break-rewrite exits the <a href="WORMHOLE.html">wormhole</a> closes and the <a href="STATE.html">state</a> ``produced''
+by break-rewrite disappears.  Thus, break-rewrite lets you query the
+state of the rewriter and even do experiments involving proofs,
+etc., but these experiments have no effect on the ongoing proof
+attempt.<p>
+
+When you first enter break-rewrite a simple herald is printed such
+as:
+
+<pre>
+(3 Breaking (:rewrite lemma12) on (delta a (+ 1 j)):
+</pre>
+
+The integer after the open parenthesis indicates the depth of
+nested break-rewrite calls.  In this discussion we use <code>3</code>
+consistently for this integer.  Unless you abort or somehow enter
+unbalanced parentheses into the script, the entire session at a
+given depth will be enclosed in balanced parentheses, making it easy
+to skip over them in Emacs.<p>
+
+You then will see the break-rewrite <a href="PROMPT.html">prompt</a>:
+
+<pre>
+3 ACL2 !&gt;
+</pre>
+
+The leading integer is, again, the depth.  Because breaks often
+occur recursively it is convenient always to know the level with
+which you are interacting.<p>
+
+You may type arbitrary commands as in the top-level ACL2 loop.  For
+example, you might type:
+
+<pre>
+3 ACL2 !&gt;:help
+</pre>
+
+or
+
+<pre>
+3 ACL2 !&gt;:pe lemma12
+</pre>
+
+More likely, upon entering break-rewrite you will determine the
+context of the attempted application.  Here are some useful
+commands:
+
+<pre>
+3 ACL2 &gt;:target           ; the term being rewritten
+3 ACL2 &gt;:unify-subst      ; the unifying substitution
+3 ACL2 &gt;:path             ; the stack of goals pursued by the rewriter
+                          ; starting at the top-level clause being simplified
+                          ; and ending with the current application
+</pre>
+
+At this point in the interaction the system has not yet tried to
+apply the <a href="MONITOR.html">monitor</a>ed rule.  That is, it has not tried to establish
+the hypotheses, considered the heuristic cost of backchaining,
+rewritten the right-hand side of the conclusion, etc.  When you are
+ready for it to try the rule you can type one of several different
+``proceed'' commands.  The basic proceed commands are <code>:ok</code>, <code>:go</code>, and
+<code>:eval</code>.
+
+<pre>
+:ok
+</pre>
+
+exits break-rewrite without further interaction.  When
+break-rewrite exits it prints ``<code>3)</code>'', closing the parenthesis that
+opened the level <code>3</code> interaction.
+
+<pre>
+:go
+</pre>
+
+exits break-rewrite without further interaction, but prints out
+the result of the application attempt, i.e., whether the application
+succeeded, if so, what the <code>:target</code> term was rewritten to, and if not
+why the rule was not applicable.
+
+<pre>
+:eval
+</pre>
+
+causes break-rewrite to attempt to apply the rule but interaction
+at this level of break-rewrite resumes when the attempt is complete.
+When control returns to this level of break-rewrite a message
+indicating the result of the application attempt (just as in <code>:go</code>) is
+printed, followed by the <a href="PROMPT.html">prompt</a> for additional user input.<p>
+
+Generally speaking, <code>:ok</code> and <code>:go</code> are used when the break in question
+is routine or uninteresting and <code>:eval</code> is used when the break is one
+that the user anticipates is causing trouble.  For example, if you
+are trying to determine why a lemma isn't being applied to a given
+term and the <code>:target</code> of the current break-rewrite is the term in
+question, you would usually <code>:eval</code> the rule and if break-rewrite
+reports that the rule failed then you are in a position to determine
+why, for example by carefully inspecting the <code>:type-alist</code> of
+governing assumptions or why some hypothesis of the rule could not
+be established.<p>
+
+It is often the case that when you are in break-rewrite you wish to
+change the set of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s.  This can be done by using
+<code>:</code><code><a href="MONITOR.html">monitor</a></code> and <code>:</code><code><a href="UNMONITOR.html">unmonitor</a></code> as noted above.  For example, you might want
+to <a href="MONITOR.html">monitor</a> a certain rule, say <code>hyp-reliever</code>, just when it is being
+used while attempting to apply another rule, say <code>main-lemma</code>.
+Typically then you would <a href="MONITOR.html">monitor</a> <code>main-lemma</code> at the ACL2 top-level,
+start the proof-attempt, and then in the break-rewrite in which
+<code>main-lemma</code> is about to be tried, you would install a <a href="MONITOR.html">monitor</a> on
+<code>hyp-reliever</code>.  If during the ensuing <code>:eval</code> <code>hyp-reliever</code> is broken
+you will know it is being used under the attempt to apply
+<code>main-lemma</code>.<p>
+
+However, once <code>hyp-reliever</code> is being <a href="MONITOR.html">monitor</a>ed it will be <a href="MONITOR.html">monitor</a>ed
+even after <code>main-lemma</code> has been tried.  That is, if you let the proof
+attempt proceed then you may see many other breaks on <code>hyp-reliever</code>,
+breaks that are not ``under'' the attempt to apply <code>main-lemma</code>.  One
+way to prevent this is to <code>:eval</code> the application of <code>main-lemma</code> and
+then <code>:</code><code><a href="UNMONITOR.html">unmonitor</a></code> <code>hyp-reliever</code> before exiting.  But this case arises
+so often that ACL2 supports several additional ``flavors'' of
+proceed commands.<p>
+
+<code>:Ok!</code>, <code>:go!</code>, and <code>:eval!</code> are just like their counterparts
+(<code>:ok</code>, <code>:go</code>, and <code>:eval</code>, respectively), except that while
+processing the rule that is currently broken no <a href="RUNE.html">rune</a>s are
+<a href="MONITOR.html">monitor</a>ed.  When consideration of the current rule is complete,
+the set of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s is restored to its original
+setting.<p>
+
+<code>:Ok$</code>, <code>:go$</code>, and <code>:eval$</code> are similar but take an additional argument
+which must be a list of <a href="RUNE.html">rune</a>s.  An example usage of <code>:eval$</code> is
+
+<pre>
+3 ACL2 !&gt;:eval$ ((:rewrite hyp-reliever))
+</pre>
+
+These three commands temporarily install unconditional breaks on
+the <a href="RUNE.html">rune</a>s listed, proceed with the consideration of the currently
+broken rule, and then restore the set of <a href="MONITOR.html">monitor</a>ed rules to its
+original setting.<p>
+
+Thus, there are nine ways to proceed from the initial entry into
+break-rewrite although we often speak as though there are two, <code>:ok</code>
+and <code>:eval</code>, and leave the others implicit.  We group <code>:go</code> with <code>:ok</code>
+because in all their flavors they exit break-rewrite without further
+interaction (at the current level).  All the flavors of <code>:eval</code>
+require further interaction after the rule has been tried.<p>
+
+To abort a proof attempt and return to the top-level of ACL2 you may
+at any time type <code>#.</code> (that is, number-sign followed by a period)
+followed by a carriage return.<p>
+
+We now address ourselves to the post-<code>:eval</code> interaction with
+break-rewrite.  As noted, that interaction begins with
+break-rewrite's report on the results of applying the rule: whether
+it worked and either what it produced or why it failed.  This
+information is also printed by certain keyword commands available
+after <code>:eval</code>, namely <code>:wonp</code>, <code>:rewritten-rhs</code>, and <code>:failure-reason</code>.  In
+addition, by using <code><a href="BRR_at_.html">brr@</a></code> (see <a href="BRR_at_.html">brr@</a>) you can obtain this
+information in the form of ACL2 data objects.  This allows the
+development of more sophisticated ``break conditions'';
+see <a href="MONITOR.html">monitor</a> for examples.  In this connection we point out the
+macro form <code>(ok-if term)</code>.  See <a href="OK-IF.html">ok-if</a>.  This command exits
+break-rewrite if <code>term</code> evaluates to non-<code>nil</code> and otherwise does not
+exit.  Thus it is possible to define macros that provide other kinds
+of exits from break-rewrite.  The only way to exit break-rewrite
+after <code>:eval</code> is <code>:ok</code> (or, equivalently, the use of <code><a href="OK-IF.html">ok-if</a></code>).<p>
+
+ACL2 users who wish to know more about break-rewrite so that they
+can develop more convenient ways to <a href="MONITOR.html">monitor</a> rules are encouraged to
+speak to J Moore.<p>
+
+The rest of this <a href="DOCUMENTATION.html">documentation</a> discusses a few implementation
+details of break-rewrite and may not be interesting to the typical
+user.<p>
+
+There is no ACL2 function named break-rewrite.  It is an illusion
+created by appropriate calls to two functions named <code>brkpt1</code> and
+<code>brkpt2</code>.  As previously noted, break-rewrite is <code><a href="LD.html">ld</a></code> operating on a
+<a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>.  One might therefore wonder how break-rewrite can
+apply a rule and then communicate the results back to the rewriter
+running in the external <a href="STATE.html">state</a>.  The answer is that it cannot.
+Nothing can be communicated through a <a href="WORMHOLE.html">wormhole</a>.  In fact, <code>brkpt1</code> and
+<code>brkpt2</code> are each calls of <code><a href="LD.html">ld</a></code> running on <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>s.  <code>Brkpt1</code>
+implements the pre-<code>:eval</code> break-rewrite and <code>brkpt2</code> implements the
+post-<code>:eval</code> break-rewrite.  The rewriter actually calls <code>brkpt1</code> before
+attempting to apply a rule and calls <code>brkpt2</code> afterwards.  In both
+cases, the rewriter passes into the <a href="WORMHOLE.html">wormhole</a> the relevant
+information about the current context.  Logically <code>brkpt1</code> and <code>brkpt2</code>
+are no-ops and <code><a href="REWRITE.html">rewrite</a></code> ignores the <code>nil</code> they return.  But while
+control is in them the execution of <code><a href="REWRITE.html">rewrite</a></code> is suspended and cannot
+proceed until the break-rewrite interactions complete.<p>
+
+This design causes a certain anomoly that might be troubling.
+Suppose that inside break-rewrite before <code>:evaling</code> a rule (i.e., in
+the <code>brkpt1</code> <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>) you define some function, <code>foo</code>.  Suppose
+then you <code>:eval</code> the rule and eventually control returns to
+break-rewrite (i.e., to <code>brkpt2</code> on a <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a> with the results
+of the application in it).  You will discover that <code>foo</code> is no longer
+defined!  That is because the <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a> created during your
+<code>pre-:eval</code> interaction is lost when we exit the <a href="WORMHOLE.html">wormhole</a> to resume
+the proof attempt.  The post-<code>:eval</code> <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a> is in fact
+identical to the initial pre-<code>:eval</code> <a href="STATE.html">state</a> (except for the results of
+the application) because <code><a href="REWRITE.html">rewrite</a></code> did not change the external <a href="STATE.html">state</a>
+and both <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>s are copies of it.<p>
+
+There is a lot more to know about break-rewrite, most of which is
+fairly easy to learn from looking at the code, since it is all
+expressed in ACL2.  Feel free to ask questions of J Moore.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

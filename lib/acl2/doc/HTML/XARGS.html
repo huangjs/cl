@@ -1,0 +1,125 @@
+<html>
+<head><title>XARGS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>XARGS</h2>giving <a href="HINTS.html">hints</a> to <code><a href="DEFUN.html">defun</a></code>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Common Lisp's <code><a href="DEFUN.html">defun</a></code> function does not easily allow one to pass extra
+arguments such as ``<a href="HINTS.html">hints</a>''.  ACL2 therefore supports a peculiar new
+declaration (see <a href="DECLARE.html">declare</a>) designed explicitly for passing
+additional arguments to <code><a href="DEFUN.html">defun</a></code> via a keyword-like syntax.<p>
+
+The following declaration is nonsensical but does illustrate all of
+the <code><a href="XARGS.html">xargs</a></code> keywords:
+
+<pre>
+(declare (xargs :guard (symbolp x)
+                :guard-hints (("Goal" :in-theory (theory batch1)))
+                :hints (("Goal" :in-theory (theory batch1)))
+                :measure (- i j)
+                :mode :logic
+                :non-executable t
+                :normalize nil
+                :otf-flg t
+                :stobjs ($s)
+                :verify-guards t
+                :well-founded-relation my-wfr))
+<p>
+General Form:
+(xargs :key1 val1 ... :keyn valn)
+</pre>
+
+where the keywords and their respective values are as shown below.
+Note that once ``inside'' the xargs form, the ``extra arguments'' to
+<code><a href="DEFUN.html">defun</a></code> are passed exactly as though they were keyword arguments.<p>
+
+<code>:</code><code><a href="GUARD.html">GUARD</a></code><br>
+
+<code>Value</code> is a term involving only the formals of the function being
+defined.  The actual <a href="GUARD.html">guard</a> used for the definition is the
+conjunction of all the <a href="GUARD.html">guard</a>s and types (see <a href="DECLARE.html">declare</a>) <a href="DECLARE.html">declare</a>d.<p>
+
+<code>:GUARD-HINTS</code><br>
+
+<code>Value</code>:  hints (see <a href="HINTS.html">hints</a>), to be used during the <a href="GUARD.html">guard</a>
+verification proofs as opposed to the termination proofs of the
+<code><a href="DEFUN.html">defun</a></code>.<p>
+
+<code>:</code><code><a href="HINTS.html">HINTS</a></code><br>
+
+Value:  hints (see <a href="HINTS.html">hints</a>), to be used during the termination
+proofs as opposed to the <a href="GUARD.html">guard</a> verification proofs of the <code><a href="DEFUN.html">defun</a></code>.<p>
+
+<code>:MEASURE</code><br>
+
+<code>Value</code> is a term involving only the formals of the function being
+defined.  This term is indicates what is getting smaller in the
+recursion.  The well-founded relation with which successive measures
+are compared is <code><a href="O_lt_.html">o&lt;</a></code>.  Also allowed is a special case,
+<code>(:? v1 ... vk)</code>, where <code>(v1 ... vk)</code> enumerates a subset of the
+formal parameters such that some valid measure involves only those
+formal parameters.  However, this special case is only allowed for
+definitions that are redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>) or are
+executed when skipping proofs (see <a href="SKIP-PROOFS.html">skip-proofs</a>).<p>
+
+<code>:MODE</code><br>
+
+<code>Value</code> is <code>:</code><code><a href="PROGRAM.html">program</a></code> or <code>:</code><code><a href="LOGIC.html">logic</a></code>, indicating the <code><a href="DEFUN.html">defun</a></code> mode of the
+function introduced.  See <a href="DEFUN-MODE.html">defun-mode</a>.  If unspecified, the
+<code><a href="DEFUN.html">defun</a></code> mode defaults to the default <code><a href="DEFUN.html">defun</a></code> mode of the current <a href="WORLD.html">world</a>.
+To convert a function from <code>:</code><code><a href="PROGRAM.html">program</a></code> mode to <code>:</code><code><a href="LOGIC.html">logic</a></code> mode,
+see <a href="VERIFY-TERMINATION.html">verify-termination</a>.<p>
+
+<code>:NON-EXECUTABLE</code><br>
+
+<code>Value</code> is <code>t</code> or <code>nil</code> (the default).  If <code>t</code>, the function has no
+executable counterpart and is permitted to use single-threaded object names
+and functions arbitrarily, as in theorems rather than as in executable
+definitions.  Such functions are not permitted to declare any names to be
+<code>:</code><code><a href="STOBJ.html">stobj</a></code>s but accessors, etc., may be used, just as in theorems.
+Since the default is <code>nil</code>, the value supplied is only of interest when it
+is <code>t</code>.<p>
+
+<code>:NORMALIZE</code><br>
+
+Value is a flag telling <code><a href="DEFUN.html">defun</a></code> whether to propagate <code><a href="IF.html">if</a></code> tests
+upward.  Since the default is to do so, the value supplied is only of
+interest when it is <code>nil</code>.
+(See <a href="DEFUN.html">defun</a>).<p>
+
+<code>:</code><code><a href="OTF-FLG.html">OTF-FLG</a></code><br>
+
+Value is a flag indicating ``onward through the fog''
+(see <a href="OTF-FLG.html">otf-flg</a>).<p>
+
+<code>:STOBJS</code><br>
+
+<code>Value</code> is either a single <code><a href="STOBJ.html">stobj</a></code> name or a true list of stobj names.
+Every stobj name among the formals of the function must be listed, if the
+corresponding actual is to be treated as a stobj.  That is, if a function
+uses a stobj name as a formal parameter but the name is not declared among
+the <code>:stobjs</code> then the corresponding argument is treated as ordinary.
+The only exception to this rule is <code><a href="STATE.html">state</a></code>:  whether you include it
+or not, <code>state</code> is always treated as a single-threaded object.  This
+declaration has two effects.  One is to enforce the syntactic restrictions
+on single-threaded objects.  The other is to strengthen the <code><a href="GUARD.html">guard</a></code> of
+the function being defined so that it includes conjuncts specifying that
+each declared single-threaded object argument satisfies the recognizer for
+the corresponding single-threaded object.<p>
+
+<code>:</code><code><a href="VERIFY-GUARDS.html">VERIFY-GUARDS</a></code><br>
+
+<code>Value</code> is <code>t</code> or <code>nil</code>, indicating whether or not <a href="GUARD.html">guard</a>s are to be
+verified upon completion of the termination proof.  This flag should
+only be <code>t</code> if the <code>:mode</code> is unspecified but the default <code><a href="DEFUN.html">defun</a></code> mode is
+<code>:</code><code><a href="LOGIC.html">logic</a></code>, or else the <code>:mode</code> is <code>:</code><code><a href="LOGIC.html">logic</a></code>.<p>
+
+<code>:</code><code><a href="WELL-FOUNDED-RELATION.html">WELL-FOUNDED-RELATION</a></code><br>
+
+<code>Value</code> is a function symbol that is known to be a well-founded
+relation in the sense that a rule of class <code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code>
+has been proved about it.  See <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

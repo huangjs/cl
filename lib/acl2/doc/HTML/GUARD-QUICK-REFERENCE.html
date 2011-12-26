@@ -1,0 +1,84 @@
+<html>
+<head><title>GUARD-QUICK-REFERENCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARD-QUICK-REFERENCE</h3>brief summary of guard checking and guard verification
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+For a careful introduction to guards, see <a href="GUARD.html">guard</a>.
+<p>
+<b>I. GUARD CHECKING DURING EXECUTION</B><p>
+
+<em>Effect</em><p>
+
+Guards on definitions are checked at execution time (except for
+guards on subsidiary calls of recursive or mutually recursive
+functions).<p>
+
+<em>When does it happen</em><p>
+
+By default, guards are checked for all forms submitted at the top
+level.<p>
+
+<em>To disable</em><br>
+
+<code>:set-guard-checking nil</code>   ; skip raw Lisp if there is a guard violation
+<code>:set-guard-checking :none</code> ; skip guard checking entirely<p>
+
+<em>To (re-)enable</em><br>
+
+<code>:set-guard-checking t</code><p>
+
+See <a href="SET-GUARD-CHECKING.html">set-guard-checking</a> for more options.<p>
+
+<b>II. GUARD VERIFICATION</B><p>
+
+<em>Effect</em><p>
+
+A proof is attempted of the obligations arising from the guards of
+subsidiary functions in a <code><a href="DEFUN.html">defun</a></code>, <code><a href="DEFTHM.html">defthm</a></code>, or <code><a href="DEFAXIOM.html">defaxiom</a></code> event.
+In the case of a <code>defun</code>, the guard itself is also verified (under an
+implicit guard of <code>t</code>).<p>
+
+<em>When does it happen</em><p>
+
+Only names of defined functions, <code><a href="DEFTHM.html">defthm</a></code>s, and <code><a href="DEFAXIOM.html">defaxiom</a></code>s are
+subject to guard verification.  Guard verification may occur when
+functions are defined (using <code><a href="DEFUN.html">defun</a></code>), but it requires an explicit
+call of <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> in order to verify guards for <code><a href="DEFTHM.html">defthm</a></code>s
+and <code><a href="DEFAXIOM.html">defaxiom</a></code>s.  Constrained functions (see <a href="ENCAPSULATE.html">encapsulate</a>) may
+not have their guards verified.<p>
+
+<code>(verify-guards foo ...)</code><br>
+
+causes guard verification for the <code><a href="DEFUN.html">defun</a></code>, <code><a href="DEFTHM.html">defthm</a></code>, or <code><a href="DEFAXIOM.html">defaxiom</a></code> named
+by <code>foo</code>, if it has not already been successfully done.  The default
+<a href="DEFUN-MODE.html">defun-mode</a> (see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) must be <code>:</code><code><a href="LOGIC.html">logic</a></code>, or else
+this event is ignored.<p>
+
+<code>(defun foo ...)</code><br>
+
+causes guard verification of <code>foo</code> if and only if the following
+conditions are both met.  (However,
+see <a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a> for how to change this
+behavior.)
+
+<blockquote>
+1. Foo is processed in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode (either by setting mode <code>:</code><code><a href="LOGIC.html">logic</a></code>
+globally, or by including <code>:mode :logic</code> in the <code><a href="XARGS.html">xargs</a></code> declaration).<p>
+
+2. The <code><a href="XARGS.html">xargs</a></code> declaration (see <a href="XARGS.html">xargs</a>) either specifies <code>:</code><code><a href="GUARD.html">guard</a></code> or
+specifies <code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> <code>t</code> (or both).
+</blockquote>
+<p>
+
+<code>(verify-termination foo ...)</code><br>
+
+causes guard verification of <code>foo</code> if <code>foo</code> is a function currently
+defined in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode and the appropriate <code><a href="XARGS.html">xargs</a></code> are supplied, as
+discussed for the case of <code><a href="DEFUN.html">defun</a></code> above.  The default <a href="DEFUN-MODE.html">defun-mode</a>
+(see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) must be <code>:</code><code><a href="LOGIC.html">logic</a></code>, or else this event is
+ignored.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

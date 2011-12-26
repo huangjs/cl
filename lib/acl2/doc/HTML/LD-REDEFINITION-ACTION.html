@@ -1,0 +1,177 @@
+<html>
+<head><title>LD-REDEFINITION-ACTION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-REDEFINITION-ACTION</h2>to allow redefinition without undoing
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Ld-redefinition-action</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor is
+<code>(ld-redefinition-action state)</code> and the updater is
+<code>(set-ld-redefinition-action val state)</code>.<p>
+
+<strong>WARNING!</strong>  If <code>ld-redefinition-action</code> is non-<code>nil</code> then ACL2 is
+liable to be made unsafe or unsound by ill-considered definitions.  The
+keyword command <code>:</code><code><a href="REDEF.html">redef</a></code> will set <code>ld-redefinition-action</code> to a
+convenient setting allowing unsound redefinition.  See below.
+<p>
+When <code>ld-redefinition-action</code> is <code>nil</code>, redefinition is prohibited.  In
+that case, an error message is printed upon any attempt to introduce a name
+that is already in use.  There is one exception to this rule.  It is
+permitted to redefine a function symbol in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode to be a
+function symbol in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode provided the formals and body remain
+the same.  This is the standard way a function ``comes into'' logical
+existence.<p>
+
+Throughout the rest of this discussion we exclude from our meaning of
+``redefinition'' the case in which a function in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode is
+identically redefined in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode.  At one time, ACL2 freely
+permitted the <a href="SIGNATURE.html">signature</a>-preserving redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode functions but it no longer does.  See <a href="REDEFINING-PROGRAMS.html">redefining-programs</a>.<p>
+
+When <code>ld-redefinition-action</code> is non-<code>nil</code>, you are allowed to redefine a
+name that is already in use.  <strong>The system may be rendered unsound</strong> by such
+an act.  It is important to understand how dangerous redefinition is.
+Suppose <code>fn</code> is a function symbol that is called from within some other
+function, say <code>g</code>.  Suppose <code>fn</code> is redefined so that its arity changes.
+Then the definition of <code>g</code> is rendered syntactically ill-formed by the
+redefinition.  This can be devastating since the entire ACL2 system assumes
+that terms in its data base are well-formed.  For example, if ACL2 executes
+<code>g</code> by running the corresponding function in raw Common Lisp the
+redefinition of <code>fn</code> may cause raw lisp to break in irreparable ways.  As
+Lisp programmers we live with this all the time by following the simple rule:
+after changing the syntax of a function don't run any function that calls it
+via its old syntax.  This rule also works in the context of the evaluation of
+ACL2 functions, but it is harder to follow in the context of ACL2 deductions,
+since it is hard to know whether the data base contains a path leading the
+theorem prover from facts about one function to facts about another.
+Finally, of course, even if the data base is still syntactically well-formed
+there is no assurance that all the rules stored in it are valid.  For
+example, theorems proved about <code>g</code> survive the redefinition of <code>fn</code> but
+may have crucially depended on the properties of the old <code>fn</code>.  In summary,
+we repeat the warning: <strong>all bets are off if you set</strong>
+<code>ld-redefinition-action</code> to <strong>non</strong>-<code>nil</code>.<p>
+
+ACL2 provides some enforcement of the concern above, by disabling
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> if any <a href="WORLD.html">world</a>-changing <a href="EVENTS.html">events</a> exist in the
+certification <a href="WORLD.html">world</a> that were executed with a non-<code>nil</code> value of
+<code>'ld-redefinition-action</code>.  (This value is checked at the end of each
+top-level command, but the value does not change during evaluation of
+embedded event forms; see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>.)<p>
+
+If at any point in a session you wish to see the list of all names that have
+been redefined, see <a href="REDEFINED-NAMES.html">redefined-names</a>.<p>
+
+That said, we'll give you enough rope to hang yourself.  When
+<code>ld-redefinition-action</code> is non-<code>nil</code>, it must be a pair, <code>(a .  b)</code>.
+The value of <code>a</code> determines how the system interacts with you when a
+redefinition is submitted.  The value of <code>b</code> allows you to specify how the
+property list of the redefined name is to be ``renewed'' before the
+redefinition.<p>
+
+There are several dimensions to the space of possibilities controlled by part
+a: Do you want to be queried each time you redefine a name, so you can
+confirm your intention?  (We sometimes make typing mistakes or simply forget
+we have used that name already.)  Do you want to see a warning stating that
+the name has been redefined?  Do you want ACL2 system functions given special
+protection from possible redefinition?  Below are the choices for part
+a:
+<blockquote><p>
+
+<code>:query</code> -- every attempt to redefine a name will produce a query.  The
+query will allow you to abort the redefinition or proceed.  It will will also
+allow you to specify the part <code>b</code> for this redefinition.  <code>:Query</code> is the
+recommended setting for users who wish to dabble in redefinition.<p>
+
+<code>:warn</code> -- any user-defined function may be redefined but a
+post-redefinition warning is printed.  The attempt to redefine a system name
+produces a query.  If you are prototyping and testing a big system in ACL2
+this is probably the desired setting for part <code>a</code>.<p>
+
+<code>:doit</code> -- any user-defined function may be redefined silently
+(without query or warning) but when an attempt is made to redefine a system
+function, a query is made.  This setting is recommended when you start making
+massive changes to your prototyped system (and tire of even the warning
+messages issued by <code>:warn</code>).<p>
+
+</blockquote>
+In support of our own ACL2 systems <a href="PROGRAMMING.html">programming</a> there are two other
+settings.  We suggest ordinary users not use them.
+<blockquote><p>
+
+<code>:warn!</code> -- every attempt to redefine a name produces a warning but no
+query.  Since ACL2 system functions can be redefined this way, this setting
+should be used by the only-slightly-less-than supremely confident ACL2 system
+hacker.<p>
+
+<code>:doit!</code> -- this setting allows any name to be redefined silently
+(without query or warnings).  ACL2 system functions are fair game.  This
+setting is reserved for the supremely confident ACL2 system hacker.
+(Actually, this setting is used when we are loading massively modified
+versions of the ACL2 source files.)<p>
+
+</blockquote>
+Part <code>b</code> of <code>ld-redefinition-action</code> tells the system how to
+``renew'' the property list of the name being redefined.  There are two
+choices:
+<blockquote><p>
+
+<code>:erase</code> -- erase all properties stored under the name, or<p>
+
+<code>:overwrite</code> -- preserve existing properties and let the redefining
+overwrite them.<p>
+
+</blockquote>
+It should be stressed that neither of these <code>b</code> settings is guaranteed
+to result in an entirely satisfactory state of affairs after the
+redefinition.  Roughly speaking, <code>:erase</code> returns the property list of the
+name to the state it was in when the name was first introduced.  Lemmas, type
+information, etc., stored under that name are lost.  Is that what you wanted?
+Sometimes it is, as when the old definition is ``completely wrong.'' But
+other times the old definition was ``almost right'' in the sense that some of
+the work done with it is still (intended to be) valid.  In that case,
+<code>:overwrite</code> might be the correct <code>b</code> setting.  For example if <code>fn</code> was
+a function and is being re-<code><a href="DEFUN.html">defun</a></code>'d with the same <a href="SIGNATURE.html">signature</a>, then
+the properties stored by the new <code><a href="DEFUN.html">defun</a></code> should overwrite those stored by
+the old <code><a href="DEFUN.html">defun</a></code> but the properties stored by <code><a href="DEFTHM.html">defthm</a></code>s will be
+preserved.<p>
+
+In addition, neither setting will cause ACL2 to erase properties stored under
+other symbols!  Thus, if <code>FOO</code> names a rewrite rule which rewrites a term
+beginning with the function symbol <code>BAR</code> and you then redefine <code>FOO</code> to
+rewrite a term beginning with the function symbol <code>BAZ</code>, then the old
+version of <code>FOO</code> is still available (because the rule itself was added to
+the rewrite rules for <code>BAR</code>, whose property list was not cleared by
+redefining <code>FOO</code>).<p>
+
+The <code>b</code> setting is only used as the default action when no query is made.
+If you choose a setting for part a that produces a query then you will have
+the opportunity, for each redefinition, to specify whether the property list
+is to be erased or overwritten.<p>
+
+The keyword command <code>:</code><code><a href="REDEF.html">redef</a></code> sets <code>ld-redefinition-action</code> to the
+pair <code>(:query . :overwrite)</code>.  Since the resulting query will give you the
+chance to specify <code>:erase</code> instead of <code>:overwrite</code>, this setting is quite
+convenient.  But when you are engaged in heavy-duty prototyping, you may wish
+to use a setting such as <code>:warn</code> or even <code>:doit</code>.  For that you will have
+to invoke a form such as:
+
+<pre>
+(set-ld-redefinition-action '(:doit . :overwrite) state) .
+</pre>
+<p>
+
+<code><a href="ENCAPSULATE.html">Encapsulate</a></code> causes somewhat odd interaction with the user if
+redefinition occurs within the encapsulation because the <a href="ENCAPSULATE.html">encapsulate</a>d
+event list is processed several times.  For example, if the redefinition
+action causes a query and a non-local definition is actually a redefinition,
+then the query will be posed twice, once during each pass.  C'est la vie.<p>
+
+Finally, it should be stressed again that redefinition is dangerous because
+not all of the rules about a name are stored on the property list of the
+name.  Thus, redefinition can render ill-formed terms stored elsewhere in the
+data base or can preserve now-invalid rules.  See <a href="REDUNDANT-EVENTS.html">redundant-events</a>, in
+particular the section ``Note About Unfortunate Redundancies,'' for more
+discussion of potential pitfalls of redefinition.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

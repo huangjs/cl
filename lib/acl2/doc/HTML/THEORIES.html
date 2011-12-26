@@ -1,0 +1,241 @@
+<html>
+<head><title>THEORIES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h1>THEORIES</h1>sets of <a href="RUNE.html">rune</a>s to enable/disable in concert
+<pre>Major Section:  <a href="acl2-doc-major-topics.html">ACL2 Documentation</a>
+</pre><p>
+
+
+<pre>
+Example: '((:definition app)
+           (:executable-counterpart app)
+           rv
+           (rv)
+           assoc-of-app)
+</pre>
+
+See:
+<p>
+<ul>
+<li><h3><a href="ACTIVE-RUNEP.html">ACTIVE-RUNEP</a> -- check that a <a href="RUNE.html">rune</a> exists and is <a href="ENABLE.html">enable</a>d
+</h3>
+</li>
+
+<li><h3><a href="CURRENT-THEORY.html">CURRENT-THEORY</a> -- currently <a href="ENABLE.html">enable</a>d rules as of logical name
+</h3>
+</li>
+
+<li><h3><a href="DEFTHEORY.html">DEFTHEORY</a> -- define a theory (to <a href="ENABLE.html">enable</a> or <a href="DISABLE.html">disable</a> a set of rules)
+</h3>
+</li>
+
+<li><h3><a href="DISABLE.html">DISABLE</a> -- deletes names from current theory
+</h3>
+</li>
+
+<li><h3><a href="E_slash_D.html">E/D</a> -- enable/disable rules
+</h3>
+</li>
+
+<li><h3><a href="ENABLE.html">ENABLE</a> -- adds names to current theory
+</h3>
+</li>
+
+<li><h3><a href="EXECUTABLE-COUNTERPART-THEORY.html">EXECUTABLE-COUNTERPART-THEORY</a> -- executable counterpart rules as of logical name
+</h3>
+</li>
+
+<li><h3><a href="FUNCTION-THEORY.html">FUNCTION-THEORY</a> -- function symbol rules as of logical name
+</h3>
+</li>
+
+<li><h3><a href="GROUND-ZERO.html">GROUND-ZERO</a> -- <a href="ENABLE.html">enable</a>d rules in the <a href="STARTUP.html">startup</a> theory
+</h3>
+</li>
+
+<li><h3><a href="INCOMPATIBLE.html">INCOMPATIBLE</a> -- declaring that two rules should not both be <a href="ENABLE.html">enable</a>d
+</h3>
+</li>
+
+<li><h3><a href="INTERSECTION-THEORIES.html">INTERSECTION-THEORIES</a> -- intersect two <a href="THEORIES.html">theories</a>
+</h3>
+</li>
+
+<li><h3><a href="MINIMAL-THEORY.html">MINIMAL-THEORY</a> -- a minimal theory to enable
+</h3>
+</li>
+
+<li><h3><a href="RULE-NAMES.html">RULE-NAMES</a> -- How rules are named.
+</h3>
+</li>
+
+<li><h3><a href="RUNE.html">RUNE</a> -- a rule name
+</h3>
+</li>
+
+<li><h3><a href="SET-DIFFERENCE-THEORIES.html">SET-DIFFERENCE-THEORIES</a> -- difference of two <a href="THEORIES.html">theories</a>
+</h3>
+</li>
+
+<li><h3><a href="THEORY.html">THEORY</a> -- retrieve named theory
+</h3>
+</li>
+
+<li><h3><a href="THEORY-FUNCTIONS.html">THEORY-FUNCTIONS</a> -- functions for obtaining or producing <a href="THEORIES.html">theories</a>
+</h3>
+</li>
+
+<li><h3><a href="UNION-THEORIES.html">UNION-THEORIES</a> -- union two <a href="THEORIES.html">theories</a>
+</h3>
+</li>
+
+<li><h3><a href="UNIVERSAL-THEORY.html">UNIVERSAL-THEORY</a> -- all rules as of logical name
+</h3>
+</li>
+
+</ul>
+
+A theory is a list of ``runic designators'' as described below.
+Each runic designator denotes a set of ``runes'' (see <a href="RUNE.html">rune</a>) and
+by unioning together the runes denoted by each member of a theory we
+define the set of runes corresponding to a theory.  Theories are
+used to control which rules are ``<a href="ENABLE.html">enable</a>d,'' i.e., available for
+automatic application by the theorem prover.  There is always a
+``current'' theory.  A rule is <a href="ENABLE.html">enable</a>d precisely if its <a href="RUNE.html">rune</a> is an
+element of the set of <a href="RUNE.html">rune</a>s corresponding to the current theory.  At
+the top-level, the current theory is the theory selected by the most
+recent <code><a href="IN-THEORY.html">in-theory</a></code> event, extended with the rule names introduced
+since then.  Inside the theorem prover, the <code>:</code><code><a href="IN-THEORY.html">in-theory</a></code> hint
+(see <a href="HINTS.html">hints</a>) can be used to select a particular theory as
+current during the proof attempt for a particular goal.<p>
+
+Theories are generally constructed by ``theory expressions.''
+Formally, a theory expression is any term, containing at most the
+single free variable <code><a href="WORLD.html">world</a></code>, that when evaluated with <code><a href="WORLD.html">world</a></code> bound to
+the current ACL2 world (see <a href="WORLD.html">world</a>) produces a theory.  ACL2
+provides various functions for the convenient construction and
+manipulation of theories.  These are called ``theory functions''
+(see <a href="THEORY-FUNCTIONS.html">theory-functions</a>).  For example, the theory function
+<code><a href="UNION-THEORIES.html">union-theories</a></code> takes two theories and produces their union.  The
+theory function <code><a href="UNIVERSAL-THEORY.html">universal-theory</a></code> returns the theory containing all
+known rule names as of the introduction of a given logical name.
+But a theory expression can contain constants, e.g.,
+
+<pre>
+'(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+</pre>
+
+and user-defined functions.  The only important criterion is that a
+theory expression mention no variable freely except <code><a href="WORLD.html">world</a></code> and
+evaluate to a theory.<p>
+
+More often than not, theory expressions typed by the user do not
+mention the variable <code><a href="WORLD.html">world</a></code>.  This is because user-typed theory
+expressions are generally composed of applications of ACL2's theory
+functions.  These ``functions'' are actually macros that expand into
+terms in which <code><a href="WORLD.html">world</a></code> is used freely and appropriately.  Thus, the
+technical definition of ``theory expression'' should not mislead you
+into thinking that interestng theory expressions must mention <code><a href="WORLD.html">world</a></code>;
+they probably do and you just didn't know it!<p>
+
+One aspect of this arrangement is that theory expressions cannot
+generally be evaluated at the top-level of ACL2, because <code><a href="WORLD.html">world</a></code> is
+not bound.  To see the value of a theory expression, <code>expr</code>, at the
+top-level, type
+
+<pre>
+ACL2 !&gt;(LET ((WORLD (W STATE))) expr).
+</pre>
+
+However, because the built-in theories are quite long, you may be
+sorry you printed the value of a theory expression!<p>
+
+A theory is a true list of runic designators and to each theory
+there corresponds a set of <a href="RUNE.html">rune</a>s, obtained by unioning together the
+sets of <a href="RUNE.html">rune</a>s denoted by each runic designator.  For example, the
+theory constant
+
+<pre>
+   '(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+</pre>
+
+corresponds to the set of <a href="RUNE.html">rune</a>s
+
+<pre>
+   {(:definition assoc)
+    (:induction assoc)
+    (:executable-counterpart assoc)
+    (:elim car-cdr-elim)
+    (:rewrite car-cons)} .
+</pre>
+
+Observe that the theory contains four elements but its runic
+correspondent contains five.  That is because some designators
+denote sets of several <a href="RUNE.html">rune</a>s.  If the above theory were selected as
+current then the five rules named in its runic counterpart would be
+<a href="ENABLE.html">enable</a>d and all other rules would be <a href="DISABLE.html">disable</a>d.<p>
+
+We now precisely define the runic designators and the set of <a href="RUNE.html">rune</a>s
+denoted by each.
+<blockquote><p>
+
+o A rune is a runic designator and denotes the singleton set
+containing that rune.<p>
+
+o If <code>symb</code> is a function symbol introduced with a <code><a href="DEFUN.html">defun</a></code> (or <code><a href="DEFUNS.html">defuns</a></code>)
+event, then <code>symb</code> is a runic designator and denotes the set containing
+the runes <code>(:definition symb)</code> and <code>(:induction symb)</code>, omitting the
+latter if no such <a href="INDUCTION.html">induction</a> rule exists (presumably because the function's
+definition is not singly recursive).<p>
+
+o If <code>symb</code> is a function symbol introduced with a <code><a href="DEFUN.html">defun</a></code> (or <code><a href="DEFUNS.html">defuns</a></code>)
+event, then <code>(symb)</code> is a runic designator and denotes the singleton
+set containing the rune <code>(:executable-counterpart symb)</code>.<p>
+
+o If <code>symb</code> is the name of a <code><a href="DEFTHM.html">defthm</a></code> (or <code><a href="DEFAXIOM.html">defaxiom</a></code>) event that
+introduced at least one rule, then <code>symb</code> is a runic designator and
+denotes the set of the names of all rules introduced by the named
+event.<p>
+
+o If <code>str</code> is the string naming some <code><a href="DEFPKG.html">defpkg</a></code> event and <code>symb</code> is the
+symbol returned by <code>(intern str "ACL2")</code>, then <code>symb</code> is a runic
+designator and denotes the singleton set containing <code>(:rewrite symb)</code>,
+which is the name of the rule stating the conditions under which the
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> of <code>(intern x str)</code> is <code>str</code>.<p>
+
+o If <code>symb</code> is the name of a <code><a href="DEFTHEORY.html">deftheory</a></code> event, then <code>symb</code> is a runic
+designator and denotes the runic theory corresponding to <code>symb</code>.<p>
+
+</blockquote>
+These conventions attempt to implement the Nqthm-1992 treatment of
+theories.  For example, including a function name, e.g., <code><a href="ASSOC.html">assoc</a></code>, in
+the current theory <a href="ENABLE.html">enable</a>s that function but does not <a href="ENABLE.html">enable</a> the
+executable counterpart.  Similarly, including <code>(assoc)</code> <a href="ENABLE.html">enable</a>s the
+executable counterpart (Nqthm's <code>*1*assoc</code>) but not the symbolic
+definition.  And including the name of a proved lemma <a href="ENABLE.html">enable</a>s all of
+the rules added by the event.  These conventions are entirely
+consistent with Nqthm usage.  Of course, in ACL2 one can include
+explicitly the <a href="RUNE.html">rune</a>s naming the rules in question and so can avoid
+entirely the use of non-runic elements in theories.<p>
+
+Because a <a href="RUNE.html">rune</a> is a runic designator denoting the set containing
+that <a href="RUNE.html">rune</a>, a list of <a href="RUNE.html">rune</a>s is a theory and denotes itself.  We call
+such theories ``runic theories.''  To every theory there corresponds
+a runic theory obtained by unioning together the sets denoted by
+each designator in the theory.  When a theory is selected as
+``current'' it is actually its runic correspondent that is
+effectively used.  That is, a <a href="RUNE.html">rune</a> is <a href="ENABLE.html">enable</a>d iff it is a member of
+the runic correspondent of the current theory.  The value of a
+theory defined with <code><a href="DEFTHEORY.html">deftheory</a></code> is the runic correspondent of the
+theory computed by the defining theory expression.  The theory
+manipulation functions, e.g., <code><a href="UNION-THEORIES.html">union-theories</a></code>, actually convert their
+theory arguments to their runic correspondents before performing the
+required set operation.  The manipulation functions always return
+runic theories.  Thus, it is sometimes convenient to think of
+(non-runic) theories as merely abbreviations for their runic
+correspondents, abbreviations which are ``expanded'' at the first
+opportunity by theory manipulation functions and the ``theory
+consumer'' functions such as <code><a href="IN-THEORY.html">in-theory</a></code> and <code><a href="DEFTHEORY.html">deftheory</a></code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

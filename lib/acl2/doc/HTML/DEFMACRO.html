@@ -1,0 +1,75 @@
+<html>
+<head><title>DEFMACRO.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFMACRO</h2>define a macro
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example Defmacros:
+(defmacro xor (x y)
+  (list 'if x (list 'not y) y))<p>
+
+(defmacro git (sym key)
+  (list 'getprop sym key nil
+        '(quote current-acl2-world)
+        '(w state)))<p>
+
+(defmacro one-of (x &amp;rest rst)
+  (declare (xargs :guard (symbol-listp rst)))
+  (cond ((null rst) nil)
+        (t (list 'or
+                 (list 'eq x (list 'quote (car rst)))
+                 (list* 'one-of x (cdr rst))))))<p>
+
+Example Expansions:
+term                    macroexpansion<p>
+
+(xor a b)              (if a (not b) b)
+(xor a (foo b))        (if a (not (foo b)) (foo b))<p>
+
+(git 'car 'lemmas)     (getprop 'car 'lemmas nil
+                                'current-acl2-world
+                                (w state))<p>
+
+(one-of x a b c)       (or (eq x 'a)
+                           (or (eq x 'b)
+                               (or (eq x 'c) nil)))<p>
+
+(one-of x 1 2 3)       ill-formed (guard violation)
+<p>
+General Form:
+(defmacro name macro-args doc-string dcl ... dcl body)
+</pre>
+
+where <code>name</code> is a new symbolic name (see <a href="NAME.html">name</a>), <code><a href="MACRO-ARGS.html">macro-args</a></code>
+specifies the formals of the macro (see <a href="MACRO-ARGS.html">macro-args</a> for a
+description), and <code>body</code> is a term.  <code><a href="DOC-STRING.html">Doc-string</a></code> is an optional
+<a href="DOCUMENTATION.html">documentation</a> string; see <a href="DOC-STRING.html">doc-string</a>.  Each <code>dcl</code> is an optional
+declaration (see <a href="DECLARE.html">declare</a>) except that the only <code><a href="XARGS.html">xargs</a></code> keyword
+permitted by <code>defmacro</code> is <code>:</code><code><a href="GUARD.html">guard</a></code>.<p>
+
+Macroexpansion occurs when a form is read in, i.e., before the
+evaluation or proof of that form is undertaken.  To experiment with
+macroexpansion, see <a href="TRANS.html">trans</a>.  When a form whose <code><a href="CAR.html">car</a></code> is <code>name</code>
+arises as the form is read in, the arguments are bound as described
+in CLTL pp. 60 and 145, the <a href="GUARD.html">guard</a> is checked, and then the <code>body</code> is
+evaluated.  The result is used in place of the original form.<p>
+
+In ACL2, macros do not have access to <code><a href="STATE.html">state</a></code>.  That is, <code><a href="STATE.html">state</a></code>
+is not allowed among the formal parameters.  This is in part a
+reflection of CLTL, pp. 143, ``More generally, an implementation of
+Common Lisp has great latitude in deciding exactly when to expand
+macro calls with a program. ...  Macros should be written in such a
+way as to depend as little as possible on the execution environment
+to produce a correct expansion.'' In ACL2, the product of
+macroexpansion is independent of the current environment and is
+determined entirely by the macro body and the functions and
+constants it references.  It is possible, however, to define macros
+that produce expansions that refer to <code><a href="STATE.html">state</a></code> or other single-threaded
+objects (see <a href="STOBJ.html">stobj</a>) or variables not among the macro's arguments.
+See the <code>git</code> example above.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

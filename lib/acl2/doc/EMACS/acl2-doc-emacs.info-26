@@ -1,0 +1,1106 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: THE-METHOD,  Next: TTAGS-SEEN,  Prev: TERM-ORDER,  Up: MISCELLANEOUS
+
+THE-METHOD    how to find proofs
+
+Many users develop proof scripts in an Emacs buffer and submit one
+event at a time to the theorem prover running in a *shell* buffer.  The
+script buffer is logically divided into two regions: the events that
+have been accepted by the theorem prover and those that have not yet
+been accepted.  An imaginary "barrier" divides these two regions.  The
+region above the barrier describes the state of the *shell* buffer (and
+ACL2's logical world).  The region below the barrier is the "to do"
+list.
+
+We usually start a proof project by typing the key lemmas, and main
+goal into the to do list.  Definitions are here just regarded as
+theorems to prove (i.e., the measure conjectures).  Then we follow "The
+Method."
+
+(1) Think about the proof of the first theorem in the to do list.
+Structure the proof either as an induction followed by simplification
+or just simplification.  Have the necessary lemmas been proved? That
+is, are the necessary lemmas in the done list already?  If so, proceed
+to Step 2.  Otherwise, add the necessary lemmas at the front of the to
+do list and repeat Step 1.
+
+(2) Call the theorem prover on the first theorem in the to do list and
+let the output stream into the *shell* buffer.  Abort the proof if it
+runs more than a few seconds.
+
+(3) If the theorem prover succeeded, advance the barrier past the
+successful command and go to Step 1.
+
+(4) Otherwise, inspect the failed proof attempt, starting from the
+beginning, not the end.  Basically you should look for the first place
+the proof attempt deviates from your imagined proof.  If your imagined
+proof was inductive, inspect the induction scheme used by ACL2.  If
+that is ok, then find the first subsequent subgoal that is stable under
+simplification and think about why it was not proved by the simplifier.
+If your imagined proof was not inductive, then think about the first
+subgoal stable under simplification, as above.  Modify the script
+appropriately.  It usually means adding lemmas to the to do list, just
+in front of the theorem just tried.  It could mean adding hints to the
+current theorem.  In any case, after the modifications go to Step 1.
+
+We do not seriously suggest that this or any rotely applied algorithm
+will let you drive ACL2 to difficult proofs.  Indeed, to remind you of
+this we call this "The Method" rather than "the method."  That is, we
+are aware of the somewhat pretentious nature of any such advice.  But
+these remarks have helped many users approach ACL2 in a constructive
+and disciplined way.
+
+We say much more about The Method in the ACL2 book.  See the home page.
+
+Learning to read failed proofs is a useful skill.  There are several
+kinds of "checkpoints" in a proof: (1) a formula to which induction is
+being (or would be) applied, (2) the first formula stable under
+simplification, (3) a formula that is possibly generalized, either by
+cross-fertilizing with and throwing away an equivalence hypothesis or
+by explicit generalization of a term with a new variable.
+
+At the induction checkpoint, confirm that you believe the formula being
+proved is a theorem and that it is appropriately strong for an
+inductive proof.  Read the selected induction scheme and make sure it
+agrees with your idea of how the proof should go.
+
+At the post-simplification checkpoint, which is probably the most
+commonly seen, consider whether there are additional rewrite rules you
+could prove to make the formula simplify still further.  Look for
+compositions of function symbols you could rewrite.  Look for
+contradictions among hypotheses and prove the appropriate implications:
+for example, the checkpoint might contain the two hypotheses (P (F A))
+and (NOT (Q (G (F A)))) and you might realize that (implies (p x) (q (g
+x))) is a theorem.  Look for signs that your existing rules did not
+apply, e.g., for terms that should have been rewritten, and figure out
+why they were not.  Possible causes include that they do not exactly
+match your old rules, that your old rules have hypotheses that cannot
+be relieved here - perhaps because some other rules are missing, or
+perhaps your old rules are disabled.  If you cannot find any further
+simplifications to make in the formula, ask yourself whether it is
+valid.  If so, sketch a proof.  Perhaps the proof is by appeal to a
+combination of lemmas you should now prove?
+
+At the two generalization checkpoints -- where hypotheses are discarded
+or terms are replaced by variables -- ask yourself whether the result
+is a theorem.  It often is not.  Think about rewrite rules that would
+prove the formula.  These are often restricted versions of the
+overly-general formulas created by the system's heuristics.
+
+See *Note PROOF-TREE:: for a discussion of a tool to help you navigate
+through ACL2 proofs.
+
+
+File: acl2-doc-emacs.info,  Node: TTAGS-SEEN,  Next: TTREE,  Prev: THE-METHOD,  Up: MISCELLANEOUS
+
+TTAGS-SEEN    list some declared trust tags (ttags)
+
+     General Forms:
+     :ttags-seen
+     (ttags-seen)
+
+Suppose the output is as follows.
+
+     (T NIL)
+     (FOO "/home/bob/bar.lisp"
+          "/home/cindy/bar.lisp")
+     Warning: This output is minimally trustworthy (see :DOC TTAGS-SEEN).
+
+This output indicates that the current logical world has seen the
+declaration of trust tag T at the top-level (see *note DEFTTAG::) and
+the declaration of trust tag FOO in the two books included from the
+listed locations.  The warning emphasizes that this command cannot be
+used to validate the "purity" of an ACL2 session, because using a ttag
+renders enough power to hide from this or any other command the fact
+that the ttag was ever declared.
+
+As discussed elsewhere (see *note DEFTTAG::), the only reliable way to
+validate the "purity" of a session is to watch for "TTAG NOTE" output.
+
+Another shortcoming of this command is that it only checks the current
+logical world for ttag declarations.  For example, one could execute a
+defttag event; then use progn! and set-raw-mode to replace system
+functions with corrupt definitions or to introduce inconsistent axioms
+in the ground-zero world; and finally, execute :1 to remove all
+evidence of the ttag in the world while leaving in place the corrupt
+definitions or axioms.  The base world is now tainted, meaning we could
+prove nil or certify a book that proves nil, but the resulting session
+or book would contain no trace of the ttag that tainted it!
+
+Despite shortcomings, this command might be useful to system hackers.
+It also serves to illustrate the inherent flaw in asking a session
+whether or how it is "tainted", justifying the "TTAG NOTE" approach
+(see *note DEFTTAG::).
+
+
+File: acl2-doc-emacs.info,  Node: TTREE,  Next: TYPE-SET,  Prev: TTAGS-SEEN,  Up: MISCELLANEOUS
+
+TTREE    tag trees
+
+Many low-level ACL2 functions take and return "tag trees" or "ttrees"
+(pronounced "tee-trees") which contain various useful bits of
+information such as the lemmas used, the linearize assumptions made,
+etc.
+
+Let a "tagged pair" be a list whose car is a symbol, called the "tag,"
+and whose cdr is an arbitrary object, called the "tagged object."  A
+"tag tree" is either nil, a tagged pair consed onto a tag tree, or a
+non-nil tag tree consed onto a tag tree.
+
+Abstractly a tag tree represents a list of sets, each member set having
+a name given by one of the tags occurring in the ttree.  The elements
+of the set named tag are all of the objects tagged tag in the tree.  To
+cons a tagged pair (tag . obj) onto a tree is to add-to-set-equal obj
+to the set corresponding to tag.  To cons two tag trees together is to
+union-equal the corresponding sets.  The concrete representation of the
+union so produced has duplicates in it, but we feel free to ignore or
+delete duplicates.
+
+The beauty of this definition is that to combine two non-nil tag trees
+you need do only one cons.
+
+The following function accumulates onto ans the set associated with a
+given tag in a ttree:
+
+     (defun tagged-objects (tag ttree ans)
+      (cond
+       ((null ttree) ans)
+       ((symbolp (caar ttree))             ; ttree = ((tag . obj) . ttree)
+        (tagged-objects tag (cdr ttree)
+                        (cond ((eq (caar ttree) tag)
+                               (add-to-set-equal (cdar ttree) ans))
+                              (t ans))))
+       (t                                  ; ttree = (ttree . ttree)
+          (tagged-objects tag (cdr ttree)
+                              (tagged-objects tag (car ttree) ans)))))
+
+This function is defined as a :PROGRAM mode function in ACL2.
+
+The rewriter, for example, takes a term and a ttree (among other
+things), and returns a new term, term', and new ttree, ttree'.  Term'
+is equivalent to term (under the current assumptions) and the ttree' is
+an extension of ttree.  If we focus just on the set associated with the
+tag LEMMA in the ttrees, then the set for ttree' is the extension of
+that for ttree obtained by unioning into it all the runes used by the
+rewrite.  The set associated with LEMMA can be obtained by
+(tagged-objects 'LEMMA ttree nil).
+
+
+File: acl2-doc-emacs.info,  Node: TYPE-SET,  Next: UNTRANSLATE,  Prev: TTREE,  Up: MISCELLANEOUS
+
+TYPE-SET    how type information is encoded in ACL2
+
+To help you experiment with type-sets we briefly note the following
+utility functions.
+
+(type-set-quote x) will return the type-set of the object x.  For
+example, (type-set-quote "test") is 2048 and (type-set-quote '(a b c))
+is 512.
+
+(type-set 'term nil nil nil nil (ens state) (w state) nil nil nil) will
+return the type-set of term.  For example,
+
+     (type-set '(integerp x) nil nil nil nil (ens state) (w state) nil nil nil)
+
+will return (mv 192 nil).  192, otherwise known as *ts-boolean*, is the
+type-set containing t and nil.  The second result may be ignored in
+these experiments.  Term must be in the translated, internal form shown
+by :trans.  See *Note TRANS:: and see *note TERM::.
+
+(type-set-implied-by-term 'x nil 'term (ens state)(w state) nil) will
+return the type-set deduced for the variable symbol x assuming the
+translated term, term, true.  The second result may be ignored in these
+experiments.  For example,
+
+     (type-set-implied-by-term 'v nil '(integerp v)
+                               (ens state) (w state) nil)
+
+returns 11.
+
+(convert-type-set-to-term 'x ts (ens state) (w state) nil) will return
+a term whose truth is equivalent to the assertion that the term x has
+type-set ts.  The second result may be ignored in these experiments.
+For example
+
+     (convert-type-set-to-term 'v 523 (ens state) (w state) nil)
+
+returns a term expressing the claim that v is either an integer or a
+non-nil true-list.  523 is the logical-or of 11 (which denotes the
+integers) with 512 (which denotes the non-nil true-lists).
+
+The "actual primitive types" of ACL2 are listed in
+*actual-primitive-types*, whose elements are shown below.  Each actual
+primitive type denotes a set -- sometimes finite and sometimes not --
+of ACL2 objects and these sets are pairwise disjoint.  For example,
+*ts-zero* denotes the set containing 0 while *ts-positive-integer*
+denotes the set containing all of the positive integers.
+
+     *TS-ZERO*                  ;;; {0}
+     *TS-POSITIVE-INTEGER*      ;;; positive integers
+     *TS-POSITIVE-RATIO*        ;;; positive non-integer rationals
+     *TS-NEGATIVE-INTEGER*      ;;; negative integers
+     *TS-NEGATIVE-RATIO*        ;;; negative non-integer rationals
+     *TS-COMPLEX-RATIONAL*      ;;; complex rationals
+     *TS-NIL*                   ;;; {nil}
+     *TS-T*                     ;;; {t}
+     *TS-NON-T-NON-NIL-SYMBOL*  ;;; symbols other than nil, t
+     *TS-PROPER-CONS*           ;;; null-terminated non-empty lists
+     *TS-IMPROPER-CONS*         ;;; conses that are not proper
+     *TS-STRING*                ;;; strings
+     *TS-CHARACTER*             ;;; characters
+
+The actual primitive types were chosen by us to make theorem proving
+convenient.  Thus, for example, the actual primitive type *ts-nil*
+contains just nil so that we can encode the hypothesis "x is nil" by
+saying "x has type *ts-nil*" and the hypothesis "x is non-nil" by
+saying "x has type complement of *ts-nil*."  We similarly devote a
+primitive type to t, *ts-t*, and to a third type,
+*ts-non-t-non-nil-symbol*, to contain all the other ACL2 symbols.
+
+Let *ts-other* denote the set of all Common Lisp objects other than
+those in the actual primitive types.  Thus, *ts-other* includes such
+things as floating point numbers and CLTL array objects.  The actual
+primitive types together with *ts-other* constitute what we call
+*universe*.  Note that *universe* is a finite set containing one more
+object than there are actual primitive types; that is, here we are
+using *universe* to mean the finite set of primitive types, not the
+infinite set of all objects in all of those primitive types.
+*Universe* is a partitioning of the set of all Common Lisp objects:
+every object belongs to exactly one of the sets in *universe*.
+
+Abstractly, a "type-set" is a subset of *universe*.  To say that a
+term, x, "has type-set ts" means that under all possible assignments to
+the variables in x, the value of x is a member of some member of ts.
+Thus, (cons x y) has type-set {*ts-proper-cons* *ts-improper-cons*}.  A
+term can have more than one type-set.  For example, (cons x y) also has
+the type-set {*ts-proper-cons* *ts-improper-cons* *ts-nil*}.
+Extraneous types can be added to a type-set without invalidating the
+claim that a term "has" that type-set.  Generally we are interested in
+the smallest type-set a term has, but because the entire theorem-proving
+problem for ACL2 can be encoded as a type-set question, namely, "Does p
+have type-set complement of *ts-nil*?," finding the smallest type-set
+for a term is an undecidable problem.  When we speak informally of
+"the" type-set we generally mean "the type-set found by our heuristics"
+or "the type-set assumed in the current context."
+
+Note that if a type-set, ts, does not contain *ts-other* as an element
+then it is just a subset of the actual primitive types.  If it does
+contain *ts-other* it can be obtained by subtracting from *universe*
+the complement of ts.  Thus, every type-set can be written as a
+(possibly complemented) subset of the actual primitive types.
+
+By assigning a unique bit position to each actual primitive type we can
+encode every subset, s, of the actual primitive types by the
+nonnegative integer whose ith bit is on precisely if s contains the ith
+actual primitive type.  The type-sets written as the complement of s
+are encoded as the twos-complement of the encoding of s.  Those
+type-sets are thus negative integers.  The bit positions assigned to
+the actual primitive types are enumerated from 0 in the same order as
+the types are listed in *actual-primitive-types*.  At the concrete
+level, a type-set is an integer between *min-type-set* and
+*max-type-set*, inclusive.
+
+For example, *ts-nil* has bit position 6.  The type-set containing just
+*ts-nil* is thus represented by 64.  If a term has type-set 64 then the
+term is always equal to nil.  The type-set containing everything but
+*ts-nil* is the twos-complement of 64, which is -65.  If a term has
+type-set -65, it is never equal to nil.  By "always" and "never" we
+mean under all, or under no, assignments to the variables, respectively.
+
+Here is a more complicated example.  Let s be the type-set containing
+all of the symbols and the natural numbers.  The relevant actual
+primitive types, their bit positions and their encodings are:
+
+     actual primitive type       bit    value
+     
+     *ts-zero*                    0       1
+     *ts-positive-integer*        1       2
+     *ts-nil*                     6      64
+     *ts-t*                       7     128
+     *ts-non-t-non-nil-symbol*    8     256
+
+Thus, the type-set s is represented by (+ 1 2 64 128 256) = 451.  The
+complement of s, i.e., the set of all objects other than the natural
+numbers and the symbols, is -452.
+
+
+File: acl2-doc-emacs.info,  Node: UNTRANSLATE,  Next: USE,  Prev: TYPE-SET,  Up: MISCELLANEOUS
+
+UNTRANSLATE    See *Note USER-DEFINED-FUNCTIONS-TABLE::.
+
+
+File: acl2-doc-emacs.info,  Node: USE,  Next: USING-COMPUTED-HINTS,  Prev: UNTRANSLATE,  Up: MISCELLANEOUS
+
+USE    hints keyword :USE
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS,  Next: USING-COMPUTED-HINTS-1,  Prev: USE,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS    how to use computed hints
+
+Computed hints are extraordinarily powerful.  We show a few examples
+here to illustrate their use.  We recommend that these be read in the
+following sequence:
+
+* Menu:
+
+
+Related topics other than immediate subtopics:
+* ADD-DEFAULT-HINTS:: add to the default hints
+
+* REMOVE-DEFAULT-HINTS:: remove from the default hints
+
+* SET-DEFAULT-HINTS:: set the default hints
+
+* USING-COMPUTED-HINTS-1:: Driving Home the Basics
+
+* USING-COMPUTED-HINTS-2:: One Hint to Every Top-Level Goal in a Forcing Round
+
+* USING-COMPUTED-HINTS-3:: Hints as a Function of the Goal (not its Name)
+
+* USING-COMPUTED-HINTS-4:: Computing the Hints
+
+* USING-COMPUTED-HINTS-5:: Debugging Computed Hints
+
+* USING-COMPUTED-HINTS-6:: Using the computed-hint-replacement feature
+
+* USING-COMPUTED-HINTS-7:: Using the stable-under-simplificationp flag
+
+* USING-COMPUTED-HINTS-8:: Some Final Comments
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-1,  Next: USING-COMPUTED-HINTS-2,  Prev: USING-COMPUTED-HINTS,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-1    Driving Home the Basics
+
+The common hint
+
+     ("Subgoal 3.2.1''" :use lemma42)
+
+has the same effect as the computed hint
+
+     (if (equal id '((0) (3 2 1) . 2))
+         '(:use lemma42)
+         nil)
+
+which, of course, is equivalent to
+
+     (and (equal id '((0) (3 2 1) . 2))
+          '(:use lemma42))
+
+which is also equivalent to the computed hint
+
+     my-special-hint
+
+provided the following defun has first been executed
+
+     (defun my-special-hint (id clause world)
+       (declare (xargs :mode :program)
+                (ignore clause world))
+       (if (equal id '((0) (3 2 1) . 2))
+           '(:use lemma42)
+           nil))
+
+It is permitted for the defun to be in :LOGIC mode (see *note
+DEFUN-MODE::) also.
+
+Just to be concrete, the following three events all behave the same way
+(if my-special-hint is as above):
+
+     (defthm main (big-thm a b c)
+       :hints (("Subgoal 3.2.1''" :use lemma42)))
+     
+     (defthm main (big-thm a b c)
+       :hints ((and (equal id '((0) (3 2 1) . 2)) '(:use lemma42))))
+     
+     (defthm main (big-thm a b c)
+       :hints (my-special-hint))
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-2,  Next: USING-COMPUTED-HINTS-3,  Prev: USING-COMPUTED-HINTS-1,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-2    One Hint to Every Top-Level Goal in a Forcing Round
+
+Suppose the main proof completes with a forcing round on three
+subgoals, "[1]Subgoal 3", "[1]Subgoal 2", and "[1]Subgoal 1".  Suppose
+you wish to :use lemma42 in all top-level goals of the first forcing
+round.  This can be done supplying the hint
+
+     (if test '(:use lemma42) nil),
+
+where test is an expression that returns t when ID is one of the clause
+ids in question.
+
+         goal-spec     (parse-clause-id goal-spec)
+     
+     "[1]Subgoal 3"        ((1) (3) . 0)
+     "[1]Subgoal 2"        ((1) (2) . 0)
+     "[1]Subgoal 1"        ((1) (1) . 0)
+
+Recall (see *note CLAUSE-IDENTIFIER::) that parse-clause-id maps from a
+goal spec to a clause id, so you can use that function on the goal
+specs printed in the failed proof attempt to determine the clause ids
+in question.
+
+So one acceptable test is
+
+     (member-equal id '(((1) (3) . 0)
+                        ((1) (2) . 0)
+                        ((1) (1) . 0)))
+
+or you could use parse-clause-id in your computed hint if you don't
+want to see clause ids in your script:
+
+     (or (equal id (parse-clause-id "[1]Subgoal 3"))
+         (equal id (parse-clause-id "[1]Subgoal 2"))
+         (equal id (parse-clause-id "[1]Subgoal 1")))
+
+or you could use the inverse function (see *note CLAUSE-IDENTIFIER::):
+
+     (member-equal (string-for-tilde-@-clause-id-phrase id)
+                   '("[1]Subgoal 3"
+                     "[1]Subgoal 2"
+                     "[1]Subgoal 1"))
+
+Recall that what we've shown above are the tests to use in the computed
+hint.  The hint itself is (if test '(:use lemma42) nil) or something
+equivalent like (and test '(:use lemma42)).
+
+The three tests above are all equivalent.  They suffer from the problem
+of requiring the explicit enumeration of all the goal specs in the
+first forcing round.  A change in the script might cause more forced
+subgoals and the ones other than those enumerated would not be given
+the hint.
+
+You could write a test that recognizes all first round top-level
+subgoals no matter how many there are.  Just think of the programming
+problem:  how do I recognize all the clause id's of the form ((1) (n) .
+0)?  Often you can come to this formulation of the problem by using
+parse-clause-id on a few of the candidate goal-specs to see the common
+structure.  A suitable test in this case is:
+
+     (and (equal (car id) '(1))     ; forcing round 1, top-level (pre-induction)
+          (equal (len (cadr id)) 1) ; Subgoal n (not Subgoal n.i ...)
+          (equal (cddr id) 0))      ; no primes
+
+The test above is "overkill" because it recognizes precisely the clause
+ids in question.  But recall that once a computed hint is used, it is
+(by default) removed from the hints available to the children of the
+clause.  Thus, we can widen the set of clause ids recognized to include
+all the children without worrying that the hint will be applied to
+those children.
+
+In particular, the following test supplies the hint to every top-level
+goal of the first forcing round:
+
+     (equal (car id) '(1))
+
+You might worry that it would also supply the hint to the subgoal
+produced by the hint - the cases we ruled out by the "overkill" above.
+But that doesn't happen since the hint is unavailable to the children.
+You could even write:
+
+     (equal (car (car id)) 1)
+
+which would supply the hint to every goal of the form "[1]Subgoal ..."
+and again, because we see and fire on the top-level goals first, we
+will not fire on, say, "[1]Subgoal *1.3/2", i.e., the id '((1 1 3) (2)
+. 0) even though the test recognizes that id.
+
+Finally, the following test supplies the hint to every top-level goal
+of every forcing round (except the 0th, which is the "gist" of the
+proof, not "really" a forcing round):
+
+     (not (equal (car (car id)) 0))
+
+Recall again that in all the examples above we have exhibited the test
+in a computed hint of the form (if test '(:key1 val1 ...) nil).
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-3,  Next: USING-COMPUTED-HINTS-4,  Prev: USING-COMPUTED-HINTS-2,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-3    Hints as a Function of the Goal (not its Name)
+
+Sometimes it is desirable to supply a hint whenever a certain term
+arises in a conjecture.  For example, suppose we have proved
+
+     (defthm all-swaps-have-the-property
+        (the-property (swap x))
+        :rule-classes nil)
+
+and suppose that whenever (SWAP A) occurs in a goal, we wish to add the
+additional hypothesis that (THE-PROPERTY (SWAP A)).  Note that this is
+equivalent supplying the hint
+
+     (if test
+         '(:use (:instance all-swaps-have-the-property (x A)))
+         nil)
+
+where test answers the question "does the clause contain (SWAP A)?"
+That question can be asked with (occur-lst '(SWAP A) clause).  Briefly,
+occur-lst takes the representation of a translated term, x, and a list
+of translated terms, y, and determines whether x occurs as a subterm of
+any term in y.  (By "subterm" here we mean proper or improper, e.g.,
+the subterms of (CAR X) are X and (CAR X).)
+
+Thus, the computed hint:
+
+     (if (occur-lst '(swap a) clause)
+         '(:use (:instance all-swaps-have-the-property (x A)))
+         nil)
+
+will add the hypothesis (THE-PROPERTY (SWAP A)) to every goal
+containing (SWAP A) - except the children of goals to which the
+hypothesis was added.
+
+A COMMON MISTAKE users are likely to make is to forget that they are
+dealing with translated terms.  For example, suppose we wished to look
+for (SWAP (LIST 1 A)) with occur-lst.  We would never find it with
+
+     (occur-lst '(SWAP (LIST 1 A)) clause)
+
+because that presentation of the term contains macros and other
+abbreviations.  By using :trans (see *note TRANS::) we can obtain the
+translation of the target term.  Then we can look for it with:
+
+     (occur-lst '(SWAP (CONS '1 (CONS A 'NIL))) clause)
+
+Note in particular that you must
+
+     * eliminate all macros and
+     * explicitly quote all constants.
+
+We recommend using :trans to obtain the translated form of the terms in
+which you are interested, before programming your hints.
+
+An alternative is to use the expression (prettyify-clause clause nil
+nil) in your hint to convert the current goal clause into the
+s-expression that is actually printed.  For example, the clause
+
+     ((NOT (CONSP X)) (SYMBOLP Y) (EQUAL (CONS '1 (CAR X)) Y))
+
+"prettyifies" to
+
+     (IMPLIES (AND (CONSP X)
+                   (NOT (SYMBOLP Y)))
+              (EQUAL (CONS 1 (CAR X)) Y))
+
+which is what you would see printed by ACL2 when the goal clause is
+that shown.
+
+However, if you choose to convert your clauses to prettyified form, you
+will have to write your own explorers (like our occur-lst), because all
+of the ACL2 term processing utilities work on translated and/or clausal
+forms.  This should not be taken as a terrible burden.  You will, at
+least, gain the benefit of knowing what you are really looking for,
+because your explorers will be looking at exactly the s-expressions you
+see at your terminal.  And you won't have to wade through our still
+undocumented term/clause utilities.  The approach will slow things down
+a little, since you will be paying the price of independently consing
+up the prettyified term.
+
+We make one more note on this example.  We said above that the computed
+hint:
+
+     (if (occur-lst '(swap a) clause)
+         '(:use (:instance all-swaps-have-the-property (x A)))
+         nil)
+
+will add the hypothesis (THE-PROPERTY (SWAP A)) to every goal
+containing (SWAP A) - except the children of goals to which the
+hypothesis was added.
+
+It bears noting that the subgoals produced by induction and top-level
+forcing round goals are not children.  For example, suppose the hint
+above fires on "Subgoal 3" and produces, say, "Subgoal 3'".  Then the
+hint will not fire on "Subgoal 3'" even though it (still) contains
+(SWAP A) because "Subgoal 3'" is a child of a goal on which the hint
+fired.
+
+But now suppose that "Subgoal 3'" is pushed for induction.  Then the
+goals created by that induction, i.e., the base case and induction
+step, are not considered children of "Subgoal 3'".  All of the original
+hints are available.
+
+Alternatively, suppose that "Subgoal 3' is proved but forces some other
+subgoal, "[1]Subgoal 1" which is attacked in Forcing Round 1.  That
+top-level forced subgoal is not a child.  All the original hints are
+available to it.  Thus, if it contains (SWAP A), the hint will fire and
+supply the hypothesis, producing "[1]Subgoal 1'".  This may be
+unnecessary, as the hypothesis might already be present in "[1]Subgoal
+1".  In this case, no harm is done.  The hint won't fire on "[1]Subgoal
+1" because it is a child of "[1]Subgoal 1" and the hint fired on that.
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-4,  Next: USING-COMPUTED-HINTS-5,  Prev: USING-COMPUTED-HINTS-3,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-4    Computing the Hints
+
+So far we have used computed hints only to compute when a fixed set of
+keys and values are to be used as a hint.  But computed hints can, of
+course, compute the set of keys and values.  You might, for example,
+write a hint that recognizes when a clause "ought" to be provable by a
+:BDD hint and generate the appropriate hint.  You might build in a set
+of useful lemmas and check to see if the clause is proveable :BY one of
+them.  You can keep all function symbols disabled and use computed
+hints to compute which ones you want to :EXPAND.  In general, you can
+write a theorem prover for use in your hints, provided you can get it
+do its job by directing our theorem prover.
+
+Suppose for example we wish to find every occurrence of an instance of
+(SWAP x) and provide the corresponding instance of
+ALL-SWAPS-HAVE-THE-PROPERTY.  Obviously, we must explore the clause
+looking for instances of (SWAP x) and build the appropriate instances
+of the lemma.  We could do this in many different ways, but below we
+show a general purpose set of utilities for doing it.  The functions
+are not defined in ACL2 but could be defined as shown.
+
+Our plan is:  (1) Find all instances of a given pattern (term) in a
+clause, obtaining a set of substitutions.  (2) Build a set of :instance
+expressions for a given lemma name and set of substitutions.  (3)
+Generate a :use hint for those instances when instances are found.
+
+The pair of functions below find all instances of a given pattern term
+in either a term or a list of terms.  The functions each return a list
+of substitutions, each substitution accounting for one of the matches
+of pat to a subterm.  At this level in ACL2 substitutions are lists of
+pairs of the form (var . term).  All terms mentioned here are presumed
+to be in translated form.
+
+The functions take as their third argument a list of substitutions
+accumulated to date and add to it the substitutions produced by
+matching pat to the subterms of the term.  We intend this accumulator
+to be nil initially.  If the returned value is nil, then no instances
+of pat occurred.
+
+     (mutual-recursion
+     
+     (defun find-all-instances (pat term alists)
+      (declare (xargs :mode :program))
+      (mv-let
+       (instancep alist)
+       (one-way-unify pat term)
+       (let ((alists (if instancep (add-to-set-equal alist alists) alists)))
+         (cond
+          ((variablep term) alists)
+          ((fquotep term) alists)
+          ((flambdap (ffn-symb term))
+           (find-all-instances pat
+                               (lambda-body (ffn-symb term))
+                               (find-all-instances-list pat (fargs term) alists)))
+          (t (find-all-instances-list pat (fargs term) alists))))))
+     
+     (defun find-all-instances-list (pat list-of-terms alists)
+      (declare (xargs :mode :program))
+      (cond
+       ((null list-of-terms) alists)
+       (t (find-all-instances pat
+                              (car list-of-terms)
+                              (find-all-instances-list pat
+                                                       (cdr list-of-terms)
+                                                       alists))))))
+
+We now turn our attention to converting a list of substitutions into a
+list of lemma instances, each of the form
+
+     (:INSTANCE name (var1 term1) ... (vark termk))
+
+as written in :use hints.  In the code shown above, substitutions are
+lists of pairs of the form (var . term), but in lemma instances we must
+write "doublets."  So here we show how to convert from one to the other:
+
+     (defun pairs-to-doublets (alist)
+       (declare (xargs :mode :program))
+       (cond ((null alist) nil)
+             (t (cons (list (caar alist) (cdar alist))
+                      (pairs-to-doublets (cdr alist))))))
+
+Now we can make a list of lemma instances:
+
+     (defun make-lemma-instances (name alists)
+       (declare (xargs :mode :program))
+       (cond
+        ((null alists) nil)
+        (t (cons (list* :instance name (pairs-to-doublets (car alists)))
+                 (make-lemma-instances name (cdr alists))))))
+
+Finally, we can package it all together into a hint function.  The
+function takes a pattern, pat, which must be a translated term, the
+name of a lemma, name, and a clause.  If some instances of pat occur in
+clause, then the corresponding instances of name are :USEd in the
+computed hint.  Otherwise, the hint does not apply.
+
+     (defun add-corresponding-instances (pat name clause)
+       (declare (xargs :mode :program))
+       (let ((alists (find-all-instances-list pat clause nil)))
+         (cond
+          ((null alists) nil)
+          (t (list :use (make-lemma-instances name alists))))))
+
+The design of this particular hint function makes it important that the
+variables of the pattern be the variables of the named lemma and that
+all of the variables we wish to instantiate occur in the pattern.  We
+could, of course, redesign it to allow "free variables" or some sort of
+renaming.
+
+We could now use this hint as shown below:
+
+     (defthm ... ...
+       :hints ((add-corresponding-instances
+                '(SWAP x)
+                'ALL-SWAPS-HAVE-THE-PROPERTY
+                clause)))
+
+The effect of the hint above is that any time a clause arises in which
+any instance of (SWAP x) appears, we add the corresponding instance of
+ALL-SWAPS-HAVE-THE-PROPERTY.  So for example, if Subgoal *1/3.5
+contains the subterm (SWAP (SWAP A)) then this hint fires and makes the
+system behave as though the hint:
+
+     ("Subgoal *1/3.5"
+      :USE ((:INSTANCE ALL-SWAPS-HAVE-THE-PROPERTY (X A))
+            (:INSTANCE ALL-SWAPS-HAVE-THE-PROPERTY (X (SWAP A)))))
+
+had been present.
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-5,  Next: USING-COMPUTED-HINTS-6,  Prev: USING-COMPUTED-HINTS-4,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-5    Debugging Computed Hints
+
+We have found that it is sometimes helpful to define hints so that they
+print out messages to the terminal when they fire, so you can see what
+hint was generated and which of your computed hints did it.
+
+To that end we have defined a macro we sometimes use.  Suppose you have
+a :hints specification such as:
+
+     :hints (computed-hint-fn (hint-expr id))
+
+If you defmacro the macro below you could then write instead:
+
+     :hints ((show-hint computed-hint-fn 1)
+             (show-hint (hint-expr id) 2))
+
+with the effect that whenever either hint is fired (i.e., returns
+non-nil), a message identifying the hint by the marker (1 or 2, above)
+and the non-nil value is printed.
+
+     (defmacro show-hint (hint &optional marker)
+       (cond
+        ((and (consp hint)
+              (stringp (car hint)))
+         hint)
+        (t
+         `(let ((marker ,marker)
+                (ans ,(if (symbolp hint)
+                          `(,hint id clause world stable-under-simplificationp)
+                        hint)))
+            (if ans
+                (prog2$
+                 (cw "~%***** Computed Hint~#0~[~/ (from hint ~x1)~]~%~x2~%~%"
+                     (if (null marker) 0 1)
+                     marker
+                     (cons (string-for-tilde-@-clause-id-phrase id)
+                           ans))
+                 ans)
+              nil)))))
+
+Note that when show-hint is applied to a hint that is a symbol, e.g.,
+computed-hint-fn, it applies the symbol to the four computed-hint
+arguments: id, clause, world, and stable-under-simplificationp.  If
+computed-hint-fn is of arity 3 the code above would cause an error.
+One way to avoid it is to write
+
+     :hints ((show-hints (computed-hint-fn id clause world) 1)
+             (show-hint (hint-expr id) 2)).
+
+If you only use computed hints of arity 3, you might eliminate the
+occurrence of stable-under-simplificationp in the definition of
+show-hint above.
+
+Putting a show-hint around a common hint has no effect.  If you find
+yourself using this utility let us know and we'll consider putting it
+into the system itself.  But it does illustrate that you can use
+computed hints to do unusual things.
+
+
+File: acl2-doc-emacs.info,  Node: USING-COMPUTED-HINTS-6,  Next: USING-COMPUTED-HINTS-7,  Prev: USING-COMPUTED-HINTS-5,  Up: MISCELLANEOUS
+
+USING-COMPUTED-HINTS-6    Using the computed-hint-replacement feature
+
+So far none of our computed hints have used the
+:COMPUTED-HINT-REPLACEMENT feature.  We now illustrate that.
+
+The :computed-hint-replacement feature can easily lead to loops.  So as
+you experiment with the examples in this section and your own hints
+using this feature, be ready to interrupt the theorem prover and abort!
+
+A non-looping use of the :computed-hint-replacement feature would be a
+hint like this:
+
+     (if (certain-terms-present clause)
+         '(:computed-hint-replacement t
+           :in-theory (enable lemma25))
+         '(:computed-hint-replacement t
+           :in-theory (disable lemma25)))
+
+In this hint, if certain terms are present in clause, as determined by
+the function with the obvious name (here undefined), then this hint
+enables lemma25 and otherwise disables it.  Lemma25 might be a very
+expensive lemma, e.g., one that matches frequently and has an expensive
+and rarely established hypothesis.  One might wish it enabled only
+under certain conditions.  Recall that theories are inherited by
+children.  So once lemma25 is enabled it "stays" enabled for the
+children, until disabled; and vice versa.  If the
+:computed-hint-replacement feature were not present and computed hints
+were always deleted after they had been used, then lemma25 would be
+left enabled (or disabled) for all the childen produced by the first
+firing of the hint.  But with the arrangement here, every subgoal gets
+a theory deemed suitable by the hint, and the hint persists.
+
+Now we will set up a toy to allow us to play with computed hints to
+understand them more deeply.  To follow the discussion it is best to
+execute the following events.
+
+     (defstub wrapper (x) t)
+     (defaxiom wrapper-axiom (wrapper x) :rule-classes nil)
+
+Now submit the following event and watch what happens.
+
+     (thm (equal u v)
+       :hints (`(:use (:instance wrapper-axiom (x a)))))
+
+The theorem prover adds (wrapper a) to the goal and then abandons the
+proof attempt because it cannot prove the subgoal.  Since the computed
+hint is deleted upon use, the hint is not applied to the subgoal (i.e.,
+the child of the goal).
+
+What happens if we do the following?
+
+     (thm (equal u v)
+       :hints (`(:computed-hint-replacement t
+                 :use (:instance wrapper-axiom (x a)))))
+
+One might expect this to loop forever: The hint is applied to the child
+and adds the hypothesis again.  However, when the hint fires, nothing
+is actually changed, since (wrapper a) is already in the subgoal.  The
+theorem prover detects this and stops.  (Careful inspection of the
+output will reveal that the hint actually did fire a second time
+without apparent effect.)
+
+So let's change the experiment a little.  Let's make the hint add the
+hypothesis (wrapper p) where p is the first literal of the clause.
+This is silly but it allows us to explore the behavior of computed
+hints a little more.
+
+     (thm (equal u v)
+       :hints (`(:use (:instance wrapper-axiom (x ,(car clause))))))
+
+So in this case, the theorem prover changes the goal to
+
+     (IMPLIES (WRAPPER (EQUAL U V)) (EQUAL U V))
+
+which then simplifies to
+
+     (IMPLIES (WRAPPER NIL) (EQUAL U V))
+
+because the concluding equality can be assumed false in the hypothesis
+(e.g., think of the contrapositive version).  Nothing else happens
+because the hint has been removed and so is not applicable to the child.
+
+Now consider the following - and be ready to interrupt it and abort!
+
+     (thm (equal u v)
+       :hints (`(:computed-hint-replacement t
+                 :use (:instance wrapper-axiom (x ,(car clause))))))
+
+This time the hint is not removed and so is applied to the child.  So
+from Goal we get
+
+     Goal'
+     (IMPLIES (WRAPPER (EQUAL U V))
+              (EQUAL U V))
+
+and then
+
+     Goal''
+     (IMPLIES (AND (WRAPPER (NOT (WRAPPER (EQUAL U V))))
+                   (WRAPPER (EQUAL U V)))
+              (EQUAL U V))
+
+etc.
+
+First, note that the hint is repeatedly applied to its children.  That
+is because we wrote :computed-hint-replacement t.  But second, note
+that Goal' is not even being simplified before Goal" is produced from
+it.  If it were being simplified, the (equal u v)'s in the hypotheses
+would be replaced by nil.  This is a feature.  It means after a
+computed hint has fired, other hints are given a chance at the result,
+even the hint itself unless it is removed from the list of hints.
+
+As an exercise, let's arrange for the hint to stay around and be
+applied indefinitely but with a simplification between each use of the
+the hint.  To do this we need to pass information from one application
+of the hint to the next, essentially to say "stay around but don't
+fire."
+
+First, we will define a function to use in the hint.  This is more than
+a mere convenience; it allows the hint to "reproduce itself" in the
+replacement.
+
+     (defun wrapper-challenge (clause parity)
+       (if parity
+           `(:computed-hint-replacement ((wrapper-challenge clause nil))
+             :use (:instance wrapper-axiom (x ,(car clause))))
+           `(:computed-hint-replacement ((wrapper-challenge clause t)))))
+
+Note that this function is not recursive, even though it uses its own
+name.  That is because the occurrence of its name is in a quoted
+constant.
+
+Now consider the following.  What will it do?
+
+     (thm (equal u v)
+       :hints ((wrapper-challenge clause t)))
+
+First, observe that this is a legal hint because it is a term that
+mentions only the free variable CLAUSE.  When defining hint functions
+you may sometimes think their only arguments are the four variables id,
+clause, world, and stable-under-simplificationp.  That is not so.  But
+in your hints you must call those functions so that those are the only
+free variables.  Note also that the occurrence of clause inside the
+:computed-hint-replacement is not an occurrence of the variable clause
+but just a constant.  Just store this note away for a moment.  We'll
+return to it momentarily.
+
+Second, the basic cleverness of this hint is that every time it fires
+it reproduces itself with the opposite parity.  When the parity is t it
+actually changes the goal by adding a hypothesis.  When the parity is
+nil it doesn't change the goal and so allows simplification to proceed
+- but it swaps the parity back to t.  What you can see with this simple
+toy is that we can use the computed hints to pass information from
+parent to child.
+
+Ok, so what happens when the event above is executed?  Try it.  You will
+see that ACL2 applied the hint the first time.  It doesn't get around to
+printing the output because an error is caused before it can print.
+But here is a blow-by-blow description of what happens.  The hint is
+evaluated on Goal with the clause ((equal u v)).  It produces a hint
+exactly as though we had typed:
+
+     ("Goal" :use (:instance wrapper-axiom (x (equal u v))))
+
+which is applied to this goal. In addition, it produces the new hints
+argument
+
+     :hints ((wrapper-challenge clause nil)).
+
+By applying the "Goal" hint we get the new subgoal
+
+     Goal'
+     (implies (wrapper (equal u v))
+              (equal u v))
+
+but this is not printed because, before printing it, the theorem prover
+looks for hints to apply to it and finds
+
+     (wrapper-challenge clause nil)
+
+That is evaluated and produces a hint exactly as though we had typed:
+
+     ("Goal'" )
+
+and the new hints argument:
+
+     :hints ((wrapper-challenge clause nil)).
+
+But if you supply the hint ("Goal'" ), ACL2 will signal an error
+because it does not allow you to specify an empty hint!
+
+So the definition of wrapper-challenge above is almost correct but
+fatally flawed.  We need a non-empty "no-op" hint.  One such hint is to
+tell the system to expand a term that will always be expanded anyway.
+So undo wrapper-challenge, redefine it, and try the proof again.  Now
+remember the observation about clause that we asked you to "store"
+above.  The new definition of wrapper-challenge illustrates what we
+meant.  Note that the first formal parameter of wrapper-challenge,
+below, is no longer named clause but is called cl instead.  But the
+"call" of wrapper-challenge in the replacements is on clause.  This may
+seem to violate the rule that a function definition cannot use
+variables other than the formals.  But the occurrences of clause below
+are not variables but constants in an object that will eventually be
+treated as hint term.
+
+     :ubt wrapper-challenge
+     
+     (defun wrapper-challenge (cl parity)
+       (if parity
+           `(:computed-hint-replacement ((wrapper-challenge clause nil))
+             :use (:instance wrapper-axiom (x ,(car cl))))
+           `(:computed-hint-replacement ((wrapper-challenge clause t))
+             :expand ((atom zzz)))))
+     
+     (thm (equal u v)
+       :hints ((wrapper-challenge clause t)))
+
+This time, things go as you might have expected!  Goal' is produced and
+simplified, to
+
+     Goal''
+     (implies (wrapper nil)
+              (equal u v)).
+
+Simplification gets a chance because when the new hint
+(wrapper-challenge clause nil) is fired it does not change the goal.
+But it does change the parity in the hints argument so that before
+Goal" is simplified again, the hint fires and adds the hypothesis:
+
+     Goal'''
+     (IMPLIES (AND (WRAPPER (NOT (WRAPPER NIL)))
+                   (WRAPPER NIL))
+              (EQUAL U V)).
+
+This simplifies, replacing the first (NOT (WRAPPER NIL)) by NIL, since
+(WRAPPER NIL) is known to be true here.  Thus the goal simplifies to
+
+     Goal'4'
+     (IMPLIES (WRAPPER NIL) (EQUAL U V)).
+
+The process repeats indefinitely.
+
+So we succeeded in getting a hint to fire indefinitely but allow a full
+simplification between rounds.
+

@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>XML-RPC in Lisp</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">XML-RPC in Lisp</DIV>
+
+<P>
+<a href="http://www.xmlrpc.com/">XML-RPC</a> is a very simple standard XML-based protocol for calling
+web services. XML-RPC is a much smaller
+protocol than the other leading XML-based web service protocol,
+<a href="http://www.soapware.org/">SOAP</a>. The complete
+specifications for XML-RPC in HTML is less than 20K bytes.
+<a href="http://www.w3.org/TR/soap12-part1/">The specifications for SOAP 1.2</a> 
+in HTML is 8 times as large. As a result, there are
+<a href="http://www.xmlrpc.com/directory/1568/implementations">many implementations</a>
+of XML-RPC in many different languages,
+including Perl, Python, C++, Java, Lisp, etc.
+A number of examples of using XML-RPC in various languages is given at 
+<a href="http://xmlrpc-c.sourceforge.net/xmlrpc-howto/xmlrpc-howto.html">
+the XML-RPC How To site</a>.
+</p>
+
+<p>XML-RPC is very stable. XML-RPC's inventor, Dave Winer, has resisted
+changes, even quite modest and reasonable ones, because they would break
+existing XML-RPC servers and clients.</p>
+
+<p>A personal history by Winer of how XML-RPC and SOAP relate is 
+<a href="http://www.xmlrpc.com/stories/storyReader$555">here</a>.
+</p>
+
+<p>In Lisp, an easy way to get started with XML-RPC is
+to use the <a href="http://common-lisp.net/project/s-xml-rpc/">The S-XML-RPC library</a>.
+This document describes how to set up the library, and call and define
+XML-RPC services.</p>
+
+<h2>Download S-XML and S-XML-RPC</h2>
+
+<p><a href="http://common-lisp.net/project/s-xml/">S-XML</a> is an XML parser, 
+like <a href="clocc-xml.html">the CLOCC XML parser</a>. 
+<a href="http://common-lisp.net/project/s-xml-rpc/">S-XML-RPC</a> is an 
+XML-RPC library that uses the S-XML parser.
+The S-XML parser isn't as complete as the CLOCC parser, but
+it's sufficient for our needs.</p>
+
+<p>Instructions on getting both S-XML and S-XML-RPC
+are at their respective web sites. Unfortunately, the standard distribution 
+omits the code
+needed for Allegro Common Lisp, so Allegro users
+should use my <a href="../../programs/s-xml-rpc.zip">s-xml-rpc.zip</a>.</p>
+
+<h2>Compile and load ASDF, S-XML and S-XML-RPC</h2>
+
+<p>To compile and load these libraries, 
+you need <a href="http://constantly.at/lisp/asdf/">ASDF</a>.
+ASDF (A System Definition Facility) is
+a Lisp equivalent of <tt>make</tt> in Unix or <tt>Ant</tt>.
+ASDF lets you define how code files depend on other code files
+so that, with one operation, you can load, and compile if necessary,
+a library and all the files it depends on. ASDF uses the
+same syntax and concepts as an earlier package called
+<tt>DEFSYSTEM</tt>.</p>
+
+<p>ASDF comes with several Lisps, including SBCL, OpenMCL,
+and Allegro. In those cases,
+you should be able to just say <code>(require :asdf)</code>
+to load ASDF.</p>
+
+<p>For other Lisps, including Lispworks, you can use the version 
+of ASDF included in  <a href="../../programs/s-xml-rpc.zip">s-xml-rpc.zip</a>.
+Load <tt>asdf.lisp</tt> before you do the remaining
+steps.</p>
+
+<p>To use ASDF to load a library like S-XML or S-XML-RPC, you:<p>
+
+<ul>
+<li>tell ASDF the directory containing the files in the library</li>
+
+<li>load the <tt>.asd</tt> file that has the system definition for the library</li>
+
+<li>tell ASDF to use the system definition to 
+load the library, compiling if necessary</li>
+</ul>
+
+<p>For CS 325 students, I've put all these steps into the file 
+<a href="../programs/load-s-xml.lisp">load-s-xml.lisp</a>. 
+<em>The code in this file runs
+in the <code>cs325-user</code> package</em>.
+Put this file in the same directory that contains
+the S-XML and S-XML-RPC directories. Load <tt>load-s-xml.lisp</tt>.
+to compile and load both S-XML and S-XML-RPC, and 
+add S-XML-RPC to the packages used by <code>cs325-user</code>.</p> 
+
+<h2>Calling XML-RPC Methods</h2>
+
+<p>The S-XML-RPC web site gives several examples of web
+services available to the public for testing the XML-RPC
+installations. In addition, I found another site that has
+XML-RPC methods to do some trivial math. 
+Try all three of these XML-RPC
+method calls:</p>
+
+<blockquote><pre>(xml-rpc-call
+   (encode-xml-rpc-call "currentTime.getCurrentTime")
+   :host "time.xmlrpc.com")
+
+(xml-rpc-call
+   (encode-xml-rpc-call "examples.getStateName" 41)
+   :host "betty.userland.com")
+
+(xml-rpc-call
+  (encode-xml-rpc-call "math.SumAndDifference" 5 2)
+  :host "www.cookcomputing.com"
+  :url "/xmlrpcsamples/math.rem")</pre></blockquote>
+
+<p>The function <code>encode-xml-rpc-call</code> constructs 
+a string with 
+the XML to send to the server, e.g.,</p>
+
+<blockquote><pre> > (encode-xml-rpc-call "examples.getStateName" 41)
+"&lt;methodCall>&lt;methodName>examples.getStateName&lt;/methodName>
+&lt;params>&lt;param>&lt;value>&lt;int>41&lt;/int>&lt;/value>&lt;/param>
+&lt;/params>&lt;/methodCall>"</pre></blockquote>
+
+<p><code>xml-rpc-call</code> then sends this XML to the server
+specifed. The server consists of a host, a port, and a path,
+specified by the keywords <code>host</code>, <code>:port</code>
+and <code>:url</code>, which default
+to <code>localhost</code>, <code>80</code>, and <code>/RPC2</code>,
+respectively.</p>
+
+
+<h3>Defining XML-RPC Methods</h3>
+
+<p>An appropriate XML-RPC service is one that:</p>
+
+<ul>
+<li>involves modest amounts of data traffic</li>
+
+<li>requires modest computational requirements on the server</li>
+
+<li>would not be easily doable on the client without additional software</li>
+
+<li>would not be called in a tight time-sensitive loop</li>
+</ul>
+
+<p>For example, a web service that retrieve book information
+given an ISBN number would make sense, but one that retrieved 
+the contents of the book, would be
+inappropriate as well as illegal. Also inappropriate
+would be a web service to calculate square roots, because this
+is so easily done on the client machine.</p>
+
+<p>For demonstration purposes, I'll define a method, 
+<code>lisp.GCD</code>, that
+takes two numbers and returns their greatest common divisor.
+This is trivial in Lisp and is just to show how the services are
+defined.</p>
+
+<p>To define a web service method in S-XML-RPC, you just need to define
+a function in the <code>s-xml-rpc-exports</code> package. Because
+XML-RPC is case-sensitive, but Lisp isn't, we need to protect
+the name of our method by using Lisp's vertical bar notation.
+So the full name of our method, including the package, will
+be <code>s-xml-rpc-exports::|lisp.GCD|</code>. In some languages,
+this name might imply that <code>GCD</code> is a method of
+some class or package called <code>lisp</code>, but here it's just
+a name, designed to look like a normal XML-RPC method name.</p>
+
+<p>Since Lisp already defines a function to calculate
+greatest common divisor, we're done:</p>
+
+<blockquote><pre>(defun s-xml-rpc-exports::|lisp.GCD| (m n)
+  (gcd m n))</pre></blockquote>
+ 
+<p>S-XML-RPC will take care of converting the input parameters
+from the strings that were sent over the network
+into numbers, and converting the returned value back into
+a string to send back to the client.</p>
+
+<p>
+The parameters for XML-RPC methods should be kept simple, i.e., 
+numbers, strings, and simple lists
+and structures, because of that's what the XML-RPC protocol allows.
+Similarly, the function should return either a number, string,
+simple list, or structure.</p>
+
+<p>"Structure" here means an XML-RPC structure,
+which is a list of name-value pairs. In S-XML-RPC client code
+in Lisp, you create an XML-RPC structure with
+<code class="code-syntax">(s-xml-rpc:xml-rpc-struct <em>key value key value ...</em>)</code>.
+In XML-RPC server code in Lisp, you get at parts of an XML-RPC
+structure with 
+<code class="code-syntax">(s-xml-rpc:get-xml-rpc-struct-member <em>struct key</em>)</code>.
+The XML-RPC method <code>math.SumAndDifference</code> shown
+in the examples above returns an XML-RPC structure to hold
+the sum and difference.</p>
+
+<h3>Running an S-XML-RPC Server</h3>
+
+<p>To start the S-XML-RPC server:</p>
+
+<blockquote><pre>(setq *xml-server* (start-xml-rpc-server :port 8080))</pre></blockquote>
+
+<p>We store the name of the server in a variable so
+that we can easily stop it later.</p>
+
+<p>If you've defined the <code>lisp.GCD</code> method above, then you can now
+call it from Lisp, like this:</p>
+
+<blockquote><pre>> (xml-rpc-call
+    (encode-xml-rpc-call "lisp.GCD" 12155 130130)
+    :port 8080)
+715</pre></blockquote>
+
+<hr>
+<h3><a name="testing-xml-rpc">Testing your server from other languages</a></h3>
+
+<p>Of course, using Lisp to call Lisp doesn't prove much. More interesting is to call
+your XML-RPC method from a totally different client, in another language,
+perhaps on a different machine. Two examples are given below.</p>
+
+<h4><a name="python-xml-rpc">Testing your server with Python</a></h4>
+
+<p>If you have Python installed, then it's easy to test XML-RPC because
+Python comes with an XML-RPC library. Just start your Python interpreter,
+import the library <tt>xmlrpclib</tt>, and call the function
+<tt>xmlrpclib.ServerProxy</tt> to create an object that
+can be then used to call your XML-RPC methods. How it works
+may be a bit confusing, but the calling pattern is quite simple.
+For example, to call our GCD function above:</p>
+
+<blockquote>
+<pre># <em>get the library</em>
+import xmlrpclib  
+
+# <em>get the server proxy and use it to call lisp.GCD()</em>
+xmlrpclib.ServerProxy("http://localhost:8080/RPC2").lisp.GCD(12155, 130130)</pre>
+</blockquote>
+
+<p>More about Python and XML-RPC can be found 
+<a href="http://www-128.ibm.com/developerworks/library/ws-pyth10.html">here</a>.
+</p>
+
+
+<hr>
+<h4><a name="java-xml-rpc">Testing your server with Java</a></h4>
+
+<p>The easiest way test to XML-RPC with Java is to 
+use <tt>xml-rpc-test.jar</tt>, a Java Archive I created by
+merging version 1.3 of <a href="http://jakarta.apache.org/commons/codec/">the Apache Commons Codec library</a>,
+and version 2 of 
+<a href="http://ws.apache.org/xmlrpc/xmlrpc2/">the Apache XML-RPC library</a>. 
+(Note: version 3 of this library does not provide a utility class
+for calling XML-RPC directly.)</p>
+
+<p>To install, download
+<a href="../programs/xml-rpc-test.jar">xml-rpc-test.jar</a>
+to some directory, e.g., <tt>c:\java\xml-rpc\</tt>.</p>
+
+<p>To test an XML-RPC method:
+
+<ul>
+<li>Start a command shell.</li>
+
+<li>Change to the directory where you put <tt>xml-rpc-test.jar</tt>.
+
+<li>Type <tt>java -jar xml-rpc-test.jar <em>server-url method-name arguments...</em></tt>.
+</li>
+</ul>
+
+<p>For example, to test the state name service,
+
+<blockquote><pre>C:\java\xml-rpc><span class="input">java -jar xml-rpc-test.jar http://betty.userland.com/RPC2 examples.getStateName 32</span>
+New York</pre></blockquote>
+
+<p>To test the GCD service above:</p>
+
+<blockquote><pre>C:\java\xml-rpc><span class="input">java -jar xml-rpc-test.jar http://localhost:8080/RPC2 lisp.GCD 12155 130130</span>
+715</pre></blockquote>
+
+<p>When you're done, for safety, be sure to stop the XML-RPC server in Lisp, with</p>
+
+<blockquote><pre>(stop-server *xml-server*)</pre></blockquote>
+
+
+<hr>
+<p><a href="http://home.snafu.de/tilman/xenulink.html"><img src=
+"../images/xenu_button.gif" alt="checked with XENU button"></a>
+
+    <a href="http://validator.w3.org/check?uri=referer"><img
+        src="http://www.w3.org/Icons/valid-html401"
+        alt="Valid HTML 4.01 Strict" height="31" width="88"></a>
+  </p>
+
+<p id="closing">Comments? <img src="../images/comments.gif" alt="Comments icon" align=
+"bottom"> Send mail to <a href=
+"mailto:riesbeck@cs.northwestern.edu">Chris Riesbeck</a>.</p>
+
+</BODY>
+</HTML>

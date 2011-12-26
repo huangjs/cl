@@ -1,0 +1,876 @@
+Snd
+
+Snd is a sound editor.  It currently runs on nearly all
+Unix-based systems, including Mac OSX and Cygwin.  It might
+even run on others if the GUI support is omitted.
+
+
+To build Snd, get the sources from
+
+  ftp://ccrma-ftp.stanford.edu/pub/Lisp/snd-8.tar.gz
+
+  gzip -d snd-8.tar.gz
+  tar xf snd-8.tar
+  cd snd-8
+  ./configure
+  make
+  make install
+
+
+The configure program has several Snd-related arguments:
+
+   Extension language:
+
+     --with-ruby               use Ruby as the extension language
+       --with-ruby-prefix      set location of Ruby
+  
+     --with-guile              use Guile, not Ruby (the default); the path to guile-config
+                                 can be set via GUILE_CONFIG_path (see examples below).
+  
+     --with-forth              use Forth (FTH) as the extension language.
+  
+     --with-gauche             use Gauche (Scheme) as the extension language.
+
+     To build Snd without any extension language, use --without-guile --without-ruby
+  
+
+   Graphics:
+
+     --with-motif              use Motif (the default)
+       --with-static-motif     same, but load Motif statically (for RPM)
+       --with-motif-prefix     set Motif location (will append lib and include)
+  
+     --with-gtk                use Gtk+
+       --with-builtin-gtkrc    include built-in gtkrc fallbacks (default=yes)
+  
+     --with-no-gui             make Snd without any graphics support
+  
+     --with-gl                 include support for OpenGL (default: no)
+       --with-just-gl          same but omit Guile bindings in gl.c (default: no)
+                                 The gl module is only useful if you want to write
+                                 Scheme code to add your own OpenGL graphics to Snd.
+                                 --with-just-gl will give you the GL spectrograms
+                                 without any extras.
+  
+       --with-gl2ps            include gl2ps (postscript output from OpenGL graphics)
+  
+     --with-static-xm          include the xm module (rather than loading it dynamically)
+  			       this option affects xm.c for Motif, xg.c for Gtk.
+                                 You'll need this (or need to "make xm" and load xm.so
+                                 at runtime) if you want to use Dave Phillips'
+                                 extensions described in the tutorial.
+       --with-static-xg        same as above, but refers to the gtk xg module.    
+                                 To build xg.so separately, use "make xg".  
+           
+   Audio:
+
+     --with-alsa               use ALSA if possible (default is OSS in Linux)
+       --with-static-alsa      use ALSA statically loaded (for RPM generation)
+  
+     --with-esd                use the enlightened sound daemon, if possible
+  
+     --with-jack               use the Jack library (can be used in conjunction
+                                 with --with-alsa)
+  
+
+   Numerics:
+
+     --with-doubles            use doubles throughout (default is floats)
+
+     --with-float-samples      represent samples internally as floats (default=yes)
+     --with-sample-width=N     use N bits of samples (default: 24). N = 32 or so is 
+                                 not recommended because it does not leave you any 
+                                 "head room" during mixes. N < 16 isn't supported.
+
+
+   Other options:
+
+     --with-ladspa             include LADSPA plugin support (default: yes in Linux)
+  
+     --with-static-gsl         try to load GSL statically
+                                 GSL is loaded in any case, if it is available, and the
+  			         ISO C99 complex trig support is not available.
+                                 This affects only the Dolph-Chebyshev window.  FFT's 
+                                 are currently handled by FFTW, if it is available, otherwise
+                                 by built-in code.
+  
+     --with-snd-as-widget      make Snd a loadable widget, not a standalone program
+     --with-snd-as-pd-external make Snd a loadable pd external, not a standalone program
+     --with-hobbit             include hobbit-style function arity checking
+
+     --with-temp-dir           directory to use for temp files (default: ".")
+     --with-save-dir           directory to use for saved-state files (default: ".")
+     --with-doc-dir            directory to search for documentation
+
+     --with-shared-sndlib      try to use libsndlib.so (default: no).  The path to
+                                 sndlib-config can be specified via SNDLIB_CONFIG_path.
+  			         Normally, sndlib is built into Snd at compile time.
+       --with-midi             include sndlib midi module (default: no)
+
+     --disable-nls             the gettext (internationalization) support is on
+                                 by default; this turns it off.
+
+     --without-gsl, --without-fftw 
+                               these turn off the default inclusion of FFTW and the
+                                 possible inclusion of GSL.
+
+
+If the configure/make process fails, please send me
+(bil@ccrma.stanford.edu) the files mus-config.h, config.log, and makefile,
+created (or updated) by configure.
+
+If you don't have Guile, Gauche, Ruby, or Forth, Snd can still be built, but it's
+severely limited in what it can do.  Snd can also be built without
+any graphics toolkit.  Without either the GUI or the extension
+language, however, there's nothing it can do.
+
+Here at CCRMA, we use this configure invocation:
+
+  ./configure --with-jack --with-temp-dir=/zap --with-static-xm --with-gl --with-gl2ps
+
+but I'd recommend --with-just-gl elsewhere (the various GL implementations
+are different enough that gl.c can be a pain to build).
+
+
+Version info:
+  if Gtk, then Gtk+ 2.0.0 or later
+  if Motif, then Motif 2.n but not Lesstif
+  in Linux, if ALSA, then ALSA 0.9beta8 or later (or any version of OSS)
+  if Guile, Guile 1.3.4 or later but most *.scm files need 1.5.0 or later
+  if Ruby, Ruby 1.6.4 or later, but some *.rb files need 1.8.0 or later
+  if Forth, any version
+  if GSL, version 0.8 or later
+  if gtkglext, version 1.0 or later
+  if gamin, version 0.1.0 or later
+  if Gauche, version 0.8.7
+
+
+----------------------------------------------------------------
+
+The customization/extension languages are either Guile, Gauche, Ruby, or Forth.
+
+Much of Snd's functionality is loaded as needed from the Scheme, Ruby, or Forth
+files found in the tarball (*.scm, *.rb, and *.fs).  You can run Snd without 
+these files, but there's no reason to!  Just add the directory containing
+those files to the "load-path".  In Guile,
+
+  (set! %load-path (cons "/home/bil/cl" %load-path))
+
+%load-path is the list of directories that Guile looks at when trying
+to find a file to load.  Here I've added "/home/bil/cl" so that Snd
+can find its sources no matter what directory I run it in.  If you 
+create a file named ~/.snd_guile and put such a line in it, you'll
+never have to think about it again.  In the other languages:
+
+Ruby:   $LOAD_PATH.push("/home/bil/cl")
+Gauche: (add-to-load-path "/home/bil/cl")
+Forth:  "/home/bil/cl" add-load-path
+
+
+----------------------------------------------------------------
+
+The documentation is in snd.html, extsnd.html, grfsnd.html, sndscm.html,
+sndlib.html, clm.html, fm.html, and libxm.html.  There's also a fancier 
+wrapper for the documentation: snd1.html.  A brief change log is in HISTORY.Snd.
+Dave Phillips has written a tutorial: see the tutorial directory.
+
+
+The mailing list for Snd is the same as that for Common Music:
+cmdist@ccrma.stanford.edu.  To subscribe, visit
+
+  http://ccrma-mail.stanford.edu/mailman/listinfo/cmdist
+
+The mailing list has been auto-archived since Apr 2002;
+the previous posts (going back to late 1993) are in
+ftp://ccrma-ftp.stanford.edu/pub/Lisp/old-cmdist.html.
+
+
+To follow the Snd CVS repository, the first time you need to
+
+       cvs -d:pserver:anonymous@snd.cvs.sourceforge.net:/cvsroot/snd login 
+       cvs -z3 -d:pserver:anonymous@snd.cvs.sourceforge.net:/cvsroot/snd co cvs-snd
+
+When prompted for a password for anonymous, press the Enter key. 
+After that, you go to your local cvs-snd directory and
+
+       cvs update 
+
+
+Included with Snd are four command-line programs that might
+be of interest: sndplay, sndrecord, sndinfo, and audinfo:
+
+  make sndplay
+
+
+----------------------------------------------------------------
+This software is available to anyone who is interested, free gratis
+for nothing, without warranties of any kind (see the file COPYING for
+legalese).  Send bug reports or suggestions to bil@ccrma.stanford.edu.
+----------------------------------------------------------------
+
+
+Authors:
+
+Bill Schottstaedt
+Michael Scholz
+Kjetil S. Matheussen
+
+Dave Phillips:          the tutorial, new-effects.scm, and many other files.
+Fernando Lopez-Lezcano: the current ALSA support.
+Richard W.E. Furse:     the original LADSPA support.
+Nick Bailey:            the ESD support.
+Volker Kuhlmann and Seppo Ingalsuo: the Solaris port.
+Seppo Ingalsuo:         the HPUX port.
+Juan Reyes:             the DEC Alpha port.
+Guenter Geiger and Stefan Schwandter: the Linux Alpha port.
+Paul Davis:             the original ALSA support.
+Gerd Rausch:            the Sam 9407 support.
+Steven Schultz:         the BSD port.
+Ludger Brummer and Charles Nichols: the Mac-OSX port.
+Thomas Klausner:        the NetBSD port.
+Plus many other contributions from
+  Fernando Lopez-Lezcano, 
+  Tom Roth,
+  Fabio Furlanete,
+  Rick Taube,
+  Anders Vinjar,
+  Olivier Doare.
+
+
+In terms of number of lines, the languages used in Snd/Sndlib are:
+C, Scheme, Ruby, Forth, m4, Common Lisp, Emacs Lisp, javascript,
+expect, and postscript (altogether more than 550,000 lines).
+
+
+To get the German version at run-time, (setlocale LC_ALL "de_DE").
+
+
+----------------------------------------------------------------
+
+If you hit a bug, don't just sit there weeping -- send me
+(bil@ccrma.stanford.edu) a description of it!  If it's something like
+a segfault, you have gdb, and you can build Snd from the sources, it
+would help me a lot if you could build it with the -g switch, then
+
+gdb snd
+run
+<here do whatever it takes to get the bug>
+where
+
+The 'where' command should print out the current stack trace which
+is extremely helpful to me in tracking down the problem.  It can also
+be helpful to move to the first Snd-related function in the stack
+(via the 'up' command), then type
+
+info locals
+
+This will print out the value of the local variables.  In most cases,
+that's all I need to fix the bug immediately.  On the SGI, the debugger
+is named dbx, and the local variable command is named dump.  If Snd
+appears to be hung, you can 
+
+gdb snd
+break exit
+run
+<now get it to hang, then type control-C to exit>
+where
+
+
+
+----------------------------------------------------------------
+
+URLS:
+
+CCRMA:
+  http://ccrma.stanford.edu/
+  http://ccrma.stanford.edu/~jos/
+  http://ccrma.stanford.edu/planetccrma/software/
+  http://ccrma.stanford.edu/planetccrma/software/soundapps.html#snd
+  http://ccrma-mail.stanford.edu/pipermail/cmdist/
+  http://ccrma-mail.stanford.edu/mailman/listinfo/planetccrma
+
+Snd:
+  ftp://ccrma-ftp.stanford.edu/pub/Lisp/snd-8.tar.gz
+  http://ccrma.stanford.edu/software/snd/
+  http://sourceforge.net/projects/snd/
+  http://www.notam02.no/arkiv/doc/snd-rt/
+  http://linux.oreillynet.com/pub/a/linux/2001/10/05/snd_partone.html
+  http://linux.oreillynet.com/pub/a/linux/2001/10/18/snd_parttwo.html
+  http://www.saunalahti.fi/~mjkoskin/
+  http://www.cosy.sbg.ac.at/~gwesp/mma-sound.html (Mathematica)
+  http://www.notam02.no/9
+  http://www.justlinux.org
+  http://www.linuxjournal.com/article.php?sid=7274
+  http://cvs.freebsoft.org/repository/fvoxedit/
+  http://www.blastwave.org/packages/snd (Solaris package)
+  http://www.notam02.no/arkiv/src/snd/ (snd-ls)
+  http://www.notam02.no/~kjetism/sandysth/
+
+Guile/Scheme:
+  http://www.gnu.org/software/guile/guile.html
+  http://www.cs.indiana.edu/scheme-repository
+  http://www.schemers.org/
+  http://www.ccs.neu.edu/home/dorai/t-y-scheme/t-y-scheme.html
+  http://www.cs.utexas.edu/users/wilson/schintro/schintro_toc.html
+  http://www.swiss.ai.mit.edu/~jaffer/SLIB.html
+  http://mitpress.mit.edu/sicp/full-text/book/book.html
+  http://cvs.zeit.de/guile-hobbit-latest.tar.gz (Hobbit for Guile 1.6.4)
+
+Forth:
+  http://sourceforge.net/projects/fth
+
+Motif:
+  http://www.motifzone.net
+
+Gauche:
+  http://www.shiro.dreamhost.com/scheme/gauche/index.html
+
+Gtk+:
+  http://www.gtk.org
+  ftp://ftp.gtk.org/pub/gtk/
+  http://sourceforge.net/projects/gtkglext/
+
+OpenGL:
+  http://www.mesa3d.org/
+  http://mesa3d.sourceforge.net/
+  http://www.geuz.org/gl2ps/
+
+Linux audio:
+  http://linux-sound.org
+  http://www.linuxsound.at
+
+GSL:
+  ftp://ftp.gnu.org/gnu/gsl
+
+Ruby:
+  comp.lang.ruby
+  http://www.ruby-lang.org
+
+fftw:  
+  http://www.fftw.org
+
+
+On LADSPA, Dave Phillips adds: "I have used the LADSPA plugins as standalone 
+effects processing modules. The Help texts for the LADSPA effects are courtesy 
+Steve Harris, with edits and emendations from yours truly. You will need the 
+latest plugin sets from www.ladspa.org and plugin.org.uk to make full use of 
+the LADSPA effects in Snd."
+
+
+
+----------------------------------------------------------------
+
+TROUBLES:
+
+
+---- audio (a can of worms) ----
+
+In Linux, Snd sometimes can't seem to play or record when other
+applications are happy -- if this happens, please evaluate the function
+mus-audio-describe, and send me whatever it prints out.  But I've
+never yet suggested anything that worked, so ask someone else first.
+
+
+If you're running esd, you need to build Snd with the configuration
+switch --with-esd.  Otherwise, it's likely you'll get an error
+from the 'play' button complaining about data formats, probably
+that it can't handle big-endian shorts.
+
+
+The Record dialog only works in Linux (OSS, perhaps ALSA), Sun (not x86),
+some SGI systems, and perhaps Mac OSX.  In Linux, someone below the level
+of my code randomly switches input between the microphone and the line-in
+jack -- I don't know why or how to stop it!  If this is happening to you,
+the recorder will appear to stop working, then if you leave it and
+return, it will be happy again -- extremely annoying!
+
+
+In X86 Solaris, you may need to install Jurgen Keil's audio drivers.
+They can be found at http://www.tools.de/solaris.  Here are some
+suggestions from Russell Aspinwall:
+
+    Assuming you are using the Java Desktop System, then if there is sound 
+    you will find a speaker in the lower right hand corner, if there is a 
+    red line through it then it has not detected the sound card. 
+
+    To find the audio device , as root run 
+
+    # prtconf -pv > /tmp/prtconf.txt 
+
+    open prtconf.txt in text editor and search for "Audio Device", this will 
+    give the pci identifiers. grep /etc/driver_aliases for those pci 
+    identifiers and this will identify the Device Driver. 
+
+    # mixerctl 
+
+    should return [some description of the audio hardware]
+
+But I still have not managed to get output on my machine.  Apparently
+the audio card thinks it's the local network controller or something.
+
+
+---- ALSA: ----
+
+Only versions from 0.9 of ALSA are supported. If you get a compile-time
+complaint about snd_pcm_hw_params (ALSA 0.9beta4) you need to get
+a newer version of ALSA.
+
+On recording, here's a note from Fernando from cmdist:
+
+    > Recently I installed a sound card with digital in (with cmi8738 chip)
+    > in my linux system with alsa. With 'arecord -D hw:0.2' I can succesfully record
+    > from my digital input. How can I do the same with with Snd? The
+    > digital inputs do not appear on the record window. I compiled Snd with alsa support.
+    
+    You could try to set up an environment variable before starting snd to 
+    point to that particular device. This is the way snd reacts to env 
+    variables:
+    
+    - searched for in the following order:
+      MUS_ALSA_PLAYBACK_DEVICE
+         defines the name of the playback device
+      MUS_ALSA_CAPTURE_DEVICE
+         defines the name of the capture device
+      MUS_ALSA_DEVICE
+         defines the name of the playback and capture device
+      use the first two if the playback and capture devices are different or the
+      third if they are the same.
+    
+    So you could try:
+      MUS_ALSA_DEVICE="hw:0,2" snd
+    if you are using bash as your shell
+    
+    This should use the digital i/o as the input output device.  It would also
+    be possible to concatenate several devices using a definition in the
+    .asoundrc file but that would involve understanding its arcane
+    configuration language, which I don't. The current snd alss 0.9 code only
+    looks at the first device it finds (normally hw:0,0).
+    
+    -- Fernando
+
+There's also a discussion of RME cards in the cmdist archives.
+
+
+An addendum: in my system, I have a wretched sound card in my machine,
+and an EMI 2|6 connected to a USB connector.  So the EMI device is "hw:1"
+in Alsa terms, and since I never want to use the internal sound card,
+I have this line in my ~/.cshrc file:
+
+setenv MUS_ALSA_DEVICE "hw:1"
+
+But this number seems to be set randomly at boot time!  And sometimes, Alsa
+in its infinite wisdom mutes the playback device. So, now I
+have these lines executing at startup:
+
+amixer sset PCM,0 80% unmute
+amixer sset Mic,0 80%
+
+If you use 100% (meaning, give me full amplitude output), it's the same
+as 0!! 
+
+
+
+---- colors: ----
+
+If you're running KDE and the menu labels are invisible, check
+the 'theme' you're using.  You normally want black label foregrounds;
+you can get these by
+
+    ./snd -xrm '*foreground: Black'
+
+
+---- fonts: ----
+
+If you're getting empty boxes where characters should be, or Xt
+warnings about missing font characters, check your LANG and
+SUPPORTED environment variables.  If they're UTF-8, you should
+probably add lines such as:
+
+setenv LANG en_US
+setenv SUPPORTED en_US:en
+
+to your .cshrc file to override the bogus settings.  (In RedHat
+Linux, the bad settings come either from /etc/profile or from 
+the lang.csh file in /etc/profile.d).
+
+
+---- Motif: ----
+
+Only Motif 2.n is supported.
+
+If you get the error:
+
+ snd-x0.h:9 Xm/XmAll: No such file or directory
+
+This probably means you don't have the Motif headers installed -- to
+build Snd with a GUI from the sources, you need either Motif or Gtk+.
+Motif has been released as open source software: see the url
+mentioned below.  If you installed the openmotif library rpm package,
+it may not have included the headers (look under
+/usr/X11R6/include/Xm); to build Snd from the sources you need the
+headers (in the openmotif-devel packages).
+
+In Debian, apt-get install libmotif-dev.
+
+If you have installed Motif in some weird place, use the -I compiler
+flag to provide that information to the compiler.  I've added the
+-with-motif-prefix argument to the configure script, but don't know if
+it works; if, for example, you have Motif in /usr/local/lib and
+/usr/local/include, try --with-motif-prefix=/usr/local
+
+If Snd using Lesstif is messed up, that's Lesstif's problem!  I'm
+not trying to support this anymore.
+
+
+---- Gtk+: ----
+
+Only Gtk-2 or later is supported.  
+
+If you get an error like:
+
+  Gtk-WARNING **: <much useless mumbling>
+
+you can find where it occurs by:
+
+  gdb snd
+  run --g-fatal-warnings
+    <now do whatever it takes to hit the warning>
+  where
+
+In some cases, if you installed gtk from an RPM file, you
+also need to install gtk-devel.  Otherwise the configure
+process thinks you have an old, unusable version of gtk.
+
+
+---- GSL: ----
+
+If configure finds GSL, but Snd refuses to load, giving an error
+about missing gsl_complex_cos (or whatever), you need to get the
+GSL sources and build it again; apparently the version of libgsl.a
+that comes with Redhat 7.0 doesn't include any of the complex
+trig package?  If GSL is used at all (it is only needed if your
+C compiler/libraries don't support complex trig), the Snd needs 
+GSL 0.8 or later.
+
+
+---- Guile: ---- 
+
+If you get a complaint along the lines of "ice-9/boot-9.scm not
+found", it means you're running a version of Snd that has Guile
+loaded, but Guile isn't installed locally.  You need to install Guile.
+If Guile is installed, try running 'guile-config info' to find out
+where it thinks its boot files are.  It's not impossible that running
+snd under strace would show you what the actual desired path is.  In
+the copious strace output, you should be able to find lines like:
+    stat("/usr/local/share/guile/1.4/ice-9/boot-9.scm"...)
+
+If you have installed Guile, but the snd image is looking in the wrong
+place, try setting the envinronment variable GUILE_LOAD_PATH to the
+correct directory:
+
+  setenv GUILE_LOAD_PATH /home/jimb/guile-snap
+
+  (fink): setenv GUILE_LOAD_PATH /sw/share/guile/1.6
+
+Another possibility is the %load-path variable; in your ~/.snd file try
+something like:
+
+    (set! %load-path (cons "/home/bil/test" %load-path)))
+
+(assuming you've put the guile files into /home/bil/test).
+
+
+If the configure script says that your guile doesn't have
+scm_make_smob_type, yet you do have guile 1.3.4 (or later) installed,
+it's probably because the RedHat installer or someone, installed Guile
+1.3 in /usr/bin and /usr/lib, but then the new version got installed
+in /usr/local/bin.  The simplest fix is to remove /usr/bin/guile and
+/usr/bin/guile-config.  If you get an inconsistent state here (that
+is, configure thinks you're loading 1.3, but Snd itself finds 1.3.4),
+you will get segfaults when the hooks are accessed (and probably
+elsewhere).  If you can run Snd at all, try snd --version -- this will
+try to catch and report consistency problems.
+
+
+If you want to keep several Guile versions around, but use a
+particular one for Snd, use the configure variable GUILE_CONFIG_path:
+
+./configure GUILE_CONFIG_path=/home/bil/test/bin
+
+In this case, the configure script looks for /home/bil/test/bin/guile-config
+and uses the paths it returns to build Snd.  See also the PATH business below.
+
+
+> Other thing is that configure doesn't find guile-1.4.
+> For some reason it thinks it's an older version and I have to manually edit
+> mus-config.h
+
+It's using guile-config to find guile; if you've got more
+than one guile-config, it's up to your PATH setting, or
+something, which one gets called.  In Redhat, an ancient
+version gets installed in /usr/bin, then if you install
+your own using the defaults, it ends up in /usr/local/bin,
+and in many cases, the new version is not noticed. You
+could delete or rename /usr/bin/guile-config or change the
+relevant environment variable.  To see what configure sees,
+in a shell try guile-config link or guile-config --version.
+
+Fernando Lopez-Lezcano mentioned this possibility:
+
+  If you want to force a different guile do (if you're using bash):
+
+    PATH=/usr/marco/nicepath/bin/:$PATH ./configure --with-alsa --with-gtk
+
+  where /usr/marco/nicepath/bin is the path where the guile-config you want
+  is located. Do the same thing when you make:
+
+    PATH=/usr/marco/nicepath/bin:$PATH make
+
+
+If you're running Guile 1.4 and get:
+    Syntax error in fixed argument declaration.
+you've hit a use of the newer (Guile 1.5) optargs syntax.  To get around
+this, load fix-optargs.scm before anything else.  There are other
+similar problems involving "applicable smobs" and the tab-completion
+system; if possible, get the latest Guile.
+
+
+If you're using the CVS Guile (1.7.0), or Forte C on a Sun, and get
+some complaint about lt_dlopen (or some name like that), you need to
+add -lltdl to the library list.  If that doesn't fix it, add
+-lguile-ltdl -- this part of the CVS guile is in flux, so the load
+sequence is tricky.
+
+
+Finally, if you installed Guile from an RPM file, you may also need
+to install the guile-devel package.  Otherwise the configure process
+will say it can't find Guile (actually guile-config).
+
+
+---- SGI/OpenGL ----
+
+OpenGL comes with the SGI, but its drawing area widget seems to be less
+than adequate -- I use Mesa on Linux where X drawing commands can be mixed
+with OpenGL.  On the SGI when using GL, the colors are all messed up.
+
+Don't run the Motif/GL and the Gtk/GL versions of Snd at the same time.
+This can kill the X server!
+
+
+
+---- Sun ----
+
+If the make process complains about lt_dlclose and friends, add -lltdl
+to the GUILE_LIBS list in makefile.  The --with-gl and --with-just-gl
+switches are not recommended on the Sun, though they work; the
+colormap of the entire system is hijacked while Snd is running.
+
+Perhaps simplest is to get the package through blastwave:
+
+    pkg-get -i snd
+
+http://www.blastwave.org/packages/snd 
+http://www.blastwave.org 
+http://www.blastwave.org/howto.html
+
+
+
+---- Mac OSX: ---- 
+
+Gtk is being ported to the Mac as a native (non-X11) library, so
+as soon as that is available to developers, I'll try to build Snd.
+Until then, you can use either Motif or Gtk running under X11.
+
+
+First, install the X11SDK and X11User packages.  The first is in one
+of the Installer directories, the second (in 10.4) is on the first
+install disk under System/Installation/Packages/X11User.pkg or some 
+such name.  These give you the X11 server and its header files.
+
+There are several ways to go from here; the simplest is probably
+to use Darwin Ports as outlined by Hans Fugal:
+
+  I installed openmotif and gsl with Darwin Ports: 
+
+  sudo port install openmotif 
+  sudo port install gsl 
+
+  Then I did the regular: 
+
+  ./configure --with-motif --with-ruby 
+  make 
+  sudo make install 
+  open-x11 /usr/local/bin/snd 
+
+
+If you get some complaint about identifiers that look like they come
+from libSM or libICE, add -lICE -lSM to the end of the library
+list in the makefile.
+
+You might also need to fixup the guile portion of the makefile:
+
+GUILE_LIBS = -L/usr/local/lib -lguile -lm -lguile-ltdl -ldl
+
+or, in the fink case:
+
+GUILE_LIBS = -L/sw/lib -lguile -lm /sw/lib/libguile.a
+GUILE_CFLAGS = -I/sw/include/
+
+
+If C-f (and other such commands) doesn't work, either try toggling
+the "w" button, or add the focus-widget related hooks from grfsnd.html
+to your initialization file:
+
+(if (not (provided? 'snd-extensions.scm)) (load-from-path "extensions.scm"))
+(focus-follows-mouse)
+
+
+If the openmotif package forgot to include libXm.a, a version is
+at ccrma-ftp.  If the Mac loader complains that it it out of date,
+run ranlib: ranlib libXm.a (you may need to admin privileges to do this).
+
+
+On my OSX 10.4 Mac, the configuration command I use is:
+
+./configure --with-motif-prefix=/usr/OpenMotif --with-static-xm
+
+So, I believe all the rest of these instructions are obsolete,
+but if the simple case above fails, they may help you get going.
+
+
+See also the cmdist archives for tips from Juan Pampin and others.
+
+Here's some info from Josh Mattoon:
+
+    "It turns out everything required for snd is now in fink! 
+
+     sudo fink install openmotif3 fftw guile guile-dev 
+
+    So... after a loooong compilation process (fftw required g77) I had
+    everything in place.  But ./configure couldn't find them, d'oh.  My
+    simple solution was to pass in the CFLAGS and LDFLAGS as so:
+    
+    CFLAGS=-I/sw/include LDFLAGS="-L/sw/lib -lmx -bind_at_load" ./configure \ 
+         --with-gl --with-editres --with-static-xm --with-guile
+    
+    This was after a bit of trial and error.  The linker couldn't find
+    some symbols that turned out to be in libmx, so I added that, and the
+    linker also suggested the bind_at_load (though I'm not totally sure
+    what that means)."
+
+
+(fftw is optional in Snd).  Adam Tinsdale had better luck with this:
+
+    CFLAGS=-I/sw/include LDFLAGS="-L/sw/lib -lmx -bind_at_load" ./configure  \
+      --with-motif --with-guile --without-fftw --with-static-xm
+
+
+Taking that into account, if you installed Guile via fink, you might
+try:
+
+    ./configure CFLAGS="-I/sw/include" LDFLAGS="-L/sw/lib -lmx -bind_at_load" \
+GUILE_CONFIG_path=/sw/bin GUILE_CONFIG_name=guile-1.6-config GUILE_name=guile-1.6 \
+--disable-nls --with-guile --with-motif --with-motif-prefix=/sw
+
+
+The ccrma-ftp images osx-10.2-snd to osx-10.4-snd need only guile 1.6.4;
+  everything else (well, leaving aside -lm) is loaded statically.  The guile
+  libraries are loaded statically, but guile needs its "boot" files in
+  its ice-9 directory whenever it starts, so you need it installed.  Set
+  the environment variable GUILE_LOAD_PATH to point to your version:
+
+    setenv GUILE_LOAD_PATH /Users/Mozart/Desktop/guile-1.6.4
+
+
+The dac-size variable seems to matter a lot in OSX.  If you're
+getting distorted playback, try various powers of 2.  It defaults
+to 64.
+
+Rick Taube mentions this for tracing the load process:
+
+  [...]you can set the DYLD_PRINT_LIBRARIES shell variable:
+
+        DYLD_PRINT_LIBRARIES=1
+        export DYLD_PRINT_LIBRARIES
+
+  some other useful dylib variables:
+
+        DYLD_FRAMEWORK_PATH
+        DYLD_FALLBACK_FRAMEWORK_PATH
+        DYLD_LIBRARY_PATH
+        DYLD_FALLBACK_LIBRARY_PATH
+
+Also, you can check the "about Snd" option under the Help menu
+to find out where Guile is finding its boot files.
+
+
+So, here's the detailed step-by-step method, thanks to Cris Ewing:
+
+    This build was done on a Mac G4 Powerbook with OS X 10.3 (panther).
+    
+    The first step (and it is a vital one) is to make sure that your version
+    of fink is fully up-to-date.  Start by running
+    
+    $ fink selfupdate
+    $ fink update-all
+    
+    Next, verify that you have a working version of X11 on your machine.  This
+    must include the development libs found in the X11SDK.  If you are using
+    apple's version of X11, the SDK package is _not_ installed by default when
+    you install X11.  You have to do a custom install from the XCode disk to
+    get the package.
+    
+    Once all this is in place, use fink to install openmotif3
+    
+    $ fink install openmotif3
+    
+    Next, install guile16
+    
+    $ fink install guile16
+    
+    And you need to add the guile development libraries, they don't get
+    installed with the rest of the packages.
+    
+    $ fink install guile16-dev
+    
+    You can also use fink to install the fftw package.  It takes a really long
+    time to build, but helps to speed up the fft-based functions in snd.
+    
+    $ fink install fftw
+    
+    Next, download and untar the latest snd sources from ccrma
+    
+    Configuration has been aided quite a bit by Bill since I had my problems,
+    he's added a number of command-line variables that you can set that will
+    help with naming problems in guile16 (the guile binaries are named
+    differently than in earlier versions of guile).  If you have trouble with
+    the configure process, you may want to check to make sure what the guile
+    binaries are named.  All the information you will need to get configure to
+    work successfully is in README.Snd inside the snd distribution.  It seems
+    important to use the switch --disable-nls.  I'm not sure why, but I
+    couldn't get the build to work with nls enabled.  This is the
+    configuration command that I used after following the instructions above:
+    
+    $ ./configure CFLAGS=-I/sw/include LDFLAGS="-L/sw/lib -lmx -bind_at_load" \
+    GUILE_CONFIG_path=/sw/bin GUILE_CONFIG_name=guile-1.6-config \
+    GUILE_name=guile-1.6 --disable-nls --with-guile --with-motif \
+    --with-static-xm --with-motif-prefix=/sw
+    
+    This config was run from a bash shell.  If you are using tcsh (and you
+    might be if you upgraded to panther) then you will have to omit the part
+    about CFLAGS and LDFLAGS above.  Instead, you can set these through the
+    shell by running
+    
+    % setenv LDFLAGS "-L/sw/lib -lmx -bind_at_load""
+    % setenv CFLAGS "-I/sw/include"
+    
+    After this, you're nearly home:
+    
+    $ make
+    
+    $ sudo make install
+    
+    (you need to sudo make install, because it will install an snd-executable
+    in /usr/local/bin)
+
+

@@ -1,0 +1,243 @@
+<html>
+<head><title>BDD-INTRODUCTION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BDD-INTRODUCTION</h2>examples illustrating the use of BDDs in ACL2
+<pre>Major Section:  <a href="BDD.html">BDD</a>
+</pre><p>
+
+See <a href="BDD.html">bdd</a> for a brief introduction to BDDs in ACL2 and for
+pointers to other documentation on BDDs in ACL2.  Here, we
+illustrate the use of BDDs in ACL2 by way of some examples.
+For a further example, see <a href="IF_star_.html">if*</a>.
+<p>
+Let us begin with a really simple example.  (We will explain the
+<code>:bdd</code> hint <code>(:vars nil)</code> below.)
+
+<pre><p>
+
+ACL2 !&gt;(thm (equal (if a b c) (if (not a) c b))
+            :hints (("Goal" :bdd (:vars nil)))) ; Prove with BDDs<p>
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]<p>
+
+But simplification with BDDs (7 nodes) reduces this to T, using the
+:definitions EQUAL and NOT.<p>
+
+Q.E.D.<p>
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION EQUAL) (:DEFINITION NOT))
+Warnings:  None
+Time:  0.18 seconds (prove: 0.05, print: 0.02, other: 0.12)<p>
+
+Proof succeeded.
+ACL2 !&gt;
+</pre>
+
+The <code>:bdd</code> hint <code>(:vars nil)</code> indicates that BDDs are to be used
+on the indicated goal, and that any so-called ``variable ordering''
+may be used:  ACL2 may use a convenient order that is far from
+optimal.  It is beyond the scope of the present documentation to
+address the issue of how the user may choose good variable
+orderings.  Someday our implementation of BDDs may be improved to
+include heuristically-chosen variable orderings rather than rather
+random ones.<p>
+
+Here is a more interesting example.
+
+<pre>
+(defun v-not (x)
+; Complement every element of a list of Booleans.
+  (if (consp x)
+      (cons (not (car x)) (v-not (cdr x)))
+    nil))<p>
+
+; Now we prove a rewrite rule that explains how to open up v-not on
+; a consp.
+(defthm v-not-cons
+  (equal (v-not (cons x y))
+         (cons (not x) (v-not y))))<p>
+
+; Finally, we prove for 7-bit lists that v-not is self-inverting.
+(thm
+ (let ((x (list x0 x1 x2 x3 x4 x5 x6)))
+   (implies (boolean-listp x)
+            (equal (v-not (v-not x)) x)))
+ :hints (("Goal" :bdd
+                 ;; Note that this time we specify a variable order.
+                 (:vars (x0 x1 x2 x3 x4 x5 x6)))))
+</pre>
+
+It turns out that the variable order doesn't seem to matter in this
+example; using several orders we found that 30 nodes were created,
+and the proof time was about 1/10 of a second on a (somewhat
+enhanced) Sparc 2.  The same proof took about a minute and a half
+without any <code>:bdd</code> hint!  This observation is a bit misleading
+perhaps, since the theorem for arbitrary <code>x</code>,
+
+<pre>
+(thm
+ (implies (boolean-listp x)
+          (equal (v-not (v-not x)) x)))
+</pre>
+
+only takes about 1.5 times as long as the <code>:bdd</code> proof for 7 bits,
+above!  Nevertheless, BDDs can be very useful in reducing proof
+time, especially when there is no regular structure to facilitate
+proof by induction, or when the induction scheme is so complicated
+to construct that significant user effort is required to get the
+proof by induction to go through.<p>
+
+Finally, consider the preceding example, with a <code>:bdd</code> hint of
+(say) <code>(:vars nil)</code>, but with the rewrite rule <code>v-not-cons</code> above
+disabled.  In that case, the proof fails, as we see below.  That is
+because the BDD algorithm in ACL2 uses hypothesis-free
+<code>:</code><a href="REWRITE.html">rewrite</a> rules, <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code><code>s</code>, and
+nonrecursive definitions, but it does not use recursive definitions.<p>
+
+Notice that when we issue the <code>(show-bdd)</code> command, the system's
+response clearly shows that we need a rewrite rule for simplifying
+terms of the form <code>(v-not (cons ...))</code>.
+
+<pre>
+ACL2 !&gt;(thm
+        (let ((x (list x0 x1 x2 x3 x4 x5 x6)))
+          (implies (boolean-listp x)
+                   (equal (v-not (v-not x)) x)))
+        :hints (("Goal" :bdd (:vars nil)
+                 :in-theory (disable v-not-cons))))<p>
+
+[Note:  A hint was supplied for our processing of the goal above.
+Thanks!]<p>
+
+
+ACL2 Error in ( THM ...):  Attempted to create V-NOT node during BDD
+processing with an argument that is a call of a bdd-constructor,
+which would produce a non-BDD term (as defined in :DOC
+bdd-algorithm).  See :DOC show-bdd.<p>
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  None
+Time:  0.58 seconds (prove: 0.13, print: 0.00, other: 0.45)<p>
+
+******** FAILED ********  See :DOC failure  ******** FAILED ********
+ACL2 !&gt;(show-bdd)<p>
+
+BDD computation on Goal yielded 17 nodes.
+==============================<p>
+
+BDD computation was aborted on Goal, and hence there is no
+falsifying assignment that can be constructed.  Here is a backtrace
+of calls, starting with the top-level call and ending with the one
+that led to the abort.  See :DOC show-bdd.<p>
+
+(LET ((X (LIST X0 X1 X2 X3 X4 X5 ...)))
+     (IMPLIES (BOOLEAN-LISTP X)
+              (EQUAL (V-NOT (V-NOT X)) X)))
+  alist: ((X6 X6) (X5 X5) (X4 X4) (X3 X3) (X2 X2) (X1 X1) (X0 X0))<p>
+
+(EQUAL (V-NOT (V-NOT X)) X)
+  alist: ((X (LIST X0 X1 X2 X3 X4 X5 ...)))<p>
+
+(V-NOT (V-NOT X))
+  alist: ((X (LIST X0 X1 X2 X3 X4 X5 ...)))<p>
+
+(V-NOT X)
+  alist: ((X (LIST X0 X1 X2 X3 X4 X5 ...)))
+ACL2 !&gt;
+</pre>
+
+The term that has caused the BDD algorithm to abort is thus
+<code>(V-NOT X)</code>, where <code>X</code> has the value <code>(LIST X0 X1 X2 X3 X4 X5 ...)</code>,
+i.e., <code>(CONS X0 (LIST X1 X2 X3 X4 X5 ...))</code>.  Thus, we see the utility
+of introducing a rewrite rule to simplify terms of the form
+<code>(V-NOT (CONS ...))</code>.  The moral of this story is that if you get
+an error of the sort shown above, you may find it useful to execute
+the command <code>(show-bdd)</code> and use the result as advice that suggests
+the left hand side of a rewrite rule.<p>
+
+Here is another sort of failed proof.  In this version we have
+omitted the hypothesis that the input is a bit vector.  Below we use
+<code>show-bdd</code> to see what went wrong, and use the resulting
+information to construct a counterexample.  This failed proof
+corresponds to a slightly modified input theorem, in which <code>x</code> is
+bound to the 4-element list <code>(list x0 x1 x2 x3)</code>.
+
+<pre>
+ACL2 !&gt;(thm
+        (let ((x (list x0 x1 x2 x3)))
+          (equal (v-not (v-not x)) x))
+        :hints (("Goal" :bdd
+                 ;; This time we do not specify a variable order.
+                 (:vars nil))))<p>
+
+[Note:  A hint was supplied for our processing of the goal above.
+Thanks!]<p>
+
+
+ACL2 Error in ( THM ...):  The :BDD hint for the current goal has
+successfully simplified this goal, but has failed to prove it.
+Consider using (SHOW-BDD) to suggest a counterexample; see :DOC
+show-bdd.<p>
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  None
+Time:  0.18 seconds (prove: 0.07, print: 0.00, other: 0.12)<p>
+
+******** FAILED ********  See :DOC failure  ******** FAILED ********
+ACL2 !&gt;(show-bdd)<p>
+
+BDD computation on Goal yielded 73 nodes.
+==============================<p>
+
+Falsifying constraints:
+((X0 "Some non-nil value")
+ (X1 "Some non-nil value")
+ (X2 "Some non-nil value")
+ (X3 "Some non-nil value")
+ ((EQUAL 'T X0) T)
+ ((EQUAL 'T X1) T)
+ ((EQUAL 'T X2) T)
+ ((EQUAL 'T X3) NIL))<p>
+
+==============================<p>
+
+Term obtained from BDD computation on Goal:<p>
+
+(IF X0
+    (IF X1
+        (IF X2 (IF X3 (IF # # #) (IF X3 # #))
+            (IF X2 'NIL (IF X3 # #)))
+        (IF X1 'NIL
+            (IF X2 (IF X3 # #) (IF X2 # #))))
+    (IF X0 'NIL
+        (IF X1 (IF X2 (IF X3 # #) (IF X2 # #))
+            (IF X1 'NIL (IF X2 # #)))))<p>
+
+ACL2 Query (:SHOW-BDD):  Print the term in full?  (N, Y, W or ?): 
+n ; I've seen enough.  The assignment shown above suggests
+  ; (though not conclusively) that if we bind x3 to a non-nil
+  ; value other than T, and bind x0, x1, and x2 to t, then we
+  ; this may give us a counterexample.
+ACL2 !&gt;(let ((x0 t) (x1 t) (x2 t) (x3 7))
+         (let ((x (list x0 x1 x2 x3)))
+           ;; Let's use LIST instead of EQUAL to see how the two
+           ;; lists differ.
+           (list (v-not (v-not x)) x)))
+((T T T T) (T T T 7))
+ACL2 !&gt;<p>
+
+</pre>
+
+See <a href="IF_star_.html">if*</a> for another example.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

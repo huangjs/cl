@@ -1,0 +1,180 @@
+<html>
+<head><title>NOTE-2-7-OTHER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-OTHER</h3>ACL2 Version  2.7 Notes on Miscellaneous Changes
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+Made several minor <a href="DOCUMENTATION.html">documentation</a> improvements.  We are grateful to Eric
+Smith for suggesting (most of) these.<p>
+
+Improved <code>(show-bdd)</code> (see <a href="BDD.html">bdd</a>) to give more useful feedback when there
+are ``leaf'' terms not known to be Boolean.<p>
+
+Sped up processing of large mutual-recursion nests.  In one large example the
+speedup was roughly two orders of magnitude.<p>
+
+Modified event printing so that if both <code>'prove</code> and <code>'event</code>
+are inhibited, then events are no longer printed on behalf of
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code>, <code><a href="ENCAPSULATE.html">encapsulate</a></code>, or <code><a href="DEFSTOBJ.html">defstobj</a></code>.  Thanks
+to Eric Smith for prompting consideration of such a change.<p>
+
+The following technical change was made to support <code><a href="WITH-ERROR-TRACE.html">with-error-trace</a></code> and
+<code><a href="WET.html">wet</a></code> (see <a href="NOTE-2-7-NEW-FUNCTIONALITY.html">note-2-7-new-functionality</a>), but may be of interest to those
+who do low-level programming using the ACL2 logical <code><a href="WORLD.html">world</a></code>.  The
+<code>'unnormalized-body</code> property is now stored not only for functions defined
+in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode, but also for functions defined by the user in
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode.  (<code>:Program</code> mode Functions built into ACL2 still
+have their <code>'unnormalized-body</code> property omitted, in order to save space.)<p>
+
+The handling of ``invisible'' functions for purposes of controlling rewriting
+(see <a href="LOOP-STOPPER.html">loop-stopper</a>) has been moved to a new table; see <a href="INVISIBLE-FNS-TABLE.html">invisible-fns-table</a>.
+Macros that access and modify this table are called
+``<code>...-invisible-fns-table</code>'' in place of their former names,
+``<code>...-invisible-fns-alist</code>.''  This feature was formerly implemented in
+the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>, which prevented a book from exporting lists of
+invisible functions intended to work with the <a href="REWRITE.html">rewrite</a> rules developed in
+the book.  Thanks to Eric Smith and Rob Sumners for suggesting this change.
+See <a href="SET-INVISIBLE-FNS-TABLE.html">set-invisible-fns-table</a> (formerly <code>set-invisible-fns-alist</code>), and also
+see <a href="ADD-INVISIBLE-FNS.html">add-invisible-fns</a> and see <a href="REMOVE-INVISIBLE-FNS.html">remove-invisible-fns</a>, which provides ways to
+incrementally add to and remove from this table, respectively.  The handling
+of printing binary function call nests using macros
+(See <a href="ADD-BINOP.html">add-binop</a>) has also been moved out of the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> as
+suggested by Eric and Rob, but this feature didn't work anyhow
+(see <a href="NOTE-2-7-BUG-FIXES.html">note-2-7-bug-fixes</a>).  Incidentally, the symbols <code><a href="BINOP-TABLE.html">binop-table</a></code>,
+<code><a href="ADD-BINOP.html">add-binop</a></code>, and <code><a href="REMOVE-BINOP.html">remove-binop</a></code> have all been added to the list
+<code>*acl2-exports*</code> (see <a href="ACL2-USER.html">acl2-user</a>), <code><a href="ADD-INVISIBLE-FNS.html">add-invisible-fns</a></code> and
+<code><a href="REMOVE-INVISIBLE-FNS.html">remove-invisible-fns</a></code> have been added to that list, and
+<code>set-invisible-fns-alist</code> has been replaced in that list by
+<code><a href="SET-INVISIBLE-FNS-TABLE.html">set-invisible-fns-table</a></code>.  Function <code>invisible-fns-alistp</code> is no
+longer defined and has been removed from <code>*acl2-exports*</code>.<p>
+
+We now enforce the stated restriction on the pairings in
+<code>macro-aliases-table</code> (see <a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a>), namely, that it
+associates names of macros with names of funcions (with respect to the
+current ACL2 logical <a href="WORLD.html">world</a>).  We make a similar requirement on
+<code><a href="INVISIBLE-FNS-TABLE.html">invisible-fns-table</a></code>.<p>
+
+The <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> event has been modified so that the default action
+is an error rather than a warning.  Thanks to Eric Smith for suggesting this
+change.  Also, the value returned upon successful execution of a
+<code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> event is now the key.<p>
+
+Proof output that reports destructor elimination no longer uses the word
+``generalizing''.  This small change may help in browsing proof output, since
+now ``generaliz'' takes you to true uses of generalization.  Thanks to Matyas
+Sustik for suggesting such a change.<p>
+
+The command <code>:</code><code><a href="PL.html">pl</a></code> now prints an abbreviated controller-alist for
+<code>;</code><code><a href="DEFINITION.html">definition</a></code> rules.  Formerly the output from <code>:pl</code> could be
+overwhelming when the supplied function was part of a large
+<code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nest.<p>
+
+The defaults for keyword parameters of <code><a href="CERTIFY-BOOK.html">certify-book</a></code> have changed.
+See <a href="NOTE-2-7-BUG-FIXES.html">note-2-7-bug-fixes</a>, in particular, the discussion there of two
+modifications to <code>certify-book</code>.<p>
+
+Technical changes have been made to <code><a href="COMPRESS1.html">compress1</a></code> and <code><a href="COMPRESS2.html">compress2</a></code> that
+should usually be invisible to users.  The next paragraph describes them in
+detail, only for competeness (i.e., that description can be ignored by most
+users).  But first, here is an example showing an effect on users.  The slow
+array warning was not there previously.  Notice that the warning only arises
+if the event form is changed.  The solution is to be sure that redundant
+<code><a href="DEFCONST.html">defconst</a></code> forms are syntactically identical.
+
+<pre>
+ACL2 !&gt;(defconst *a* (compress1 'demo 
+                                '((:header :dimensions (5)
+                                           :maximum-length 15
+                                           :default uninitialized
+                                           :name demo)
+                                  (1 . one)
+                                  (0 . zero))))<p>
+
+Summary
+Form:  ( DEFCONST *A* ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ *A*
+ACL2 !&gt;(aref1 'demo *a* 0)
+ZERO
+ACL2 !&gt;(defconst *a* (compress1 'demo 
+                                '((:header :dimensions (5)
+                                           :maximum-length 15
+                                           :default uninitialized
+                                           :name demo)
+                                  (1 . one)
+                                  (0 . zero))))<p>
+
+This event is redundant.  See :DOC redundant-events.<p>
+
+Summary
+Form:  ( DEFCONST *A* ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ :REDUNDANT
+ACL2 !&gt;(aref1 'demo *a* 0)
+ZERO
+ACL2 !&gt;(defconst *a* (compress1 'demo 
+                                '((:header :dimensions (5)
+                                           :maximum-length 15
+                                           :default uninitialized
+                                           :name demo)
+                                  (0 . zero)
+                                  (1 . one))))<p>
+
+This event is redundant.  See :DOC redundant-events.<p>
+
+Summary
+Form:  ( DEFCONST *A* ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ :REDUNDANT
+ACL2 !&gt;(aref1 'demo *a* 0)<p>
+
+
+**********************************************************
+Slow Array Access!  A call of AREF1 on an array named
+DEMO is being executed slowly.  See :DOC slow-array-warning
+**********************************************************<p>
+
+ZERO
+ACL2 !&gt;
+</pre>
+<p>
+
+As before, the von Neumann structure stored in the <code>'acl2-array</code> property
+of the array name contains the array list object in its <code><a href="CAR.html">car</a></code>.  However,
+previously it was the case that <code>compress1</code> and <code>compress2</code> did not
+update that <code>car</code> when its new value would be equal to its old value.  This
+was done largely in support of some type-set tables defined using
+<code><a href="DEFCONST.html">defconst</a></code> in <code>type-set-b.lisp</code>.  The new versions of <code><a href="COMPRESS1.html">compress1</a></code>
+and <code><a href="COMPRESS2.html">compress2</a></code> are simpler in that no such exception is made in the case
+of equal lists, although instead the entire compression process is
+short-circuited when the input array list object is <code><a href="EQ.html">eq</a></code> to the <code>car</code>
+of the <code>'acl2-array</code> property.  This change was made because the equality
+test was causing a ``slow array access'' warning to be printed in rare cases
+during proofs, as described elswhere (see <a href="NOTE-2-7-BUG-FIXES.html">note-2-7-bug-fixes</a>).<p>
+
+We no longer distribute documentation specific to Lucid Emacs.  The Info
+documentation in directory <code>doc/EMACS/</code> works well both for Gnu Emacs and
+XEmacs.<p>
+
+A little-advertised macro, <code>value</code>, has long been allowed for top-level
+forms in <a href="BOOKS.html">books</a>; see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>.  This has been replaced by a
+new macro, <code>value-triple</code>.  The two have the same semantics at the
+top-level of books, where <code><a href="STATE.html">state</a></code> is ``live''.  However, <code>value-triple</code>
+should be used at the top-level of a book, while <code>value</code> should be used in
+function definitions (as before).  This change eliminates a warning put out
+by the Allegro Common Lisp compiler for top-level <code>value</code> forms in
+<a href="BOOKS.html">books</a>.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

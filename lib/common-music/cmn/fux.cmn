@@ -1,0 +1,63 @@
+;;; -*- Lisp -*-
+
+;;; an excerpt from the automatic counterpoint paper
+
+(defun xecmn (siz exp &rest args) 
+  (apply #'cmn (size siz) (free-expansion-factor exp) args))
+
+(defvar fnc .4)
+(defvar fdy 0)
+
+(defun centered-number (num &optional gad)
+  ;; place num at the center of its associated note and in the space below the staff
+  (make-instance 'sundry
+    :name :centered-number
+    :mark #'(lambda (mark note score &optional justifying)
+	      (declare (ignore mark justifying))
+	      (let* ((numr (format nil "~D" num))
+		     (numl (length numr))
+		     (x0 (+ (x0 note) (center note) (* -.1 numl)))
+		     (y0 (- (staff-y0 note) (or gad fdy) .75)))
+		(show score (text numr (font-name "Times-Roman") (font-scaler (or fnc .3)))
+		      :matrix (translate-matrix score mark x0 y0))))))
+
+(defun chfdd (&rest args)
+  (engorge
+   (loop for nt in args by #'cddr and num in (cdr args) by #'cddr
+    collect (note nt w (centered-number num .25)))))
+
+(defun chw (&rest args)
+  (engorge
+   (loop for nt in args 
+    collect (note nt w))))
+
+(defun chh (&rest args)
+  (engorge
+   (loop for nt in args by #'cddr and num in (cdr args) by #'cddr
+    collect (note nt h (centered-number num)))))
+
+(defun chht (&rest args)
+  (engorge
+   (loop for nt in args by #'cddr and num in (cdr args) by #'cddr
+    collect (note nt h (centered-number num .4)))))
+
+(defun chf3d (&rest args)
+  (engorge
+   (loop for nt in args by #'cdddr and rhy in (cdr args) by #'cdddr and num in (cddr args) by #'cdddr
+    collect (note nt rhy (centered-number num)))))
+
+(defun nc (num) (centered-number num))
+(defun nwt (pit num0 num1) (engorge (list (note pit h begin-tie (centered-number num0 .4)) (note pit h end-tie (centered-number num1 .4)))))
+
+(let ((fnc .25))
+  (xecmn 16 1.0 (automatic-line-breaks nil)
+      (staff bar treble (meter 4 4 (meter-size 0)) (chf3d d5 q 0 e5 q 1 f5 q 213 a5 e 13 g5 e 1 f5 h 105 a5 q 15 g5 q 5 f5 h 316 g5 h 3
+			       a5 h 218 f5 q 15 d5 e 19 a5 e 119 c6 q 140 a5 e 16 b5 e 6 c6 q 115 b5 q 7
+			       a5 q 218 d5 e 9 e5 e 1 f5 q 253 d5 e 10 e5 e 2 f5 h 318 g5 h 2 a5 q 220 e5 e 112 f5 e 3 g5 h 338
+			       a5 h 30 d5 q 107 c5 e 115 d5 e 129 b4 h 32 e5 q 5 b4 e 16 cs5 e 4 d5 w 122) bar)
+      (staff bar treble (meter 4 4 (meter-size 0)) (chht a4 0 d5 17 c5 3) (nwt c4 133 17) (nwt a3 13 7)
+	     (chht a4 11 e4 117 c4 21 d4 4 c4 32 a3 10 f4 19 e4 7 e5 9 d5 3 a4 5 g4 11 e4 105) (a4 w (centered-number 7 .4)) bar)
+      (staff bar treble (meter 4 4 (meter-size 0)) (chw d4 f4 e4 d4 g4 f4 a4 g4 f4 e4 d4) bar)
+      (staff bar bass (meter 4 4 (meter-size 0)) (chh a3 0 f3 2 a3 11 f3 12 c3 3 c4 21 f4 125 d4 112 e4 2 e3 8 
+			   a3 13 f3 21 c3 10 d3 3 e3 2 c4 19 a3 5 d4 6 e4 110 b3 2) (a3 w (nc 10)) bar)
+      (staff bar bass (meter 4 4 (meter-size 0)) (chfdd d3 0 a2 1 a2 6 f2 3 c2 13 f2 17 f2 5 c3 6 f3 20 g3 3 d3 11) bar)))

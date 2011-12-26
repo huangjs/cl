@@ -1,0 +1,141 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-3.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-3</h2>Hints as a Function of the Goal (not its Name)
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+Sometimes it is desirable to supply a hint whenever a certain term
+arises in a conjecture.  For example, suppose we have proved
+
+<pre>
+(defthm all-swaps-have-the-property
+   (the-property (swap x))
+   :rule-classes nil)
+</pre>
+
+and suppose that whenever <code>(SWAP A)</code> occurs in a goal, we wish to
+add the additional hypothesis that <code>(THE-PROPERTY (SWAP A))</code>.
+Note that this is equivalent supplying the hint
+
+<pre>
+(if test
+    '(:use (:instance all-swaps-have-the-property (x A)))
+    nil)
+</pre>
+
+where <code>test</code> answers the question ``does the clause contain <code>(SWAP A)</code>?''
+That question can be asked with <code>(occur-lst '(SWAP A) clause)</code>.
+Briefly, <code>occur-lst</code> takes the representation of a translated term,
+x, and a list of translated terms, y, and determines whether x
+occurs as a subterm of any term in y.  (By ``subterm'' here we mean
+proper or improper, e.g., the subterms of <code>(CAR X)</code> are <code>X</code> and
+<code>(CAR X)</code>.)<p>
+
+Thus, the computed hint:
+
+<pre>
+(if (occur-lst '(swap a) clause)
+    '(:use (:instance all-swaps-have-the-property (x A)))
+    nil)
+</pre>
+
+will add the hypothesis <code>(THE-PROPERTY (SWAP A))</code> to every goal
+containing <code>(SWAP A)</code> -- except the children of goals to which the
+hypothesis was added.<p>
+
+<b>A COMMON MISTAKE</B> users are likely to make is to forget that they
+are dealing with translated terms.  For example, suppose we wished
+to look for <code>(SWAP (LIST 1 A))</code> with <code>occur-lst</code>.  We would never
+find it with
+
+<pre>
+(occur-lst '(SWAP (LIST 1 A)) clause)
+</pre>
+
+because that presentation of the term contains macros and other
+abbreviations.  By using :trans (see <a href="TRANS.html">trans</a>) we can obtain the
+translation of the target term.  Then we can look for it with:
+
+<pre>
+(occur-lst '(SWAP (CONS '1 (CONS A 'NIL))) clause)
+</pre>
+
+Note in particular that you must 
+
+<pre>
+* eliminate all macros and
+* explicitly quote all constants.
+</pre>
+
+We recommend using <code>:trans</code> to obtain the translated form of the
+terms in which you are interested, before programming your hints.<p>
+
+An alternative is to use the expression
+<code>(prettyify-clause clause nil nil)</code> in your hint to convert the
+current goal clause into the s-expression that is actually printed.
+For example, the clause
+
+<pre>
+((NOT (CONSP X)) (SYMBOLP Y) (EQUAL (CONS '1 (CAR X)) Y)) 
+</pre>
+
+``prettyifies'' to
+
+<pre>
+(IMPLIES (AND (CONSP X)
+              (NOT (SYMBOLP Y)))
+         (EQUAL (CONS 1 (CAR X)) Y))
+</pre>
+
+which is what you would see printed by ACL2 when the goal clause is
+that shown.<p>
+
+However, if you choose to convert your clauses to prettyified form,
+you will have to write your own explorers (like our <code>occur-lst</code>),
+because all of the ACL2 term processing utilities work on translated
+and/or clausal forms.  This should not be taken as a terrible
+burden.  You will, at least, gain the benefit of knowing what you
+are really looking for, because your explorers will be looking at
+exactly the s-expressions you see at your terminal.  And you won't
+have to wade through our still undocumented term/clause utilities.
+The approach will slow things down a little, since you will be
+paying the price of independently consing up the prettyified term.<p>
+
+We make one more note on this example.  We said above that
+the computed hint:
+
+<pre>
+(if (occur-lst '(swap a) clause)
+    '(:use (:instance all-swaps-have-the-property (x A)))
+    nil)
+</pre>
+
+will add the hypothesis <code>(THE-PROPERTY (SWAP A))</code> to every goal
+containing <code>(SWAP A)</code> -- except the children of goals to which the
+hypothesis was added.<p>
+
+It bears noting that the subgoals produced by induction and
+top-level forcing round goals are not children.  For example,
+suppose the hint above fires on "Subgoal 3" and produces, say,
+"Subgoal 3'".  Then the hint will not fire on "Subgoal 3'" even
+though it (still) contains <code>(SWAP A)</code> because "Subgoal 3'" is a
+child of a goal on which the hint fired.<p>
+
+But now suppose that "Subgoal 3'" is pushed for induction.  Then
+the goals created by that induction, i.e., the base case and
+induction step, are not considered children of "Subgoal 3'".  All
+of the original hints are available.<p>
+
+Alternatively, suppose that "Subgoal 3' is proved but forces some
+other subgoal, "[1]Subgoal 1" which is attacked in Forcing Round
+1.  That top-level forced subgoal is not a child.  All the original
+hints are available to it.  Thus, if it contains <code>(SWAP A)</code>, the
+hint will fire and supply the hypothesis, producing "[1]Subgoal
+1'".  This may be unnecessary, as the hypothesis might already be
+present in "[1]Subgoal 1".  In this case, no harm is done.  The
+hint won't fire on "[1]Subgoal 1" because it is a child of
+"[1]Subgoal 1" and the hint fired on that.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

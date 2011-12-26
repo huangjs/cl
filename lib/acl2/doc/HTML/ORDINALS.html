@@ -1,0 +1,152 @@
+<html>
+<head><title>ORDINALS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ORDINALS</h2>ordinals in ACL2
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Ordinals are used in ACL2 for proving termination in the admission of
+recursive function definitions.  For a proof that the ACL2 ordinals are
+well-founded, see <a href="PROOF-OF-WELL-FOUNDEDNESS.html">proof-of-well-foundedness</a>.<p>
+
+The representation of ordinals changed in ACL2 Version_2.8, and is due to
+Pete Manolios and Daron Vroon.  They have also defined algorithms for ordinal
+arithmetic, created a library of theorems to reason about ordinal arithmetic,
+and written the rest of this documentation in order to explain this change.
+We thank them for their efforts.  Although they have provided the
+implementation and even modified the distributed books and workshop books as
+needed, we have looked over their work and are maintaining it (and this
+documentation); if there are any bugs, they should be considered ours (Matt
+Kaufmann and J Moore).<p>
+
+A book is included for compatibility with the representation before
+Version_2.8.  For books that contain events relying on the previous ordinal
+implementation, insert the following lines before the first such event:
+
+<pre>
+(include-book "ordinals/e0-ordinal" :dir :system)
+(set-well-founded-relation e0-ord-&lt;)
+</pre>
+<p>
+
+The new ordinal representation is based on a slightly different version of
+Cantor Normal Form than that used by the old ordinals.  An advantage of the
+new representation is that it is exponentially more succinct than the old
+representation.<p>
+
+While pre-Version_2.8 ACL2 versions provided built-in functions for checking
+if an object is an ordinal and for comparing two ordinals, they did not
+provide support for reasoning about and constructing ordinals.  The books in
+the directory <code>books/ordinals</code> provide such support.  First, they provide
+efficient algorithms for ordinal arithmetic (including addition, subtraction,
+multiplication, and exponentiation).  The algorithms and their complexity are
+described in the following paper.
+
+<pre>
+Manolios, Panagiotis &amp; Vroon, Daron. 
+Algorithms for ordinal arithmetic.
+Baader, Franz (ed),
+19th International Conference on Automated Deduction--CADE-19.
+Pages 243-257 of LNAI, vol. 2741.  Springer-Verlag.
+</pre>
+
+Second, the algorithms are mechanically verified and libraries of theorems
+which can be used to automate reasoning involving the ordinals are provided.
+For details, see the following paper.
+
+<pre>
+Manolios, Panagiotis &amp; Vroon, Daron.
+Ordinal arithmetic in ACL2.
+Kaufmann, Matt, &amp; Moore, J Strother (eds). 
+Fourth International Workshop on the ACL2 Theorem
+Prover and Its Applications (ACL2-2003),
+July, 2003.
+See URL <code>http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/</code>.
+</pre>
+
+We now describe aspects of the above mentioned books in more detail.<p>
+
+The new ordering function is <code><a href="O_lt_.html">o&lt;</a></code> and the new ordinal recognizer is
+<code><a href="O-P.html">o-p</a></code>.  See also <code><a href="NATP.html">natp</a></code>, <code><a href="POSP.html">posp</a></code>, <code><a href="O_lt_=.html">o&lt;=</a></code>, <code><a href="O_gt_.html">o&gt;</a></code>, <code><a href="O_gt_=.html">o&gt;=</a></code>,
+<code><a href="O-FIRST-EXPT.html">o-first-expt</a></code>, <code><a href="O-FIRST-COEFF.html">o-first-coeff</a></code>, <code><a href="O-RST.html">o-rst</a></code>, <code><a href="MAKE-ORD.html">make-ord</a></code>,
+<code><a href="O-FINP.html">o-finp</a></code>, and <code><a href="O-INFP.html">o-infp</a></code>. 
+<p>
+The old ordinals were based on the following formulation of Cantor Normal
+Form:<p>
+
+For any ordinal, <code>a &lt; epsilon-0</code>, there exist natural numbers <code>p</code> and
+<code>n</code>, and ordinals <code>a1 &gt;= a2 &gt;= ... &gt;= an &gt; 0</code> such that <code>a &gt; a1</code>
+and <code>a = w^(a1) + w^(a2) + ... + w^(an) + p</code>.<p>
+
+Thus, a predicate recognizing ACL2's old ordinals is given by the following
+definition.
+
+<pre>
+(defun e0-ordinalp (x)
+  (if (consp x)
+      (and (e0-ordinalp (car x))
+           (not (equal (car x) 0))
+           (e0-ordinalp (cdr x))
+           (or (atom (cdr x))
+               (not (e0-ord-&lt; (car x) (cadr x)))))
+    (and (integerp x)
+         (&gt;= x 0))))
+</pre>
+
+The new representation is based on a corollary to the above theorem, which we
+get by the left distributive property of ordinal multiplication over ordinal
+addition. Thus, <code>w^a + w^a = (w^a)2</code>, <code>w^a + w^a + w^a = (w^a)3</code> and so
+forth. The corollary is as follows:<p>
+
+For any ordinal, <code>a &lt; epsilon-0</code>, there exist natural numbers <code>p</code>
+and <code>n</code>, positive integers <code>x1, x2, ..., xn</code> and ordinals
+<code>a1 &gt; a2 &gt; ... &gt; an &gt; 0</code> such that <code>a &gt; a1</code> and 
+<code>a = w^(a1)x1 + w^(a2)x2 + ... + w^(an)xn + p</code>.<p>
+
+Instead of representing an ordinal as a list of non-increasing ordinals, we
+represent it as a list of exponent-coefficient pairs, such that the exponents
+are strictly decreasing (see <a href="O-P.html">o-p</a>).  Note that this representation is
+exponentially more efficient than the old representation.<p>
+
+The ordinal arithmetic functions: <code>o+</code>, <code>o-</code>, <code>o*</code>, and <code>o^</code> are
+defined in the ordinals library (in the subdirectory <code>books/ordinals</code>). To
+use them, include the book <code>ordinals-without-arithmetic</code> or <code>ordinals</code>,
+depending on whether you want the arithmetic books included or not
+(<code>ordinals</code> includes <code>books/arithmetic/top-with-meta</code>). To use the old
+ordinals, include the book <code>e0-ordinal</code> and run the command
+<code>(set-well-founded-relation e0-ord-&lt;)</code><p>
+
+The file <code>books/arithmetic/natp-posp</code> is a book for reasoning
+about <code>posp</code> and <code>natp</code>.  We recommend using this book if you
+have to reason about <code>posp</code> and <code>natp</code>.  It is included in
+<code>books/arithmetic/top</code>, which is included in
+<code>books/arithmetic/top-with-meta</code>, which is included in
+<code>books/ordinals/ordinals</code>.<p>
+
+If you have a good reason to use the old definitions of the ordinals (e.g.,
+because of legacy code and theorems), then we provide a convenient way to do
+this.  In the book <code>ordinal-isomorphism</code> we prove that the new ordinals are
+order-isomorphic to the old ordinals and thus theorems proved in one context
+can be directly transferred to the other.  For an example of how to do this,
+look at the book <code>defmul</code> in the directory
+<code>books/workshops/2000/ruiz/multiset</code>.<p>
+
+The ordinals books have been used to prove non-trivial theorems.  For a good
+example, see the books in the directory
+<code>books/workshops/2003/sustik/support</code>, where Matyas Sustik proves Dickson's
+lemma.<p>
+
+Finally, many termination proofs can be carried out with weaker orderings
+than the ordinals up to <code>epsilon-0</code>.  For example, many inductive theorem
+provers only know that the lexicographic ordering on natural numbers is
+well-founded.  The book <code>lexicographic-ordering</code> contains a definition of
+such an ordering <code>l&lt;</code> whose arguments are either a list of natural numbers,
+or a natural number.  In the book we prove that <code>l&lt;</code> is well-founded (that
+is, we prove a <code>:well-founded-relation</code> <code><a href="DEFTHM.html">defthm</a></code> and provide a macro
+<code>llist</code> to simplify the generation of measure functions.  We also show how
+to use <code>l&lt;</code> to prove that the famous Ackermann function terminates.
+Finally, since <code>l&lt;</code> does something reasonable with natural numbers, it gets
+along with <code><a href="ACL2-COUNT.html">acl2-count</a></code>, the default measure chosen by ACL2.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

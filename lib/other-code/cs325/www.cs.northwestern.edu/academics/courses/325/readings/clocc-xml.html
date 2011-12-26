@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+<HEAD>
+   <TITLE>CLOCC XML Parser</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">CLOCC XML Parser</DIV>
+
+<hr>
+<p>As far as I can tell, there's no online documentation for <a
+href="http://clocc.sourceforge.net/snapshot/">the CLOCC XML
+Parser</a>. The following is what I've gleaned from reading the
+code and documentation strings, and should be enough to get you
+started.</p>
+
+<h2>Downloading and installing the CLOCC XML parser</h2>
+
+<p>The Common Lisp Open Code Collection contains a number of
+useful utilities for Common Lisp. This page is only concerned
+with the XML parser, but feel free to explore the rest of the
+collection.</p>
+
+<p>To install this code, you need an archive utility that knows
+how to handle tar-gzipped files. These are like Zip files on Windows but are
+more common on Unix systems. There are many free and inexpensive
+utilities for Windows, such as
+WinZip, ZipGenius, TugZip, Stuffit, etc., that know how to handle tarred
+gzip files.</p>
+
+<ul>
+<li>Go to <a href="http://clocc.sourceforge.net/">the CLOCC home
+page</a>.</li>
+
+<li>Download <a href="http://clocc.sourceforge.net/snapshot/">the
+latest snapshot</a>.</li>
+
+<li>The archive contains a directory called <tt>clocc</tt>.
+Extract this whole directory to your Lisp code directory.</li>
+
+<li>Start your Lisp.</li>
+
+<li>Open <tt>clocc/clocc.lisp</tt> in your Lisp editor.</li>
+
+<li>Search for <code>(defvar *clocc-root*</code>.</li>
+
+<li>Replace the <em>entire</em> expression with this one: 
+
+<pre>
+(defvar *clocc-root*
+  (namestring
+   (make-pathname :host (pathname-host *load-pathname*)
+                  :device (pathname-device *load-pathname*)
+                  :directory (pathname-directory *load-pathname*)))
+  "*The root CLOCC directory.")
+</pre>
+
+This constructs a pathname with the
+directory containing your <code>clocc.lisp</code> file. Doing it
+this way is nice because it won't break if you move the CLOCC
+directory to some other location.</li>
+
+<li>Load <tt>clocc.lisp</tt>.</li>
+
+<li>Load (don't compile yet!) <tt>clocc/src/cllib/xml.lisp</tt>. 
+If you get an alert dialog about defining <tt>PRINT-OBJECT</tt>,
+just say <tt>OK</tt>.</li>
+
+<li>After the file has loaded, compile and load it.</li>
+</ul>
+
+
+<h2>How to use the CLOCC XML Parser</h2>
+
+<p>Assuming you've done the steps previously, all you'll need to 
+do is load <tt>clocc.lisp</tt> and then the compiled
+version of <tt>xml.lisp</tt>.</p>
+
+<p>The parser is defined in the <code>cllib:</code>
+package. If you don't want to type <code>cllib:</code> in front of
+the XML parser function names, do the following <em>in the
+package <code>cs325-user</code></em>:</p>
+
+<blockquote>
+<pre>
+(use-package :cllib)
+</pre>
+</blockquote>
+
+<p class="note">
+LispWorks Note:
+If you do a <code>(use-package :cllib)</code>, LispWorks will warn
+about a conflict with <code>whitespace-char-p</code>. Just select the
+default response <tt>Unintern the conflicting symbol</tt>.
+</p>
+
+<h2>How to parse XML</h2>
+
+<p>Find a short XML file on your machine. XML files are used for many purposes. 
+Java and .Net uses
+them to hold configuration information.</p>
+
+<p>Alternatively, find a short XML file on the web and copy it to your machine. There are many
+there too. Blogs, for example, use XML files to list new
+items, using RSS. 
+The <a href="http://en.wikipedia.org/wiki/RSS_(file_format)">Wikipedia entry on RSS</a>
+gives an example of such an XML.</p>
+
+<p>Once you have a file with XML, you can parse it into Lisp with:</p>
+
+<blockquote>
+<pre>
+(cllib:xml-read-from-file <em>pathname</em>)
+
+<em>Example:</em> (cllib:xml-read-from-file "c:/cs325/code/test-bugs.xml")
+</pre>
+</blockquote>
+
+<p>The function returns a list of the top-level objects read from
+the XML file. See <a href="#xml-objects">below</a> for how to inspect these objects.</p>
+
+<p>To parse XML directly from an input stream:</p>
+
+<blockquote>
+<pre>
+(cllib:with-xml-input (<em>variable</em> <em>stream</em>)
+  <em>&lt;code that calls</em> (read <em>variable</em>) <em>to extract XML forms&gt;</em>
+  )
+</pre>
+</blockquote>
+
+<p>This puts an "XML wrapper" around the input stream, similar
+to the way Java uses wrappers around input streams. Each call to <code>read</code>
+will try to read one XML object, including nested objects,
+much the way <code>read</code> on a regular Lisp input stream will read a list.</p>
+
+<p>When testing XML forms, it's often handy to parse XML stored in a string. Here's a
+function that will read one XML object from a string:</p>
+
+<blockquote>
+<pre>
+(defun xml-read-from-string (string)
+ (cllib:with-xml-input (in (make-string-input-stream string))
+  (read in)))
+</pre>
+</blockquote>
+
+<a name="xml-objects"></a>
+<h2>How to process XML objects</h2>
+
+<p>Reading from a CLOCC XML stream returns objects of type
+<code>xml-obj</code>. CLOCC defines several functions for getting
+data out of the object. To illustrate these functions, assume
+we've done the following:</p>
+
+<blockquote>
+<pre>
+(setq xmlo
+  (xml-read-from-string
+    "&lt;book id=\"book-1\"&gt;&lt;title&gt;Alas!&lt;/title&gt;&lt;author&gt;Anon&lt;/author&gt;&lt;/book&gt;"))
+</pre>
+</blockquote>
+
+<p>The following functions will get data out of
+<code>xmlo</code>:</p>
+
+<ul>
+<li><code>(cllib:xmlo-nm xmlo)</code>: returns the name of the top
+element, as a string, i.e., <code>"book"</code>.</li>
+
+<li><code>(cllib:xmlo-args xmlo)</code>: returns the attribute pairs of the
+top element, in a list, i.e., <code>(("id" "book-1"))</code>.</li>
+
+<li><code>(cllib:xmlo-data xmlo)</code>: returns the children of the top
+element, in a list, i.e., <code>(#&lt;XML-OBJ title ...&gt;
+#&lt;XML-OBJ author ...&gt;)</code>.</li>
+</ul>
+
+<p>Using recursion, you can explore the entire XML tree with
+these functions.</p>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

@@ -1,0 +1,59 @@
+<html>
+<head><title>UNCERTIFIED-BOOKS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>UNCERTIFIED-BOOKS</h2>invalid <a href="CERTIFICATE.html">certificate</a>s and uncertified <a href="BOOKS.html">books</a>
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+<code><a href="INCLUDE-BOOK.html">Include-book</a></code> has a special provision for dealing with uncertified
+<a href="BOOKS.html">books</a>: If the file has no <a href="CERTIFICATE.html">certificate</a> or an invalid
+<a href="CERTIFICATE.html">certificate</a> (i.e., one whose check sums describe files other
+than the ones actually read), a warning is printed and the book is
+otherwise processed as though it were certified and had an open
+<a href="PORTCULLIS.html">portcullis</a>.  (For details see <a href="BOOKS.html">books</a>, see <a href="CERTIFICATE.html">certificate</a>,
+and see <a href="PORTCULLIS.html">portcullis</a>.)<p>
+
+This can be handy, but it can have disastrous consequences.
+<p>
+The provision allowing uncertified <a href="BOOKS.html">books</a> to be included can
+have disastrous consequences, ranging from hard lisp errors, to
+damaged memory, to quiet logical inconsistency.<p>
+
+It is possible for the inclusion of an uncertified book to render
+the logic inconsistent.  For example, one of its non-<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a>
+might be <code>(defthm t-is-nil (equal t nil))</code>.  It is also possible
+for the inclusion of an uncertified book to cause hard errors or
+<a href="BREAKS.html">breaks</a> into raw Common Lisp.  For example, if the file has been
+edited since it was certified, it may contain too many open
+parentheses, causing Lisp to read past ``end of file.'' Similarly,
+it might contain non-ACL2 objects such as <code>3.1415</code> or ill-formed
+event forms that cause ACL2 code to break.<p>
+
+Even if a book is perfectly well formed and could be certified (in a
+suitable extension of ACL2's initial <a href="WORLD.html">world</a>), its uncertified
+inclusion might cause Lisp errors or inconsistencies!  For example,
+it might mention packages that do not exist in the host <a href="WORLD.html">world</a>.
+The <a href="PORTCULLIS.html">portcullis</a> of a certified book ensures that the correct
+<code><a href="DEFPKG.html">defpkg</a></code>s have been admitted, but if a book is read without
+actually raising its <a href="PORTCULLIS.html">portcullis</a>, symbols in the file, e.g.,
+<code>acl2-arithmetic::fn</code>, could cause ``unknown package'' errors in
+Common Lisp.  Perhaps the most subtle disaster occurs if the host
+<a href="WORLD.html">world</a> does have a <code><a href="DEFPKG.html">defpkg</a></code> for each package used in the book
+but the host <code><a href="DEFPKG.html">defpkg</a></code> imports different symbols than those required
+by the <a href="PORTCULLIS.html">portcullis</a>.  In this case, it is possible that formulas
+which were theorems in the certified book are non-theorems in the
+host <a href="WORLD.html">world</a>, but those formulas can be read without error and
+will then be quietly assumed.<p>
+
+In short, if you include an uncertified book, <strong>all bets are off</strong>
+regarding the validity of the future behavior of ACL2.<p>
+
+That said, it should be noted that ACL2 is pretty tough and if
+errors don't occur, the chances are that deductions after the
+inclusion of an uncertified book are probably justified in the
+(possibly inconsistent) logical extension obtained by assuming the
+admissibility and validity of the definitions and conjectures in the
+book.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

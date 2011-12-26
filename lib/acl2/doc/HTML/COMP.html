@@ -1,0 +1,81 @@
+<html>
+<head><title>COMP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>COMP</h2>compile some ACL2 functions
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+:comp t          ; compile all uncompiled ACL2 functions
+(comp t)         ; same as above, but can be put into a book
+(comp :exec)     ; compile all uncompiled logic (``*1*'') definitions
+:comp foo        ; compile the defined function foo
+:comp (:raw foo) ; compile the raw Lisp version of the defined function foo
+                   but not the corresponding logic definition
+:comp (foo bar)  ; compile the defined functions foo and bar
+:comp (foo (:raw bar))  ; compile the defined functions foo and bar, but for
+                        ; bar do not compile the corresponding logic definition<p>
+
+General Form:
+:comp specifier
+where specifier is one of the following:<p>
+
+  t                     compile all user-defined ACL2 functions that are
+                          currently uncompiled (redefined built-in functions
+                          are not recompiled)
+  :exec                 same as t, except that only logic versions are
+                          compiled (see below), not raw Lisp definitions
+  :raw                  same as t, except that only raw Lisp definitions are
+                          compiled, not logic version (see below)
+  (name-1 ... name-k)   a non-empty list of names of functions defined by
+                          DEFUN in ACL2, except that each name-i can be of
+                          the form (:raw sym) or (:exec sym), where sym is
+                        the name of such a function
+  name                  same as (name)
+</pre>
+<p>
+
+When you define a function in ACL2, you are really causing two definitions to
+be made ``under the hood'' in Common Lisp: the definition is submitted
+explicitly to raw Lisp, but so is a corresponding ``logic definition''.  If
+guards have not been verified, then only the logic definition will be
+evaluated; see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>, in particular the section titled
+``Guards and evaluation V: efficiency issues''.<p>
+
+Thus, if you are not verifying <a href="GUARD.html">guard</a>s and you want the benefit of Lisp
+compilation for speed and space efficiency, then you may want to place the
+form <code>(comp :exec)</code> in your <a href="BOOKS.html">books</a>.<p>
+
+Generally it is not necessary to place the form <code>(comp t)</code>, or the form
+<code>(comp :raw)</code>, in a book, because <code><a href="CERTIFY-BOOK.html">certify-book</a></code> compiles the raw Lisp
+definitions anyhow, by default.  But you may wish to put <code>(comp t)</code> or
+<code>(comp fn1 fn2 ... fnk)</code> in a book when such a form precedes expensive
+calls of functions, for example for proofs involving calls of functions on
+large constants, or to support computationally expensive macroexpansion.<p>
+
+As suggested by the examples above, if a function specifier is of the form
+<code>(:raw fn)</code>, then <code>fn</code> will be compiled in raw Common Lisp but its
+corresponding logic definition will not be compiled; and for <code>(:exec fn)</code>,
+it's the other way around.<p>
+
+The use of <code>:comp</code> creates various files whose names start with
+``<code>TMP*</code>'', but then deletes them.  If you want to keep these files around
+for some reason, evaluate <code>(assign keep-tmp-files t)</code>.
+<p>
+<ul>
+<li><h3><a href="COMP-GCL.html">COMP-GCL</a> -- compile some ACL2 functions leaving .c and .h files
+</h3>
+</li>
+
+</ul>
+
+Also see <a href="SET-COMPILE-FNS.html">set-compile-fns</a> for a way to compile each function as it is
+defined.  But note that <code>set-compile-fns</code> is ignored during
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+:cited-by Programming
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<html>
+<head><title>NOTE-2-8-NEW-FUNCTIONALITY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-8-NEW-FUNCTIONALITY</h3>ACL2 Version  2.8 Notes on New Functionality
+<pre>Major Section:  <a href="NOTE-2-8.html">NOTE-2-8</a>
+</pre><p>
+
+WARNING: You may find that <code>control-d</code> (in emacs, <code>control-c control-d</code>)
+can throw you completely out of Lisp where it had not formerly done so.<p>
+
+(CLISP and Allegro CL only) ACL2 now starts up inside the ACL2 loop -- that
+is, <code>(</code><code><a href="LP.html">LP</a></code><code>)</code> is executed automatically -- when built on CLISP or
+Allegro CL.  This was already the case for GCL and CMUCL, and it still is not
+true for Lispworks.  Thanks to Joe Corneli for bringing the CLISP
+command-line option <code>"-i"</code> to our attention, which led to this CLISP
+change and inspired reconsideration of how to do this for Allegro CL.<p>
+
+Pete Manolios and Daron Vroon have changed the representation of ordinals in
+ACL2, defined algorithms for ordinal arithmetic, and created a library of
+theorems to reason about ordinal arithmetic.  We thank them for these nice
+contributions.  See <a href="NOTE-2-8-ORDINALS.html">note-2-8-ordinals</a> for details, in particular, for how to
+preserve existing proofs that depend on the previous ordinal representation.<p>
+
+Sometimes users create rules of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> that cause an
+infinite loop in the ACL2 rewriter.  This has lead to Lisp stack overflows
+and even segmentation faults.  Now, the depth of calls of functions in the
+ACL2 rewriter is limited, and under user control.  See <a href="REWRITE-STACK-LIMIT.html">rewrite-stack-limit</a>.<p>
+
+Macros <code><a href="MBE.html">mbe</a></code> (``must be equal'') and <code><a href="MBT.html">mbt</a></code> (``must be true'') have
+been introduced, which allow the user to attach fast executable definitions
+to (presumably slower) <code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions.  Thanks to Vernon
+Austel for a key idea.  Also provided is a macro <code><a href="DEFEXEC.html">defexec</a></code>, which employs
+<code><a href="MBE.html">mbe</a></code> but enforces the requirement that the executable definition also
+terminates.  Thanks to Jose Luis Ruiz Reina for collaborating in the design
+and development of <code><a href="DEFEXEC.html">defexec</a></code>, and for useful comments from a number of
+others as well in the development of <code>mbe</code> including Joe Hendrix and Rob
+Sumners.<p>
+
+Definitions have been added for functions <code><a href="RASSOC-EQ.html">rassoc-eq</a></code> and
+<code><a href="RASSOC-EQUAL.html">rassoc-equal</a></code>, which are like <code><a href="RASSOC.html">rassoc</a></code> but use different tests
+and have different guards.  (Compare <code><a href="ASSOC-EQ.html">assoc-eq</a></code> and <code><a href="ASSOC-EQUAL.html">assoc-equal</a></code>,
+which are in similar relation to <code><a href="ASSOC.html">assoc</a></code>.)<p>
+
+The user can now control multiple matching for free variables in hypotheses
+for <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules, as has already been supported for
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> and <code>:</code><code><a href="LINEAR.html">linear</a></code> rules.  For <code>:forward-chaining</code>
+rules, ``free variables'' are those in the hypotheses not bound by a given
+trigger term.  As for <code>:rewrite</code> and <code>:linear</code> rules, free-variable
+matching may be limited to the first successful attempt by specifying
+<code>:match-free :once</code> with <code>:forward-chaining</code> in the
+<code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code>, and <code><a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a></code> may be used to
+modify the behavior of an existing rule.  Thanks to Erik Reeber for most of
+the implementation of these new capabilities, as well as significant
+assistance with a corresponding new documentation topic
+(see <a href="FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING.html">free-variables-examples-forward-chaining</a>).<p>
+
+It is no longer necessary to specify <code>(set-match-free-error nil)</code> in order
+to avoid errors when a rule with free variables in its hypotheses is missing
+the <code>:match-free</code> field.  (This was already true during book certification,
+but now it is the case in interactive sessions as well.)<p>
+
+The form <code>(break-on-error)</code> causes, at least for most Lisps, entry into
+the Lisp debugger whenever ACL2 causes an error.  See <a href="BREAK-ON-ERROR.html">break-on-error</a>.  Thanks
+to John Erickson for providing encouragement to provide this feature.<p>
+
+A new <code><a href="TABLE.html">table</a></code> has been provided so that advanced users can override the
+built-in <code>untranslate</code> functionality.  See <a href="USER-DEFINED-FUNCTIONS-TABLE.html">user-defined-functions-table</a>.<p>
+
+The <code><a href="PSTACK.html">pstack</a></code> mechanism (formerly denoted <code>checkpoints</code>) has been
+improved.  The ``process [prover] stack,'' or pstack, is automatically
+printed when proofs abort.  Evaluation of function calls on explicit
+arguments during proofs is now tracked.  Actual parameters are shown with
+<code>(pstack t)</code> rather than formals.  Thanks to Bill Legato for
+suggesting the first two of these improvements and, in general, encouraging
+changes that make ACL2 easier to use.<p>
+
+The <code><a href="DEFSTOBJ.html">defstobj</a></code> event is now allowed to take an <code>:inline</code> argument,
+which can speed up execution.  Thanks to Rob Sumners for suggesting and
+implementing this new feature.<p>
+
+Macro <code><a href="ASSERT$.html">assert$</a></code> has been added in order to make it easy to write
+assertions in one's code.  Semantically, <code>(assert$ test form)</code> is the same
+as <code>form</code>, but it causes a hard error (using <code><a href="ILLEGAL.html">illegal</a></code>) if <code>test</code>
+evaluates to <code>nil</code>.<p>
+
+Macro <code><a href="CW-GSTACK.html">cw-gstack</a></code> no longer takes arguments for the gstack or <code><a href="STATE.html">state</a></code>.
+However, it now takes a keyword argument (which is optional),
+<code>:evisc-tuple</code>, that can be used to control how it prints terms.  In
+particular, <code>cw-gstack</code> abbreviates large terms by default, but
+<code>(cw-gstack :evisc-tuple nil)</code> causes terms to be printed in full.
+Thanks to Robert Krug and Eric Smith for requesting this improvement.<p>
+
+The advanced user now has more control over the evisceration of terms.
+See <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a>, in particular the new paragraph on ``The printing of
+error messages and warnings.''<p>
+
+The <code><a href="INCLUDE-BOOK.html">include-book</a></code> event now has an additional (optional) keyword,
+<code>:dir</code>.  The value of <code>:dir</code> should be a keyword that is associated with
+an absolute directory pathname to be used in place of the current book
+directory (see <a href="CBD.html">cbd</a>) for resolving the first argument of <code>include-book</code> to
+an absolute pathname.  At start-up, the only such keyword is <code>:system</code>, so
+that for example <code>(include-book "arithmetic/top" :dir :system)</code> will
+include the book <code>"arithmetic/top"</code> under the <code>"books/"</code> directory of
+your ACL2 installation.  But you can associate ``projects'' with keywords
+using <code><a href="ADD-INCLUDE-BOOK-DIR.html">add-include-book-dir</a></code>, e.g.,
+<code>(add-include-book-dir :my-project "/u/smith/project0/")</code>.
+See <a href="ADD-INCLUDE-BOOK-DIR.html">add-include-book-dir</a> and also see <a href="DELETE-INCLUDE-BOOK-DIR.html">delete-include-book-dir</a> and
+see <a href="INCLUDE-BOOK.html">include-book</a>.  Note: You will probably not find <code>:dir :system</code> to be
+useful if the distributed books are not placed in the path of their original
+location, pointed to by <code>:dir :system</code>, which will often happen if the
+executable image is obtained from another site.  Also see <a href="INCLUDE-BOOK.html">include-book</a>, in
+particular its ``soundness warning''.<p>
+
+The printing of results in raw mode (see <a href="SET-RAW-MODE.html">set-raw-mode</a>) may now be partially
+controlled by the user:  see <a href="ADD-RAW-ARITY.html">add-raw-arity</a>.  Also, newlines are printed when
+necessary before the value is printed.<p>
+
+For those using Unix/Linux <code>make</code>: A <code>cert.acl2</code> file can contain forms
+to be evaluated before an appropriate <code><a href="CERTIFY-BOOK.html">certify-book</a></code> command is invoked
+automatically (not included in <code>cert.acl2</code>).<p>
+
+Jared Davis has contributed a new set of books for ordered finite set theory
+to the standard distribution, <code>books/finite-set-theory/osets-0.81/</code>.  See
+the <code>README</code> file in that directory.  Thanks, Jared.<p>
+
+Robert Krug has contributed two related changes (thanks, Robert!) in support
+of stronger arithmetic reasoning.  First, one can now enable and disable
+nonlinear arithmetic with a <code>:nonlinearp</code> hint, which will override the
+default provided by <code><a href="SET-NON-LINEARP.html">set-non-linearp</a></code> (initially, <code>nil</code>).  See <a href="HINTS.html">hints</a>.
+Second, <a href="COMPUTED-HINTS.html">computed-hints</a> can now have access to the <code>HISTORY</code>, <code>PSPV</code>,
+and <code>CTX</code> variables of the waterfall, which (for example) allows the
+writing of a hint which will enable nonlinear arithmetic on precisely those
+goals that are <code>stable-under-simplificationp</code>.  See <a href="COMPUTED-HINTS.html">computed-hints</a>.<p>
+
+Robert Krug has contributed a new set of arithmetic books to the standard
+distribution, <code>books/arithmetic-3/</code>.  See the <code>README</code> file in that
+directory.  Thanks, Robert.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

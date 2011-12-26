@@ -1,0 +1,1164 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-DEFAULTS-TABLE,  Next: ACL2-HELP,  Prev: atsign,  Up: OTHER
+
+ACL2-DEFAULTS-TABLE    a table specifying certain defaults, e.g., the default defun-mode
+
+     Example Forms:
+     (table acl2-defaults-table :defun-mode) ; current default defun-mode
+     (table acl2-defaults-table :defun-mode :program)
+                ; set default defun-mode to :program
+
+See *Note TABLE:: for a discussion of tables in general.  The legal
+keys for this table are shown below.  They may be accessed and changed
+via the general mechanisms provided by tables.  However, there are
+often more convenient ways to access and/or change the defaults.  (See
+also the note below.)
+
+     :defun-mode
+
+the default defun-mode, which must be :program or :logic.  See *Note
+DEFUN-MODE:: for a general discussion of defun-modes.  The :defun-mode
+key may be conveniently set by keyword commands naming the new
+defun-mode, :program and :logic.  See *Note PROGRAM:: and see *note
+LOGIC::.
+
+     :enforce-redundancy
+
+if t, cause ACL2 to insist that most events are redundant (see *note
+REDUNDANT-EVENTS::); if :warn, cause a warning instead of an error for
+such non-redundant events; else, nil.  See *Note
+SET-ENFORCE-REDUNDANCY::.
+
+     :verify-guards-eagerness
+
+an integer between 0 and 2 indicating how eager the system is to verify
+the guards of a defun event.  See *Note SET-VERIFY-GUARDS-EAGERNESS::.
+
+     :compile-fns
+
+When this key's value is t, functions are compiled when they are
+defun'd; otherwise, the value is nil.  To set the flag, see *note
+SET-COMPILE-FNS::.
+
+     :measure-function
+
+the default measure function used by defun when no :measure is supplied
+in xargs.  The default measure function must be a function symbol of
+one argument. Let mfn be the default measure function and suppose no
+:measure is supplied with some recursive function definition.  Then
+defun finds the first formal, var, that is tested along every branch
+and changed in each recursive call.  The system then "guesses" that
+(mfn var) is the :measure for that defun.
+
+     :well-founded-relation
+
+the default well-founded relation used by defun when no
+:well-founded-relation is supplied in xargs.  The default well-founded
+relation must be a function symbol, rel, of two arguments about which a
+:well-founded-relation rule has been proved.  See *Note
+WELL-FOUNDED-RELATION::.
+
+     :bogus-mutual-recursion-ok
+
+When this key's value is t, ACL2 skips the check that every function in
+a mutual-recursion (or defuns) "clique" calls at least one other
+function in that "clique."  Otherwise, the value is the keyword nil
+(the default) or :warn (which makes the check but merely warns when the
+check fails).  See *Note SET-BOGUS-MUTUAL-RECURSION-OK::.
+
+     :irrelevant-formals-ok
+
+When this key's value is t, the check for irrelevant formals is
+bypassed; otherwise, the value is the keyword nil (the default) or
+:warn (which makes the check but merely warns when the check fails).
+See *Note IRRELEVANT-FORMALS:: and see *note
+SET-IRRELEVANT-FORMALS-OK::.
+
+     :ignore-ok
+
+When this key's value is t, the check for ignored variables is
+bypassed; otherwise, the value is the keyword nil (the default) or
+:warn (which makes the check but merely warns when the check fails).
+See *Note SET-IGNORE-OK::.
+
+     :inhibit-warnings
+
+ACL2 prints warnings that may, from time to time, seem excessive to
+experienced users.  Each warning is "labeled" with a string identifying
+the type of warning.  Consider for example
+
+     ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE ....
+
+Here, the label is "Use".  The value of the key :inhibit-warnings is a
+list of such labels, where case is ignored.  Any warning whose label is
+a member of this list (where again, case is ignored) is suppressed.
+See *Note SET-INHIBIT-WARNINGS:: and also see *note
+SET-INHIBIT-OUTPUT-LST::.
+
+     :bdd-constructors
+
+This key's value is a list of function symbols used to define the
+notion of "BDD normal form."  See *Note BDD-ALGORITHM:: and see *note
+HINTS::.
+
+     :ttag
+
+This key's value, when non-nil, allows certain operations that extend
+the trusted code base beyond what is provided by ACL2.  See *Note
+DEFTTAG::.  See *Note DEFTTAG::.
+
+     :state-ok
+
+This key's value is either t or nil and indicates whether the user is
+aware of the syntactic restrictions on the variable symbol STATE.  See
+*Note SET-STATE-OK::.
+
+     :backchain-limit
+
+This key's value is either nil or a non-negative integer.  It is used
+to set the backchain limit upon starting rewriting.  See *Note
+BACKCHAIN-LIMIT::.
+
+     :default-backchain-limit
+
+This key's value is either nil or a non-negative integer.  It is used
+to set the backchain limit of a rule if one has not been specified.
+See *Note BACKCHAIN-LIMIT::.
+
+     :rewrite-stack-limit
+
+This key's value is a nonnegative integer less than (expt 2 28).  It is
+used to limit the depth of calls of ACL2 rewriter functions.  See *Note
+REWRITE-STACK-LIMIT::.
+
+     :let*-abstractionp
+
+This key affects how the system displays subgoals.  The value is either
+t or nil.  When t, let* expressions are introduced before printing to
+eliminate common subexpressions.  The actual goal being worked on is
+unchanged.
+
+     :nu-rewriter-mode
+
+This key's value is nil, t, or :literals.  When the value is non-nil,
+the rewriter gives special treatment to expressions and functions
+defined in terms of nth and update-nth.  See set-nu-rewriter-mode.
+
+     :case-split-limitations
+
+This key's value is a list of two "numbers."  Either "number" may
+optionally be nil, which is treated like positive infinity.  The
+numbers control how the system handles case splits in the simplifier.
+See *Note SET-CASE-SPLIT-LIMITATIONS::.
+
+     :include-book-dir-alist
+
+This key's value is used by include-book's :DIR argument to associate a
+directory with a keyword.  An exception is the keyword :SYSTEM for the
+distributed ACL2 books/ directory; see *note INCLUDE-BOOK::, in
+particular the section on "Books Directory."
+
+     :match-free-default
+
+This key's value is either :all, :once, or nil.  See *Note
+SET-MATCH-FREE-DEFAULT::.
+
+     :match-free-override
+
+This key's value is a list of runes.  See *Note
+ADD-MATCH-FREE-OVERRIDE::.
+
+     :match-free-override-nume
+
+This key's value is an integer used in the implementation of
+add-match-free-override, so that only existing runes are affected by
+that event.
+
+     :non-linearp
+
+This key's value is either t or nil and indicates whether the user
+wishes ACL2 to extend the linear arithmetic decision procedure to
+include non-linear reasoning.  See *Note NON-LINEAR-ARITHMETIC::.
+
+Note: Unlike all other tables, acl2-defaults-table can affect the
+soundness of the system.  The table mechanism therefore enforces on it
+a restriction not imposed on other tables: when table is used to update
+the acl2-defaults-table, the key and value must be variable-free forms.
+Thus, while
+
+     (table acl2-defaults-table :defun-mode :program),
+     
+     (table acl2-defaults-table :defun-mode ':program), and
+     
+     (table acl2-defaults-table :defun-mode (compute-mode *my-data*))
+
+are all examples of legal events (assuming compute-mode is a function
+of one non-state argument that produces a defun-mode as its single
+value),
+
+     (table acl2-defaults-table :defun-mode (compute-mode (w state)))
+
+is not legal because the value form is state-sensitive.
+
+Consider for example the following three events which one might make
+into the text of a book.
+
+     (in-package "ACL2")
+     
+     (table acl2-defaults-table
+       :defun-mode
+       (if (ld-skip-proofsp state) :logic :program))
+     
+     (defun crash-and-burn (x) (car x))
+
+The second event is illegal because its value form is state-sensitive.
+If it were not illegal, then it would set the :defun-mode to :program
+when the book was being certified but would set the defun-mode to
+:logic when the book was being loaded by include-book.  That is because
+during certification, ld-skip-proofsp is nil (proof obligations are
+generated and proved), but during book inclusion ld-skip-proofsp is
+non-nil (those obligations are assumed to have been satisfied.)  Thus,
+the above book, when loaded, would create a function in :logic mode that
+does not actually meet the conditions for such status.
+
+For similar reasons, table events affecting acl2-defaults-table are
+illegal within the scope of local forms.  That is, the text
+
+     (in-package "ACL2")
+     
+     (local (table acl2-defaults-table :defun-mode :program))
+     
+     (defun crash-and-burn (x) (car x))
+
+is illegal because acl2-defaults-table is changed locally.  If this
+text were acceptable as a book, then when the book was certified,
+crash-and-burn would be processed in :program mode, but when the
+certified book was included later, crash-and-burn would have :logic
+mode because the local event would be skipped.
+
+The text
+
+     (in-package "ACL2")
+     
+     (program) ;which is (table acl2-defaults-table :defun-mode :program)
+     
+     (defun crash-and-burn (x) (car x))
+
+is acceptable and defines crash-and-burn in :program mode, both during
+certification and subsequent inclusion.
+
+We conclude with an important observation about the relation between
+acl2-defaults-table and include-book, certify-book, and encapsulate.
+Including or certifying a book never has an effect on the
+acl2-defaults-table, nor does executing an encapsulate event; we always
+restore the value of this table as a final act.  (Also see *note
+INCLUDE-BOOK::, see *note ENCAPSULATE::, and see *note CERTIFY-BOOK::.)
+That is, no matter how a book fiddles with the acl2-defaults-table,
+its value immediately after including that book is the same as
+immediately before including that book.  If you want to set the
+acl2-defaults-table in a way that persists, you need to do so using
+commands that are not inside books.  It may be useful to set your
+favorite defaults in your acl2-customization file; see *note
+ACL2-CUSTOMIZATION::.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-HELP,  Next: ASSIGN,  Prev: ACL2-DEFAULTS-TABLE,  Up: OTHER
+
+ACL2-HELP    the acl2-help mailing list
+
+You can email questions about ACL2 usage to the acl2-help mailing list:
+acl2-help@lists.cc.utexas.edu.  If you have more general questions about
+ACL2, for example, about projects completed using ACL2, you may prefer
+the acl2 mailing list, acl2@lists.cc.utexas.edu, which tends to have
+wider distribution.
+
+
+File: acl2-doc-emacs.info,  Node: ASSIGN,  Next: CERTIFY-BOOK!,  Prev: ACL2-HELP,  Up: OTHER
+
+ASSIGN    assign to a global variable in state
+
+     Examples:
+     (assign x (expt 2 10))
+     (assign a (aset1 'ascii-map-array (@ a) 66 'Upper-case-B))
+     
+     General Form:
+     (assign symbol term)
+
+where symbol is any symbol (with certain enforced exclusions to avoid
+overwriting ACL2 system "globals") and term is any ACL2 term that could
+be evaluated at the top-level.  Assign evaluates the term, stores the
+result as the value of the given symbol in the global-table of state,
+and returns the result.  (Note:  the actual implementation of the
+storage of this value is much more efficient than this discussion of
+the logic might suggest.)  Assign is a macro that effectively expands
+to the more complicated but understandable:
+
+     (pprogn (f-put-global 'symbol term state)
+             (mv nil (f-get-global 'symbol term state) state)).
+
+The macro @ gives convenient access to the value of such globals.  The
+:ubt operation has no effect on the global-table of state.  Thus, you
+may use these globals to hang onto useful data structures even though
+you may undo back past where you computed and saved them.
+
+
+File: acl2-doc-emacs.info,  Node: CERTIFY-BOOK!,  Next: CW-GSTACK,  Prev: ASSIGN,  Up: OTHER
+
+CERTIFY-BOOK!    a variant of certify-book
+
+     Examples:
+     (certify-book! "my-arith" 3)     ;Certify in a world with 3
+                                        ; commands, starting in a world
+                                        ; with at least 3 commands.
+     (certify-book! "my-arith")       ;Certify in the initial world.
+     (certify-book! "my-arith" 0 nil) ;As above, but do not compile.
+     
+     General Form:
+     (certify-book! book-name k compile-flg)
+
+where book-name is a book name (see *note BOOK-NAME::), k is a
+nonnegative integer used to indicate the "certification world," and
+compile-flg indicates whether you wish to compile the (functions in
+the) book.
+
+This command is identical to certify-book, except that the second
+argument k may not be t in certify-book! and if k exceeds the current
+command number, then an appropriate ubt! will be executed first.  See
+*Note CERTIFY-BOOK:: and see *note UBT!::.
+
+
+File: acl2-doc-emacs.info,  Node: CW-GSTACK,  Next: EXIT,  Prev: CERTIFY-BOOK!,  Up: OTHER
+
+CW-GSTACK    debug a rewriting loop or stack overflow
+
+     General Forms:
+     (cw-gstack)
+     (cw-gstack :frames 10)       ; show only the top 10 frames
+     (cw-gstack :frames (1 10))   ; same as above:  show only frames 1 through 10
+     (cw-gstack :frames (10 20))  ; show only frames 10 through 20
+     (cw-gstack :evisc-tuple nil) ; print using default ``evisceration''
+     (cw-gstack :evisc-tuple x)   ; print with evisceration tuple x
+
+For the last case above, see *note LD-EVISC-TUPLE::.
+
+Stack overflows may occur, perhaps caused by looping rewrite rules.  In
+some Lisps, especially GCL, stack overflows often manifest themselves
+as segmentation faults, causing the entire ACL2 image to crash.
+Finding looping rewrite rules can be tricky, especially if you are
+using books supplied by other people.  (However, see *note
+SET-REWRITE-STACK-LIMIT:: for a way to avoid stack overflows caused by
+rewriter loops.)
+
+A wonderful trick is the following.  When there is a stack overflow
+during a proof, abort and then try it again after turning on rewrite
+stack monitoring with :brr t.  When the stack overflows again, exit to
+raw Lisp.  How you exit to raw Lisp depends on which Lisp you are
+using.  In Allegro Common Lisp, for example, the stack overflow will
+leave you in an interactive break.  It is often a good idea to exit the
+break immediately (e.g., using :pop if you use Allegro Common Lisp, or
+:q using GCL), which will leave you in the top-level ACL2 command loop,
+after which it is recommended to leave that loop using :q.  That will
+leave you in raw Lisp.  Then, execute
+
+     (cw-gstack)
+
+If the loop is in the rewriter, it will probably be evident!  You can
+re-enter the ACL2 loop now with (lp).
+
+Note: By default, cw-gstack "eviscerates" terms, printing abbreviated
+representations of large terms.  The user can control this behavior by
+using (cw-gstack :evisc-tuple x), where x is nil or an evisceration
+tuple; see *note LD-EVISC-TUPLE::.  For example, (cw-gstack
+:evisc-tuple nil) will avoid all evisceration, while the default
+behavior can be obtained by using (cw-gstack :evisc-tuple '(nil 3 4
+(hide))), meaning that substructures deeper than 3 are replaced by "#"
+and those longer than 4 are replaced by "...", and terms of the form
+(hide ...) are printed as <hidden>.
+
+If you are in GCL the stack overflow may cause a segmentation fault and
+abort the Lisp job.  This makes it harder to debug but here is what you
+do.  First, re-create the situation just prior to submitting the form
+that will cause the stack overflow.  You can do this without suffering
+through all the proofs by using the :ld-skip-proofsp option of ld to
+reload your scripts.  Before you submit the form that causes the stack
+overflow, exit the ACL2 command loop with :q.  In raw GCL type:
+
+     (si::use-fast-links nil)
+
+This will slow GCL down but make it detect and signal stack overflows
+rather than overwrite the system memory.  Now reenter the ACL2 command
+loop with (lp).
+
+Now carry on as described above, turning on rewrite stack monitoring
+with :brr t and provoking the stack overflow.  When it occurs, you will
+be in an interactive break.  Exit to raw Lisp with two successive :q's,
+one to get out of the error break and the next to get out of the
+top-level ACL2 command loop.  Then in raw GCL execute (cw-gstack).
+
+Suggestion: Once you have found the loop and fixed it, you should
+execute the ACL2 command :brr nil, so that you don't slow down
+subsequent proof attempts.  If you are in GCL, you should also get into
+raw Lisp and execute (si::use-fast-links t).
+
+
+File: acl2-doc-emacs.info,  Node: EXIT,  Next: GOOD-BYE,  Prev: CW-GSTACK,  Up: OTHER
+
+EXIT    quit entirely out of Lisp
+
+Same as good-bye.
+
+
+File: acl2-doc-emacs.info,  Node: GOOD-BYE,  Next: IN-PACKAGE,  Prev: EXIT,  Up: OTHER
+
+GOOD-BYE    quit entirely out of Lisp
+
+     Example:
+     ACL2 !>:good-bye
+
+*Note:  Your entire session will disappear forever when you type*
+:good-bye.
+
+The command :good-bye quits not only out of the ACL2 command loop, but
+in fact quits entirely out of the underlying Lisp.  Thus, there is no
+going back!  You will *not* be able to re-enter the command loop after
+typing :good-bye!  All your work will be lost!!!
+
+This command may not work in some underlying Common Lisp
+implementations.  But we don't expect there to be any harm in trying.
+It *does* work in GCL and Allegro CL, at least as of this writing.
+
+In some systems, typing control-d at the top-level ACL2 prompt
+(control-c control-d if inside emacs) will call this function.
+
+If you merely want to exit the ACL2 command loop, use :q instead (see
+*note Q::).
+
+
+File: acl2-doc-emacs.info,  Node: IN-PACKAGE,  Next: LD,  Prev: GOOD-BYE,  Up: OTHER
+
+IN-PACKAGE    select current package
+
+     Example:
+     (in-package "MY-PKG")
+     
+     General Form:
+     (in-package str)
+
+where str is a string that names an existing ACL2 package, i.e., one of
+the initial packages such as "KEYWORD" or "ACL2" or a package
+introduced with defpkg.  For a complete list of the known packages
+created with defpkg, evaluate
+
+     (strip-cars (known-package-alist state)).
+
+See *Note DEFPKG::.  An ACL2 book (see *note BOOKS::) must contain a
+single in-package form, which must be the first form in that book.
+
+
+File: acl2-doc-emacs.info,  Node: LD,  Next: PROPS,  Prev: IN-PACKAGE,  Up: OTHER
+
+LD    the ACL2 read-eval-print loop, file loader, and command processor
+
+     Examples:
+     (LD "foo.lisp")              ; read and evaluate each form in file
+                                  ; "foo.lisp", in order
+     (LD "foo.lisp" :ld-pre-eval-print t)
+                                  ; as above, but print each form to standard
+                                  ; character output just before it is evaluated
+     
+     General Form:
+     (LD standard-oi                  ; open obj in channel, stringp file name
+                                      ; to open and close, or list of forms
+     
+     ; Optional keyword arguments:
+         :dir                ...      ; use this add-include-book-dir directory
+         :standard-co        ...      ; open char out or file to open and close
+         :proofs-co          ...      ; open char out or file to open and close
+         :current-package    ...      ; known package name
+         :ld-skip-proofsp    ...      ; nil, 'include-book, or t
+                                      ;   (see *note LD-SKIP-PROOFSP::)
+         :ld-redefinition-action ...  ; nil or '(:a . :b)
+         :ld-prompt          ...      ; nil, t, or some prompt printer fn
+         :ld-keyword-aliases ...      ; an alist pairing keywords to parse info
+         :ld-pre-eval-filter ...      ; :all, :query, or some new name
+         :ld-pre-eval-print  ...      ; nil, t, or :never
+         :ld-post-eval-print ...      ; nil, t, or :command-conventions
+         :ld-evisc-tuple     ...      ; nil or '(alist nil nil level length)
+         :ld-error-triples   ...      ; nil or t
+         :ld-error-action    ...      ; :return (default), :continue or :error
+         :ld-query-control-alist ...  ; alist supplying default responses
+         :ld-verbose         ...)     ; nil or t
+
+Ld is the top-level ACL2 read-eval-print loop.  (When you call lp, a
+little initialization is done in raw Common Lisp and then ld is
+called.)  ld is also a general-purpose ACL2 file loader and a command
+interpreter.  Ld is actually a macro that expands to a function call
+involving state.  Ld returns an "error/value/state" triple as explained
+below.
+
+The arguments to ld, except for :dir, all happen to be global variables
+in state.  For example, 'current-package and 'ld-verbose are global
+variables, which may be accessed via (@ current-package) and (@
+ld-verbose).  When ld is called, it "binds" these variables.  By
+"binds" we actually mean the variables are globally set but restored to
+their old values on exit.  Because ld provides the illusion of state
+global variables being bound, they are called "ld specials" (after the
+Lisp convention of calling a variable "special" if it is referenced
+freely after having been bound).
+
+Note that all arguments but the first are passed via keyword.  Any
+variable not explicitly given a value in a call retains its pre-call
+value, with the exception of :ld-error-action, which defaults to
+:return if not explicitly specified.
+
+Just as an example to drive the point home: If current-package is
+"ACL2" and you typed
+
+     (ld *standard-oi* :current-package "MY-PKG")
+
+you would find yourself in (an inner) read-eval-print loop in which the
+current-package was "MY-PKG".  You could operate there as long as you
+wished, changing the current package at will.  But when you typed :q
+you would return to the outer read-eval-print loop where the current
+package would still be "ACL2".
+
+Roughly speaking, ld repeatedly reads a form from standard-oi,
+evaluates it, and prints its result to standard-co.  It does this until
+the form evaluates to an error triple whose value component is :q or
+until the input channel or list is emptied.  However, ld has many bells
+and whistles controlled by the ld specials.  Each such special is
+documented individually.  For example, see the documentation for
+standard-oi, current-package, ld-pre-eval-print, etc.
+
+A more precise description of ld is as follows.  In the description
+below we use the ld specials as variables, e.g., we say "a form is read
+from standard-oi."  By this usage we refer to the current value of the
+named state global variable, e.g., we mean "a form is read from the
+current value of 'standard-oi." This technicality has an important
+implication: If while interacting with ld you change the value of one of
+the ld specials, e.g., 'standard-oi, you will change the behavior of
+ld, e.g., subsequent input will be taken from the new value.
+
+Three ld specials are treated as channels: standard-oi is treated as an
+object input channel and is the source of forms evaluated by ld;
+standard-co and proofs-co are treated as character output channels and
+various flavors of output are printed to them.  However, the supplied
+values of these specials need not actually be channels; several special
+cases are recognized.
+
+If the supplied value of one of these is in fact an open channel of the
+appropriate type, that channel is used and is not closed by ld.  If the
+supplied value of one of these specials is a string, the string is
+treated as a file name in (essentially) Unix syntax (see *note
+PATHNAME::) and a channel of the appropriate type is opened to/from
+that file.  Any channel opened by ld during the binding of the ld
+specials is automatically closed by ld upon termination.  If
+standard-co and proofs-co are equal strings, only one channel to that
+file is opened and is used for both.
+
+As a special convenience, when standard-oi is a string and the :dir
+argument is also provided, we look up :dir in the table of directories
+maintained by add-include-book-dir, and prepend this directory to
+standard-oi to create the filename.  (In this case, however, we require
+that standard-oi is a relative pathname, not an absolute pathname.)  For
+example, one can write (ld "arithmetic/top-with-meta.lisp" :dir
+:system) to ld that particular system library.  (Of course, you should
+almost always load books like arithmetic/top-with-meta using
+include-book instead of ld.)  If :dir is not specified, then a relative
+pathname is resolved using the connected book directory; see *note
+CBD::.
+
+Several other alternatives are allowed for standard-oi.  If standard-oi
+is a true list then it is taken as the list of forms to be processed.
+If standard-oi is a list ending in an open channel, then ld processes
+the forms in the list and then reads and processes the forms from the
+channel.  Analogously, if standard-oi is a list ending a string, an
+object channel from the named file is opened and ld processes the forms
+in the list followed by the forms in the file.  That channel is closed
+upon termination of ld.
+
+The remaining ld specials are handled more simply and generally have to
+be bound to one of a finite number of tokens described in the :doc
+entries for each ld special.  Should any ld special be supplied an
+inappropriate value, an error message is printed.
+
+Next, if ld-verbose is t, ld prints the message "ACL2 loading name"
+where name names the file or channel from which forms are being read.
+At the conclusion of ld, it will print "Finished loading name" if
+ld-verbose is t.
+
+Finally, ld repeatedly executes the ACL2 read-eval-print step, which
+may be described as follows.  A prompt is printed to standard-co if
+ld-prompt is non-nil.  The format of the prompt is determined by
+ld-prompt.  If it is t, the default ACL2 prompt is used.  If it is any
+other non-nil value then it is treated as an ACL2 function that will
+print the desired prompt.  See *Note LD-PROMPT::.  In the exceptional
+case where ld's input is coming from the terminal (*standard-oi*) but
+its output is going to a different sink (i.e., standard-co is not
+*standard-co*), we also print the prompt to the terminal.
+
+Ld then reads a form from standard-oi.  If the object read is a
+keyword, ld constructs a "keyword command form" by possibly reading
+several more objects.  See *Note KEYWORD-COMMANDS::.  This construction
+process is sensitive to the value of ld-keyword-aliases.  See *Note
+LD-KEYWORD-ALIASES::.  Otherwise, the object read is treated as the
+command form.
+
+Ld next decides whether to evaluate or skip this form, depending on
+ld-pre-eval-filter.  Initially, the filter must be either :all, :query,
+or a new name.  If it is :all, it means all forms are evaluated.  If it
+is :query, it means each form that is read is displayed and the user is
+queried.  Otherwise, the filter is a name and each form that is read is
+evaluated as long as the name remains new, but if the name is ever
+introduced then no more forms are read and ld terminates.  See *Note
+LD-PRE-EVAL-FILTER::.
+
+If the form is to be evaluated, first prints the form to standard-co,
+if ld-pre-eval-print is t.  With this feature, ld can process an input
+file or form list and construct a script of the session that appears as
+though each form was typed in.  See *Note LD-PRE-EVAL-PRINT::.
+
+Ld then evaluates the form, with state bound to the current state.  The
+result is some list of (multiple) values.  If a state is among the
+values, then ld uses that state as the subsequent current state.
+
+Depending on ld-error-triples, ld may interpret the result as an
+"error." See *Note LD-ERROR-TRIPLES::.  We first discuss ld's behavior
+if no error signal is detected (either because none was sent or because
+ld is ignoring them as per ld-error-triples).
+
+In the case of a non-erroneous result, ld does two things: First, if
+the logical world in the now current state is different than the world
+before execution of the form, ld adds to the world a "command landmark"
+containing the form evaluated.  See *Note COMMAND-DESCRIPTOR::.
+Second, ld prints the result to standard-co, according to
+ld-post-eval-print.  If ld-post-eval-print is nil, no result is
+printed.  If it is t, all of the results are printed as a list of
+(multiple) values.  Otherwise, it is :command-conventions and only the
+non-erroneous "value" component of the result is printed.  See *Note
+LD-POST-EVAL-PRINT::.
+
+Whenever ld prints anything (whether the input form, a query, or some
+results) it "eviscerates" it if ld-evisc-tuple is non-nil.
+Essentially, evisceration is a generalization of Common Lisp's use of
+*print-level* and *print-length* to hide large substructures.  See
+*Note LD-EVISC-TUPLE::.
+
+We now return to the case of a form whose evaluation signals an error.
+In this case, ld first restores the ACL2 logical world to what it was
+just before the erroneous form was evaluated.  Thus, a form that
+partially changes the world (i.e., begins to store properties) and then
+signals an error, has no effect on the world.  You may see this happen
+on commands that execute several events (e.g., an encapsulate or a
+progn of several defuns): even though the output makes it appear that
+the initial events were executed, if an error is signalled by a later
+event the entire block of events is discarded.
+
+After rolling back, ld takes an action determined by ld-error-action.
+If the action is :continue, ld merely iterates the read-eval-print
+step.  Note that nothing suggestive of the value of the "erroneous"
+form is printed.  If the action is :return, ld terminates normally.  If
+the action is :error, ld terminates signalling an error to its caller.
+If its caller is in fact another instance of ld and that instance is
+watching out for error signals, the entire world created by the
+erroneous inner ld will be discarded by the outer ld.
+
+Ld returns an error triple, (mv erp val state).  Erp is t or nil
+indicating whether an error is being signalled.  If no error is
+signalled, val is the "reason" ld terminated and is one of :exit
+(meaning :q was read), :eof (meaning the input source was exhausted),
+:error (meaning an error occurred but has been supressed) or :filter
+(meaning the ld-pre-eval-filter terminated ld).
+
+
+File: acl2-doc-emacs.info,  Node: PROPS,  Next: PSO,  Prev: LD,  Up: OTHER
+
+PROPS    print the ACL2 properties on a symbol
+
+     Example:
+     :props assoc-eq
+
+Props takes one argument, a symbol, and prints all of the properties
+that are on that symbol in the ACL2 world.
+
+
+File: acl2-doc-emacs.info,  Node: PSO,  Next: PSO!,  Prev: PROPS,  Up: OTHER
+
+PSO    show the most recently saved output
+
+Evaluate :pso in order to print output that was generated in an
+environment where output was being saved;  see *note SET-SAVED-OUTPUT::
+for details.  However, proof-tree output will be suppressed; use :pso!
+if you want that output to be printed as well.
+
+
+File: acl2-doc-emacs.info,  Node: PSO!,  Next: PSTACK,  Prev: PSO,  Up: OTHER
+
+PSO!    show the most recently saved output, including proof-tree output
+
+Evaluate :pso in order to print output that was generated in an
+environment where output was being saved; see *note SET-SAVED-OUTPUT::
+for details.  Note that proof-tree will be included; use :pso if you
+want that output to be suppressed.
+
+
+File: acl2-doc-emacs.info,  Node: PSTACK,  Next: Q,  Prev: PSO!,  Up: OTHER
+
+PSTACK    seeing what is the prover up to
+
+     General Forms:
+     (pstack)      ; inspect break
+     (pstack t)    ; inspect break, printing all calls in abbreviated form
+     (pstack :all) ; as above, but only abbreviating the ACL2 world
+
+When the form (pstack) is executed during a break from a proof, or at
+the end of a proof that the user has aborted, a "process stack" (or
+"prover stack") will be printed that gives some idea of what the
+theorem prover has been doing.  Moreover, by evaluating (verbose-pstack
+t) before starting a proof (see *note VERBOSE-PSTACK::) one can get
+trace-like information about prover functions, including time
+summaries, printed to the screen during a proof.  This feature is
+currently quite raw and may be refined considerably as time goes on,
+based on user suggestions.  For example, the usual control of printing
+given by set-inhibit-output-lst is irrelevant for printing the pstack.
+
+The use of (pstack t) or (pstack :all) should only be used by those who
+are comfortable looking at functions in the ACL2 source code.
+Otherwise, simply use (pstack).
+
+* Menu:
+
+* VERBOSE-PSTACK:: seeing what is the prover up to (for advanced users)
+
+Entries in the pstack include the following (listed here alphabetically,
+except for the first).
+
+preprocess-clause, simplify-clause, etc. (in general,xxx-clause):
+top-level processes in the prover "waterfall"
+
+clausify: splitting a goal into subgoals
+
+ev-fncall: evaluating a function on explicit arguments
+
+ev-fncall-meta:  evaluating a metafunction
+
+forward-chain: building a context for the current goal using
+forward-chaining rules
+
+induct: finding an induction scheme
+
+pop-clause:  getting the next goal to prove by induction
+
+process-assumptions:  creating forcing rounds
+
+remove-built-in-clauses: removing built-in clauses (see *note
+BUILT-IN-CLAUSES::)
+
+process-equational-polys:  deducing interesting equations
+
+remove-trivial-equivalences:  removing trivial equalities (and
+equivalences) from the current goal
+
+rewrite-atm:  rewriting a top-level term in the current goal
+
+setup-simplify-clause-pot-lst:  building the linear arithmetic database
+for the current goal
+
+strip-branches,  subsumption-replacement-loop:  subroutines of clausify
+
+waterfall: top-level proof control
+
+
+File: acl2-doc-emacs.info,  Node: VERBOSE-PSTACK,  Prev: PSTACK,  Up: PSTACK
+
+VERBOSE-PSTACK    seeing what is the prover up to (for advanced users)
+
+     General Forms:
+     (verbose-pstack t)   ; get trace-like information on prover during proofs
+     (verbose-pstack '(fn1 fn2 ...))
+                          ; as above, but omit calls of the indicated functions
+     (verbose-pstack nil) ; turn off trace-like information on prover
+
+For example, (verbose-pstack '(ev-fncall)) will provide a trace of
+various prover functions during proofs, except for the function
+ev-fncall.
+
+By evaluating (verbose-pstack t) one can get trace-like information
+during subsequent proofs about prover functions, including time
+summaries, printed to the screen during a proof.  To turn off this
+feature, evaluate (verbose-pstack nil).  Also See *Note PSTACK::.
+
+
+File: acl2-doc-emacs.info,  Node: Q,  Next: QUIT,  Prev: PSTACK,  Up: OTHER
+
+Q    quit ACL2 (type :q) --- reenter with (lp)
+
+     Example:
+     ACL2 !>:Q
+
+The keyword command :q typed at the top-level of the ACL2 loop will
+terminate the loop and return control to the Common Lisp top-level (or,
+more precisely, to whatever program invoked lp).  To reenter the ACL2
+loop, execute (acl2::lp) in Common Lisp.  You will be in the same state
+as you were when you exited with :q, unless during your stay in Common
+Lisp you messed the data structures representating the ACL2 state
+(including files, property lists, and single-threaded objects).
+
+Unlike all other keyword commands, typing :q is not equivalent to
+invoking the function q.  There is no function q.
+
+
+File: acl2-doc-emacs.info,  Node: QUIT,  Next: REBUILD,  Prev: Q,  Up: OTHER
+
+QUIT    quit entirely out of Lisp
+
+Same as good-bye.
+
+
+File: acl2-doc-emacs.info,  Node: REBUILD,  Next: RESET-LD-SPECIALS,  Prev: QUIT,  Up: OTHER
+
+REBUILD    a convenient way to reconstruct your old state
+
+     Examples:
+     ACL2 !>(rebuild "project.lisp")
+     ACL2 !>(rebuild "project.lisp" t)
+     ACL2 !>(rebuild "project.lisp" :all)
+     ACL2 !>(rebuild "project.lisp" :query)
+     ACL2 !>(rebuild "project.lisp" 'lemma-22)
+
+Rebuild allows you to assume all the commands in a given file or list,
+supplied in the first argument.  Because rebuild processes an arbitrary
+sequence of commands with ld-skip-proofsp t, it is unsound!  However,
+if each of these commands is in fact admissible, then processing them
+with rebuild will construct the same logical state that you would be in
+if you typed each command and waited through the proofs again.  Thus,
+rebuild is a way to reconstruct a state previously obtained by proving
+your way through the commands.
+
+The second, optional argument to rebuild is a "filter" (see *note
+LD-PRE-EVAL-FILTER::) that lets you specify which commands to process.
+You may specify t, :all, :query, or a new logical name.  t and :all
+both mean that you expect the entire file or list to be processed.
+:query means that you will be asked about each command in turn.  A new
+name means that all commands will be processed as long as the name is
+new, i.e., rebuild will stop processing commands immediately after
+executing a command that introduces name.  Rebuild will also stop if
+any command causes an error.  You may therefore wish to plant an
+erroneous form in the file, e.g., (mv t nil state), (see *note
+LD-ERROR-TRIPLES::), to cause rebuild to stop there.  The form
+(i-am-here) is such a pre-defined form.  If you do not specify a
+filter, rebuild will query you for one.
+
+Inspection of the definition of rebuild, e.g., via :pc rebuild-fn, will
+reveal that it is just a glorified call to the function ld.  See *Note
+LD:: if you find yourself wishing that rebuild had additional
+functionality.
+
+
+File: acl2-doc-emacs.info,  Node: RESET-LD-SPECIALS,  Next: SAVE-EXEC,  Prev: REBUILD,  Up: OTHER
+
+RESET-LD-SPECIALS    restores initial settings of the ld specials
+
+     Examples:
+     (reset-ld-specials t)
+     (reset-ld-specials nil)
+
+Roughly speaking, the ld specials are certain state global variables,
+such as current-package, ld-prompt, and ld-pre-eval-filter, which are
+managed by ld as though they were local variables.  These variables
+determine the channels on which ld reads and prints and control many
+options of ld.  See *Note LD:: for the details on what the ld specials
+are.
+
+This function, reset-ld-specials, takes one Boolean argument, flg.  The
+function resets all of the ld specials to their initial, top-level
+values, except for the three channel variables, standard-oi,
+standard-co, and proofs-co, which are reset to their initial values
+only if flg is non-nil.  Of course, if you are in a recursive call of
+ld, then when you exit that call, the ld specials will be restored to
+the values they had at the time ld was called recursively.  To see what
+the initial values are, inspect the value of the constant
+*initial-ld-special-bindings*.
+
+
+File: acl2-doc-emacs.info,  Node: SAVE-EXEC,  Next: SET-GUARD-CHECKING,  Prev: RESET-LD-SPECIALS,  Up: OTHER
+
+SAVE-EXEC    save an executable image and (for most Common Lisps) a wrapper script
+
+See *Note SAVING-AND-RESTORING:: for an explanation of why one might
+want to use this function.
+
+     Examples:
+     ; Save an executable named my-saved_acl2:
+     (save-exec "my-saved_acl2"
+                "This saved image includes Version 7 of Project Foo.")
+     
+     ; Same as above, but with a generic comment instead:
+     (save-exec "my-saved_acl2" nil)
+     
+     General Form:
+     (save-exec exec-filename extra-startup-string)
+
+where exec-filename is the filename of the proposed executable and
+extra-startup-string is a non-empty string to be printed after the
+normal ACL2 startup message when you start up the saved image.  However,
+extra-startup-string is allowed to be nil, in which case a generic
+string will be printed instead.
+
+*Note*: For technical reasons, we require that you first execute :q, to
+exit the ACL2 read-eval-print loop, before evaluating a save-exec call.
+
+For most Common Lisps, the specified file (e.g., "my-saved_acl2" in the
+examples above) will be written as a small script, which in turn
+invokes a saved image to which an extension has been appended (e.g.,
+my-saved_acl2.gcl for the examples above, when the underlying Common
+Lisp is GCL on a non-Windows system).
+
+
+File: acl2-doc-emacs.info,  Node: SET-GUARD-CHECKING,  Next: SET-INHIBIT-OUTPUT-LST,  Prev: SAVE-EXEC,  Up: OTHER
+
+SET-GUARD-CHECKING    control checking guards during execution of top-level forms
+
+Detailed comments about the arguments of this function may be found
+elsewhere: see *note GUARD-EVALUATION-TABLE::.  Here we provide an
+introduction to the use of set-guard-checking.
+
+New users are encouraged to execute one of the following forms in order
+to avoid evaluation errors due to guards:
+
+     (set-guard-checking :none)
+     (set-guard-checking nil)
+
+The former avoids all guard-checking on user-defined functions and
+should generally work fine for new users, the only drawback being
+efficiency loss on compute-intensive problems.  All settings other than
+:none check guards, but a value of nil allows evaluation to continue in
+the logic when guards fail (avoiding the raw Lisp definition in that
+case).
+
+You may put one of the above forms in the "acl2-customization.lisp"
+file in your current directory (see *note CBD::) or your home directory;
+see *note ACL2-CUSTOMIZATION::.
+
+Note that guards are not part of the ACL2 logic, and hence new users can
+completely ignore the notion of guard (and the rest of this
+documentation section after this paragraph!).  For example, (car 3) and
+nil can be proved equal in the ACL2 logic, as follows, even though the
+guard on car requires its first argument to be a cons pair or nil.
+
+     (thm (equal (car 3) nil))
+
+Moreover, unless your functions or top-level forms call built-in ACL2
+functions that are defined in :program mode, the following property
+will hold.
+
+     Evaluation of (set-guard-checking :none) will allow evaluation of
+     forms such as (car 3) to take place without error in the top level
+     loop, not only when proving theorems.
+
+
+If you feel bold, then you may wish to read the rest of this
+documentation topic; also see *note GUARD::.
+
+See *Note GUARD-EVALUATION-TABLE:: for a succinct table, with
+associated discussion, that covers in detail the material presented in
+the rest of the present topic.
+
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  To turn "guard checking on," by which we mean
+that guards are checked at runtime, execute the top-level form
+:set-guard-checking t.  To allow guard violations, do
+:set-guard-checking nil, or do :set-guard-checking :none to turn off
+all guard-checking, so that raw Lisp definitions of user-defined
+functions are avoided unless their guard is t. The status of
+guard-checking is reflected in the prompt.
+
+     ACL2 !>
+
+means guard checking is on and
+
+     ACL2 >
+
+means guard checking is off.  The exclamation mark can be thought of as
+"barring" certain computations.  The absence of the mark suggests the
+absence of error messages or unbarred access to the logical axioms.
+Thus, for example
+
+     ACL2 !>(car 'abc)
+
+will signal an error, while
+
+     ACL2 >(car 'abc)
+
+will return nil.
+
+We will return at the end of this documentation topic to discuss two
+other values, :all and :nowarn, for :set-guard-checking.  We also note
+that evaluation of built-in :program mode functions always takes place
+in raw Lisp.
+
+Whether guards are checked during evaluation is independent of the
+default-defun-mode.  We note this simply because it is easy to confuse
+":program mode" with "evaluation in Common Lisp" and thus with "guard
+checking on;" and it is easy to confuse ":logic mode" with "evaluation
+in the logic" and with "guard checking off."  But the
+default-defun-mode determines whether newly submitted definitions
+introduce programs or add logical axioms.  That mode is independent of
+whether evaluation checks guards or not.  You can operate in :logic
+mode with runtime guard checking on or off.  Analogously, you can
+operate in :program mode with runtime guard checking on or off.
+
+For further discussion on evaluation and guards see *note
+GUARDS-AND-EVALUATION::, in particular the exception for safe-mode in
+the "Aside" there.  See *Note GUARD:: for a general discussion of
+guards.
+
+Now we fulfill our promise above to discuss two other values for
+:set-guard-checking:
+
+     :set-guard-checking :nowarn
+     :set-guard-checking :all
+
+The meaning of these values is perhaps best described by the following
+example provided by David Rager.
+
+     ACL2 !>(defun my-test (expr)
+              (declare (xargs :guard (true-listp expr)
+                              :verify-guards nil))
+              (if (atom expr)
+                  expr
+                (cons (my-test (car expr))
+                      (my-test (cdr expr)))))
+     
+     The admission of MY-TEST is trivial, using the relation O< (which is
+     known to be well-founded on the domain recognized by O-P) and the measure
+     (ACL2-COUNT EXPR).  We could deduce no constraints on the type of MY-
+     TEST.  However, in normalizing the definition we used primitive type
+     reasoning.
+     
+     Summary
+     Form:  ( DEFUN MY-TEST ...)
+     Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+     Warnings:  None
+     Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+      MY-TEST
+     ACL2 !>(my-test '(a b c))
+     
+     ACL2 Warning [Guards] in TOP-LEVEL:  Guard-checking will be inhibited
+     on recursive calls of the executable counterpart (i.e., in the ACL2
+     logic) of MY-TEST.  To check guards on all recursive calls:
+       (set-guard-checking :all)
+     To leave behavior unchanged except for inhibiting this message:
+       (set-guard-checking :nowarn)
+     
+     (A B C)
+     ACL2 !>
+
+If you think about evaluation of (my-test '(a b c)), you will see that
+it leads to the recursive call (my-test 'a), which one might expect to
+cause a guard violation since the symbol a is not a true-listp.
+However, as the warning above explains, we do not by default check
+guards on recursive calls.  The reason is efficiency -- imagine a
+simple definition with a guard that is slow to evaluate.  The values
+:nowarn and :all for :set-guard-checking have been introduced as ways
+of dealing with the above warning.  The value :nowarn simply turns off
+the warning above.  The value :all causes all guards to be checked,
+even on recursive calls and even on all calls of non-built-in :program
+mode functions -- unless, of course, a call is made of a function whose
+guard has been verified (see *note VERIFY-GUARDS::), where the
+arguments satisfy the guard, in which case the corresponding call is
+made in raw Lisp without subsidiary guard-checking.  We still say that
+"guard-checking is on" after :set-guard-checking is invoked with values
+t, :nowarn, and :all, otherwise (after value nil) we say
+"guard-checking is off.
+
+For technical reasons, :all does not have its advertised effect in the
+case of built-in :program-mode functions.  If you are interested in
+this technical detail, see the comment "In the boot-strap world..." in
+source function oneify-cltl-code.
+
+We conclude with a remark about the use of :set-guard-checking for
+experimenting with ACL2 as a logic or as a programming language.  If one
+views ACL2 as a logic, one may wish to use :set-guard-checking :none,
+while if instead one views ACL2 as a functional programming language,
+one may wish to use :set-guard-checking :all.  The following transcript
+illustrates this distinction by way of example.  Specifically, (car 3)
+is equal to nil in the ACL2 logic, but may be viewed as a programming
+error.  The default of :set-guard-checking t is problematic for learning
+ACL2 using :program mode functions, since one can get raw Lisp errors.
+In the example below, the raw Lisp error occurs because foo implicitly
+has a guard of t, hence (foo 3) is evaluated in raw Lisp, which leads
+to a raw Lisp call of c[(car 3)].
+
+     ACL2 !>(defun foo (x)
+              (declare (xargs :mode :program))
+              (car x))
+     
+     Summary
+     Form:  ( DEFUN FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+      FOO
+     ACL2 !>(foo 3)
+     Error: Attempt to take the car of 3 which is not listp.
+       [condition type: TYPE-ERROR]
+     
+     Restart actions (select using :continue):
+      0: Abort entirely from this (lisp) process.
+     [Current process: Initial Lisp Listener]
+     [1] ACL2(1): [RAW LISP] :pop
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(foo 3)
+     NIL
+     ACL2 >:set-guard-checking :all
+     
+     Turning guard checking on, value :ALL.
+     
+     ACL2 !>(foo 3)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (CAR 3).  See :DOC wet for how you might be able to get an error
+     backtrace.  See :DOC set-guard-checking for information about suppressing
+     this check with (set-guard-checking :none), as recommended for new
+     users.
+     
+     ACL2 !>
+

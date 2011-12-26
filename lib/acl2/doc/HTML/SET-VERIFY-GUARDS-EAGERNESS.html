@@ -1,0 +1,60 @@
+<html>
+<head><title>SET-VERIFY-GUARDS-EAGERNESS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-VERIFY-GUARDS-EAGERNESS</h2>the eagerness with which <a href="GUARD.html">guard</a> verification is tried.
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example Forms:                        try guard verification?
+(set-verify-guards-eagerness 0) ; no, unless :verify-guards t
+(set-verify-guards-eagerness 1) ; yes if a :guard is supplied
+(set-verify-guards-eagerness 2) ; yes, unless :verify-guards nil
+</pre>
+
+Note: This is an event!  It does not print the usual event summary
+but nevertheless changes the ACL2 logical <a href="WORLD.html">world</a> and is so recorded.
+<p>
+
+<pre>
+General Form:
+(set-verify-guards-eagerness n)
+</pre>
+
+where <code>n</code> is a variable-free term that evaluates to <code>0</code>, <code>1</code>, or
+<code>2</code>.  This macro is essentially equivalent to
+
+<pre>
+(table acl2-defaults-table :verify-guards-eagerness n)
+</pre>
+
+and hence is <code><a href="LOCAL.html">local</a></code> to any <a href="BOOKS.html">books</a> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>
+in which it occurs; see <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.  However, unlike the above
+simple call of the <code><a href="TABLE.html">table</a></code> event function (see <a href="TABLE.html">table</a>), no output results
+from a <code>set-verify-guards-eagerness</code> event.<p>
+
+<code>Set-verify-guards-eagerness</code> may be thought of as an event that
+merely sets a flag to <code>0</code>, <code>1</code>, or <code>2</code>.  The flag is used by
+certain <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a> to determine whether <a href="GUARD.html">guard</a> verification is
+tried.  The flag is irrelevant to those <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a> in
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode and to those <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a> in which an explicit
+<code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> setting is provided among the <code><a href="XARGS.html">xargs</a></code>.  In the
+former case, <a href="GUARD.html">guard</a> verification is not done because it can only be
+done when logical functions are being defined.  In the latter case,
+the explicit <code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> setting determines whether <a href="GUARD.html">guard</a>
+verification is tried.  So consider a <code>:</code><code><a href="LOGIC.html">logic</a></code> mode <code><a href="DEFUN.html">defun</a></code> in
+which no <code>:</code><code><a href="VERIFY-GUARDS.html">verify-guards</a></code> setting is provided.  Is <a href="GUARD.html">guard</a>
+verification tried?  The answer depends on the eagerness setting as
+follows.  If the eagerness is <code>0</code>, <a href="GUARD.html">guard</a> verification is not tried.
+If the eagerness is <code>1</code>, it is tried iff a <code>:</code><code><a href="GUARD.html">guard</a></code> is explicitly
+provided in the <code><a href="DEFUN.html">defun</a></code>.  If the eagerness is <code>2</code>, <a href="GUARD.html">guard</a>
+verification is tried.<p>
+
+The default behavior of the system is as though the
+<code>:verify-guards-eagerness</code> is <code>1</code>.  The current behavior can be
+ascertained by evaluating the form
+<code>(default-verify-guards-eagerness (w state))</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

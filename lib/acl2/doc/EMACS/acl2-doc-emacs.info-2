@@ -1,0 +1,914 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: TIPS,  Next: TUTORIAL-EXAMPLES,  Prev: TIDBITS,  Up: ACL2-TUTORIAL
+
+TIPS    some hints for using the ACL2 prover
+
+We present here some tips for using ACL2 effectively.  Though this
+collection is somewhat _ad hoc_, we try to provide some organization,
+albeit somewhat artificial:  for example, the sections overlap, and no
+particular order is intended.  This material has been adapted by Bill
+Young from a very similar list for Nqthm that appeared in the
+conclusion of:  "Interaction with the Boyer-Moore Theorem Prover: A
+Tutorial Study Using the Arithmetic-Geometric Mean Theorem," by Matt
+Kaufmann and Paolo Pecchiari, CLI Technical Report 100, June, 1995.  We
+also draw from a similar list in Chapter 13 of "A Computational Logic
+Handbook" by R.S. Boyer and J S. Moore (Academic Press, 1988).  We'll
+refer to this as "ACLH" below.
+
+These tips are organized roughly as follows.
+
+     A. ACL2 Basics
+
+     B. Strategies for creating events
+
+     C. Dealing with failed proofs
+
+     D. Performance tips
+
+     E. Miscellaneous tips and knowledge
+
+     F. Some things you DON'T need to know
+
+
+_ACL2 BASICS_
+
+*A1. The ACL2 logic.*
+This is a logic of total functions.  For example, if A and B are less
+than or equal to each other, then we need to know something more in
+order to conclude that they are equal (e.g., that they are numbers).
+This kind of twist is important in writing definitions; for example, if
+you expect a function to return a number, you may want to apply the
+function fix or some variant (e.g., nfix or ifix) in case one of the
+formals is to be returned as the value.
+
+ACL2's notion of ordinals is important on occasion in supplying
+"measure hints" for the acceptance of recursive definitions.  Be sure
+that your measure is really an ordinal.  Consider the following
+example, which ACL2 fails to admit (as explained below).
+
+
+       (defun cnt (name a i x)
+         (declare (xargs :measure (+ 1 i)))
+         (cond ((zp (+ 1 i))
+                0)
+               ((equal x (aref1 name a i))
+                (1+ (cnt name a (1- i) x)))
+               (t (cnt name a (1- i) x))))
+
+One might think that (+ 1 i) is a reasonable measure, since we know
+that (+ 1 i) is a positive integer in any recursive call of cnt, and
+positive integers are ACL2 ordinals (see *note O-P::).  However, the
+ACL2 logic requires that the measure be an ordinal unconditionally, not
+just under the governing assumptions that lead to recursive calls.  An
+appropriate fix is to apply nfix to (+ 1 i), i.e., to use
+
+
+       (declare (xargs :measure (nfix (+ 1 i))))
+
+in order to guarantee that the measure will always be an ordinal (in
+fact, a positive integer).
+
+*A2. Simplification.*
+The ACL2 simplifier is basically a rewriter, with some "linear
+arithmetic" thrown in.  One needs to understand the notion of
+conditional rewriting.  See *Note REWRITE::.
+
+*A3. Parsing of rewrite rules.*
+ACL2 parses rewrite rules roughly as explained in ACLH, _except_ that
+it never creates "unusual" rule classes.  In ACL2, if you want a
+:linear rule, for example, you must specify :linear in the
+:rule-classes.  See *Note RULE-CLASSES::, and also see *note REWRITE::
+and see *note LINEAR::.
+
+*A4. Linear arithmetic.*
+On this subject, it should suffice to know that the prover can handle
+truths about + and -, and that linear rules (see above) are somehow
+"thrown in the pot" when the prover is doing such reasoning.  Perhaps
+it's also useful to know that linear rules can have hypotheses, and
+that conditional rewriting is used to relieve those hypotheses.
+
+*A5. Events.*
+Over time, the expert ACL2 user will know some subtleties of its
+events.  For example, in-theory events and hints are important, and
+they distinguish between a function and its executable counterpart.
+
+_B. STRATEGIES FOR CREATING EVENTS_
+
+In this section, we concentrate on the use of definitions and rewrite
+rules.  There are quite a few kinds of rules allowed in ACL2 besides
+rewrite rules, though most beginning users probably won't usually need
+to be aware of them.  See *Note RULE-CLASSES:: for details.  In
+particular, there is support for congruence rewriting.  Also see *note
+RUNE:: ("RUle NamE") for a description of the various kinds of rules in
+the system.
+
+*B1. Use high-level strategy.*
+Decompose theorems into "manageable" lemmas (admittedly, experience
+helps here) that yield the main result "easily."  It's important to be
+able to outline non-trivial proofs by hand (or in your head).  In
+particular, avoid submitting goals to the prover when there's no reason
+to believe that the goal will be proved and there's no "sense" of how
+an induction argument would apply.  It is often a good idea to avoid
+induction in complicated theorems unless you have a reason to believe
+that it is appropriate.
+
+*B2. Write elegant definitions.*
+Try to write definitions in a reasonably modular style, especially
+recursive ones.  Think of ACL2 as a programming language whose
+procedures are definitions and lemmas, hence we are really suggesting
+that one follow good programming style (in order to avoid duplication
+of "code," for example).
+
+When possible, complex functions are best written as compositions of
+simpler functions.  The theorem prover generally performs better on
+primitive recursive functions than on more complicated recursions (such
+as those using accumulating parameters).
+
+Avoid large non-recursive definitions which tend to lead to large case
+explosions.  If such definitions are necessary, try to prove all
+relevant facts about the definitions and then disable them.
+
+Whenever possible, avoid mutual recursion if you care to prove anything
+about your functions.  The induction heuristics provide essentially no
+help with reasoning about mutually defined functions.  Mutually
+recursive functions can usually be combined into a single function with
+a "flag" argument.  (However, see *note
+MUTUAL-RECURSION-PROOF-EXAMPLE:: for a small example of proof involving
+mutually recursive functions.)
+
+*B3. Look for analogies.*
+Sometimes you can easily edit sequences of lemmas into sequences of
+lemmas about analogous functions.
+
+*B4. Write useful rewrite rules.*
+As explained in A3 above, every rewrite rule is a directive to the
+theorem prover, usually to replace one term by another.  The directive
+generated is determined by the syntax of the defthm submitted.  Never
+submit a rewrite rule unless you have considered its interpretation as
+a proof directive.
+
+*B4a.  Rewrite rules should simplify.*
+Try to write rewrite rules whose right-hand sides are in some sense
+"simpler than" (or at worst, are variants of) the left-hand sides.
+This will help to avoid infinite loops in the rewriter.
+
+*B4b.  Avoid needlessly expensive rules.*
+Consider a rule whose conclusion's left-hand side (or, the entire
+conclusion) is a term such as (consp x) that matches many terms
+encountered by the prover.  If in addition the rule has complicated
+hypotheses, this rule could slow down the prover greatly.  Consider
+switching the conclusion and a complicated hypothesis (negating each)
+in that case.
+
+*B4c. The "Knuth-Bendix problem".*
+Be aware that left sides of rewrite rules should match the "normalized
+forms", where "normalization" (rewriting) is inside out.  Be sure to
+avoid the use of nonrecursive function symbols on left sides of rewrite
+rules, except when those function symbols are disabled, because they
+tend to be expanded away before the rewriter would encounter an
+instance of the left side of the rule.  Also assure that subexpressions
+on the left hand side of a rule are in simplified form.
+
+*B4d. Avoid proving useless rules.*
+Sometimes it's tempting to prove a rewrite rule even before you see how
+it might find application.  If the rule seems clean and important, and
+not unduly expensive, that's probably fine, especially if it's not too
+hard to prove.  But unless it's either part of the high-level strategy
+or, on the other hand, intended to get the prover past a particular
+unproved goal, it may simply waste your time to prove the rule, and
+then clutter the database of rules if you are successful.
+
+*B4e. State rules as strongly as possible, usually.*
+It's usually a good idea to state a rule in the strongest way possible,
+both by eliminating unnecessary hypotheses and by generalizing
+subexpressions to variables.
+
+Advanced users may choose to violate this policy on occasion, for
+example in order to avoid slowing down the prover by excessive
+attempted application of the rule.  However, it's a good rule of thumb
+to make the strongest rule possible, not only because it will then
+apply more often, but also because the rule will often be easier to
+prove (see also B6 below).  New users are sometimes tempted to put in
+extra hypotheses that have a "type restriction" appearance, without
+realizing that the way ACL2 handles (total) functions generally lets it
+handle trivial cases easily.
+
+*B4f. Avoid circularity.*
+A stack overflow in a proof attempt almost always results from circular
+rewriting.  Use brr to investigate the stack; see *note BREAK-LEMMA::.
+Because of the complex heuristics, it is not always easy to define just
+when a rewrite will cause circularity.  See the very good discussion of
+this topic in ACLH.
+
+See *Note BREAK-LEMMA:: for a trick involving use of the forms brr t
+and (cw-gstack) for inspecting loops in the rewriter.
+
+*B4g. Remember restrictions on permutative rules.*
+Any rule that permutes the variables in its left hand side could cause
+circularity.  For example, the following axiom is automatically
+supplied by the system:
+
+
+       (defaxiom commutativity-of-+
+                 (equal (+ x y) (+ y x))).
+
+This would obviously lead to dangerous circular rewriting if such
+"permutative" rules were not governed by a further restriction.  The
+restriction is that such rules will not produce a term that is
+"lexicographically larger than" the original term (see *note
+LOOP-STOPPER::).  However, this sometimes prevents intended rewrites.
+See Chapter 13 of ACLH for a discussion of this problem.
+
+*B5. Conditional vs. unconditional rewrite rules.*
+It's generally preferable to form unconditional rewrite rules unless
+there is a danger of case explosion.  That is, rather than pairs of
+rules such as
+
+
+     (implies p
+              (equal term1 term2))
+
+and
+
+
+     (implies (not p)
+              (equal term1 term3))
+
+consider:
+
+
+     (equal term1
+            (if p term2 term3))
+
+However, sometimes this strategy can lead to case explosions: IF terms
+introduce cases in ACL2.  Use your judgment.  (On the subject of IF:
+COND, CASE, AND, and OR are macros that abbreviate IF forms, and
+propositional functions such as IMPLIES quickly expand into IF terms.)
+
+*B6. Create elegant theorems.*
+Try to formulate lemmas that are as simple and general as possible.
+For example, sometimes properties about several functions can be
+"factored" into lemmas about one function at a time.  Sometimes the
+elimination of unnecessary hypotheses makes the theorem easier to
+prove, as does generalizing first by hand.
+
+*B7. Use* defaxioms *temporarily to explore possibilities.*
+When there is a difficult goal that seems to follow immediately (by a
+:use hint or by rewriting) from some other lemmas, you can create those
+lemmas as defaxiom events (or, the application of skip-proofs to defthm
+events) and then double-check that the difficult goal really does
+follow from them.  Then you can go back and try to turn each defaxiom
+into a defthm.  When you do that, it's often useful to disable any
+additional rewrite rules that you prove in the process, so that the
+"difficult goal" will still be proved from its lemmas when the process
+is complete.
+
+Better yet, rather than disabling rewrite rules, use the local
+mechanism offered by encapsulate to make temporary rules completely
+local to the problem at hand.  See *Note ENCAPSULATE:: and see *note
+LOCAL::.
+
+*B9. Use books.*
+Consider using previously certified books, especially for arithmetic
+reasoning.  This cuts down the duplication of effort and starts your
+specification and proof effort from a richer foundation.  See the file
+"doc/README" in the ACL2 distribution for information on books that
+come with the system.
+
+_C. DEALING WITH FAILED PROOFS_
+
+*C1. Look in proof output for goals that can't be further simplified.*
+Use the "proof-tree" utility to explore the proof space.  However, you
+don't need to use that tool to use the "checkpoint" strategy.  The idea
+is to think of ACL2 as a "simplifier" that either proves the theorem or
+generates some goal to consider.  That goal is the first "checkpoint,"
+i.e., the first goal that does not further simplify.  Exception:  it's
+also important to look at the induction scheme in a proof by induction,
+and if induction seems appropriate, then look at the first checkpoint
+_after_ the induction has begun.
+
+Consider whether the goal on which you focus is even a theorem.
+Sometimes you can execute it for particular values to find a
+counterexample.
+
+When looking at checkpoints, remember that you are looking for any
+reason at all to believe the goal is a theorem.  So for example,
+sometimes there may be a contradiction in the hypotheses.
+
+Don't be afraid to skip the first checkpoint if it doesn't seem very
+helpful.  Also, be willing to look a few lines up or down from the
+checkpoint if you are stuck, bearing in mind however that this practice
+can be more distracting than helpful.
+
+*C2. Use the "break rewrite" facility.*
+Brr and related utilities let you inspect the "rewrite stack."  These
+can be valuable tools in large proof efforts.  See *Note BREAK-LEMMA::
+for an introduction to these tools, and see *note BREAK-REWRITE:: for
+more complete information.
+
+The break facility is especially helpful in showing you why a
+particular rewrite rule is not being applied.
+
+*C3. Use induction hints when necessary.* Of course, if you can define
+your functions so that they suggest the correct inductions to ACL2, so
+much the better!  But for complicated inductions, induction hints are
+crucial.  See *Note HINTS:: for a description of :induct hints.
+
+*C4. Use the "Proof Checker" to explore.*
+The verify command supplied by ACL2 allows one to explore problem areas
+"by hand."  However, even if you succeed in proving a conjecture with
+verify, it is useful to prove it without using it, an activity that
+will often require the discovery of rewrite rules that will be useful
+in later proofs as well.
+
+*C5. Don't have too much patience.*
+Interrupt the prover fairly quickly when simplification isn't
+succeeding.
+
+*C6. Simplify rewrite rules.*
+When it looks difficult to relieve the hypotheses of an existing
+rewrite rule that "should" apply in a given setting, ask yourself if
+you can eliminate a hypothesis from the existing rewrite rule.  If so,
+it may be easier to prove the new version from the old version (and
+some additional lemmas), rather than to start from scratch.
+
+*C7. Deal with base cases first.*
+Try getting past the base case(s) first in a difficult proof by
+induction.  Usually they're easier than the inductive step(s), and
+rules developed in proving them can be useful in the inductive step(s)
+too.  Moreover, it's pretty common that mistakes in the statement of a
+theorem show up in the base case(s) of its proof by induction.
+
+*C8. Use* :expand *hints.* Consider giving :expand hints.  These are
+especially useful when a proof by induction is failing.  It's almost
+always helpful to open up a recursively defined function that is
+supplying the induction scheme, but sometimes ACL2 is too timid to do
+so; or perhaps the function in question is disabled.
+
+_D. PERFORMANCE TIPS_
+
+*D1. Disable rules.*
+There are a number of instances when it is crucial to disable rules,
+including (often) those named explicitly in :use hints.  Also, disable
+recursively defined functions for which you can prove what seem to be
+all the relevant properties.  The prover can spend significant time
+"behind the scenes" trying to open up recursively defined functions,
+where the only visible effect is slowness.
+
+*D2. Turn off the "break rewrite" facility.* Remember to execute :brr
+nil after you've finished with the "break rewrite" utility (see *note
+BREAK-REWRITE::), in order to bring the prover back up to full speed.
+
+_E. MISCELLANEOUS TIPS AND KNOWLEDGE_
+
+*E1. Order of application of rewrite rules.*
+Keep in mind that the most recent rewrite rules in the history are
+tried first.
+
+*E2. Relieving hypotheses is not full-blown theorem proving.*
+Relieving hypotheses on rewrite rules is done by rewriting and linear
+arithmetic alone, not by case splitting or by other prover processes
+"below" simplification.
+
+*E3. "Free variables" in rewrite rules.*
+The set of "free variables" of a rewrite rule is defined to contain
+those variables occurring in the rule that do not occur in the left-hand
+side of the rule.  It's often a good idea to avoid rules containing
+free variables because they are "weak," in the sense that hypotheses
+containing such variables can generally only be proved when they are
+"obviously" present in the current context.  This weakness suggests
+that it's important to put the most "interesting" (specific) hypotheses
+about free variables first, so that the right instances are considered.
+For example, suppose you put a very general hypothesis such as (consp
+x) first.  If the context has several terms around that are known to be
+consps, then x may be bound to the wrong one of them.  For much more
+information on free variables, see *note FREE-VARIABLES::.
+
+*E4. Obtaining information* Use :pl foo to inspect rewrite rules whose
+left hand sides are applications of the function foo.  Another approach
+to seeing which rewrite rules apply is to enter the proof-checker with
+verify, and use the show-rewrites or sr command.
+
+*E5. Consider esoteric rules with care.*
+If you care to see *note RULE-CLASSES:: and peruse the list of
+subtopics (which will be listed right there in most versions of this
+documentation), you'll see that ACL2 supports a wide variety of rules
+in addition to :rewrite rules.  Should you use them?  This is a complex
+question that we are not ready to answer with any generality.  Our
+general advice is to avoid relying on such rules as long as you doubt
+their utility.  More specifically:  be careful not to use conditional
+type prescription rules, as these have been known to bring ACL2 to its
+knees, unless you are conscious that you are doing so and have reason
+to believe that they are working well.
+
+_F. SOME THINGS YOU DON'T NEED TO KNOW_
+
+Most generally:  you shouldn't usually need to be able to predict too
+much about ACL2's behavior.  You should mainly just need to be able to
+react to it.
+
+*F1. Induction heuristics.*
+Although it is often important to read the part of the prover's output
+that gives the induction scheme chosen by the prover, it is not
+necessary to understand how the prover made that choice.  (Granted,
+advanced users may occasionally gain minor insight from such knowledge.
+But it's truly minor in many cases.)  What _is_ important is to be
+able to tell it an appropriate induction when it doesn't pick the right
+one (after noticing that it doesn't).  See C3 above.
+
+*F2. Heuristics for expanding calls of recursively defined functions.*
+As with the previous topic, the important thing isn't to understand
+these heuristics but, rather, to deal with cases where they don't seem
+to be working.  That amounts to supplying :expand hints for those calls
+that you want opened up, which aren't.  See also C8 above.
+
+*F3. The "waterfall".*
+As discussed many times already, a good strategy for using ACL2 is to
+look for checkpoints (goals stable under simplification) when a proof
+fails, perhaps using the proof-tree facility.  Thus, it is reasonable
+to ignore almost all the prover output, and to avoid pondering the
+meaning of the other "processes" that ACL2 uses besides simplification
+(such as elimination, cross-fertilization, generalization, and
+elimination of irrelevance).  For example, you don't need to worry
+about prover output that mentions "type reasoning" or "abbreviations,"
+for example.
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL-EXAMPLES,  Prev: TIPS,  Up: ACL2-TUTORIAL
+
+TUTORIAL-EXAMPLES    examples of ACL2 usage
+
+Beginning users may find these examples at least as useful as the
+extensive documentation on particular topics.  We suggest that you read
+these in the following order:
+
+     Tutorial1-Towers-of-Hanoi
+     Tutorial2-Eights-Problem
+     Tutorial3-Phonebook-Example
+     Tutorial4-Defun-Sk-Example
+     Tutorial5-Miscellaneous-Examples
+
+You may also wish to visit the other introductory sections, startup and
+tidbits.  These contain further information related to the use of ACL2.
+
+* Menu:
+
+* SOLUTION-TO-SIMPLE-EXAMPLE:: solution to a simple example
+
+* TUTORIAL1-TOWERS-OF-HANOI:: The Towers of Hanoi Example
+
+* TUTORIAL2-EIGHTS-PROBLEM:: The Eights Problem Example
+
+* TUTORIAL3-PHONEBOOK-EXAMPLE:: A Phonebook Specification
+
+* TUTORIAL4-DEFUN-SK-EXAMPLE:: example of quantified notions
+
+* TUTORIAL5-MISCELLANEOUS-EXAMPLES:: miscellaneous ACL2 examples
+
+When you feel you have read enough examples, you might want to try the
+following very simple example on your own.  First define the notion of
+the "fringe" of a tree, where we identify trees simply as cons
+structures, with atoms at the leaves.  For example:
+
+
+       ACL2 !>(fringe '((a . b) c . d))
+       (A B C D)
+
+Next, define the notion of a "leaf" of a tree, i.e., a predicate leaf-p
+that is true of an atom if and only if that atom appears at the tip of
+the tree.  Define this notion without referencing the function fringe.
+Finally, prove the following theorem, whose proof may well be automatic
+(i.e., not require any lemmas).
+
+
+       (defthm leaf-p-iff-member-fringe
+         (iff (leaf-p atm x)
+              (member-equal atm (fringe x))))
+
+For a solution, see *note SOLUTION-TO-SIMPLE-EXAMPLE::.
+
+
+File: acl2-doc-emacs.info,  Node: SOLUTION-TO-SIMPLE-EXAMPLE,  Next: TUTORIAL1-TOWERS-OF-HANOI,  Prev: TUTORIAL-EXAMPLES,  Up: TUTORIAL-EXAMPLES
+
+SOLUTION-TO-SIMPLE-EXAMPLE    solution to a simple example
+
+To see a statement of the problem solved below, see *note
+TUTORIAL-EXAMPLES::.
+
+Here is a sequence of ACL2 events that illustrates the use of ACL2 to
+make definitions and prove theorems.  We will introduce the notion of
+the fringe of a tree, as well as the notion of a leaf of a tree, and
+then prove that the members of the fringe are exactly the leaves.
+
+We begin by defining the fringe of a tree, where we identify trees
+simply as cons structures, with atoms at the leaves.  The definition is
+recursive, breaking into two cases.  If x is a cons, then the fringe of
+x is obtained by appending together the fringes of the car and cdr
+(left and right child) of x.  Otherwise, x is an atom and its fringe is
+the one-element list containing only x.
+
+
+       (defun fringe (x)
+         (if (consp x)
+             (append (fringe (car x))
+                     (fringe (cdr x)))
+           (list x)))
+
+Now that fringe has been defined, let us proceed by defining the notion
+of an atom appearing as a "leaf", with the goal of proving that the
+leaves of a tree are exactly the members of its fringe.
+
+
+       (defun leaf-p (atm x)
+         (if (consp x)
+             (or (leaf-p atm (car x))
+                 (leaf-p atm (cdr x)))
+           (equal atm x)))
+
+The main theorem is now as follows.  Note that the rewrite rule below
+uses the equivalence relation iff (see *note EQUIVALENCE::) rather than
+equal, since member returns the tail of the given list that begins with
+the indicated member, rather than returning a Boolean.  (Use :pe member
+to see the definition of member.)
+
+
+       (defthm leaf-p-iff-member-fringe
+         (iff (leaf-p atm x)
+              (member-equal atm (fringe x))))
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL1-TOWERS-OF-HANOI,  Next: TUTORIAL2-EIGHTS-PROBLEM,  Prev: SOLUTION-TO-SIMPLE-EXAMPLE,  Up: TUTORIAL-EXAMPLES
+
+TUTORIAL1-TOWERS-OF-HANOI    The Towers of Hanoi Example
+
+This example was written almost entirely by Bill Young of Computational
+Logic, Inc.
+
+We will tackle the famous "Towers of Hanoi" problem.  This problem is
+illustrated by the following picture.
+
+
+               |        |        |
+               |        |        |
+              ---       |        |
+             -----      |        |
+            -------     |        |
+     
+               A        B        C
+
+We have three pegs -- a, b, and c -- and n disks of different sizes.
+The disks are all initially on peg a.  The goal is to move all disks to
+peg c while observing the following two rules.
+
+1. Only one disk may be moved at a time, and it must start and finish
+the move as the topmost disk on some peg;
+
+2. A disk can never be placed on top of a smaller disk.
+
+Let's consider some simple instances of this problem.  If n = 1, i.e.,
+only one disk is to be moved, simply move it from a to c.  If n = 2,
+i.e., two disks are to be moved, the following sequence of moves
+suffices:  move from a to b, move from a to c, move from b to c.
+
+In general, this problem has a straightforward recursive solution.
+Suppose that we desire to move n disks from a to c, using b as the
+intermediate peg.  For the basis, we saw above that we can always move
+a single disk from a to c.  Now if we have n disks and assume that we
+can solve the problem for n-1 disks, we can move n disks as follows.
+First, move n-1 disks from a to b using c as the intermediate peg; move
+the single disk from a to c; then move n-1 disks from b to c using a as
+the intermediate peg.
+
+In ACL2, we can write a function that will return the sequence of
+moves.  One such function is as follows.  Notice that we have two base
+cases.  If (zp n) then n is not a positive integer; we treat that case
+as if n were 0 and return an empty list of moves.  If n is 1, then we
+return a list containing the single appropriate move.  Otherwise, we
+return the list containing exactly the moves dictated by our recursive
+analysis above.
+
+
+       (defun move (a b)
+         (list 'move a 'to b))
+     
+       (defun hanoi (a b c n)
+         (if (zp n)
+             nil
+           (if (equal n 1)
+               (list (move a c))
+             (append (hanoi a c b (1- n))
+                     (cons (move a c)
+                           (hanoi b a c (1- n)))))))
+
+Notice that we give hanoi four arguments:  the three pegs, and the
+number of disks to move.  It is necessary to supply the pegs because,
+in recursive calls, the roles of the pegs differ.  In any execution of
+the algorithm, a given peg will sometimes be the source of a move,
+sometimes the destination, and sometimes the intermediate peg.
+
+After submitting these functions to ACL2, we can execute the hanoi
+function on various specific arguments.  For example:
+
+
+       ACL2 !>(hanoi 'a 'b 'c 1)
+       ((MOVE A TO C))
+     
+       ACL2 !>(hanoi 'a 'b 'c 2)
+       ((MOVE A TO B)
+        (MOVE A TO C)
+        (MOVE B TO C))
+     
+       ACL2 !>(hanoi 'a 'b 'c 3)
+       ((MOVE A TO C)
+        (MOVE A TO B)
+        (MOVE C TO B)
+        (MOVE A TO C)
+        (MOVE B TO A)
+        (MOVE B TO C)
+        (MOVE A TO C))
+
+From the algorithm it is clear that if it takes m moves to transfer n
+disks, it will take (m + 1 + m) = 2m + 1 moves for n+1 disks.  From
+some simple calculations, we see that we need the following number of
+moves in specific cases:
+
+
+        Disks   0   1   2   3   4   5   6   7  ...
+        Moves   0   1   3   7  15  31  63  127 ...
+
+The pattern is fairly clear.  To move n disks requires (2^n - 1) moves.
+Let's attempt to use ACL2 to prove that fact.
+
+First of all, how do we state our conjecture?  Recall that hanoi
+returns a list of moves.  The length of the list (given by the function
+len) is the number of moves required.  Thus, we can state the following
+conjecture.
+
+
+       (defthm hanoi-moves-required-first-try
+         (equal (len (hanoi a b c n))
+                (1- (expt 2 n))))
+
+When we submit this to ACL2, the proof attempt fails.  Along the way we
+notice subgoals such as:
+
+
+       Subgoal *1/1'
+       (IMPLIES (NOT (< 0 N))
+                (EQUAL 0 (+ -1 (EXPT 2 N)))).
+
+This tells us that the prover is considering cases that are
+uninteresting to us, namely, cases in which n might be negative.  The
+only cases that are really of interest are those in which n is a
+non-negative natural number.  Therefore, we revise our theorem as
+follows:
+
+
+       (defthm hanoi-moves-required
+         (implies (and (integerp n)
+                       (<= 0 n))    ;; n is at least 0
+                  (equal (len (hanoi a b c n))
+                         (1- (expt 2 n)))))
+
+and submit it to ACL2 again.
+
+Again the proof fails.  Examining the proof script we encounter the
+following text.  (How did we decide to focus on this goal?  Some
+information is provided in ACLH, and the ACL2 documentation on tips may
+be helpful.  But the simplest answer is:  this was the first goal
+suggested by the "proof-tree" tool below the start of the proof by
+induction.  See *Note PROOF-TREE::.)
+
+
+       Subgoal *1/5''
+       (IMPLIES (AND (INTEGERP N)
+                     (< 0 N)
+                     (NOT (EQUAL N 1))
+                     (EQUAL (LEN (HANOI A C B (+ -1 N)))
+                            (+ -1 (EXPT 2 (+ -1 N))))
+                     (EQUAL (LEN (HANOI B A C (+ -1 N)))
+                            (+ -1 (EXPT 2 (+ -1 N)))))
+                (EQUAL (LEN (APPEND (HANOI A C B (+ -1 N))
+                                    (CONS (LIST 'MOVE A 'TO C)
+                                          (HANOI B A C (+ -1 N)))))
+                       (+ -1 (* 2 (EXPT 2 (+ -1 N))))))
+
+It is difficult to make much sense of such a complicated goal.
+However, we do notice something interesting.  In the conclusion is a
+term of the following shape.
+
+
+        (LEN (APPEND ... ...))
+
+We conjecture that the length of the append of two lists should be the
+sum of the lengths of the lists.  If the prover knew that, it could
+possibly have simplified this term earlier and made more progress in
+the proof.  Therefore, we need a rewrite rule that will suggest such a
+simplification to the prover.  The appropriate rule is:
+
+
+       (defthm len-append
+         (equal (len (append x y))
+                (+ (len x) (len y))))
+
+We submit this to the prover, which proves it by a straightforward
+induction.  The prover stores this lemma as a rewrite rule and will
+subsequently (unless we disable the rule) replace terms matching the
+left hand side of the rule with the appropriate instance of the term on
+the right hand side.
+
+We now resubmit our lemma hanoi-moves-required to ACL2.  On this
+attempt, the proof succeeds and we are done.
+
+One bit of cleaning up is useful.  We needed the hypotheses that:
+
+
+       (and (integerp n) (<= 0 n)).
+
+This is an awkward way of saying that n is a natural number; natural is
+not a primitive data type in ACL2.  We could define a function
+naturalp, but it is somewhat more convenient to define a macro as
+follows:
+
+
+       (defmacro naturalp (x)
+         (list 'and (list 'integerp x)
+                       (list '<= 0 x)))
+
+Subsequently, we can use (naturalp n) wherever we need to note that a
+quantity is a natural number.  See *Note DEFMACRO:: for more
+information about ACL2 macros.  With this macro, we can reformulate our
+theorem as follows:
+
+
+       (defthm hanoi-moves-required
+         (implies (naturalp n)
+                  (equal (len (hanoi a b c n))
+                         (1- (expt 2 n))))).
+
+Another interesting (but much harder) theorem asserts that the list of
+moves generated by our hanoi function actually accomplishes the desired
+goal while following the rules.  When you can state and prove that
+theorem, you'll be a very competent ACL2 user.
+
+By the way, the name "Towers of Hanoi" derives from a legend that a
+group of Vietnamese monks works day and night to move a stack of 64
+gold disks from one diamond peg to another, following the rules set out
+above.  We're told that the world will end when they complete this
+task.  From the theorem above, we know that this requires
+18,446,744,073,709,551,615 moves:
+
+
+       ACL2 !>(1- (expt 2 64))
+       18446744073709551615
+       ACL2 !>
+
+We're guessing they won't finish any time soon.
+
+
+File: acl2-doc-emacs.info,  Node: TUTORIAL2-EIGHTS-PROBLEM,  Next: TUTORIAL3-PHONEBOOK-EXAMPLE,  Prev: TUTORIAL1-TOWERS-OF-HANOI,  Up: TUTORIAL-EXAMPLES
+
+TUTORIAL2-EIGHTS-PROBLEM    The Eights Problem Example
+
+This example was written almost entirely by Bill Young of Computational
+Logic, Inc.
+
+This simple example was brought to our attention as one that Paul
+Jackson has solved using the NuPrl system.  The challenge is to prove
+the theorem:
+
+
+       for all n > 7, there exist naturals i and j such that: n = 3i + 5j.
+
+In ACL2, we could phrase this theorem using quantification.  However we
+will start with a constructive approach, i.e., we will show that values
+of i and j exist by writing a function that will construct such values
+for given n.  Suppose we had a function (split n) that returns an
+appropriate pair (i . j).  Our theorem would be as follows:
+
+
+       (defthm split-splits
+         (let ((i (car (split n)))
+               (j (cdr (split n))))
+           (implies (and (integerp n)
+                         (< 7 n))
+                    (and (integerp i)
+                         (<= 0 i)
+                         (integerp j)
+                         (<= 0 j)
+                         (equal (+ (* 3 i) (* 5 j))
+                                n)))))
+
+That is, assuming that n is a natural number greater than 7, (split n)
+returns values i and j that are in the appropriate relation to n.
+
+Let's look at a few cases:
+
+
+       8 = 3x1 + 5x1;    11 = 3x2 + 5x1;     14 = 3x3 + 5x1;   ...
+       9 = 3x3 + 5x0;    12 = 3x4 + 5x0;     15 = 3x5 + 5x0;   ...
+      10 = 3x0 + 5x2;    13 = 3x1 + 5x2;     16 = 3x2 + 5x2;   ...
+
+Maybe you will have observed a pattern here; any natural number larger
+than 10 can be obtained by adding some multiple of 3 to 8, 9, or 10.
+This gives us the clue to constructing a proof.   It is clear that we
+can write split as follows:
+
+
+       (defun bump-i (x)
+         ;; Bump the i component of the pair
+         ;; (i . j) by 1.
+         (cons (1+ (car x)) (cdr x)))
+     
+       (defun split (n)
+         ;; Find a pair (i . j) such that
+         ;; n = 3i + 5j.
+         (if (or (zp n) (< n 8))
+             nil ;; any value is really reasonable here
+           (if (equal n 8)
+               (cons 1 1)
+             (if (equal n 9)
+                 (cons 3 0)
+               (if (equal n 10)
+                   (cons 0 2)
+                 (bump-i (split (- n 3))))))))
+
+Notice that we explicitly compute the values of i and j for the cases
+of 8, 9, and 10, and for the degenerate case when n is not a natural or
+is less than 8.  For all naturals greater than n, we decrement n by 3
+and bump the number of 3's (the value of i) by 1.  We know that the
+recursion must terminate because any integer value greater than 10 can
+eventually be reduced to 8, 9, or 10 by successively subtracting 3.
+
+Let's try it on some examples:
+
+
+       ACL2 !>(split 28)
+       (6 . 2)
+     
+       ACL2 !>(split 45)
+       (15 . 0)
+     
+       ACL2 !>(split 335)
+       (110 . 1)
+
+Finally, we submit our theorem split-splits, and the proof succeeds.
+In this case, the prover is "smart" enough to induct according to the
+pattern indicated by the function split.
+
+For completeness, we'll note that we can state and prove a quantified
+version of this theorem.  We introduce the notion split-able to mean
+that appropriate i and j exist for n.
+
+
+       (defun-sk split-able (n)
+         (exists (i j)
+                 (equal n (+ (* 3 i) (* 5 j)))))
+
+Then our theorem is given below.  Notice that we prove it by observing
+that our previous function split delivers just such an i and j (as we
+proved above).
+
+
+       (defthm split-splits2
+         (implies (and (integerp n)
+                       (< 7 n))
+                  (split-able n))
+         :hints (("Goal" :use (:instance split-able-suff
+                                         (i (car (split n)))
+                                         (j (cdr (split n)))))))
+
+Unfortunately, understanding the mechanics of the proof requires
+knowing something about the way defun-sk works.  See *Note DEFUN-SK::
+or see *note TUTORIAL4-DEFUN-SK-EXAMPLE:: for more on that subject.
+

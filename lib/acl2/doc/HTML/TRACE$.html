@@ -1,0 +1,166 @@
+<html>
+<head><title>TRACE$.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TRACE$</h2>trace the indicated functions
+<pre>Major Section:  <a href="TRACE.html">TRACE</a>
+</pre><p>
+
+
+<pre>
+Example:
+(trace$ foo bar)
+<p>
+General Form:
+(trace$ fn1 fn2 ... fnk)
+</pre>
+
+where the <code>fni</code> are defined or even constrained functions.<p>
+
+see <a href="UNTRACE$.html">untrace$</a> for how to undo the effect of <code><a href="TRACE$.html">trace$</a></code>.<p>
+
+Basically, <code>trace$</code> calls on the underlying Lisp to trace the specified
+functions as well as their <code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code>s.  However, for GCL,
+Allegro CL, and OpenMCL, the underlying Lisp trace routines are modified
+before an image is saved in order to hide the ACL2 world and other large data
+structures and provide slightly prettier output.<p>
+
+Recursive calls of functions whose <a href="GUARD.html">guard</a>s have not been verified will
+not generally be traced.  If you want to see traces for corresponding
+evaluations in raw Lisp, which will generally show recursive calls (except,
+in some Lisp implementations, for compiled tail recursive functions), then
+you can quit into raw Lisp (<code>:q</code>) and execute your form there.
+Alternatively, you can avoid <a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a> functions by using
+<code>:</code><code><a href="SET-RAW-MODE.html">set-raw-mode</a></code> to enter a raw Lisp version of the ACL2 loop;
+see <a href="SET-RAW-MODE.html">set-raw-mode</a> and see <a href="SET-RAW-MODE-ON_bang_.html">set-raw-mode-on!</a>.<p>
+
+Output from <code><a href="TRACE$.html">trace$</a></code> normally goes to the screen, i.e.,
+<code><a href="STANDARD-CO.html">standard-co</a></code>.  But it can be redirected to a file;
+see <a href="OPEN-TRACE-FILE.html">open-trace-file</a>.<p>
+
+Also see <a href="WET.html">wet</a> (``<code><a href="WITH-ERROR-TRACE.html">with-error-trace</a></code>'') for a different way that ACL2
+takes advantage of the underlying Lisp, namely to provide a backtrace when
+there is an error.<p>
+
+Note that from a logical perspective all trace printing is a fiction.  For a
+related fiction, see <a href="CW.html">cw</a>.  <code>Trace$</code> returns <code>nil</code>.<p>
+
+The following example will give an idea of the options available other than
+just <code>(trace$ fn1 fn2 ... fnk)</code>.  It works about as shown in Allegro CL and
+GCL, but in OpenMCL the recursive calls are omitted unless you escape into
+raw Lisp and redefine <code>fact</code> with <code>(declare (notinline fact))</code>.
+
+<pre>
+ACL2 !&gt;(defun fact (n)
+         (declare (xargs :guard (natp n) :mode :program))
+         (if (zp n)
+             1
+           (* n (fact (1- n)))))<p>
+
+Summary
+Form:  ( DEFUN FACT ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ FACT
+ACL2 !&gt;(trace$ (fact :entry (car arglist) :exit values))
+NIL
+ACL2 !&gt;(fact 5)
+1&gt; (ACL2_*1*_ACL2::FACT . 5)
+  2&gt; (FACT . 5)
+    3&gt; (FACT . 4)
+      4&gt; (FACT . 3)
+        5&gt; (FACT . 2)
+          6&gt; (FACT . 1)
+            7&gt; (FACT . 0)
+            &lt;7 (FACT 1)
+          &lt;6 (FACT 1)
+        &lt;5 (FACT 2)
+      &lt;4 (FACT 6)
+    &lt;3 (FACT 24)
+  &lt;2 (FACT 120)
+&lt;1 (ACL2_*1*_ACL2::FACT 120)
+120
+ACL2 !&gt;
+</pre>
+
+Here is another example.
+
+<pre>
+ACL2 !&gt;(defun fact2 (n acc)
+         (declare (xargs :guard (and (natp n) (natp acc))))
+         (if (zp n)
+             (mv acc (* 2 acc))
+           (fact2 (1- n) (* n acc))))<p>
+
+The admission of FACT2 is trivial, using the relation O&lt; (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of FACT2 is described by
+the theorem (AND (CONSP (FACT2 N ACC)) (TRUE-LISTP (FACT2 N ACC))).
+We used primitive type reasoning.<p>
+
+(FACT2 * *) =&gt; (MV * *).<p>
+
+The guard conjecture for FACT2 is trivial to prove.  FACT2 is compliant
+with Common Lisp.<p>
+
+Summary
+Form:  ( DEFUN FACT2 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ FACT2
+ACL2 !&gt;(trace$ (fact2 :entry (list 'my-entry (car arglist))
+                      :exit (list 'my-second-value (cadr values))))
+NIL
+ACL2 !&gt;(fact2 6 1)<p>
+
+  1&gt; (ACL2_*1*_ACL2::FACT2 MY-ENTRY 6)&gt;
+    2&gt; (FACT2 MY-ENTRY 6)&gt;
+      3&gt; (FACT2 MY-ENTRY 5)&gt;
+        4&gt; (FACT2 MY-ENTRY 4)&gt;
+          5&gt; (FACT2 MY-ENTRY 3)&gt;
+            6&gt; (FACT2 MY-ENTRY 2)&gt;
+              7&gt; (FACT2 MY-ENTRY 1)&gt;
+                8&gt; (FACT2 MY-ENTRY 0)&gt;
+                &lt;8 (FACT2 MY-SECOND-VALUE 1440)&gt;
+              &lt;7 (FACT2 MY-SECOND-VALUE 1440)&gt;
+            &lt;6 (FACT2 MY-SECOND-VALUE 1440)&gt;
+          &lt;5 (FACT2 MY-SECOND-VALUE 1440)&gt;
+        &lt;4 (FACT2 MY-SECOND-VALUE 1440)&gt;
+      &lt;3 (FACT2 MY-SECOND-VALUE 1440)&gt;
+    &lt;2 (FACT2 MY-SECOND-VALUE 1440)&gt;
+  &lt;1 (ACL2_*1*_ACL2::FACT2 MY-SECOND-VALUE 1440)&gt;
+(720 1440)
+ACL2 !&gt;(trace$ (fact2 :entry (list 'my-args-reversed
+                                   (list (cadr arglist) (car arglist)))
+                      :exit (list 'values-reversed
+                                  (cadr values) (car values))))
+NIL
+ACL2 !&gt;(fact2 6 1)<p>
+
+  1&gt; (ACL2_*1*_ACL2::FACT2 MY-ARGS-REVERSED (1 6))&gt;
+    2&gt; (FACT2 MY-ARGS-REVERSED (1 6))&gt;
+      3&gt; (FACT2 MY-ARGS-REVERSED (6 5))&gt;
+        4&gt; (FACT2 MY-ARGS-REVERSED (30 4))&gt;
+          5&gt; (FACT2 MY-ARGS-REVERSED (120 3))&gt;
+            6&gt; (FACT2 MY-ARGS-REVERSED (360 2))&gt;
+              7&gt; (FACT2 MY-ARGS-REVERSED (720 1))&gt;
+                8&gt; (FACT2 MY-ARGS-REVERSED (720 0))&gt;
+                &lt;8 (FACT2 VALUES-REVERSED 1440 720)&gt;
+              &lt;7 (FACT2 VALUES-REVERSED 1440 720)&gt;
+            &lt;6 (FACT2 VALUES-REVERSED 1440 720)&gt;
+          &lt;5 (FACT2 VALUES-REVERSED 1440 720)&gt;
+        &lt;4 (FACT2 VALUES-REVERSED 1440 720)&gt;
+      &lt;3 (FACT2 VALUES-REVERSED 1440 720)&gt;
+    &lt;2 (FACT2 VALUES-REVERSED 1440 720)&gt;
+  &lt;1 (ACL2_*1*_ACL2::FACT2 VALUES-REVERSED 1440 720)&gt;
+(720 1440)
+ACL2 !&gt;
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

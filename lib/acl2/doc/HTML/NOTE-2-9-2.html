@@ -1,0 +1,220 @@
+<html>
+<head><title>NOTE-2-9-2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9-2</h2>ACL2 Version  2.9.2 (April, 2005) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Also see <a href="NOTE-2-9-1.html">note-2-9-1</a> for other changes since the last non-incremental release
+(Version_2.9).<p>
+
+There was a bug in non-linear arithmetic (see <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>) that
+caused the following error:
+
+<pre>
+ACL2 !&gt;(include-book "rtl/rel4/lib/top" :dir :system)
+....
+ACL2 !&gt;(set-non-linearp t)
+ T
+ACL2 !&gt;(thm
+ (implies (and (bvecp a 77)
+               (bvecp b 50))
+          (bvecp (fl (/ (* a b) (expt 2 23)))
+                 104))
+ :hints (("Goal" :in-theory (enable bvecp))))<p>
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]<p>
+
+By the simple :definition BVECP, the :executable-counterparts of EXPT
+and UNARY-/ and the simple :rewrite rule ASSOCIATIVITY-OF-* we reduce
+the conjecture to<p>
+
+Goal'
+(IMPLIES (AND (INTEGERP A)
+              (&lt;= 0 A)
+              (&lt; A 151115727451828646838272)
+              (INTEGERP B)
+              (&lt;= 0 B)
+              (&lt; B 1125899906842624))
+         (BVECP (FL (* A B 1/8388608)) 104)).<p>
+
+
+HARD ACL2 ERROR in VARIFY:  This should not have happened.  The supposed
+variable, '1/8388608, is instead a constant.<p>
+
+<p>
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  See :DOC wet for how
+you might be able to get an error backtrace.<p>
+
+ACL2 !&gt;
+</pre>
+
+Thanks to Robert Krug for providing a fix for the above error.<p>
+
+Guard-checking was being inhibited (since v2-9) for calls of built-in
+primitives on explicit values, e.g., <code>(car 3)</code>.  This has been fixed.<p>
+
+Guard-related warnings could be printed during proofs (this bug was
+introduced in Version_2.9.1).  These warnings have been eliminated.<p>
+
+Compound-recognizer rules <code>natp-compound-recognizer</code> and
+<code>posp-compound-recognizer</code> are now built into ACL2 for predicates
+<code><a href="NATP.html">natp</a></code> and <code><a href="POSP.html">posp</a></code>, and hence have been deleted from book
+<code>natp-posp.lisp</code> (where they were called <code>natp-cr</code> and <code>posp-cr</code>,
+respectively).<p>
+
+The function <code>file-clock-p</code>, which recognizes a component of the ACL2
+<code><a href="STATE.html">state</a></code>, is now defined using <code><a href="NATP.html">natp</a></code> instead of <code><a href="INTEGERP.html">integerp</a></code>.
+Thanks to Jared Davis for suggesting this change.  (Technical explanation
+about functions in ACL2 source file <code>axioms.lisp</code>: With a <code>file-clock</code> of
+-1, the call of <code>make-input-channel</code> in <code>open-input-channel</code> will create
+a channel that can't be closed; see the guard of <code>close-input-channel</code>.)<p>
+
+(Allegro CL users only) Support is now provided for building an Allegro CL
+application, provided you have an Allegro CL dynamic runtime license.  (Our
+belief is that with such a license, many users can use the same application,
+rather than each user needing a separate license.)  See new GNUmakefile
+target <code>allegro-app</code> and file <code>build-allegro-exe.cl</code> for more
+information.<p>
+
+The new home page now contains a link to a new page <code>other-releases.html</code>,
+which contains information about other ACL2 releases.  (This is in one's
+local home page, but may not show up on the central ACL2 home page until the
+next non-incremental release.)  Thanks to Warren Hunt for suggesting this
+addition.<p>
+
+We thank Erik Reeber for suggesting a solution to output redirection using
+<code><a href="SYS-CALL.html">sys-call</a></code>, which we have described at the end of its documentation.<p>
+
+A new documentation topic fixes the flawed argument for conservativity of the
+<code><a href="DEFCHOOSE.html">defchoose</a></code> event that appears in Appendix B of Kaufmann and Moore's
+paper, ``Structured Theory Development for a Mechanized Logic'' (Journal of
+Automated Reasoning 26, no. 2 (2001), pp. 161-203).
+See <a href="CONSERVATIVITY-OF-DEFCHOOSE.html">conservativity-of-defchoose</a>.  Thanks to John Cowles and Ruben Gamboa for
+helpful feedback on drafts of this note.<p>
+
+The solution to exercise 6.15 in <code>books/textbook/chap6/solutions.txt</code> has
+been fixed.  Thanks to Aaron Smith for pointing out the problem.<p>
+
+A new documentation topic <a href="DEFUN-SK-EXAMPLE.html">defun-sk-example</a> gives a little more help in
+using <code><a href="DEFUN-SK.html">defun-sk</a></code> effectively.  Thanks to Julien Schmaltz for presenting
+this example as a challenge.<p>
+
+(GCL only) There is now a way to speed up GCL builds of ACL2, at the cost of
+perhaps a percent or so in performance of the resulting image.  Using
+<code>make</code> one supplies the following.
+
+<pre>
+LISP='gcl -eval "(defparameter user::*fast-acl2-gcl-build* t)"
+</pre>
+<p>
+
+Various makefiles have been improved in several ways.
+
+<blockquote>
+(1) Parallel book certification, using GNU make's <code>-j</code> option, can be used.<p>
+
+(2) Book certifications now stops at the first failure if <code>books/Makefile</code>
+or <code>books/Makefile-generic</code> is used, and returns non-zero exit status.
+However, the various make targets in the ACL2 source directory
+(<code>regression</code>, <code>certify-books</code>, etc.) still continue past failures unless
+you provide <code>ACL2_IGNORE=' '</code> on the <code>make</code> command line.<p>
+
+(3) The build process has been modified (file <code>GNUmakefile</code>) so that it
+stops upon a failed compile or a failed initialization.<p>
+
+(4) The automatic dependency generation (from ``<code>make dependencies</code>'' has
+been improved so that commands of the form <code>(ld "my-book.lisp")</code> in
+<code>.acl2</code> files cause the appropriate depedencies to be generated.</blockquote>
+
+Thanks to comments from several users that led to the above Makefile
+improvements: Ray Richards, Doug Harper, and the Rockwell ACL2 users for (1)
+and (2) (and inspiring (4)), and David Rager for (2) and (3).  In particular,
+Doug Harper sent a replacement for the <code>.date</code> mechanism, which was
+interfering with <code>make -n</code>; so, these files are no longer written.<p>
+
+A mechanism has been added for saving output.  In particular, you can now
+call <code><a href="LD.html">ld</a></code> on a file with output turned off, for efficiency, and yet when
+a proof fails you can then display the proof attempt for the failed (last)
+event.  See <a href="SET-SAVED-OUTPUT.html">set-saved-output</a>.  Another new command --
+see <a href="SET-PRINT-CLAUSE-IDS.html">set-print-clause-ids</a> -- causes subgoal numbers to be printed during
+proof attempts when output is inhibited.<p>
+
+Documentation has been added for using ACL2's makefile support to automate
+the certification of collections of books.  See <a href="BOOK-MAKEFILES.html">book-makefiles</a>.<p>
+
+Fixed a bug in <code><a href="SYS-CALL-STATUS.html">sys-call-status</a></code> that was causing hard Lisp errors.<p>
+
+Improved <code><a href="CW-GSTACK.html">cw-gstack</a></code> to allow a <code>:frames</code> argument to specify a range
+of one or more frames to be printed.  see <a href="CW-GSTACK.html">cw-gstack</a>.<p>
+
+Fixed a bug in <a href="PROOF-CHECKER.html">proof-checker</a> command <code>forwardchain</code>.  Thanks to
+Ming-Hsiu Wang for bringing this bug to our attention.<p>
+
+We have provided a mechanism for saving an executable image.
+See <a href="SAVING-AND-RESTORING.html">saving-and-restoring</a> and see <a href="SAVE-EXEC.html">save-exec</a>.  We have eliminated obsolete
+functions <code>note-lib</code> and <code>make-lib</code>.<p>
+
+Modified the <code><a href="GROUND-ZERO.html">ground-zero</a></code> <a href="THEORY.html">theory</a> so that it contains all of the
+built-in rules (in ACL2 source file <code>axioms.lisp</code>).  It had formerly failed
+to include rules from some definitions and theorems near the end of
+<code>axioms.lisp</code>.<p>
+
+A new event, <code><a href="SET-ENFORCE-REDUNDANCY.html">set-enforce-redundancy</a></code>, allows the enforcement of
+<code><a href="DEFTHM.html">defthm</a></code>, <code><a href="DEFUN.html">defun</a></code>, and most other events during book development.
+See <a href="SET-ENFORCE-REDUNDANCY.html">set-enforce-redundancy</a>.<p>
+
+A bug has been fixed that had allowed <code><a href="DEFTHEORY.html">deftheory</a></code> <a href="EVENTS.html">events</a> to cause a
+hard Lisp error when calling <code><a href="UNION-THEORIES.html">union-theories</a></code> on ill-formed theories
+after, for example:
+
+<pre>
+:set-guard-checking nil
+(in-theory (union-theories '((:rewrite no-such-rule))
+                           (current-theory 'ground-zero)))
+</pre>
+
+The handling of <a href="GUARD.html">guard</a> checking has been modified somewhat in a way that
+should only very rarely affect users.  (An ``Essay on Guard Checking'' in the
+ACL2 source code explains this point to anyone interested in implementation
+details.)<p>
+
+(GCL ONLY) Removed the -dir setting in the ACL2 wrapper script for GCL.  This
+should generally have no effect for most users, but it eliminates a potential
+source of error down the road.<p>
+
+Several interesting new definitions and lemmas have been added to the rtl
+library developed at AMD, and incorporated into <code>books/rtl/rel4/lib/</code>.
+Other book changes include a change to lemma <code>truncate-rem-elim</code> in
+<code>books/ihs/quotient-remainder-lemmas.lisp</code>, as suggested by Jared Davis.<p>
+
+The macro <code><a href="REAL_slash_RATIONALP.html">real/rationalp</a></code> may now be referred to in <code><a href="IN-THEORY.html">in-theory</a></code>
+<a href="EVENTS.html">events</a> and <a href="HINTS.html">hints</a>, thanks to a new <code><a href="ADD-MACRO-ALIAS.html">add-macro-alias</a></code> event.
+Thanks to Jared Davis for this suggestion.<p>
+
+ACL2 terms of the form <code>(if p 'nil 't)</code> are now printed as <code>(not p)</code>,
+where in some setting they had been printed as <code>(and (not p) t)</code>.  Thanks
+to Robert Krug for this improvement.<p>
+
+(GCL ONLY) Added profiling support, based heavily on code supplied by Camm
+Maguire.  See file <code>save-gprof.lsp</code> for instructions.  Thanks to Camm, and
+also to David Hardin for inspiring this addition.<p>
+
+Added support for preprocessing before printing (untranslating) a term.
+See <a href="USER-DEFINED-FUNCTIONS-TABLE.html">user-defined-functions-table</a>, in particular the discussion of
+<code>untranslate-preprocess</code>.  Thanks to Jared Davis for inspiring this
+addition, and for providing a book that takes advantage of it
+(<code>books/misc/untranslate-patterns.lisp</code>).<p>
+
+The documentation has been improved for explaining how <a href="RUNE.html">rune</a>s are
+assigned; see <a href="RUNE.html">rune</a>.  Thanks to Robert Krug for pointing out inaccuracies in
+the existing documentation.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<html>
+<head><title>BACKCHAIN-LIMIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BACKCHAIN-LIMIT</h2>limiting the effort expended on relieving hypotheses
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Before ACL2 can apply a rule with hypotheses, it must establish that
+the hypotheses are true.  (We ignore the relaxing of this
+requirement afforded by <code><a href="CASE-SPLIT.html">case-split</a></code>s and <code><a href="FORCE.html">force</a></code>d hypotheses.)  ACL2
+typically establishes each hypothesis by backchaining --
+instantiating the hypothesis and then rewriting it recursively.
+Here we describe how ACL2 allows the user to limit backchaining.
+<p>
+Each hypothesis of a <code><a href="REWRITE.html">rewrite</a></code> or <code><a href="LINEAR.html">linear</a></code> rule is assigned a
+backchain-limit when the rule is stored.  By default, this limit is
+<code>nil</code>, denoting infinity (no limit).  However, the value used for
+the default may be set to a non-negative integer (or to <code>nil</code>) by
+the user; see <a href="SET-DEFAULT-BACKCHAIN-LIMIT.html">set-default-backchain-limit</a>.  The default is
+overridden when a <code>:backchain-limit-lst</code> is supplied explicitly with
+the rule; see <a href="RULE-CLASSES.html">rule-classes</a>.  The number of recursive
+applications of backchaining starting with the hypothesis of a rule
+is limited to the backchain-limit associated with that hypothesis.<p>
+
+Moreover, the user may set a global backchain-limit that limits the
+total backchaining depth.  See <a href="SET-BACKCHAIN-LIMIT.html">set-backchain-limit</a>.  Below we lay
+out the precise sense in which this global backchain-limit interacts
+with the backchain-limits of individual rules in order to limit
+backchaining.  But first we note that when further backchaining is
+disallowed, ACL2 can still prove a hypothesis in a given context by
+using that contextual information.  This process is sometimes called
+``type-set reasoning,'' an appropriate term since rules of class
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> may be used.  So, for example, the
+relieving of hypotheses may be limited to the use of contextual
+information (without backchaining, i.e., without recursively
+rewriting hypotheses) by executing <code>:set-backchain-limit 0</code>.<p>
+
+Recall that there are two sorts of backchain limits:  those applied
+to hypotheses of individual rules, as assigned by their
+<code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code> or else taken from the default
+(see <a href="SET-DEFAULT-BACKCHAIN-LIMIT.html">set-default-backchain-limit</a>); and the global limit, initially
+<code>nil</code> (no limit) but settable with <code>:</code><code><a href="SET-BACKCHAIN-LIMIT.html">set-backchain-limit</a></code>.
+Here is how these two types of limits interact to limit backchaining,
+i.e., recursive rewriting of hypotheses.  ACL2 maintains a current
+backchain limit, which is the limit on the depth of recursive calls
+to the rewriter, as well as a current backchain depth, which is
+initially 0 and is incremented each time ACL2 backchains (and is
+decremented when a backchain completes).  When ACL2 begins to
+rewrite a literal (crudely, one of the ``top-level'' terms of the
+goal currently being worked on), it sets the current backchain-limit
+to the global value, which is initially <code>nil</code> but can be set using
+<code>:</code><code><a href="SET-BACKCHAIN-LIMIT.html">set-backchain-limit</a></code>.  When ACL2 is preparing to relieve a
+hypothesis by backchaining (hence, after it has already tried
+type-set reasoning), it first makes sure that the current backchain
+limit is greater than the current backchain depth.  If not, then it
+refuses to relieve that hypothesis.  Otherwise, it increments the
+current backchain depth and calculates a new current backchain-limit
+by taking the minimum of two values: the existing current
+backchain-limit, and the sum of the current backchain depth and the
+the backchain-limit associated with the hypothesis.  Thus, ACL2 only
+modifies the current backchain-limit if it is necessary to decrease
+that limit in order to respect the backchain limit associated with
+the hypothesis.<p>
+
+We illustrate with the following examples.<p>
+
+
+<pre>
+; We stub out some functions so that we can reason about them.<p>
+
+(defstub p0 (x) t)
+(defstub p1 (x) t)
+(defstub p2 (x) t)
+(defstub p3 (x) t)<p>
+
+; Initially, the default-backchain-limit is nil, or infinite.<p>
+
+(defaxiom p2-implies-p1-limitless
+  (implies (p2 x)
+           (p1 x)))<p>
+
+; The following rule will have a backchain-limit of 0.<p>
+
+(defaxiom p1-implies-p0-limit-0
+  (implies (p1 x)
+           (p0 x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))<p>
+
+; We have (p2 x) ==&gt; (p1 x) ==&gt; (p0 x).  We wish to establish that
+; (p2 x) ==&gt; (p0 x).  Normally, this would be no problem, but here
+; we fail because ACL2 cannot establish (p0 x) by type-set reasoning
+; alone.<p>
+
+(thm
+  (implies (p2 x)
+           (p0 x)))<p>
+
+; We set the default-backchain-limit to 1.<p>
+
+:set-default-backchain-limit 1<p>
+
+; The following is more powerful than p1-implies-p0-limit-0
+; because it can use rewrite rules to establish (p1 x).<p>
+
+(defaxiom p1-implies-p0-limit-1
+  (implies (p1 x)
+           (p0 x)))<p>
+
+; This theorem will succeed:<p>
+
+(thm
+  (implies (p2 x)
+           (p0 x)))<p>
+
+; We return the default-backchain-limit to its initial value.<p>
+
+:set-default-backchain-limit nil<p>
+
+; Here is our last axiom.<p>
+
+(defaxiom p3-implies-p2-limitless
+  (implies (p3 x)
+           (p2 x)))<p>
+
+; We now have (p3 x) ==&gt; (p2 x) ==&gt; (p1 x) ==&gt; (p0 x).  However the
+; rule p1-implies-p0-limit-1 has a backchain-limit of 1; hence we
+; are not allowed to backchain far enough back to use
+; p3-implies-p2-limitless.  We therefore lose.<p>
+
+(defthm will-fail
+  (implies (p3 x)
+           (p0 x)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

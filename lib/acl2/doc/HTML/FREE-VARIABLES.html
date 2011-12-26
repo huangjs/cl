@@ -1,0 +1,207 @@
+<html>
+<head><title>FREE-VARIABLES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>FREE-VARIABLES</h2>free variables in rules
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+As described elsewhere (see <a href="RULE-CLASSES.html">rule-classes</a>), ACL2 rules are treated as
+implications for which there are zero or more hypotheses <code>hj</code> to prove.  In
+particular, rules of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> may look like this:
+
+<pre>
+(implies (and h1 ... hn)
+         (fn lhs rhs))
+</pre>
+
+Variables of <code>hi</code> are said to occur <em>free</em> in the above <code>:rewrite</code>
+rule if they do not occur in <code>lhs</code> or in any <code>hj</code> with <code>j&lt;i</code>.  (To be
+precise, here we are only discussing those variables that are not in the
+scope of a <code><a href="LET.html">let</a></code>/<code><a href="LET_star_.html">let*</a></code>/<code>lambda</code> that binds them.)  We also refer
+to these as the <em>free variables</em> of the rule.  ACL2 issues a warning or
+error when there are free variables in a rule, as described below.
+(Variables of <code>rhs</code> may be considered free if they do not occur in <code>lhs</code>
+or in any <code>hj</code>.  But we do not consider those in this discussion.)<p>
+
+In general, the <em>free variables</em> of rules are those variables occurring in
+their hypotheses (not <code><a href="LET.html">let</a></code>/<code><a href="LET_star_.html">let*</a></code>/<code>lambda</code>-bound) that are not
+bound when the rule is applied.  For rules of class <code>:</code><code><a href="LINEAR.html">linear</a></code> and
+<code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code>, variables are bound by a trigger term.
+(See <a href="RULE-CLASSES.html">rule-classes</a> for a discussion of the <code>:trigger-terms</code> field).  For
+rules of class <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code>, variables are bound by the
+<code>:typed-term</code> field.<p>
+
+Let us discuss the method for relieving hypotheses of <a href="REWRITE.html">rewrite</a> rules with
+free variables.  Similar considerations apply to <a href="LINEAR.html">linear</a> and
+<a href="FORWARD-CHAINING.html">forward-chaining</a> rules, while for other rules (in particular,
+<a href="TYPE-PRESCRIPTION.html">type-prescription</a> rules), only one binding is tried, much as described
+in the discussion about <code>:once</code> below.<p>
+
+See <a href="FREE-VARIABLES-EXAMPLES.html">free-variables-examples</a> for more examples of how this all works,
+including illustration of how the user can exercise some control over it.  In
+particular, see <a href="FREE-VARIABLES-EXAMPLES-REWRITE.html">free-variables-examples-rewrite</a> for an explanation of output
+from the <a href="BREAK-REWRITE.html">break-rewrite</a> facility in the presence of rewriting failures
+involving free variables.
+<p>
+<ul>
+<li><h3><a href="FREE-VARIABLES-EXAMPLES.html">FREE-VARIABLES-EXAMPLES</a> -- examples pertaining to free variables in rules
+</h3>
+</li>
+
+</ul>
+
+We begin with an example.  Does the proof of the <code><a href="THM.html">thm</a></code> below succeed?
+
+<pre>
+(defstub p2 (x y) t)<p>
+
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (equal (p2 x z) t))
+  :rule-classes ((:rewrite :match-free :all)))<p>
+
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))
+</pre>
+
+Consider what happens when the proof of the <code>thm</code> is attempted.  The ACL2
+rewriter attempts to apply rule <code>p2-trans</code> to the conclusion, <code>(p2 a d)</code>.
+So, it binds variables <code>x</code> and <code>z</code> from the left-hand side of the
+conclusion of <code>p2-trans</code> to terms <code>a</code> and <code>d</code>, respectively, and then
+attempts to relieve the hypotheses of <code>p2-trans</code>.  The first hypothesis of
+<code>p2-trans</code>, <code>(p2 x y)</code>, is considered first.  Variable <code>y</code> is free in
+that hypothesis, i.e., it has not yet been bound.  Since <code>x</code> is bound to
+<code>a</code>, the rewriter looks through the context for a binding of <code>y</code> such
+that <code>(p2 a y)</code> is true, and it so happens that it first finds the term
+<code>(p2 a b)</code>, thus binding <code>y</code> to <code>b</code>.  Now it goes on to the next
+hypothesis, <code>(p2 y z)</code>.  At this point <code>y</code> and <code>z</code> have already been
+bound to <code>b</code> and <code>d</code>; but <code>(p2 b d)</code> cannot be proved.<p>
+
+So, in order for the proof of the <code><a href="THM.html">thm</a></code> to succeed, the rewriter needs to
+backtrack and look for another way to instantiate the first hypothesis of
+<code>p2-trans</code>.  Because <code>:match-free :all</code> has been specified, backtracking
+does take place.  This time <code>y</code> is bound to <code>c</code>, and the subsequent
+instantiated hypothesis becomes <code>(p2 c d)</code>, which is true.  The application
+of rule <code>(p2-trans)</code> succeeds and the theorem is proved.<p>
+
+If instead <code>:match-free :all</code> had been replaced by <code>:match-free :once</code> in
+rule <code>p2-trans</code>, then backtracking would not occur, and the proof of the
+<code><a href="THM.html">thm</a></code> would fail.<p>
+
+Next we describe in detail the steps used by the rewriter in dealing with
+free variables.<p>
+
+ACL2 uses the following sequence of steps to relieve a hypothesis with free
+variables, except that steps (1) and (3) are skipped for
+<code>:forward-chaining</code> rules and step (3) is skipped for
+<code>:type-prescription</code> rules.  First, if the hypothesis is of the form
+<code>(force hyp0)</code> or <code>(case-split hyp0)</code>, then replace it with <code>hyp0</code>.
+(1) Suppose the hypothesis has the form <code>(equiv var term)</code> where <code>var</code> is
+free and no variable of <code>term</code> is free, and either <code>equiv</code> is <code><a href="EQUAL.html">equal</a></code>
+or else <code>equiv</code> is a known <a href="EQUIVALENCE.html">equivalence</a> relation and <code>term</code> is a call
+of <code><a href="DOUBLE-REWRITE.html">double-rewrite</a></code>.  Then bind <code>var</code> to the result of rewriting
+<code>term</code> in the current context.  (2) Look for a binding of the free
+variables of the hypothesis so that the corresponding instance of the
+hypothesis is known to be true in the current context.  (3) Search all
+<code><a href="ENABLE.html">enable</a></code>d, hypothesis-free rewrite rules of the form <code>(equiv lhs rhs)</code>,
+where <code>lhs</code> has no variables (other than those bound by <code><a href="LET.html">let</a></code>,
+<code><a href="LET_star_.html">let*</a></code>, or <code>lambda</code>), <code>rhs</code> is known to be true in the current
+context, and <code>equiv</code> is typically <code>equal</code> but can be any equivalence
+relation appropriate for the current context (see <a href="CONGRUENCE.html">congruence</a>); then attempt
+to bind the free variables so that the instantiated hypothesis is <code>lhs</code>.
+If all attempts fail and the original hypothesis is a call of <code><a href="FORCE.html">force</a></code> or
+<code><a href="CASE-SPLIT.html">case-split</a></code>, where forcing is enabled (see <a href="FORCE.html">force</a>) then the hypothesis
+is relieved, but in the split-off goals, all free variables are bound to
+unusual names that call attention to this odd situation.<p>
+
+When a <a href="REWRITE.html">rewrite</a> or <a href="LINEAR.html">linear</a> rule has free variables in the hypotheses,
+the user generally needs to specify whether to consider only the first
+instance found in steps (2) and (3) above, or instead to consider them all.
+Below we discuss how to specify these two options as ``<code>:once</code>'' or
+``<code>:all</code>'' (the default), respectively.<p>
+
+Is it better to specify <code>:once</code> or <code>:all</code>?  We believe that <code>:all</code> is
+generally the better choice because of its greater power, provided the user
+does not introduce a large number of rules with free variables, which has
+been known to slow down the prover due to combinatorial explosion in the
+search (Steps (2) and (3) above).<p>
+
+Either way, it is good practice to put the ``more substantial'' hypotheses
+first, so that the most likely bindings of free variables will be found first
+(in the case of <code>:all</code>) or found at all (in the case of <code>:once</code>).  For
+example, a rewrite rule like
+
+<pre>
+(implies (and (p1 x y)
+              (p2 x y))
+         (equal (bar x) (bar-prime x)))
+</pre>
+
+may never succeed if <code>p1</code> is nonrecursive and enabled, since we may well
+not find calls of <code>p1</code> in the current context.  If however <code>p2</code> is
+disabled or recursive, then the above rule may apply if the two hypotheses
+are switched.  For in that case, we can hope for a match of <code>(p2 x y)</code> in
+the current context that therefore binds <code>x</code> and <code>y</code>; then the rewriter's
+full power may be brought to bear to prove <code>(p1 x y)</code> for that <code>x</code> and
+<code>y</code>.<p>
+
+Moreover, the ordering of hypotheses can affect the efficiency of the
+rewriter.  For example, the rule
+
+<pre>
+(implies (and (rationalp y)
+              (foo x y))
+         (equal (bar x) (bar-prime x)))
+</pre>
+
+may well be sub-optimal.  Presumably the intention is to rewrite <code>(bar x)</code>
+to <code>(bar-prime x)</code> in a context where <code>(foo x y)</code> is explicitly known to
+be true for some rational number <code>y</code>.  But <code>y</code> will be bound first to the
+first term found in the current context that is known to represent a rational
+number.  If the 100th such <code>y</code> that is found is the first one for which
+<code>(foo x y)</code> is known to be true, then wasted work will have been done on
+behalf of the first 99 such terms <code>y</code> -- unless <code>:once</code> has been
+specified, in which case the rule will simply fail after the first binding of
+<code>y</code> for which <code>(rationalp y)</code> is known to be true.  Thus, a better form
+of the above rule is almost certainly the following.
+
+<pre>
+(implies (and (foo x y)
+              (rationalp y))
+         (equal (bar x) (bar-prime x)))
+</pre>
+<p>
+
+<em>Specifying `once' or `all'.</em> One method for specifying <code>:once</code> or
+<code>:all</code> for free-variable matching is to provide the <code>:match-free</code> field of
+the <code>:rule-classes</code> of the rule, for example, <code>(:rewrite :match-free :all)</code>.
+See <a href="RULE-CLASSES.html">rule-classes</a>.  However, there are global events that can be used
+to specify <code>:once</code> or <code>:all</code>; see <a href="SET-MATCH-FREE-DEFAULT.html">set-match-free-default</a> and
+see <a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a>.  Here are some examples.
+
+<pre>
+(set-match-free-default :once)    ; future rules without a :match-free field
+                                  ; are stored as :match-free :once (but this
+                                  ; behavior is local to a book)
+(add-match-free-override :once t) ; existing rules are treated as
+                                  ; :match-free :once regardless of their
+                                  ; original :match-free fields
+(add-match-free-override :once (:rewrite foo) (:rewrite bar . 2))
+                                  ; the two indicated rules are treated as
+                                  ; :match-free :once regardless of their
+                                  ; original :match-free fields
+</pre>
+<p>
+
+<em>Some history.</em> Before Version  2.7 the ACL2 rewriter performed Step (2)
+above first.  More significantly, it always acted as though <code>:once</code> had
+been specified.  That is, if Step (2) did not apply, then the rewriter took
+the first binding it found using either Steps (1) or (3), in that order, and
+proceeded to relieve the remaining hypotheses without trying any other
+bindings of the free variables of that hypothesis.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

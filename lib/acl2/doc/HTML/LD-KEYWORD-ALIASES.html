@@ -1,0 +1,57 @@
+<html>
+<head><title>LD-KEYWORD-ALIASES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-KEYWORD-ALIASES</h2>allows the abbreviation of some keyword commands
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(set-ld-keyword-aliases '((:q 0 q-fn)
+                          (:e 0 exit-acl2-macro))
+                        state)
+</pre>
+
+<code>Ld-keyword-aliases</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor
+is <code>(ld-keyword-aliases state)</code> and the updater is
+<code>(set-ld-keyword-aliases val state)</code>.  <code>Ld-keyword-aliases</code> must be an
+alist, each element of which is of the form <code>(:keyword n fn)</code>, where
+<code>:keyword</code> is a keyword, <code>n</code> is a nonnegative integer, and <code>fn</code> is a
+function symbol of arity <code>n</code>, a macro symbol, or a <code>lambda</code> expression
+of arity <code>n</code>.  When <code>keyword</code> is typed as an <code><a href="LD.html">ld</a></code> command, <code>n</code> more forms
+are read, <code>x1, ..., xn</code>, and the form <code>(fn 'x1 ... 'xn)</code> is then
+evaluated.  The initial value of <code>ld-keyword-aliases</code> is <code>nil</code>.<p>
+
+In the example above, <code>:</code><code><a href="Q.html">q</a></code> has been redefined to have the effect of
+executing <code>(q-fn)</code>, so for example if you define
+
+<pre>
+(defmacro q-fn ()
+  '(er soft 'q "You un-bound :q and now we have a soft error."))
+</pre>
+
+then <code>:</code><code><a href="Q.html">q</a></code> will cause an error, and if you define
+
+<pre>
+(defmacro exit-acl2-macro () '(exit-ld state))
+</pre>
+
+then <code>:e</code> will cause the effect (it so happens) that <code>:</code><code><a href="Q.html">q</a></code> normally
+has.  If you prefer <code>:e</code> to <code>:</code><code><a href="Q.html">q</a></code> for exiting the ACL2 loop, you might
+even want to put such definitions of <code>q-fn</code> and <code>exit-acl2-macro</code>
+together with the <code>set-ld-keyword-aliases</code> form above in your
+<code>"acl2-customization.lisp"</code> file; see <a href="ACL2-CUSTOMIZATION.html">acl2-customization</a>.
+<p>
+The general-purpose ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>, reads forms from
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, evaluates them and prints the result to <code><a href="STANDARD-CO.html">standard-co</a></code>.
+However, there are various flags that control <code><a href="LD.html">ld</a></code>'s behavior and
+<code>ld-keyword-aliases</code> is one of them.  <code>Ld-keyword-aliases</code> affects how
+keyword commands are parsed.  Generally speaking, <code><a href="LD.html">ld</a></code>'s command
+interpreter reads ``<code>:fn x1 ... xn</code>'' as ``<code>(fn 'x1 ... 'xn)</code>'' when <code>:fn</code>
+is a keyword and <code>fn</code> is the name of an <code>n</code>-ary function.  But this
+parse is overridden, as described above, for the keywords bound in
+<code>ld-keyword-aliases</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

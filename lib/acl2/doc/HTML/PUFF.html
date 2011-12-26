@@ -1,0 +1,121 @@
+<html>
+<head><title>PUFF.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PUFF</h2>replace a compound <a href="COMMAND.html">command</a> by its immediate subevents
+<pre>Major Section:  <a href="HISTORY.html">HISTORY</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+ACL2 !&gt;:puff :max
+ACL2 !&gt;:puff :x
+ACL2 !&gt;:puff 15
+ACL2 !&gt;:puff "book"
+<p>
+General Form:
+:puff cd
+</pre>
+
+where <code>cd</code> is a <a href="COMMAND.html">command</a> descriptor (see <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>) for
+a ``puffable'' <a href="COMMAND.html">command</a> (see below).  <code>Puff</code> replaces the <a href="COMMAND.html">command</a> at <code>cd</code>
+by the immediate subevents of the <a href="COMMAND.html">command</a>, executed as <a href="COMMAND.html">command</a>s.
+<code>Puff</code> then prints, using <code><a href="PCS.html">pcs</a></code>, the <code>puff</code>ed region.<p>
+
+A <a href="COMMAND.html">command</a> is ``puffable'' if it is an <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="COMMAND.html">command</a>, an
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> <a href="COMMAND.html">command</a>, or any <a href="COMMAND.html">command</a> other than those consisting of
+a single primitive event.  For example, since <code><a href="DEFUN.html">defun</a></code> is a primitive
+event, a <code><a href="DEFUN.html">defun</a></code> <a href="COMMAND.html">command</a> is not puffable.  But a macro form that
+expands into several <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a> is puffable.  The only primitive
+event <a href="COMMAND.html">command</a>s that are puffable are <code><a href="ENCAPSULATE.html">encapsulate</a></code> and <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+<a href="COMMAND.html">command</a>s.  A puffable <a href="COMMAND.html">command</a> contains (interesting) subevents,
+namely, the <a href="EVENTS.html">events</a> in the body of the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, in the file of
+the book included, or in the <a href="COMMAND.html">command</a> block.<p>
+
+The puff <a href="COMMAND.html">command</a> ``lifts'' the immediate subevents of the indicated
+<a href="COMMAND.html">command</a> so that they become <a href="COMMAND.html">command</a>s themselves.  The <a href="COMMAND.html">command</a> <code><a href="PUFF_star_.html">puff*</a></code>
+recursively puffs the newly introduced <a href="COMMAND.html">command</a>s.  See <a href="PUFF_star_.html">puff*</a>,
+which also gives an example illustrating both <code>puff</code> and <code><a href="PUFF_star_.html">puff*</a></code>.  <code>Puff</code>
+undoes the <a href="COMMAND.html">command</a> at <code>cd</code> and replaces it by its immediate subevents.
+Thus, in general the length of the <a href="HISTORY.html">history</a> grows when a puff <a href="COMMAND.html">command</a>
+is executed.  If <code>puff</code> causes an error (see below), the logical <a href="WORLD.html">world</a>
+remains unchanged from its initial configuration.<p>
+
+The intended use of <code>puff</code> is to allow the user access to the <a href="EVENTS.html">events</a>
+``hidden'' inside compound <a href="COMMAND.html">command</a>s.  For example, while trying to
+prove some theorem, <code>p</code>, about a constrained function, <code>fn</code>, one might
+find that the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, <code>cd</code>, that introduced <code>fn</code> failed to include
+an important <a href="CONSTRAINT.html">constraint</a>, <code>q</code>.  Without <code>puff</code>, the only way to proceed
+is to undo back through <code>cd</code>, create a suitable <code><a href="ENCAPSULATE.html">encapsulate</a></code> that
+proves and exports <code>q</code> as well as the old <a href="CONSTRAINT.html">constraint</a>s, re-execute the
+new <code><a href="ENCAPSULATE.html">encapsulate</a></code>, re-execute the <a href="EVENTS.html">events</a> since <code>cd</code>, and then try <code>p</code>
+again.  Unfortunately, it may be hard to prove <code>q</code> and additional
+<a href="EVENTS.html">events</a> may have to be inserted into the <code><a href="ENCAPSULATE.html">encapsulate</a></code> to prove it.  It
+may also be hard to formulate the ``right'' <code>q</code>, i.e., one that is
+provable in the <code><a href="ENCAPSULATE.html">encapsulate</a></code> and provides the appropriate facts for
+use in the proof of <code>p</code>.<p>
+
+Using <code>puff</code>, the user can erase the <code><a href="ENCAPSULATE.html">encapsulate</a></code> at <code>cd</code>, replacing it
+by the <a href="EVENTS.html">events</a> in its body.  Now the formerly constrained function,
+<code>fn</code>, is defined as its witness.  The user can experiment with
+formulations and proofs of <code>q</code> suitable for <code>p</code>.  Of course, to get into
+the ultimately desired <a href="STATE.html">state</a> -- where <code>fn</code> is constrained rather than
+defined and <code>q</code> is exported by an <code><a href="ENCAPSULATE.html">encapsulate</a></code> at <code>cd</code> -- the user must
+ultimately undo back to <code>cd</code> and carry out the more tedious program
+described above.  But by using <code>puff</code> it is easier to experiment.<p>
+
+Similar applications of <code>puff</code> allow the user of a book to expose the
+innards of the book as though they had all be typed as <a href="COMMAND.html">command</a>s.
+The user might then ``partially undo'' the book, keeping only some
+of the <a href="EVENTS.html">events</a> in it.<p>
+
+<code>Puff</code> operates as follows.  First, it determines the list of
+immediate subevents of the <a href="COMMAND.html">command</a> indicated by <code>cd</code>.  It causes an
+error if there is only one subevent and that subevent is identical
+to the <a href="COMMAND.html">command</a> -- i.e., if the <a href="COMMAND.html">command</a> at <code>cd</code> is a primitive.  Next,
+<code>puff</code> undoes back through the indicated <a href="COMMAND.html">command</a>.  This not only
+erases the <a href="COMMAND.html">command</a> at <code>cd</code> but all the <a href="COMMAND.html">command</a>s executed after it.
+Finally, <code>puff</code> re-executes the subevents of (the now erased) <code>cd</code>
+followed by all the <a href="COMMAND.html">command</a>s that were executed afterwards.<p>
+
+Observe that the <a href="COMMAND.html">command</a>s executed after <code>cd</code> will generally have
+higher <a href="COMMAND.html">command</a> numbers than they did before the puff.  For example,
+suppose 100 <a href="COMMAND.html">command</a>s have been executed and that <code>:puff 80</code> is then
+executed.  Suppose <a href="COMMAND.html">command</a> 80 contains 5 immediate subevents (i.e.,
+is an encapsulation of five <a href="EVENTS.html">events</a>).  Then, after puffing, <a href="COMMAND.html">command</a>
+80 is the first event of the puffed <a href="COMMAND.html">command</a>, <a href="COMMAND.html">command</a> 81 is the
+second, and so on; 104 <a href="COMMAND.html">command</a>s appear to have been executed.<p>
+
+When puffing an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code>, the <code><a href="LOCAL.html">local</a></code> <a href="COMMAND.html">command</a>s are
+executed.  Note that this will replace constrained functions by
+their witnesses.<p>
+
+Finally, it is impossible to <code>puff</code> in the presence of <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+<a href="COMMAND.html">command</a>s involving certified files that have been altered since they
+were included.  To be specific, suppose <code>"arith"</code> is a certified
+book that has been included in a session.  Suppose that after
+<code>"arith"</code> was included, the source file is modified.  (This might
+happen if the user of <code>"arith"</code> is not its author and the author
+happens to be working on a new version of <code>"arith"</code> during the same
+time period.)  Now suppose the user tries to <code>puff</code> the <a href="COMMAND.html">command</a> that
+included <code>"arith"</code>.  The attempt to obtain the subevents in
+<code>"arith"</code> will discover that the check sum of <code>"arith"</code> has changed
+and an error will be caused.  No change is made in the logical
+<a href="WORLD.html">world</a>.  A similar error is caused if, in this same situation, the
+user tries to puff <strong>any command that occurred before the inclusion</strong> of
+<code>"arith"</code>!  That is, <code>puff</code> may cause an error and leave the <a href="WORLD.html">world</a>
+unchanged even if the <a href="COMMAND.html">command</a> puffed is not one involving the
+modified book.  This happens because in order to reconstruct the
+<a href="WORLD.html">world</a> after the puffed <a href="COMMAND.html">command</a>, <code>puff</code> must obtain the <a href="EVENTS.html">events</a> in the
+book and if the book's source file has changed there is no assurance
+that the reconstructed <a href="WORLD.html">world</a> is the one the user intends.<p>
+
+Warning: We do not detect changes to uncertified <a href="BOOKS.html">books</a> that have
+been included and are then puffed or re-included!  The act of
+including an uncertified book leaves no trace of the check sum of
+the book.  Furthermore, the act prints a warning message disclaiming
+soundness.  In light of this, <code>:puff</code> quietly ``re-''executes the
+current contents of the book.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

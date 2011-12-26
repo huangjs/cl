@@ -1,0 +1,60 @@
+<html>
+<head><title>WHY-BRR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WHY-BRR</h2>an explanation of why ACL2 has an explicit <code><a href="BRR.html">brr</a></code> mode
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Why isn't <code><a href="BRR.html">brr</a></code> mode automatically disabled when there are no
+monitored runes?  The reason is that the list of monitored runes is
+kept in a wormhole state.
+<p>
+See <a href="WORMHOLE.html">wormhole</a> for more information on wormholes in general.  But
+the fundamental property of the wormhole function is that it is a
+logical <code>no-op</code>, a constant function that does not take state as an
+argument.  When entering a wormhole, arbitrary information can be
+passed in (including the external state).  That information is used
+to construct a near copy of the external state and that ``wormhole
+state'' is the one with respect to which interactions occur during
+breaks.  But no information is carried by ACL2 out of a wormhole --
+if that were allowed wormholes would not be logical no-ops.  The
+only information carried out of a wormhole is in the user's head.<p>
+
+<code><a href="BREAK-REWRITE.html">Break-rewrite</a></code> interacts with the user in a wormhole state because
+the signature of the ACL2 rewrite function does not permit it to
+modify <code><a href="STATE.html">state</a></code>.  Hence, only wormhole interaction is possible.  (This
+has the additional desirable property that the correctness of the
+rewriter does not depend on what the user does during interactive
+breaks within it; indeed, it is logically impossible for the user to
+affect the course of <code><a href="REWRITE.html">rewrite</a></code>.)<p>
+
+Now consider the list of monitored runes.  Is that kept in the
+external state as a normal state global or is it kept in the
+wormhole state?  If it is in the external state then it can be
+inspected within the wormhole but not changed.  This is
+unacceptable; it is common to change the <a href="MONITOR.html">monitor</a>ed rules as the
+proof attempt progresses, installing monitors when certain rules are
+about to be used in certain contexts.  Thus, the list of monitored
+runes must be kept as a wormhole variable.  Hence, its value cannot
+be determined outside the wormhole, where the proof attempt is
+ongoing.<p>
+
+This raises another question: If the list of monitored runes is
+unknown to the rewriter operating on the external state, how does
+the rewriter know when to break?  The answer is simple: it breaks
+every time, for every rune, if <code><a href="BRR.html">brr</a></code> mode is enabled.  The wormhole is
+entered (silently), computations are done within the wormhole state
+to determine if the user wants to see the break, and if so,
+interactions begin.  For unmonitored runes and runes with false
+break conditions, the silent wormhole entry is followed by a silent
+wormhole exit and the user perceives no break.<p>
+
+Thus, the penalty for running with <code><a href="BRR.html">brr</a></code> mode enabled when there are
+no monitored runes is high: a wormhole is entered on every
+application of every rune and the user is simply unware of it.  The
+user who has finally unmonitored all runes is therefore strongly
+advised to carry this information out of the wormhole and to do <code>:</code><code><a href="BRR.html">brr</a></code>
+<code>nil</code> in the external state when the next opportunity arises.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,191 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(setf with-stem-up-too 
+    (make-self-acting
+	:action #'(lambda (note &rest rest)
+		    (declare (ignore rest))
+		    (setf (head-quarters note) 2)
+		    (add-to-marks 
+		     note 
+		     (list (make-instance 'sundry
+			       :name :with-stem-up-too
+			       :mark #'(lambda (mark note score &optional justifying)
+					 (when (not justifying)
+					   (moveto score (+ (x0 note) .2875) (y0 note))
+					   (setf (line-width score) *stem-width*)
+					   (rlineto score 0 .75)
+					   (draw score)
+					   (setf (line-width score) 0)))))))
+	:argument nil))
+
+(defun with-stem-up-too () with-stem-up-too)
+
+
+(cmn (size 12)
+     ;(free-expansion-factor 1.0)
+     (line-separation 3.0)
+     (staff-separation 1.5)
+     (header-margin .5)
+     (footer-margin .5)
+  (system
+     (setf pno (staff treble (key e-major) (meter common-time (meter-size 0))
+            (chord (notes e5 g4) q) quarter-rest half-rest
+	    bar
+	    (f5 q (grace-note (slurred nil) d4) begin-slur)
+	    (g5 e (crescendo (dy .125) (duration 3))) (as5 e) 
+	    (b5 (rq 1/5)) (c6 (rq 1/5)) (b5 (rq 1/5)) (a5 (rq 1/5)) (b5 (rq 1/5))
+	    (c6 e.) (d6 s end-slur)
+	    bar
+	    (d6 h accent begin-slur) (e5 h end-slur)
+	    bar
+	    (e5 begin-slur (rq 1/5)) (f5 (rq 1/5)) (e5 (rq 1/5)) (d5 (rq 1/5)) (e5 (rq 1/5))
+	    (d6 e) (c6 e end-slur)
+	    (b5 s (begin-slur (slur-curvature 1.0))) (a5 (appoggiatura (slurred nil) (a5 (sign double-sharp) s) (b5 s))  s)
+	    (g5 s) (a5 s) (b5 e.) (c6 s end-slur)
+	    bar 
+	    (c6 h accent) (d5 (appoggiatura unjustified b5 as5 g5 f5 e5) h (begin-slur (slur-curvature 1.0)))
+	    bar (line-mark)
+	    (c5 q) (d5 e.) (as4 s) (b4 q trill) (c5 e (appoggiatura (slurred nil) a4 b4)) (c5 (sign double-sharp) e)
+	    bar
+	    (d5 e end-slur)
+	    (e5 q (begin-slur (slur-curvature .75))) (bs4 e) (c5 (rq 1/5)) (d5 (rq 1/5)) (c5 (rq 1/5)) (b4 (rq 1/5)) (c5 (rq 1/5))
+	    (d5 e staccato) (e5 e staccato end-slur)
+	    bar
+	    (f5 q stem-up) (f5 stem-up (sign double-sharp) q)
+	    (g5 begin-beam (begin-slur (slur-direction :up) (slur-curvature .5)) stem-up (rq 2/5)) (g5 stem-up (rq 2/5)) (g5 stem-up (rq 2/5)) 
+	    (g5 stem-up (rq 2/5)) (g5 stem-up end-slur end-beam (rq 2/5)) 
+	    bar
+	    (g5 e. begin-slur) (gn5 s) (f5 s) (fn5 s) (e5 s) (d5 s end-slur)
+	    (c5 q. fermata) (c5 e (sign double-sharp))
+	    bar))
+     (staff treble (tied-to pno) (chord (notes d5 bn4 a4) q stem-down (onset 28)) (chord (notes d5 b4 a4) q sf stem-down)
+	    (chord (notes e5 b4 g4) q stem-down arpeggio))
+     (staff (dy -.5) brace bar bass (key e-major) (meter common-time (meter-size 0))
+	    (chord (notes e3 b3) q) quarter-rest half-rest
+	    bar
+	    (b2 e (pedal (dy -.4)) begin-beam (begin-slur (dy .5) (slur-curvature 1.0))
+		(text "legatissimo" (dx -.25) (dy 1.625) (font-scaler .6) (font-name "Times-Italic"))) 
+	    (f3 e) (b3 e) (d4 e end-beam)
+	    (b3 e begin-beam) (f4 e) (b3 e) (f3 e end-beam end-slur (pedal-off (dy -.8)))
+	    bar
+	    (c3 e (pedal (dy -.5)) begin-beam (begin-slur (dy1 1.0) (dy2 1.0) (slur-curvature 1.0))) (g3 e) (b3 e) (e4 e end-beam)
+	    (b3 e begin-beam) (e4 e) (g3 e) (c3 e end-beam end-slur (pedal-off (dy -.5)))
+	    bar
+	    (f2 e pedal begin-beam (begin-slur (slur-curvature 1.0) (dy .25))) (c3 e) (as3 e) (e4 e end-beam)
+	    (a3 e begin-beam) (e4 e) (a3 e) (f3 e end-beam end-slur (pedal-off (dy -.8)))
+	    bar
+	    (b2 e (pedal (dy -.4)) begin-beam (begin-slur (dy .25) (slur-curvature 1.0))) (f3 e) (b3 e) (d4 e end-beam)
+	    (b3 e begin-beam) (f4 e) (b3 e) (f3 e end-beam end-slur (pedal-off (dy -.8)))
+	    bar
+	    (e3 e begin-beam begin-slur with-stem-up-too) (f3 e) (as3 e) (f4 e end-beam end-slur)
+	    (d3 e begin-beam begin-slur with-stem-up-too) (f3 e) (b3 e) (f4 e end-beam end-slur)
+	    bar
+	    (f3 e begin-beam begin-slur with-stem-up-too) (g3 e) (bs3 e) (g4 e end-beam end-slur)
+	    (e3 e begin-beam begin-slur with-stem-up-too) (g3 e) (c4 e) (g4 e end-beam end-slur)
+	    bar
+	    (bn2 e (pedal (dy -.4)) begin-beam begin-slur) (f3 e) (b3 e) (d4 e end-beam end-slur (pedal-off (dy -.8)))
+	    (e3 e begin-beam begin-slur (pedal (dy -.75)) (grace-note (slurred nil) e2))
+	    (g3 e) (b3 e) (e4 e end-beam end-slur)
+	    bar
+	    (f2 te (pedal (dy -.75)) (fingering 5 (dy -.125)) (begin-slur (dy .25) (slur-direction :up))) 
+	    (c3 te (fingering 5)) (f3 te end-slur (fingering 4))
+	    (as3 s begin-slur) (c4 s) (e4 s) (f4 s end-slur)
+	    (as4 q. fermata) eighth-rest
+	    bar))
+   (system bracket
+     (staff treble (key e-major) (meter common-time (meter-size 0))
+	    quarter-rest
+	    (g4 e (p (dx -.25)) begin-slur (crescendo (onset 1.25) (duration .75))) (as4 e) 
+	    (b4 q (diminuendo (duration 2.0))) (e4 q end-slur)
+	    bar
+	    (d4 h begin-slur) (b4 h end-slur begin-tie)
+	    bar
+	    (b4 h end-tie) (g4 h begin-tie)
+	    bar
+	    (g4 h end-tie) (f4 q begin-slur) (e4 q begin-tie)
+	    bar
+	    (e4 q end-tie) (d4 q) (f4 q) (d4 q)
+	    bar
+	    (c4 q end-slur) quarter-rest half-rest
+	    bar
+	    (g4 w begin-slur (crescendo (duration 4)))
+	    bar
+	    (b4 h end-slur begin-tie)
+	    (b4 te end-tie begin-slur) (as4 te) (g4 te) (f4 te) (e4 te) (d4 te end-slur)
+	    bar
+	    (c4 h. fermata) quarter-rest
+	    bar)
+     (staff brace treble e-major (meter common-time (meter-size 0))
+	    quarter-rest
+	    (b3 h begin-slur (p (dx -.25)) (crescendo (dy -.3) (onset 1.25))) (g3 e diminuendo) (as3 e end-slur)
+	    bar
+	    (b3 w begin-slur)
+	    bar
+	    (g3 w end-slur begin-slur)
+	    bar
+	    (as3 w end-slur begin-slur)
+	    bar
+	    (b3 w end-slur)
+	    bar
+	    (c4 h begin-slur) (d4 h begin-tie (crescendo (dy -.25) (duration 6)))
+	    bar
+	    (d4 h end-tie) (e4 h end-slur)
+	    bar
+	    (d4 h begin-slur) (e4 q end-slur) quarter-rest
+	    bar
+	    (e4 h. fermata) quarter-rest
+	    bar)
+     (staff (dy -.5)  alto e-major (common-time (meter-size 0))
+	    quarter-rest
+	    (e4 q (p (dx -.25)) begin-slur (crescendo (onset 1.25))) (f4 q end-slur) 
+	    (g3 e begin-slur diminuendo) (f3 e end-slur)
+	    bar
+	    (f3 h begin-slur) (d4 h)
+	    bar
+	    (e4 w end-slur begin-tie)
+	    bar
+	    (e4 h end-tie begin-slur) (c4 h)
+	    bar
+	    (f3 w end-slur) 
+	    bar
+	    (as3 h begin-slur) (b3 h (crescendo (duration 6)))
+	    bar
+	    (bs3 h) (c4 h stem-up end-slur)
+	    bar
+	    whole-rest
+	    bar
+	    (c3 h. fermata) quarter-rest
+	    bar)
+     (staff bass e-major (common-time (meter-size 0))
+	    quarter-rest
+	    (e3 q (p (dx -.25)) begin-slur (crescendo (onset 1.25))) (d3 q diminuendo) (c3 q end-slur)
+	    bar
+	    (b2 w begin-slur)
+	    bar
+	    (c3 w end-slur)
+	    bar
+	    (f2 w begin-slur)
+	    bar
+	    (b2 w end-slur)
+	    bar
+	    (e3 q begin-slur) (f3 q) (d3 q) (f3 q end-slur)
+	    bar
+	    (f3 q begin-slur) (g3 q) (e3 q) (g3 q)
+	    bar
+	    (a3 q end-slur) (b3 q (begin-slur (slur-curvature 1.0))) (g3 q) (c4 e.) (b3 s end-slur)
+	    bar
+	    (as3 h. fermata) quarter-rest
+	    bar)
+     (staff brace bar bass e-major (common-time (meter-size 0))
+     	    quarter-rest
+	    (e3 q (p (dx -.25)) begin-slur (crescendo (onset 1.25))) (d3 q diminuendo) (c3 q end-slur)
+	    bar
+	    (b2 q) quarter-rest half-rest
+	    bar
+	    whole-rest bar whole-rest bar whole-rest bar whole-rest bar
+	    (g3 h begin-slur p) (c3 h)
+	    bar
+	    (b2 h) (e3 h end-slur)
+	    bar
+	    (f3 h. fermata) quarter-rest
+	    bar)))

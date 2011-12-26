@@ -1,0 +1,61 @@
+How to make a distribution:
+===========================
+In what follows you will need cvs installed on your system
+and an account on sourceforge (which we will call <login>).
+
+1. You need a *working* copy of the Matlisp repository:
+
+	cvs -z3 -d<login>@cvs.matlisp.sourceforge.net:/cvsroot/matlisp co matlisp
+
+2. You need to decide on the release version. Our convention
+   is to use <major>.<minor>[a|b].  Then the following steps:
+
+	cd matlisp   
+	cvs -z3 -d<login>@cvs.matlisp.sourceforge.net:/cvsroot/matlisp \
+     		-q tag R_<major>_<minor>[_alpha | _beta]
+	cd ..
+	cvs -z3 -d<login>@cvs.matlisp.sourceforge.net:/cvsroot/matlisp \
+     		-q export -r R_<major>_<minor>[_alpha | _beta] -d matlisp-<major>.<minor>[a|b] matlisp
+	tar cvf matlisp-<major>.<minor>[a|b].tar matlisp-<major>.<minor>[a|b]
+	gzip matlisp-<major>.<minor>[a|b].tar
+	mv matlisp-<major>.<minor>[a|b].tar.gz matlisp-<major>.<minor>[a|b].tgz
+
+
+For example, with my login name simsek, to make a release called 1.4b:
+
+	alias tvs cvs -z3 -dsimsek@cvs.matlisp.sourceforge.net:/cvsroot/matlisp
+	tvs co matlisp
+	cd matlisp
+	tvs -q tag R_1_4_beta
+	cd ..
+	tvs -q export -r R_1_4_beta -d matlisp-1.4b matlisp
+	tar cvf matlisp-1.4b.tar matlisp
+	gzip matlisp-1.4b.tar
+	mv matlisp-1.4b.tar.gz matlisp-1.4b.tgz
+
+Another example, with my login name simsek, to make a release called 1.6:
+
+	alias tvs cvs -z3 -dsimsek@cvs.matlisp.sourceforge.net:/cvsroot/matlisp
+	tvs co matlisp
+	cd matlisp
+	tvs -q tag R_1_6
+	cd ..
+	tvs -q export -r R_1_6 -d matlisp-1.6 matlisp
+	tar cvf matlisp-1.6.tar matlisp
+	gzip matlisp-1.6.tar
+	mv matlisp-1.6.tar.gz matlisp-1.6.tgz
+
+
+3. Uploading the distribution file matlisp-x.x.tgz to sourceforge:
+
+	you will need administrator priviliges on the matlisp project.
+	For more information see:
+
+	https://sourceforge.net/project/admin/addfile.php?group_id=4511
+
+4. Checking in files.  We would like to keep the CVS repository consistent
+   with the releases.  So, if the release you are working on is <major>.<minor>
+   then you should check in files with <major> as the major revision (no
+   constraints on minor).
+
+   More information on CVS may be found at http://cvsbook.red-bean.com/cvsbook.html

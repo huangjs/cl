@@ -1,0 +1,55 @@
+<html>
+<head><title>SET-TAINTED-OKP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-TAINTED-OKP</h2>control output
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Forms:
+(set-tainted-okp nil) ; do not allow incremental version mismatches (default)
+(set-tainted-okp t)   ; allow incremental version mismatches
+</pre>
+<p>
+
+<code>Set-tainted-okp</code> is of use only in the presence of incremental releases.
+In short, evaluation of <code>(set-tainted-okp t)</code> instructs ACL2 to consider an
+incremental release to have the same ACL2 <a href="VERSION.html">version</a> as the most recently
+preceding normal release.  BUT THIS IS NOT THE CASE BY DEFAULT BECAUSE ACL2
+IS POTENTIALLY UNSOUND WHEN <code>SET-TAINTED-OKP</code> IS EVALUATED.
+<p>
+Incremental releases have an incremental (incrl) <a href="VERSION.html">version</a> field, for
+example the number 1 in version  2.9.1.  (Also see <a href="VERSION.html">version</a>.)  Ordinary
+releases have an implicit incrl version field of 0 (for example, in version
+2.9).  By default, <code><a href="INCLUDE-BOOK.html">include-book</a></code> and <code><a href="CERTIFY-BOOK.html">certify-book</a></code> consider all
+fields of ACL2 version strings, including their incrl fields, in order to
+decide if there are version mismatches.  But it may be convenient to treat an
+incremental release as the same as the corresponding (immediately preceding)
+normal release, in order to avoid recertification of existing certified
+books.  SUCH RECERTIFICATION IS LOGICALLY REQUIRED, but we provide
+<code>(set-tainted-okp t)</code> as a mechanism to allow users to experiment with
+incremental releases.<p>
+
+Below we describe how books can be certified even though their certification
+has depended on ignoring mismatches of incrl version fields.  We call such
+certified books ``tainted''.<p>
+
+If <code>(set-tainted-okp t)</code> is evaluated, then any discrepancy is ignored
+between the incrl version field of an included book (representing the version
+of ACL2 in which that book was certified) and the current ACL2 version,
+namely the value of <code>(@ acl2-version)</code>.  Thus, with <code>(set-tainted-okp t)</code>
+we allow certification of books that depend on included books that have such
+version mismatches with the current ACL2 version or are themselves tainted.
+Any book thus certified will have the string "(tainted)" included in its
+<a href="CERTIFICATE.html">certificate</a>'s <a href="VERSION.html">version</a> string.  Indeed, when ACL2 detects that a
+book may depend either on a book whose version's incrl field differs from
+that of the current ACL2 <a href="VERSION.html">version</a>, or on a tainted book, then such a book
+is marked as tainted.<p>
+
+When <code>(set-tainted-okp t)</code> has been executed, then even though ACL2
+``ignores'' issues of tainting as discussed above, a <code>"Tainted"</code> warning
+is printed whenever a tainted book is included or certified.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

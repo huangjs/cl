@@ -1,0 +1,142 @@
+<html>
+<head><title>ENCAPSULATE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ENCAPSULATE</h2>constrain some functions and/or hide some <a href="EVENTS.html">events</a>
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(encapsulate (((an-element *) =&gt; *))<p>
+
+; The list of signatures above could also be written 
+;            ((an-element (lst) t))<p>
+
+  (local (defun an-element (lst)
+           (if (consp lst) (car lst) nil)))
+  (local (defthm member-equal-car
+            (implies (and lst (true-listp lst))
+                     (member-equal (car lst) lst))))
+  (defthm thm1
+     (implies (null lst) (null (an-element lst))))
+  (defthm thm2
+     (implies (and (true-listp lst)
+                   (not (null lst)))
+              (member-equal (an-element lst) lst))))<p>
+
+(encapsulate
+ ()<p>
+
+ (local (defthm hack
+          (implies (and (syntaxp (quotep x))
+                        (syntaxp (quotep y)))
+                   (equal (+ x y z)
+                          (+ (+ x y) z)))))<p>
+
+ (defthm nthcdr-add1-conditional
+   (implies (not (zp (1+ n)))
+            (equal (nthcdr (1+ n) x)
+                   (nthcdr n (cdr x))))))
+<p>
+General Form:
+(encapsulate (signature ... signature)
+  ev1
+  ...
+  evn)
+</pre>
+<p>
+
+where each <code><a href="SIGNATURE.html">signature</a></code> is a well-formed signature (see <a href="SIGNATURE.html">signature</a>), each
+<code>signature</code> describes a different function symbol, and each <code>evi</code> is an
+embedded event form (See <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).  There must be at least one
+<code>evi</code>.  The <code>evi</code> inside <code><a href="LOCAL.html">local</a></code> special forms are called ``local''
+<a href="EVENTS.html">events</a> below.  <a href="EVENTS.html">Events</a> that are not <code><a href="LOCAL.html">local</a></code> are sometimes said
+to be ``exported'' by the encapsulation.  We make the further restriction
+that no <code><a href="DEFAXIOM.html">defaxiom</a></code> event may be introduced in the scope of an
+<code>encapsulate</code> (not even by <code>encapsulate</code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code> events
+that are among the <code>evi</code>).  Furthermore, no non-<code><a href="LOCAL.html">local</a></code>
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> event is permitted in the scope of any <code>encapsulate</code>
+with a non-empty list of signatures.<p>
+
+To be well-formed, an <code>encapsulate</code> event must have the properties that
+each event in the body (including the <code><a href="LOCAL.html">local</a></code> ones) can be successfully
+executed in sequence and that in the resulting theory, each function
+mentioned among the <a href="SIGNATURE.html">signature</a>s was introduced via a <code><a href="LOCAL.html">local</a></code> event
+and has the <a href="SIGNATURE.html">signature</a> listed.  (A utility is provided to assist in
+debugging failures of such execution; see <a href="REDO-FLAT.html">redo-flat</a>.)  In addition, the body
+may contain no ``local incompatibilities'' which, roughly stated, means that
+the <a href="EVENTS.html">events</a> that are not <code><a href="LOCAL.html">local</a></code> must not syntactically require
+symbols defined by <code><a href="LOCAL.html">local</a></code> <code><a href="EVENTS.html">events</a></code>, except for the functions listed
+in the <a href="SIGNATURE.html">signature</a>s.  See <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a>.  Finally, no
+non-<code><a href="LOCAL.html">local</a></code> recursive definition in the body may involve in its suggested
+induction scheme any function symbol listed among the <a href="SIGNATURE.html">signature</a>s.
+See <a href="SUBVERSIVE-RECURSIONS.html">subversive-recursions</a>.<p>
+
+The result of an <code>encapsulate</code> event is an extension of the logic
+in which, roughly speaking, the functions listed in the
+<a href="SIGNATURE.html">signature</a>s are constrained to have the <a href="SIGNATURE.html">signature</a>s listed
+and to satisfy the non-<code><a href="LOCAL.html">local</a></code> theorems proved about them.  In
+fact, other functions introduced in the <code>encapsulate</code> event may be
+considered to have ``<a href="CONSTRAINT.html">constraint</a>s'' as well.  (See <a href="CONSTRAINT.html">constraint</a>
+for details, which are only relevant to functional instantiation.)
+Since the <a href="CONSTRAINT.html">constraint</a>s were all theorems in the ``ephemeral'' or
+``local'' theory, we are assured that the extension produced by
+<code>encapsulate</code> is sound.  In essence, the <code><a href="LOCAL.html">local</a></code> definitions of
+the constrained functions are just ``witness functions'' that
+establish the consistency of the <a href="CONSTRAINT.html">constraint</a>s.  Because those
+definitions are <code><a href="LOCAL.html">local</a></code>, they are not present in the theory
+produced by encapsulation.  <code>Encapsulate</code> also exports all rules
+generated by its non-<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a>, but rules generated by
+<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> are not exported.<p>
+
+The <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a> for the first event in an encapsulation is
+the default <a href="DEFUN-MODE.html">defun-mode</a> ``outside'' the encapsulation.  But since
+<a href="EVENTS.html">events</a> changing the <a href="DEFUN-MODE.html">defun-mode</a> are permitted within the body of an
+<code>encapsulate</code>, the default <a href="DEFUN-MODE.html">defun-mode</a> may be changed.  However,
+<a href="DEFUN-MODE.html">defun-mode</a> changes occurring within the body of the <code>encapsulate</code>
+are not exported.  In particular, the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> after
+an <code>encapsulate</code> is always the same as it was before the
+<code>encapsulate</code>, even though the <code>encapsulate</code> body might contain
+<a href="DEFUN-MODE.html">defun-mode</a> changing <a href="EVENTS.html">events</a>, <code>:</code><code><a href="PROGRAM.html">program</a></code> and <code>:</code><code><a href="LOGIC.html">logic</a></code>.
+See <a href="DEFUN-MODE.html">defun-mode</a>.  More generally, after execution of an
+<code>encapsulate</code> event, the value of <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> is
+restored to what it was immediately before that event was executed.
+See <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.<p>
+
+Theorems about the constrained function symbols may then be proved
+-- theorems whose proofs necessarily employ only the <a href="CONSTRAINT.html">constraint</a>s.
+Thus, those theorems may be later functionally instantiated, as with
+the <code>:functional-instance</code> lemma instance
+(see <a href="LEMMA-INSTANCE.html">lemma-instance</a>), to derive analogous theorems about
+different functions, provided the constraints (see <a href="CONSTRAINT.html">constraint</a>)
+can be proved about the new functions.<p>
+
+Observe that if the <a href="SIGNATURE.html">signature</a>s list is empty, <code>encapsulate</code> may still
+be useful for deriving theorems to be exported whose proofs require
+lemmas you prefer to hide (i.e., made <code><a href="LOCAL.html">local</a></code>).<p>
+
+The order of the <a href="EVENTS.html">events</a> in the vicinity of an <code>encapsulate</code> is
+confusing.  We discuss it in some detail here because when logical
+names are being used with theory functions to compute sets of rules,
+it is sometimes important to know the order in which <a href="EVENTS.html">events</a> were
+executed.  (See <a href="LOGICAL-NAME.html">logical-name</a> and see <a href="THEORY-FUNCTIONS.html">theory-functions</a>.)
+What, for example, is the set of function names extant in the middle
+of an encapsulation?<p>
+
+If the most recent event is <code>previous</code> and then you execute an
+<code>encapsulate</code> constraining <code>an-element</code> with two non-<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> in its
+body, <code>thm1</code> and <code>thm2</code>, then the order of the <a href="EVENTS.html">events</a> after the
+encapsulation is (reading chronologically forward): <code>previous</code>, <code>thm1</code>,
+<code>thm2</code>, <code>an-element</code> (the <code>encapsulate</code> itself).  Actually, between
+<code>previous</code> and <code>thm1</code> certain extensions were made to the <a href="WORLD.html">world</a> by the
+superior <code>encapsulate</code>, to permit <code>an-element</code> to be used as a function
+symbol in <code>thm1</code>.<p>
+
+Finally, we note that an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event is redundant if and
+only if a syntactically identical <code><a href="ENCAPSULATE.html">encapsulate</a></code> has already been
+executed under the same <code><a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a></code>.
+See <a href="REDUNDANT-EVENTS.html">redundant-events</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

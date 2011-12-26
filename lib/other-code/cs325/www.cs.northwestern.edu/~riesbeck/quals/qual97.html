@@ -1,0 +1,167 @@
+<!--This file created 6/19/97 4:03 PM by Claris Home Page version 2.0-->
+<HTML>
+<HEAD>
+   <TITLE>The job of the Lisp Critiquer is to find predictable
+   mistakes
+   in novice Lisp code, including stylistic problems. One of the most
+   common
+   problems is functions that are too long, but this is also one of
+   the hardest to
+   implement. Riesbeck complains whenever </TITLE>
+   <META NAME=GENERATOR CONTENT="Claris Home Page 2.0">
+   <X-SAS-WINDOW TOP=42 BOTTOM=621 LEFT=4 RIGHT=534>
+   <X-SAS-REMOTESAVE SERVER="godzilla.cs.nwu.edu" USER="riesbeck"
+   DIR="/home1/riesbeck/public_html/quals/" FILE="">
+<!-- This document was created from RTF source by rtftohtml version
+2.7.5 -->
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<P ALIGN=CENTER>
+<HR>
+</P>
+
+<H1 ALIGN=CENTER>1997 Qual</H1>
+
+<H1 ALIGN=CENTER>Lisp Programming Question</H1>
+
+<P>
+<HR>
+</P>
+
+<P>Give yourself 1 hour to read, think, and code a solution.
+Afterwards, compare your solution with <A HREF="ans97.html">this
+analysis</A>.</P>
+
+<P>
+<HR>
+</P>
+
+<P>OK, enough is enough! I'm tired of telling all these novice Lisp
+programs that their functions that are too long. Define a predicate
+that returns true if and only if a function definition is too "long."
+It should take the function definition as a list, not a string. It
+should probably also take one or more "threshold" parameters to let
+me adjust the allowable length for different exercises. Exactly what
+measures these thresholds control is up to you.</P>
+
+<P>Some examples of real code are given below, roughly in order of
+increasing badness. <TT>replace-hex-escape</TT> was <B>not</B>
+considered too long. The rest were. In particular,
+<TT>difference-one-do</TT> is significantly worse than
+<TT>replace-hex-escape</TT> even though it only has a few more atoms
+and doesn't nest as deeply.</P>
+
+<P>Program for flexibility. It should be easy to change the scoring
+algorithm and for a Lisp programmer like me to specify
+context-specific rules, such as "deprecate nesting more when it
+occurs in the tests of cond's and if's and do's."</P>
+
+<P>
+<HR>
+</P>
+
+<PRE>(defun replace-hex-escape (string &amp;optional (start 0)) 
+  (let ((esc-start (position #\% string :start start)))
+    (cond ((not (null esc-start))
+           (let ((esc-end (+ 3 esc-start)))
+             (cons (subseq string start esc-start)
+                   (cons (hex-&gt;char-string (subseq string (1+ esc-start) esc-end))
+                         (replace-hex-escape string esc-end)))))
+          (t (list (subseq string start))))))
+&nbsp;
+(defun difference-one-do (lst)
+  (let ((copy-lst (copy-list lst)))
+    (do ((counter 0 (1+ counter))
+         (true-counter 0))
+        ((= counter (1- (length lst))) (if (= counter true-counter)
+                                         t))
+      (if (or (= (first copy-lst) (1+ (second copy-lst)))
+              (= (first copy-lst) (1- (second copy-lst))))
+        (progn 
+          (incf true-counter)
+          (setf copy-lst (cdr copy-lst)))))))
+&nbsp;
+(defun rieger-simple (cd)
+  (initialize)
+  (let ((max-depth 5))
+    (push cd *queue-1*)
+    (push cd *memory-1*)
+    (loop
+      (let ((c (pop *queue-1*)))
+        (cond ((or (null c) (&gt;= (cd-depth c) max-depth))
+               (format t "~%The queue is empty. No more inferences.~%We got:~%")
+               (return (print-memory *memory-1*)))
+              (t
+               (dolist (rule *rules*)
+                 (let ((infcd (draw-inference c rule)))
+                   (cond ((null infcd)
+                          (format t "~%No inference derived"))
+                         ((null (check-circular *memory-1* infcd))
+                          (push infcd *memory-1*)
+                          (push infcd *queue-1*))
+                         (t
+                          (format t "~%Circular inference detected...")))))))))))
+&nbsp;
+(defun intersectp (x1 y1 x2 y2 x3 y3 x4 y4)
+  (let ((dx1 (- x1 x2))
+        (dx2 (- x3 x4))
+        (dy1 (- y1 y2))
+        (dy2 (- y3 y4)))
+    (cond ((and (zerop dx1) (zerop dx2))
+           nil)
+          ((zerop dx1)
+           (let* ((m2 (/ dy2 dx2))
+                  (b2 (- y3 (* x3 m2))))
+             (values x1 (+ (* m2 x1) b2))))   
+          ((zerop dx2)
+           (let* ((m1 (/ dy1 dx1))
+                  (b1 (- y1 (* x1 m1))))
+             (values x3 (+ (* m1 x3) b1))))
+          ((= (/ dy1 dx1) (/ dy2 dx2))
+           nil)
+          (t (let* ((m1 (/ dy1 dx1))
+                    (m2 (/ dy2 dx2))
+                    (b1 (- y1 (* x1 m1)))
+                    (b2 (- y3 (* x3 m2)))
+                    (x-intersect (/ (- b2 b1) (- m1 m2)))
+                    (y-intersect (+ (* m1 x-intersect) b1)))
+               (values x-intersect y-intersect))))))
+&nbsp;
+(defun stream-subst (old new in out)
+  (let* ((pos 0)
+         (len (length old))
+         (buf (new-buf len))
+         (from-buf nil))
+    (do ((c (read-char in nil :eof)
+            (or (setf from-buf (buf-next buf))
+                (read-char in nil :eof))))
+        ((eql c :eof))
+      (cond ((or (char= c (char old pos))
+                 (string= "+" (char old pos)))
+             (incf pos)
+             (cond ((= pos len)
+                    (princ new out)
+                    (setf pos 0)
+                    (buf-clear buf))
+                   ((not from-buf)
+                    (buf-insert c buf))))
+            ((zerop pos)
+             (princ c out)
+             (when from-buf
+               (buf-pop buf)
+               (buf-reset buf)))
+            (t
+             (unless from-buf
+               (buf-insert c buf))
+             (princ (buf-pop buf) out)
+             (buf-reset buf)
+             (setf pos 0))))
+    (buf-flush buf out)))
+	 </PRE>
+
+<P>
+<HR>
+</P>
+</BODY>
+</HTML>

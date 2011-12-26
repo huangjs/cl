@@ -1,0 +1,59 @@
+<html>
+<head><title>ACL2-PC_colon__colon_LISP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::LISP</h3>(meta)
+<code>   </code>evaluate the given form in Lisp
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(lisp (assign xxx 3))
+<p>
+General Form:
+(lisp form)
+</pre>
+
+Evaluate <code>form</code>.  The <code>lisp</code> command is mainly of interest for side
+effects.  See also <code>print</code>, <code>skip</code>, and <code>fail</code>.<p>
+
+The rest of the documentation for <code>lisp</code> is of interest only to
+those who use it in macro commands.  If the Lisp evaluation (by
+<code>trans-eval</code>) of form returns an ``error triple'' of the form
+<code>(mv erp ((NIL NIL STATE) . (erp-1 val-1 &amp;)) state)</code>, then the
+<code>lisp</code> command returns the appropriate error triple
+
+<pre>
+(mv (or erp erp-1)
+    val-1
+    state) .
+</pre>
+
+Otherwise, the <code>trans-eval</code> of form must return an ``error triple''
+of the form <code>(mv erp (cons stobjs-out val) &amp;)</code>, and the <code>lisp</code>
+command returns the appropriate error triple
+
+<pre>
+(mv erp
+    val
+    state).
+</pre>
+<p>
+
+Note that the output signature of the form has been lost.  The user
+must know the signature in order to use the output of the <code>lisp</code>
+command.  Trans-eval, which is undocumented except by comments in
+the ACL2 source code, has replaced, in <code>val</code>, any occurrence of
+the current state or the current values of stobjs by simple symbols
+such as <code>REPLACED-STATE</code>.  The actual values of these objects may
+be recovered, in principle, from the <code>state</code> returned and the
+<code>user-stobj-alist</code> within that state.  However, in practice, the
+stobjs cannot be recovered because the user is denied access to
+<code>user-stobj-alist</code>.  The moral is: do not try to write macro
+commands that manipulate stobjs.  Should the returned <code>val</code>
+contain <code>REPLACED-STATE</code> the value may simply be ignored and
+<code>state</code> used, since that is what <code>REPLACED-STATE</code> denotes.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

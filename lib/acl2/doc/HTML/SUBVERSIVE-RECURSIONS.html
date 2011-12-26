@@ -1,0 +1,140 @@
+<html>
+<head><title>SUBVERSIVE-RECURSIONS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SUBVERSIVE-RECURSIONS</h2>why we restrict <a href="ENCAPSULATE.html">encapsulate</a>d recursive functions
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Subtleties arise when one of the ``constrained'' functions, <code>f</code>,
+introduced in the <a href="SIGNATURE.html">signature</a> of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event, is
+involved in the termination argument for a non-local recursively
+defined function, <code>g</code>, in that <code>encapsulate</code>.  During the
+processing of the encapsulated events, <code>f</code> is locally defined to
+be some witness function, <code>f'</code>.  Properties of <code>f'</code> are
+explicitly proved and exported from the encapsulate as the
+constraints on the undefined function <code>f</code>.  But if <code>f</code> is used
+in a recursive <code>g</code> defined within the encapsulate, then the
+termination proof for <code>g</code> may use properties of <code>f'</code> -- the
+witness -- that are not explicitly set forth in the constraints
+stated for <code>f</code>.<p>
+
+Such recursive <code>g</code> are said be ``subversive'' because if naively
+treated they give rise to unsound induction schemes or (via
+functional instantiation) recurrence equations that are impossible
+to satisfy.  We illustrate what could go wrong below.<p>
+
+Subversive recursions are not banned outright.  Instead, they are
+treated as part of the constraint.  That is, in the case above, the
+definitional equation for <code>g</code> becomes one of the constraints on
+<code>f</code>.  This is generally a severe restriction on future functional
+instantiations of <code>f</code>.  In addition, ACL2 removes from its knowledge
+of <code>g</code> any suggestions about legal inductions to ``unwind'' its
+recursion.<p>
+
+What should you do?  Often, the simplest response is to move the
+offending recursive definition, e.g., <code>g</code>, out of the encapsulate.
+That is, introduce <code>f</code> by constraint and then define <code>g</code> as an
+``independent'' event.  You may need to constrain ``additional''
+properties of <code>f</code> in order to admit <code>g</code>, e.g., constrain it to
+reduce some ordinal measure.  However, by separating the
+introduction of <code>f</code> from the admission of <code>g</code> you will clearly
+identify the necessary constraints on <code>f</code>, functional
+instantiations of <code>f</code> will be simpler, and <code>g</code> will be a useful
+function which suggests inductions to the theorem prover.<p>
+
+Note that the functions introduced in the <a href="SIGNATURE.html">signature</a> should not
+even occur ancestrally in the termination proofs for non-local
+recursive functions in the encapsulate.  That is, the constrained
+functions of an encapsulate should not be reachable in the
+dependency graph of the functions used in the termination arguments
+of recursive functions in encapsulate.  If they are reachable, their
+definitions become part of the constraints.
+<p>
+The following event illustrates the problem posed by subversive
+recursions.
+
+<pre>
+(encapsulate (((f *) =&gt; *))
+  (local (defun f (x) (cdr x)))
+  (defun g (x)
+    (if (consp x) (not (g (f x))) t)))
+</pre>
+
+Suppose, contrary to how ACL2 works, that the encapsulate above
+were to introduce no constraints on <code>f</code> on the bogus grounds that
+the only use of <code>f</code> in the encapsulate is in an admissible function.
+We discuss the plausibility of this bogus argument in a moment.<p>
+
+Then it would be possible to prove the theorem:<p>
+
+
+<pre>
+(defthm f-not-identity
+  (not (equal (f '(a . b)) '(a . b)))
+  :rule-classes nil
+  :hints (("Goal" :use (:instance g (x '(a . b))))))
+</pre>
+  
+simply by observing that if <code>(f '(a . b))</code> were <code>'(a . b)</code>, then
+<code>(g '(a . b))</code> would be <code>(not (g '(a . b)))</code>, which is impossible.<p>
+
+But then we could functionally instantiate <code>f-not-identity</code>, replacing
+<code>f</code> by the identity function, to prove <code>nil</code>!  This is bad.
+
+<pre>
+(defthm bad
+  nil
+  :rule-classes nil
+  :hints
+  (("Goal" :use (:functional-instance f-not-identity (f identity)))))
+</pre>
+
+
+This sequence of events was legal in versions of ACL2 prior to Version 1.5.
+When we realized the problem we took steps to make it illegal.  However,
+our steps were insufficient and it was possible to sneak in a subversive
+function (via mutual recursion) as late as Version  2.3.<p>
+
+We now turn to the plausibility of the bogus argument above.  Why might
+one even be tempted to think that the definition of <code>g</code> above poses
+no constraint on <code>f</code>?  Here is a very similar encapsulate.
+
+<pre>
+(encapsulate (((f *) =&gt; *))
+  (local (defun f (x) (cdr x)))
+  (defun map (x)
+    (if (consp x)
+        (cons (f x) (map (cdr x)))
+      nil)))
+</pre>
+
+Here <code>map</code> plays the role of <code>g</code> above.  Like <code>g</code>, <code>map</code>
+calls the constrained function <code>f</code>.  But <code>map</code> truly does not
+constrain <code>f</code>.  In particular, the definition of <code>map</code> could be
+moved ``out'' of the encapsulate so that <code>map</code> is introduced
+afterwards.  The difference between <code>map</code> and <code>g</code> is that the
+constrained function plays no role in the termination argument for
+the one but does for the other.<p>
+
+As a ``user-friendly'' gesture, ACL2 implicitly moves <code>map</code>-like
+functions out of encapsulations; logically speaking, they are
+introduced after the encapsulation.  This simplifies the constraint.
+This is done only for ``top-level'' encapsulations.  When an
+<code>encapsulate</code> containing a non-empty <a href="SIGNATURE.html">signature</a> list is
+embedded in another <code>encapsulate</code> with a non-empty signature list,
+no attempt is made to move <code>map</code>-like functions out.  The user is
+advised, via the ``infected'' warning, to phrase the encapsulation
+in the simplest way possible.<p>
+
+The lingering bug between Versions 1.5 and 2.3 mentioned above was
+due to our failure to detect the <code>g</code>-like nature of some functions
+when they were defined in mutually recursively cliques with other
+functions.  The singly recursive case was recognized.  The bug arose
+because our detection ``algorithm'' was based on the ``suggested
+inductions'' left behind by successful definitions.  We failed to
+recall that mutually-recursive definitions do not, as of this
+writing, make any suggestions about inductions and so did not leave
+any traces of their subversive natures.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

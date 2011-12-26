@@ -1,0 +1,52 @@
+CPP_COMPILER = g++
+CPP_PREPROC = 
+SHELL       = /bin/sh
+SOEXT = dylib
+OBJEXT = o
+LDFLAGS =  -dynamiclib -L/usr/local/lib -framework Carbon -framework CoreAudio -framework CoreMIDI -framework IOKit -lsndobj -lportaudio -Wall -W -Wno-unused -fPIC -fno-common -flat_namespace -undefined suppress
+CPPFLAGS =  -DMACOSX -DSWIGCFFI -Os -I/usr/local/include -I/usr/local/include/SndObj -I./include -I/system/library/Frameworks/CoreAudio.framework/Headers -Wall -W -Wno-unused -fPIC -fno-common 
+ARCHFILES =  libsa.dylib
+
+
+
+TARGET = $(ARCHFILES)
+
+sa_SRC = src/BusRead.cpp src/BusWrite.cpp src/FloatSig.cpp src/Maths.cpp src/PVOCEXRead.cpp src/RTAudioStream.cpp src/RTOutput.cpp src/sa_wrap.cpp src/SndObj_wrap.cpp
+sa_OBJ = src/BusRead.$(OBJEXT) src/BusWrite.$(OBJEXT) src/FloatSig.$(OBJEXT) src/Maths.$(OBJEXT) src/PVOCEXRead.$(OBJEXT) src/RTAudioStream.$(OBJEXT) src/RTOutput.$(OBJEXT) src/sa_wrap.$(OBJEXT) src/SndObj_wrap.$(OBJEXT)
+
+
+all : $(TARGET)
+
+libsa.$(SOEXT) : $(sa_OBJ)
+	$(CPP_COMPILER) $(LDFLAGS) -o libsa.$(SOEXT) $(sa_OBJ)
+	
+
+BusRead.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/BusRead.cpp -o src/BusRead.$(OBJEXT)
+	
+BusWrite.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/BusWrite.cpp -o src/BusWrite.$(OBJEXT)
+	
+FloatSig.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/FloatSig.cpp -o src/FloatSig.$(OBJEXT)
+
+Maths.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/Maths.cpp -o src/Maths.$(OBJEXT)
+	
+PVOCEXRead.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/PVOCEXRead.cpp -o src/PVOCEXRead.$(OBJEXT)
+	
+RTAudioStream.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/RTAudioStream.cpp -o src/RTAudioStream.$(OBJEXT)
+	
+RTOutput.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/RTOutput.cpp -o src/RTOutput.$(OBJEXT)
+	
+sa_wrap.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/sa_wrap.cpp -o src/sa_wrap.$(OBJEXT)
+	
+SndObj_wrap.$(OBJEXT) : $(sa_SRC)
+	$(CPP_COMPILER) $(CPP_PREPROC) $(CPPFLAGS) -c src/SndObj_wrap.cpp -o src/SndObj_wrap.$(OBJEXT)
+	
+clean : 
+	rm -f  src/*.$(OBJEXT)

@@ -1,0 +1,501 @@
+<html>
+<head><title>ARRAYS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ARRAYS</h2>an introduction to ACL2 arrays
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Below we begin a detailed presentation of ACL2 arrays.  ACL2's single-threaded
+objects (see <a href="STOBJ.html">stobj</a>) provide a similar functionality that is generally more
+efficient but also more restrictive.
+
+ Related topics:
+<p>
+<ul>
+<li><h3><a href="AREF1.html">AREF1</a> -- access the elements of a 1-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="AREF2.html">AREF2</a> -- access the elements of a 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="ARRAY1P.html">ARRAY1P</a> -- recognize a 1-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="ARRAY2P.html">ARRAY2P</a> -- recognize a 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="ARRAYS-EXAMPLE.html">ARRAYS-EXAMPLE</a> -- an example illustrating ACL2 arrays
+</h3>
+</li>
+
+<li><h3><a href="ASET1.html">ASET1</a> -- set the elements of a 1-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="ASET2.html">ASET2</a> -- set the elements of a 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="COMPRESS1.html">COMPRESS1</a> -- remove irrelevant pairs from a 1-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="COMPRESS2.html">COMPRESS2</a> -- remove irrelevant pairs from a 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="DEFAULT.html">DEFAULT</a> -- return the <code>:default</code> from the <a href="HEADER.html">header</a> of a 1- or 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="DIMENSIONS.html">DIMENSIONS</a> -- return the <code>:dimensions</code> from the <a href="HEADER.html">header</a> of a 1- or 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="FLUSH-COMPRESS.html">FLUSH-COMPRESS</a> -- flush the under-the-hood array for the given name
+</h3>
+</li>
+
+<li><h3><a href="HEADER.html">HEADER</a> -- return the header of a 1- or 2-dimensional array
+</h3>
+</li>
+
+<li><h3><a href="MAXIMUM-LENGTH.html">MAXIMUM-LENGTH</a> -- return the <code>:maximum-length</code> from the <a href="HEADER.html">header</a> of an array
+</h3>
+</li>
+
+<li><h3><a href="SLOW-ARRAY-WARNING.html">SLOW-ARRAY-WARNING</a> -- a warning issued when <a href="ARRAYS.html">arrays</a> are used inefficiently
+</h3>
+</li>
+
+</ul>
+
+See <a href="ARRAYS-EXAMPLE.html">arrays-example</a> for a brief introduction illustrating the use
+of ACL2 arrays.<p>
+
+ACL2 provides relatively efficient 1- and 2-dimensional arrays.
+Arrays are awkward to provide efficiently in an applicative language
+because the programmer rightly expects to be able to ``modify'' an
+array object with the effect of changing the behavior of the element
+accessing function on that object.  This, of course, does not make
+any sense in an applicative setting.  The element accessing function
+is, after all, a function, and its behavior on a given object is
+immutable.  To ``modify'' an array object in an applicative setting
+we must actually produce a new array object.  Arranging for this to
+be done efficiently is a challenge to the implementors of the
+language.  In addition, the programmer accustomed to the von Neumann
+view of arrays must learn how to use immutable applicative arrays
+efficiently.<p>
+
+In this note we explain 1-dimensional arrays.  In particular, we
+explain briefly how to create, access, and ``modify'' them, how they
+are implemented, and how to program with them.  2-dimensional arrays
+are dealt with by analogy.<p>
+
+<em>The Logical Description of ACL2 Arrays</em><p>
+
+An ACL2 1-dimensional array is an object that associates arbitrary
+objects with certain integers, called ``indices.'' Every array has a
+dimension, <code>dim</code>, which is a positive integer.  The indices of an
+array are the consecutive integers from <code>0</code> through <code>dim-1</code>.  To obtain
+the object associated with the index <code>i</code> in an array <code>a</code>, one uses
+<code>(aref1 name a i)</code>.  <code>Name</code> is a symbol that is irrelevant to the
+semantics of <code><a href="AREF1.html">aref1</a></code> but affects the speed with which it computes.  We
+will talk more about array ``names'' later.  To produce a new array
+object that is like <code>a</code> but which associates <code>val</code> with index <code>i</code>, one
+uses <code>(aset1 name a i val)</code>.<p>
+
+An ACL2 1-dimensional array is actually an alist.  There is no
+special ACL2 function for creating arrays; they are generally built
+with the standard list processing functions <code><a href="LIST.html">list</a></code> and <code><a href="CONS.html">cons</a></code>.  However,
+there is a special ACL2 function, called <code><a href="COMPRESS1.html">compress1</a></code>, for speeding up
+access to the elements of such an alist.  We discuss <code><a href="COMPRESS1.html">compress1</a></code>
+later.<p>
+
+One element of the alist must be the ``header'' of the array.  The
+<a href="HEADER.html">header</a> of a 1-dimensional array with dimension <code>dim</code> is of the form:
+
+<pre>
+(:HEADER :DIMENSIONS (dim)
+         :MAXIMUM-LENGTH max
+         :DEFAULT obj ; optional
+         :NAME name   ; optional
+         :ORDER order ; optional values are &lt; (the default), &gt;, or :none
+         ).
+</pre>
+
+<code>Obj</code> may be any object and is called the ``default value'' of the array.
+<code><a href="MAX.html">Max</a></code> must be an integer greater than <code>dim</code>.  <code>Name</code> must be a
+symbol.  The <code>:</code><code><a href="DEFAULT.html">default</a></code> and <code>:name</code> entries are optional; if
+<code>:</code><code><a href="DEFAULT.html">default</a></code> is omitted, the default value is <code>nil</code>.  The function
+<code><a href="HEADER.html">header</a></code>, when given a name and a 1- or 2-dimensional array, returns the
+<a href="HEADER.html">header</a> of the array.  The functions <code><a href="DIMENSIONS.html">dimensions</a></code>,
+<code><a href="MAXIMUM-LENGTH.html">maximum-length</a></code>, and <code><a href="DEFAULT.html">default</a></code> are similar and return the
+corresponding fields of the <a href="HEADER.html">header</a> of the array.  The role of the
+<code>:</code><code><a href="DIMENSIONS.html">dimensions</a></code> field is obvious: it specifies the legal indices into
+the array.  The roles played by the <code>:</code><code><a href="MAXIMUM-LENGTH.html">maximum-length</a></code> and
+<code>:</code><code><a href="DEFAULT.html">default</a></code> fields are described below.<p>
+
+Aside from the <a href="HEADER.html">header</a>, the other elements of the alist must each be
+of the form <code>(i . val)</code>, where <code>i</code> is an integer and <code>0 &lt;= i &lt; dim</code>, and
+<code>val</code> is an arbitrary object.<p>
+
+The <code>:order</code> field of the header is ignored for 2-dimensional arrays.  For
+1-dimensional arrays, it specifies the order of keys (<code>i</code>, above) when the
+array is compressed with <code><a href="COMPRESS1.html">compress1</a></code>, as described below.  An <code>:order</code>
+of <code>:none</code> specifies no reordering of the alist <code><a href="COMPRESS1.html">compress1</a></code>, and an
+order of <code>&gt;</code> specifies reordering by <code><a href="COMPRESS1.html">compress1</a></code> so that keys are in
+descending order.  Otherwise, the alist is reordered by <code><a href="COMPRESS1.html">compress1</a></code> so
+that keys are in ascending order.<p>
+
+<code>(Aref1 name a i)</code> is <a href="GUARD.html">guard</a>ed so that <code>name</code> must be a symbol, <code>a</code> must be
+an array and <code>i</code> must be an index into <code>a</code>.  The value of
+<code>(aref1 name a i)</code> is either <code>(cdr (assoc i a))</code> or else is the
+default value of <code>a</code>, depending on whether there is a pair in <code>a</code>
+whose <code><a href="CAR.html">car</a></code> is <code>i</code>.  Note that <code>name</code> is irrelevant to the value of
+an <code><a href="AREF1.html">aref1</a></code> expression.  You might <code>:pe aref1</code> to see how simple
+the definition is.<p>
+
+<code>(Aset1 name a i val)</code> is <a href="GUARD.html">guard</a>ed analogously to the <code><a href="AREF1.html">aref1</a></code> expression.
+The value of the <code><a href="ASET1.html">aset1</a></code> expression is essentially
+<code>(cons (cons i val) a)</code>.  Again, <code>name</code> is irrelevant.  Note
+<code>(aset1 name a i val)</code> is an array, <code>a'</code>, with the property that
+<code>(aref1 name a' i)</code> is <code>val</code> and, except for index <code>i</code>, all other
+indices into <code>a'</code> produce the same value as in <code>a</code>.  Note also
+that if <code>a</code> is viewed as an alist (which it is) the pair
+``binding'' <code>i</code> to its old value is in <code>a'</code> but ``covered up'' by
+the new pair.  Thus, the length of an array grows by one when
+<code><a href="ASET1.html">aset1</a></code> is done.<p>
+
+Because <code><a href="ASET1.html">aset1</a></code> covers old values with new ones, an array produced by
+a sequence of <code><a href="ASET1.html">aset1</a></code> calls may have many irrelevant pairs in it.  The
+function <code><a href="COMPRESS1.html">compress1</a></code> can remove these irrelevant pairs.  Thus,
+<code>(compress1 name a)</code> returns an array that is equivalent
+(vis-a-vis <code><a href="AREF1.html">aref1</a></code>) to <code>a</code> but which may be shorter.  For technical
+reasons, the alist returned by <code><a href="COMPRESS1.html">compress1</a></code> may also list the pairs
+in a different order than listed in <code>a</code>.<p>
+
+To prevent arrays from growing excessively long due to repeated <code><a href="ASET1.html">aset1</a></code>
+operations, <code><a href="ASET1.html">aset1</a></code> actually calls <code><a href="COMPRESS1.html">compress1</a></code> on the new alist
+whenever the length of the new alist exceeds the <code>:</code><code><a href="MAXIMUM-LENGTH.html">maximum-length</a></code>
+entry, <code><a href="MAX.html">max</a></code>, in the <a href="HEADER.html">header</a> of the array.  See the definition of
+<code><a href="ASET1.html">aset1</a></code> (for example by using <code>:</code><code><a href="PE.html">pe</a></code>).  This is primarily just a
+mechanism for freeing up <code><a href="CONS.html">cons</a></code> space consumed while doing <code><a href="ASET1.html">aset1</a></code>
+operations.  Note however that this <code><a href="COMPRESS1.html">compress1</a></code> call is replaced by a
+hard error if the header specifies an <code>:order</code> of <code>:none</code>.<p>
+
+This completes the logical description of 1-dimensional arrays.
+2-dimensional arrays are analogous.  The <code>:</code><code><a href="DIMENSIONS.html">dimensions</a></code> entry of the
+<a href="HEADER.html">header</a> of a 2-dimensional array should be <code>(dim1 dim2)</code>.  A pair of
+indices, <code>i</code> and <code>j</code>, is legal iff <code>0 &lt;= i &lt; dim1</code> and <code>0 &lt;= j &lt; dim2</code>.
+The <code>:</code><code><a href="MAXIMUM-LENGTH.html">maximum-length</a></code> must be greater than <code>dim1*dim2</code>.  <code><a href="AREF2.html">Aref2</a></code>, <code><a href="ASET2.html">aset2</a></code>,
+and <code><a href="COMPRESS2.html">compress2</a></code> are like their counterparts but take an additional
+<code>index</code> argument.  Finally, the pairs in a 2-dimensional array are of
+the form <code>((i . j) . val)</code>.<p>
+
+<em>The Implementation of ACL2 Arrays</em><p>
+
+Very informally speaking, the function <code><a href="COMPRESS1.html">compress1</a></code> ``creates'' an
+ACL2 array that provides fast access, while the function <code><a href="AREF1.html">aref1</a></code>
+``maintains'' fast access.  We now describe this informal idea more
+carefully.<p>
+
+<code><a href="AREF1.html">Aref1</a></code> is essentially <code><a href="ASSOC.html">assoc</a></code>.  If <code><a href="AREF1.html">aref1</a></code> were implemented naively the
+time taken to access an array element would be linear in the
+dimension of the array and the number of ``assignments'' to it (the
+number of <code><a href="ASET1.html">aset1</a></code> calls done to create the array from the initial
+alist).  This is intolerable; arrays are ``supposed'' to provide
+constant-time access and change.<p>
+
+The apparently irrelevant names associated with ACL2 arrays allow us
+to provide constant-time access and change when arrays are used in
+``conventional'' ways.  The implementation of arrays makes it clear
+what we mean by ``conventional.''<p>
+
+Recall that array names are symbols.  Behind the scenes, ACL2
+associates two objects with each ACL2 array name.  The first object
+is called the ``semantic value'' of the name and is an alist.  The
+second object is called the ``raw lisp array'' and is a Common Lisp
+array.<p>
+
+When <code>(compress1 name alist)</code> builds a new alist, <code>a'</code>, it sets the
+semantic value of <code>name</code> to that new alist.  Furthermore, it creates a
+Common Lisp array and writes into it all of the index/value pairs of
+<code>a'</code>, initializing unassigned indices with the default value.  This
+array becomes the raw lisp array of <code>name</code>.  <code><a href="COMPRESS1.html">Compress1</a></code> then returns
+<code>a'</code>, the semantic value, as its result, as required by the definition
+of <code><a href="COMPRESS1.html">compress1</a></code>.<p>
+
+When <code>(aref1 name a i)</code> is invoked, <code><a href="AREF1.html">aref1</a></code> first determines whether the
+semantic value of <code>name</code> is <code>a</code> (i.e., is <code><a href="EQ.html">eq</a></code> to the alist <code>a</code>).  If so,
+<code><a href="AREF1.html">aref1</a></code> can determine the <code>i</code>th element of <code>a</code> by invoking Common Lisp's
+<code>aref</code> function on the raw lisp array associated with name.  Note that
+no linear search of the alist <code>a</code> is required; the operation is done
+in constant time and involves retrieval of two global variables, an
+<code><a href="EQ.html">eq</a></code> test and <code>jump</code>, and a raw lisp array access.  In fact, an ACL2
+array access of this sort is about 5 times slower than a C array
+access.  On the other hand, if <code>name</code> has no semantic value or if it
+is different from <code>a</code>, then <code><a href="AREF1.html">aref1</a></code> determines the answer by linear
+search of <code>a</code> as suggested by the <code>assoc-like</code> definition of <code><a href="AREF1.html">aref1</a></code>.
+Thus, <code><a href="AREF1.html">aref1</a></code> always returns the axiomatically specified result.  It
+returns in constant time if the array being accessed is the current
+semantic value of the name used.  The ramifications of this are
+discussed after we deal with <code><a href="ASET1.html">aset1</a></code>.<p>
+
+When <code>(aset1 name a i val)</code> is invoked, <code><a href="ASET1.html">aset1</a></code> does two <code><a href="CONS.html">cons</a></code>es to
+create the new array.  Call that array <code>a'</code>.  It will be returned as
+the answer.  (In this discussion we ignore the case in which <code><a href="ASET1.html">aset1</a></code>
+does a <code><a href="COMPRESS1.html">compress1</a></code>.)  However, before returning, <code><a href="ASET1.html">aset1</a></code> determines if
+<code>name</code>'s semantic value is <code>a</code>.  If so, it makes the new semantic value
+of <code>name</code> be <code>a'</code> and it smashes the raw lisp array of <code>name</code> with <code>val</code> at
+index <code>i</code>, before returning <code>a'</code> as the result.  Thus, after doing an
+<code><a href="ASET1.html">aset1</a></code> and obtaining a new semantic value <code>a'</code>, all <code><a href="AREF1.html">aref1</a></code>s on that new
+array will be fast.  Any <code><a href="AREF1.html">aref1</a></code>s on the old semantic value, <code>a</code>, will
+be slow.<p>
+
+To understand the performance implications of this design, consider
+the chronological sequence in which ACL2 (Common Lisp) evaluates
+expressions:  basically inner-most first, left-to-right,
+call-by-value.  An array use, such as <code>(aref1 name a i)</code>, is ``fast''
+(constant-time) if the alist supplied, <code>a</code>, is the value returned by
+the most recently executed <code><a href="COMPRESS1.html">compress1</a></code> or <code><a href="ASET1.html">aset1</a></code> on the name supplied.
+In the functional expression of ``conventional'' array processing,
+all uses of an array are fast.<p>
+
+The <code>:name</code> field of the <a href="HEADER.html">header</a> of an array is completely irrelevant.
+Our convention is to store in that field the symbol we mean to use
+as the name of the raw lisp array.  But no ACL2 function inspects
+<code>:name</code> and its primary value is that it allows the user, by
+inspecting the semantic value of the array -- the alist -- to recall
+the name of the raw array that probably holds that value.  We say
+``probably'' since there is no enforcement that the alist was
+compressed under the name in the <a href="HEADER.html">header</a> or that all <code>aset</code>s used that
+name.  Such enforcement would be inefficient.<p>
+
+<em>Some Programming Examples</em><p>
+
+In the following examples we will use ACL2 ``global variables'' to
+hold several arrays.  See <a href="_at_.html">@</a>, and see <a href="ASSIGN.html">assign</a>.<p>
+
+Let the <code><a href="STATE.html">state</a></code> global variable <code>a</code> be the 1-dimensional compressed
+array of dimension <code>5</code> constructed below.
+
+<pre>
+ACL2 !&gt;(assign a (compress1 'demo 
+                            '((:header :dimensions (5)
+                                       :maximum-length 15
+                                       :default uninitialized
+                                       :name demo)
+                              (0 . zero))))
+</pre>
+
+Then <code>(aref1 'demo (@ a) 0)</code> is <code>zero</code> and <code>(aref1 'demo (@ a) 1)</code> is
+<code>uninitialized</code>.<p>
+
+Now execute
+
+<pre>
+ACL2 !&gt;(assign b (aset1 'demo (@ a) 1 'one))
+</pre>
+
+Then <code>(aref1 'demo (@ b) 0)</code> is <code>zero</code> and <code>(aref1 'demo (@ b) 1)</code> is
+<code>one</code>.<p>
+
+All of the <code><a href="AREF1.html">aref1</a></code>s done so far have been ``fast.''<p>
+
+Note that we now have two array objects, one in the global variable
+<code>a</code> and one in the global variable <code>b</code>.  <code>B</code> was obtained by assigning to
+<code>a</code>.  That assignment does not affect the alist <code>a</code> because this is an
+applicative language.  Thus, <code>(aref1 'demo (@ a) 1)</code> must <strong>still</strong> be
+<code>uninitialized</code>.  And if you execute that expression in ACL2 you will
+see that indeed it is.  However, a rather ugly comment is printed,
+namely that this array access is ``slow.''  The reason it is slow is
+that the raw lisp array associated with the name <code>demo</code> is the array
+we are calling <code>b</code>.  To access the elements of <code>a</code>, <code><a href="AREF1.html">aref1</a></code> must now do a
+linear search.  Any reference to <code>a</code> as an array is now
+``unconventional;'' in a conventional language like Ada or Common
+Lisp it would simply be impossible to refer to the value of the
+array before the assignment that produced our <code>b</code>.<p>
+
+Now let us define a function that counts how many times a given
+object, <code>x</code>, occurs in an array.  For simplicity, we will pass in the
+name and highest index of the array:
+
+<pre>
+ACL2 !&gt;(defun cnt (name a i x)
+         (declare (xargs :guard
+                         (and (array1p name a)
+                              (integerp i)
+                              (&gt;= i -1)
+                              (&lt; i (car (dimensions name a))))
+                         :mode :logic
+                         :measure (nfix (+ 1 i))))
+         (cond ((zp (1+ i)) 0) ; return 0 if i is at most -1
+               ((equal x (aref1 name a i))
+                (1+ (cnt name a (1- i) x)))
+               (t (cnt name a (1- i) x))))
+</pre>
+
+To determine how many times <code>zero</code> appears in <code>(@ b)</code> we can execute:
+
+<pre>
+ACL2 !&gt;(cnt 'demo (@ b) 4 'zero)
+</pre>
+
+The answer is <code>1</code>.  How many times does <code>uninitialized</code> appear in
+<code>(@ b)</code>?
+
+<pre>
+ACL2 !&gt;(cnt 'demo (@ b) 4 'uninitialized)
+</pre>
+
+The answer is <code>3</code>, because positions <code>2</code>, <code>3</code> and <code>4</code> of the array contain
+that default value.<p>
+
+Now imagine that we want to assign <code>'two</code> to index <code>2</code> and then count
+how many times the 2nd element of the array occurs in the array.
+This specification is actually ambiguous.  In assigning to <code>b</code> we
+produce a new array, which we might call <code>c</code>.  Do we mean to count the
+occurrences in <code>c</code> of the 2nd element of <code>b</code> or the 2nd element of <code>c</code>?
+That is, do we count the occurrences of <code>uninitialized</code> or the
+occurrences of <code>two</code>?  If we mean the former the correct answer is <code>2</code>
+(positions <code>3</code> and <code>4</code> are <code>uninitialized</code> in <code>c</code>); if we mean the latter,
+the correct answer is <code>1</code> (there is only one occurrence of <code>two</code> in <code>c</code>).<p>
+
+Below are ACL2 renderings of the two meanings, which we call
+<code>[former]</code> and <code>[latter]</code>.  (Warning:  Our description of these
+examples, and of an example <code>[fast former]</code> that follows, assumes
+that only one of these three examples is actually executed; for
+example, they are not executed in sequence.  See ``A Word of
+Warning'' below for more about this issue.)
+
+<pre>
+(cnt 'demo (aset1 'demo (@ b) 2 'two) 4 (aref1 'demo (@ b) 2))  ; [former]<p>
+
+(let ((c (aset1 'demo (@ b) 2 'two)))                           ; [latter]
+  (cnt 'demo c 4 (aref1 'demo c 2)))
+</pre>
+
+Note that in <code>[former]</code> we create <code>c</code> in the second argument of the
+call to <code>cnt</code> (although we do not give it a name) and then refer to <code>b</code>
+in the fourth argument.  This is unconventional because the second
+reference to <code>b</code> in <code>[former]</code> is no longer the semantic value of <code>demo</code>.
+While ACL2 computes the correct answer, namely <code>2</code>, the execution of
+the <code><a href="AREF1.html">aref1</a></code> expression in <code>[former]</code> is done slowly.<p>
+
+A conventional rendering with the same meaning is
+
+<pre>
+(let ((x (aref1 'demo (@ b) 2)))                           ; [fast former]
+  (cnt 'demo (aset1 'demo (@ b) 2 'two) 4 x))
+</pre>
+
+which fetches the 2nd element of <code>b</code> before creating <code>c</code> by
+assignment.  It is important to understand that <code>[former]</code> and
+<code>[fast former]</code> mean exactly the same thing: both count the number
+of occurrences of <code>uninitialized</code> in <code>c</code>.  Both are legal ACL2 and
+both compute the same answer, <code>2</code>.  Indeed, we can symbolically
+transform <code>[fast former]</code> into <code>[former]</code> merely by substituting
+the binding of <code>x</code> for <code>x</code> in the body of the <code><a href="LET.html">let</a></code>.  But <code>[fast former]</code>
+can be evaluated faster than <code>[former]</code> because all of the
+references to <code>demo</code> use the then-current semantic value of
+<code>demo</code>, which is <code>b</code> in the first line and <code>c</code> throughout the
+execution of the <code>cnt</code> in the second line.  <code>[Fast former]</code> is
+the preferred form, both because of its execution speed and its
+clarity.  If you were writing in a conventional language you would
+have to write something like <code>[fast former]</code> because there is no
+way to refer to the 2nd element of the old value of <code>b</code> after
+smashing <code>b</code> unless it had been saved first.<p>
+
+We turn now to <code>[latter]</code>.  It is both clear and efficient.  It
+creates <code>c</code> by assignment to <code>b</code> and then it fetches the 2nd element of
+<code>c</code>, <code>two</code>, and proceeds to count the number of occurrences in <code>c</code>.  The
+answer is <code>1</code>.  <code>[Latter]</code> is a good example of typical ACL2 array
+manipulation: after the assignment to <code>b</code> that creates <code>c</code>, <code>c</code> is used
+throughout.<p>
+
+It takes a while to get used to this because most of us have grown
+accustomed to the peculiar semantics of arrays in conventional
+languages.  For example, in raw lisp we might have written something
+like the following, treating <code>b</code> as a ``global variable'':
+
+<pre>
+(cnt 'demo (aset 'demo b 2 'two) 4 (aref 'demo b 2))
+</pre>
+
+which sort of resembles <code>[former]</code> but actually has the semantics of
+<code>[latter]</code> because the <code>b</code> from which <code>aref</code> fetches the 2nd element is
+not the same <code>b</code> used in the <code>aset</code>!  The array <code>b</code> is destroyed by the
+<code>aset</code> and <code>b</code> henceforth refers to the array produced by the <code>aset</code>, as
+written more clearly in <code>[latter]</code>.<p>
+
+A Word of Warning:  Users must exercise care when experimenting with
+<code>[former]</code>, <code>[latter]</code> and <code>[fast former]</code>.  Suppose you have
+just created <code>b</code> with the assignment shown above,
+
+<pre>
+ACL2 !&gt;(assign b (aset1 'demo (@ a) 1 'one))
+</pre>
+
+If you then evaluate <code>[former]</code> in ACL2 it will complain that the
+<code><a href="AREF1.html">aref1</a></code> is slow and compute the answer, as discussed.  Then suppose
+you evaluate <code>[latter]</code> in ACL2.  From our discussion you might expect
+it to execute fast -- i.e., issue no complaint.  But in fact you
+will find that it complains repeatedly.  The problem is that the
+evaluation of <code>[former]</code> changed the semantic value of <code>demo</code> so that it
+is no longer <code>b</code>.  To try the experiment correctly you must make <code>b</code> be
+the semantic value of <code>demo</code> again before the next example is
+evaluated.  One way to do that is to execute
+
+<pre>
+ACL2 !&gt;(assign b (compress1 'demo (@ b)))
+</pre>
+
+before each expression.  Because of issues like this it is often
+hard to experiment with ACL2 arrays at the top-level.  We find it
+easier to write functions that use arrays correctly and efficiently
+than to so use them interactively.<p>
+
+This last assignment also illustrates a very common use of
+<code><a href="COMPRESS1.html">compress1</a></code>.  While it was introduced as a means of removing
+irrelevant pairs from an array built up by repeated assignments, it
+is actually most useful as a way of insuring fast access to the
+elements of an array.<p>
+
+Many array processing tasks can be divided into two parts.  During
+the first part the array is built.  During the second part the array
+is used extensively but not modified.  If your <a href="PROGRAMMING.html">programming</a> task can
+be so divided, it might be appropriate to construct the array
+entirely with list processing, thereby saving the cost of
+maintaining the semantic value of the name while few references are
+being made.  Once the alist has stabilized, it might be worthwhile
+to treat it as an array by calling <code><a href="COMPRESS1.html">compress1</a></code>, thereby gaining
+constant time access to it.<p>
+
+ACL2's theorem prover uses this technique in connection with its
+implementation of the notion of whether a <a href="RUNE.html">rune</a> is <a href="DISABLE.html">disable</a>d or not.
+Associated with every <a href="RUNE.html">rune</a> is a unique integer <code>index</code>, called its
+``nume.''  When each rule is stored, the corresponding nume is
+stored as a component of the rule.  <a href="THEORIES.html">Theories</a> are lists of <a href="RUNE.html">rune</a>s and
+membership in the ``current theory'' indicates that the
+corresponding rule is <a href="ENABLE.html">enable</a>d.  But these lists are very long and
+membership is a linear-time operation.  So just before a proof
+begins we map the list of <a href="RUNE.html">rune</a>s in the current theory into an alist
+that pairs the corresponding numes with <code>t</code>.  Then we compress this
+alist into an array.  Thus, given a rule we can obtain its nume
+(because it is a component) and then determine in constant time
+whether it is <a href="ENABLE.html">enable</a>d.  The array is never modified during the
+proof, i.e., <code><a href="ASET1.html">aset1</a></code> is never used in this example.  From the logical
+perspective this code looks quite odd:  we have replaced a
+linear-time membership test with an apparently linear-time <code><a href="ASSOC.html">assoc</a></code>
+after going to the trouble of mapping from a list of <a href="RUNE.html">rune</a>s to an
+alist of numes.  But because the alist of numes is an array, the
+``apparently linear-time <code><a href="ASSOC.html">assoc</a></code>'' is more apparent than real; the
+operation is constant-time.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

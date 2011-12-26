@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Chapter 9 Notes: Ray Tracer</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 9: A Data-Driven Ray Tracer</DIV>
+
+<H2>The Problem</H2>
+
+<P>Here's the definition of <CODE>intersect</CODE> given by Graham in
+Chapter 9, extended to show what it would like if cubes were added:
+</P>
+
+<PRE>(defun intersect (s pt xr yr zr)
+  (funcall (typecase s
+              (sphere #'sphere-intersect)
+              (cube #'cube-intersect))
+           s pt xr yr zr))</PRE>
+
+<P>As noted, this approach means that  we will have to redefine
+<CODE>intersect</CODE>  every time we define a new kind of object .
+Furthermore, whereever <CODE>intersect</CODE> should go, it
+definitely doesn't belong in the spheres definition file, because of
+the reference to cubes. On the other hand, we'd rather not put it in
+the base file where <CODE>tracer</CODE> and so on are defined because
+</P>
+
+<UL>
+   <LI>it would make the base file dependent on every object
+   definition file
+   
+   <LI>we'd have to edit the base file and recompile it every time we
+   added a new kind of object
+   
+   <LI>we'll get "undefined function" errors when
+   <CODE>intersect</CODE> is compiled if any of the object files are
+   missing, even if we don't need them
+</UL>
+
+<H2>The Data-Driven Solution</H2>
+
+<P>The data-driven approach would define <CODE>intersect</CODE> in
+the base file as follows:</P>
+
+<PRE>(defun intersect (s pt xr yr zr)
+  (let ((intersecter (get-intersecter s)))
+    (cond ((null intersecter)
+           (error "Unknown object type: ~S" s))
+          (t (funcall intersecter s pt xr yr zr)))))</PRE>
+
+<P>This code makes no explicit reference to any kind of object.
+Instead it calls get-intersecter to look up the intersect function
+for an object in a table of some kind. We can define
+<CODE>get-intersecter</CODE> in the base file this way:</P>
+
+<PRE>(defvar *intersecters* (make-hash-table))
+&nbsp;
+(defun get-intersecter (s)
+  (gethash s *intersecters*))
+&nbsp;
+(defun (setf get-intersecter) (fn s)
+  (setf (gethash s *intersecters*) fn))</PRE>
+
+<P>Or, if we use the tables package, we could simply say:</P>
+
+<PRE>(deftable get-intersecter)</PRE>
+
+<P>In any case, our definitions of <CODE>intersect</CODE> and
+<CODE>get-intersect</CODE> are object-independent. The data, stored
+in the table, drives what <CODE>intersect</CODE> does.</P>
+
+<P>In the spheres definition file, we put the following:</P>
+
+<PRE>(setf (get-intersecter 'sphere) #'sphere-intersect)</PRE>
+
+<P>In the cubes definition file, we put</P>
+
+<PRE>(setf (get-intersecter 'cube) #'cube-intersect)</PRE>
+
+<P>Each definition file, in other words, takes care of putting the
+appropriate ray intersection function into the table. It's easy to
+add new objects, or to remove them, without editing or recompiling
+the base code.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

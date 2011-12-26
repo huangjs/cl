@@ -1,0 +1,471 @@
+<html>
+<head><title>CONSTRAINT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CONSTRAINT</h2>restrictions on certain functions introduced in <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Suppose that a given theorem, <code>thm</code>, is to be functionally instantiated
+using a given functional substitution, <code>alist</code>.  (See <a href="LEMMA-INSTANCE.html">lemma-instance</a>, or
+for an example, see <a href="FUNCTIONAL-INSTANTIATION-EXAMPLE.html">functional-instantiation-example</a>.)  What is the set of
+proof obligations generated?  It is the set obtained by applying <code>alist</code> to
+all terms, <code>tm</code>, such that (a) <code>tm</code> mentions some function symbol in the
+domain of <code>alist</code>, and (b) either (i) <code>tm</code> arises from the ``constraint''
+on a function symbol ancestral in <code>thm</code> or in some <code><a href="DEFAXIOM.html">defaxiom</a></code> or (ii)
+<code>tm</code> is the body of a <code><a href="DEFAXIOM.html">defaxiom</a></code>.  Here, a function symbol is
+``ancestral'' in <code>thm</code> if either it occurs in <code>thm</code>, or it occurs in the
+definition of some function symbol that occurs in <code>thm</code>, and so on.<p>
+
+The remainder of this note explains what we mean by ``constraint''
+in the words above.
+<p>
+In a certain sense, function symbols are introduced in essentially
+two ways.  The most common way is to use <code><a href="DEFUN.html">defun</a></code> (or when there is
+mutual recursion, <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> or <code><a href="DEFUNS.html">defuns</a></code>).  There is also
+a mechanism for introducing ``witness functions'';
+see <a href="DEFCHOOSE.html">defchoose</a>.  The documentation for these <a href="EVENTS.html">events</a> describes
+the axioms they introduce, which we will call here their
+``definitional axioms.''  These definitional axioms are generally
+the constraints on the function symbols that these axioms introduce.<p>
+
+However, when a function symbol is introduced in the scope of an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> event, its constraints may differ from the
+definitional axioms introduced for it.  For example, suppose that a
+function's definition is <code><a href="LOCAL.html">local</a></code> to the <code><a href="ENCAPSULATE.html">encapsulate</a></code>; that is,
+suppose the function is introduced in the <a href="SIGNATURE.html">signature</a> of the
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>.  Then its constraints include, at the least, those
+non-<code><a href="LOCAL.html">local</a></code> theorems and definitions in the <code><a href="ENCAPSULATE.html">encapsulate</a></code> that
+mention the function symbol.<p>
+
+Actually, it will follow from the discussion below that if the
+<a href="SIGNATURE.html">signature</a> is empty for an <code><a href="ENCAPSULATE.html">encapsulate</a></code>, then the constraint on
+each of its new function symbols is exactly the definitional axiom
+introduced for it.  Intuitively, we view such <code>encapsulates</code> just
+as we view <code><a href="INCLUDE-BOOK.html">include-book</a></code> <a href="EVENTS.html">events</a>.  But the general case, where the
+<a href="SIGNATURE.html">signature</a> is not empty, is more complicated.<p>
+
+In the discussion that follows we describe in detail exactly which
+constraints are associated with which function symbols that are
+introduced in the scope of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event.  In order to
+simplify the exposition we make two cuts at it.  In the first cut we
+present an over-simplified explanation that nevertheless captures
+the main ideas.  In the second cut we complete our explanation by
+explaining how we view certain <a href="EVENTS.html">events</a> as being ``lifted'' out of the
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>, resulting in a possibly smaller <code><a href="ENCAPSULATE.html">encapsulate</a></code>,
+which becomes the target of the algorithm described in the first
+cut.<p>
+
+At the end of this note we present an example showing why a more
+naive approach is unsound.<p>
+
+Finally, before we start our ``first cut,'' we note that constrained
+functions always have <a href="GUARD.html">guard</a>s of T.  This makes sense when one
+considers that a constrained function's ``<a href="GUARD.html">guard</a>'' only appears in
+the context of a <code><a href="LOCAL.html">local</a></code> <code><a href="DEFUN.html">defun</a></code>, which is skipped.  Note also that any
+information you want ``exported'' outside an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event must
+be there as an explicit definition or theorem.  For example, even if
+a function <code>foo</code> has output type <code>(mv t t)</code> in its <a href="SIGNATURE.html">signature</a>, the system
+will not know <code>(true-listp (foo x))</code> merely on account of this
+information.  Thus, if you are using functions like <code>foo</code>
+(constrained <code><a href="MV.html">mv</a></code> functions) in a context where you are verifying
+<a href="GUARD.html">guard</a>s, then you should probably provide a <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule
+for the constrained function, for example, the <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code>
+rule <code>(true-listp (foo x))</code>.<p>
+
+<em>First cut at constraint-assigning algorithm.</em>  Quite simply, the
+formulas introduced in the scope of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> are conjoined,
+and each function symbol introduced by the <code><a href="ENCAPSULATE.html">encapsulate</a></code> is
+assigned that conjunction as its constraint.<p>
+
+Clearly this is a rather severe algorithm.  Let us consider two
+possible optimizations in an informal manner before presenting our
+second cut.<p>
+
+Consider the (rather artificial) event below.  The function
+<code>before1</code> does not refer at all, even indirectly, to the
+locally-introduced function <code>sig-fn</code>, so it is unfortunate to
+saddle it with constraints about <code>sig-fn</code>.
+
+<pre>
+(encapsulate
+ (((sig-fn *) =&gt; *))<p>
+
+ (defun before1 (x)
+   (if (consp x)
+       (before1 (cdr x))
+     x))<p>
+
+ (local (defun sig-fn (x) (cons x x)))<p>
+
+ (defthm sig-fn-prop
+   (consp (sig-fn x)))
+ )
+</pre>
+
+We would like to imagine moving the definition of <code>before1</code> to just
+in front of this <code><a href="ENCAPSULATE.html">encapsulate</a></code>, as follows.
+
+<pre>
+(defun before1 (x)
+  (if (consp x)
+      (before1 (cdr x))
+    x))<p>
+
+(encapsulate
+ (((sig-fn *) =&gt; *))<p>
+
+ (local (defun sig-fn (x) (cons x x)))<p>
+
+ (defthm sig-fn-prop
+   (consp (sig-fn x)))
+ )
+</pre>
+
+Thus, we will only assign the constraint <code>(consp (sig-fn x))</code>, from
+the theorem <code>sig-fn-prop</code>, to the function <code>sig-fn</code>, not to the
+function <code>before1</code>.<p>
+
+More generally, suppose an event in an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event does not
+mention any function symbol in the <a href="SIGNATURE.html">signature</a> of the <code><a href="ENCAPSULATE.html">encapsulate</a></code>,
+nor any function symbol that mentions any such function symbol, and
+so on.  (We might say that no function symbol from the <a href="SIGNATURE.html">signature</a> is
+an ``ancestor'' of any function symbol occurring in the event.)
+Then we imagine moving the event, so that it appears in front of the
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>.  We don't actually move it, but we pretend we do when
+it comes time to assign constraints.  Thus, such definitions only
+introduce definitional axioms as the constraints on the function
+symbols being defined, and such theorems introduce no constraints.<p>
+
+Once this first optimization is performed, we have in mind a set of
+``constrained functions.''  These are the functions introduced in
+the <code><a href="ENCAPSULATE.html">encapsulate</a></code> that would remain after moving some of them out,
+as indicated above.  Consider the collection of all formulas
+introduced by the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, except the definitional axioms, that
+mention these constrained functions.  So for example, in the event
+below, no such formula mentions the function symbol <code>after1</code>.
+
+<pre>
+(encapsulate
+ (((sig-fn *) =&gt; *))<p>
+
+ (local (defun sig-fn (x) (cons x x)))<p>
+
+ (defthm sig-fn-prop
+   (consp (sig-fn x)))<p>
+
+ (defun after1 (x)
+   (sig-fn x))
+ )
+</pre>
+
+We can see that there is really no harm in imagining that we move
+the definition of <code>after1</code> out of the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, to just after
+the <code><a href="ENCAPSULATE.html">encapsulate</a></code>.<p>
+
+Many subtle aspects of this rearrangement process have been omitted.
+For example, suppose the function <code>fn</code> uses <code>sig-fn</code>, the latter
+being a function in the signature of the encapsulation.  Suppose a
+formula about <code>fn</code> is proved in the encapsulation.  Then from the
+discussion above <code>fn</code> is among the constrained functions of the
+encapsulate:  it cannot be moved before the encapsulate and it cannot
+be moved after the encapsulation.  But why is <code>fn</code> constrained?
+The reason is that the theorem proved about <code>fn</code> may impose or express
+constraints on <code>sig-fn</code>.  That is, the theorem proved about <code>fn</code>
+may depend upon properties of the witness used for <code>sig-fn</code>.
+Here is a simple example:
+
+<pre>
+(encapsulate
+ (((sig-fn *) =&gt; *))<p>
+
+ (local (defun sig-fn (x) (declare (ignore x)) 0))<p>
+
+ (defun fn (lst)
+   (if (endp lst)
+       t
+       (and (integerp (sig-fn (car lst)))
+            (fn (cdr lst)))))<p>
+
+ (defthm fn-always-true
+   (fn lst)))
+</pre>
+
+In this example, there are no explicit theorems about <code>sig-fn</code>, i.e.,
+no theorems about it explicitly.  One might therefore conclude that
+it is completely unconstrained.  But the witness we chose for it always
+returns an integer.  The function <code>fn</code> uses <code>sig-fn</code> and we prove that
+<code>fn</code> always returns true.  Of course, the proof of this theorem
+depends upon the properties of the witness for <code>sig-fn</code>, even though
+those properties were not explicitly ``called out'' in theorems proved
+about <code>sig-fn</code>. It would be unsound to move <code>fn</code> after
+the encapsulate.  It would also be unsound to constrain <code>sig-fn</code> to
+satisfy just <code>fn-always-true</code> without including in the constraint
+the relation between <code>sig-fn</code> and <code>fn</code>.  Hence both <code>sig-fn</code> and
+<code>fn</code> are constrained by this encapsulation and the constraint imposed
+on each is the same and states the relation between the two as characterized
+by the equation defining <code>fn</code> as well as the property that <code>fn</code> always
+returns true.  Suppose, later, one proved a theorem about <code>sig-fn</code> and
+wished to functional instantiate it.  Then one must also functionally
+instantiate <code>fn</code>, even if it is not involved in the theorem, because
+it is only through <code>fn</code> that <code>sig-fn</code> inherits its constrained
+properties.<p>
+
+This is a pathological example that illustrate a trap into which one
+may easily fall: rather than identify the key properties of the
+constrained function the user has foreshadowed its intended
+application and constrained those notions.
+Clearly, the user wishing to introduce the <code>sig-fn</code> above would be
+well-advised to use the following instead:
+
+<pre>
+(encapsulate
+ (((sig-fn *) =&gt; *))
+ (local (defun sig-fn (x) (declare (ignore x)) 0))
+ (defthm integerp-sig-fn
+   (integerp (sig-fn x))))
+
+(defun fn (lst)
+  (if (endp lst)
+      t
+    (and (integerp (sig-fn (car lst)))
+         (fn (cdr lst)))))
+
+(defthm fn-always-true
+   (fn lst)))
+</pre>
+
+Note that <code>sig-fn</code> is constrained merely to be an integer.  It is
+the only constrained function.  Now <code>fn</code> is introduced after the
+encapsulation, as a simple function that uses <code>sig-fn</code>.  We prove
+that <code>fn</code> always returns true, but this fact does not constrain
+<code>sig-fn</code>.  Future uses of <code>sig-fn</code> do not have to consider
+<code>fn</code> at all.<p>
+
+Sometimes it is necessary to introduce a function such as <code>fn</code>
+within the <code>encapsulate</code> merely to state the key properties of the
+undefined function <code>sig-fn</code>.  But that is unusual and the user
+should understand that both functions are being constrained.<p>
+
+Another subtle aspect of encapsulation that has been brushed over so
+far has to do with exactly how functions defined within the
+encapsulation use the signature functions.  For example, above we
+say ``Consider the collection of all formulas introduced by the
+encapsulate, <em>except the definitional axioms</em>, that mention these
+constrained functions.''  We seem to suggest that a definitional
+axiom which mentions a constrained function can be moved out of the
+encapsulation and considered part of the ``post-encapsulation''
+extension of the logic, if the defined function is not used in any
+non-definitional formula proved in the encapsulation.  For example,
+in the encapsulation above that constrained <code>sig-fn</code> and introduced
+<code>fn</code> within the encapsulation, <code>fn</code> was constrained because we
+proved the formula <code>fn-always-true</code> within the encapsulation.  Had
+we not proved <code>fn-always-true</code> within the encapsulation, <code>fn</code> could
+have been moved after the encapsulation.  But this suggests an
+unsound rule because whether such a function can be moved after the
+encapsulate depend on whether its <em>admission</em> used properties of the
+witnesses!  In particular, we say a function is ``subversive'' if
+any of its governing tests or the actuals in any recursive call involve
+a function in which the signature functions are ancestral.<p>
+
+Another aspect we have not discussed is what happens to nested
+encapsulations when each introduces constrained functions.  We say an
+<code>encapsulate</code> event is ``trivial'' if it introduces no constrained
+functions, i.e., if its signatures is <code>nil</code>.  Trivial encapsulations
+are just a way to wrap up a collection of events into a single event.<p>
+
+From the foregoing discussion we see we are interested in exactly
+how we can ``rearrange'' the events in a non-trivial encapsulation
+-- moving some ``before'' the encapsulation and others ``after'' the
+encapsulation.  We are also interested in which functions introduced by
+the encapsulation are ``constrained'' and what the ``constraints'' on
+each are.
+
+We may summarize the observations above as follows, after which we
+conclude with a more elaborate example.<p>
+
+<em>Second cut at constraint-assigning algorithm.</em>  First, we focus
+only on non-trivial encapsulations that neither contain nor are
+contained in non-trivial encapsulations.  (Nested non-trivial
+encapsulations are not rearranged at all: do not put anything in
+such a nest unless you mean for it to become part of the constraints
+generated.)  Second, in what follows we only consider the
+non-<code>local</code> events of such an <code>encapsulate</code>, assuming that they
+satisfy the restriction of using no locally defined function symbols
+other than the signature functions.  Given such an <code>encapsulate</code>
+event, move, to just in front of it and in the same order, all
+definitions and theorems for which none of the signature functions
+is ancestral.  Now collect up all formulas (theorems) introduced in
+the <code><a href="ENCAPSULATE.html">encapsulate</a></code> other than definitional axioms.  Add to this
+set any of those definitional equations that is either subversive or
+defines a function used in a formula in the set.  The
+conjunction of the resulting set of formulas is called the
+``constraint'' and the set of all the signature functions of the
+<code>encapsulate</code> together with all function symbols defined in the
+<code>encapsulate</code> and mentioned in the constraint is called the
+``constrained functions.''  Assign the constraint to each of the
+constrained functions.  Move, to just after the <code>encapsulate</code>, the
+definitions of all function symbols defined in the <code>encapsulate</code> that
+have been omitted from the constraint.<p>
+
+Implementation note.  In the implementation we do not actually move
+<a href="EVENTS.html">events</a>, but we create constraints that pretend that we did.<p>
+
+Here is an example illustrating our constraint-assigning algorithm.
+It builds on the preceding examples.
+
+<pre>
+(encapsulate
+ (((sig-fn *) =&gt; *))<p>
+
+ (defun before1 (x)
+   (if (consp x)
+       (before1 (cdr x))
+     x))<p>
+
+ (local (defun sig-fn (x) (cons x x)))<p>
+
+ (defthm sig-fn-prop
+   (consp (sig-fn x)))<p>
+
+ (defun during (x)
+   (if (consp x)
+       x
+     (cons (car (sig-fn x))
+           17)))<p>
+
+ (defun before2 (x)
+   (before1 x))<p>
+
+ (defthm before2-prop
+   (atom (before2 x)))<p>
+
+ (defthm during-prop
+   (implies (and (atom x)
+                 (before2 x))
+            (equal (car (during x))
+                   (car (sig-fn x)))))<p>
+
+ (defun after1 (x)
+   (sig-fn x))<p>
+
+ (defchoose after2 (x) (u)
+   (and (&lt; u x) (during x)))
+ )
+</pre>
+
+Only the functions <code>sig-fn</code> and <code>during</code> receive extra
+constraints.  The functions <code>before1</code> and <code>before2</code> are viewed as
+moving in front of the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, as is the theorem
+<code>before2-prop</code>.  The functions <code>after1</code> and <code>after2</code> are viewed
+as being moved past the <code><a href="ENCAPSULATE.html">encapsulate</a></code>.  Notice that the formula
+<code>(consp (during x))</code> is a conjunct of the constraint.  It comes
+from the <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule deduced during the definition
+of the function <code>during</code>.  The implementation reports the following.
+
+<pre>
+(SIG-FN X) is axiomatized to return one result.<p>
+
+In addition, we export AFTER2, AFTER1, DURING-PROP, BEFORE2-PROP, BEFORE2,
+DURING, SIG-FN-PROP and BEFORE1.<p>
+
+The following constraint is associated with both of the functions DURING
+and SIG-FN:<p>
+
+(AND (EQUAL (DURING X)
+            (IF (CONSP X)
+                X (CONS (CAR (SIG-FN X)) 17)))
+     (CONSP (DURING X))
+     (CONSP (SIG-FN X))
+     (IMPLIES (AND (ATOM X) (BEFORE2 X))
+              (EQUAL (CAR (DURING X))
+                     (CAR (SIG-FN X)))))
+</pre>
+<p>
+
+We conclude by asking (and to a certain extent, answering) the
+following question:  Isn't there an approach to assigning
+constraints that avoids over-constraining more simply than our
+``second cut'' above?  Perhaps it seems that given an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>, we should simply assign to each locally defined
+function the theorems exported about that function.  If we adopted
+that simple approach the events below would be admissible.<p>
+
+
+<pre>
+(encapsulate
+ (((foo *) =&gt; *))
+ (local (defun foo (x) x))
+ (defun bar (x)
+   (foo x))
+ (defthm bar-prop
+   (equal (bar x) x)
+   :rule-classes nil))<p>
+
+(defthm foo-id
+  (equal (foo x) x)
+  :hints (("Goal" :use bar-prop)))<p>
+
+; The following event is not admissible in ACL2.<p>
+
+(defthm ouch!
+  nil
+  :rule-classes nil
+  :hints
+  (("Goal" :use
+    ((:functional-instance foo-id
+                           (foo (lambda (x) (cons x x))))))))
+</pre>
+
+Under the simple approach we have in mind, <code>bar</code> is constrained to
+satisfy both its definition and <code>bar-prop</code> because <code>bar</code> mentions
+a function declared in the signature list of the encapsulation.  In
+fact, <code>bar</code> is so-constrained in the ACL2 semantics of
+encapsulation and the first two events above (the <code>encapsulate</code> and
+the consequence that <code>foo</code> must be the identity function) are
+actually admissible.  But under the simple approach to assigning
+constraints, <code>foo</code> is unconstrained because no theorem about it is
+exported.  Under that approach, <code>ouch!</code> is proveable because <code>foo</code>
+can be instantiated in <code>foo-id</code> to a function other than the
+identity function.<p>
+
+It's tempting to think we can fix this by including definitions, not
+just theorems, in constraints.  But consider the following slightly
+more elaborate example.  The problem is that we need to include as
+a constraint on <code>foo</code> not only the definition of <code>bar</code>, which
+mentions <code>foo</code> explicitly, but also <code>abc</code>, which has <code>foo</code> as an
+ancestor.
+
+<pre>
+(encapsulate
+ (((foo *) =&gt; *))
+ (local (defun foo (x) x))
+ (local (defthm foo-prop
+          (equal (foo x) x)))
+ (defun bar (x)
+   (foo x))
+ (defun abc (x)
+   (bar x))
+ (defthm abc-prop
+   (equal (abc x) x)
+   :rule-classes nil))<p>
+
+(defthm foo-id
+  (equal (foo x) x)
+  :hints (("Goal" :use abc-prop)))<p>
+
+; The following event is not admissible in ACL2.<p>
+
+(defthm ouch!
+  nil
+  :rule-classes nil
+  :hints
+  (("Goal" :use
+    ((:functional-instance foo-id
+                           (foo (lambda (x) (cons x x)))
+                           (bar (lambda (x) (cons x x))))))))
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

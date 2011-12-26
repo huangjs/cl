@@ -1,0 +1,1018 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: META,  Next: REFINEMENT,  Prev: LINEAR,  Up: RULE-CLASSES
+
+META    make a :meta rule (a hand-written simplifier)
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  Meta rules extend the
+ACL2 simplifier with hand-written code to transform certain terms to
+equivalent ones.  To add a meta rule, the :corollary formula must
+establish that the hand-written "metafunction" preserves the meaning of
+the transformed term.
+
+Example :corollary formulas from which :meta rules might be built are:
+
+     Examples:
+     (equal (evl x a)                  ; Modify the rewriter to use fn to
+            (evl (fn x) a))            ; transform terms.  The :trigger-fns
+                                       ; of the :meta rule-class specify
+                                       ; the top-most function symbols of
+                                       ; those x that are candidates for
+                                       ; this transformation.
+     
+     (implies (and (pseudo-termp x)    ; As above, but this illustrates
+                   (alistp a))         ; that without loss of generality we
+              (equal (evl x a)         ; may restrict x to be shaped like a
+                     (evl (fn x) a)))  ; term and a to be an alist.
+     
+     (implies (and (pseudo-termp x)    ; As above (with or without the
+                   (alistp a)          ; hypotheses on x and a) with the
+                   (evl (hyp-fn x) a)) ; additional restriction that the
+              (equal (evl x a)         ; meaning of (hyp-fn x) is true in
+                     (evl (fn x) a)))  ; the current context.  That is, the
+                                       ; applicability of the transforma-
+                                       ; tion may be dependent upon some
+                                       ; computed hypotheses.
+
+A non-nil list of function symbols must be supplied as the value of the
+:trigger-fns field in a :meta rule class object.
+
+     General Forms:
+     (implies (and (pseudo-termp x)        ; this hyp is optional
+                   (alistp a)              ; this hyp is optional
+                   (ev (hyp-fn x ...) a))  ; this hyp is optional
+              (equiv (ev x a)
+                     (ev (fn x ...) a)))
+
+where equiv is a known equivalence relation, x and a are distinct
+variable names, and ev is an evaluator function (see below), and fn is
+a function symbol, as is hyp-fn when provided.  The arguments to fn and
+hyp-fn should be identical.  In the most common case, both take a single
+argument, x, which denotes the term to be simplified.  If fn and/or
+hyp-fn are guarded, their guards should be (implied by) pseudo-termp.
+See *Note PSEUDO-TERMP::.  We say the theorem above is a "metatheorem"
+or "metalemma" and fn is a "metafunction", and hyp-fn is a "hypothesis
+metafunction".
+
+If "..." is empty, i.e., the metafunctions take just one argument, we
+say they are "vanilla flavored."  If "..." is non-empty, we say the
+metafunctions are "extended."  Extended metafunctions can access state
+and context sensitive information to compute their results, within
+certain limits.  We discuss vanilla metafunctions here and recommend a
+thorough understanding of them before proceeding (at which time see
+*note EXTENDED-METAFUNCTIONS::).
+
+We defer discussion of the case in which there is a hypothesis
+metafunction and for now address the case in which the other two
+hypotheses are present.
+
+In the discussion below, we refer to the argument, x, of fn and hyp-fn
+as a "term."  When these metafunctions are executed by the simplifier,
+they will be applied to (the quotations of) terms.  But during the
+proof of the metatheorem itself, x may not be the quotation of a term.
+If the pseudo-termp hypothesis is omitted, x may be any object.  Even
+with the pseudo-termp hypothesis, x may merely "look like a term" but
+use non-function symbols or function symbols of incorrect arity.  In any
+case, the metatheorem is stronger than necessary to allow us to apply
+the metafunctions to terms, as we do in the discussion below.  We
+return later to the question of proving the metatheorem.
+
+Suppose the general form of the metatheorem above is proved with the
+pseudo-termp and alistp hypotheses.  Then when the simplifier
+encounters a term, (h t1 ... tn), that begins with a function symbol,
+h, listed in :trigger-fns, it applies the metafunction, fn, to the
+quotation of the term, i.e., it evaluates (fn '(h t1 ... tn)) to obtain
+some result, which can be written as 'val.  If 'val is different from
+'(h t1 ... tn) and val is a term, then (h t1 ... tn) is replaced by val,
+which is then passed along for further rewriting.  Because the
+metatheorem establishes the correctness of fn for all terms (even
+non-terms!), there is no restriction on which function symbols are
+listed in the :trigger-fns.  Generally, of course, they should be the
+symbols that head up the terms simplified by the metafunction fn.  See
+*Note TERM-TABLE:: for how one obtains some assistance towards
+guaranteeing that val is indeed a term.
+
+The "evaluator" function, ev, is a function that can evaluate a certain
+class of expressions, namely, all of those composed of variables,
+constants, and applications of a fixed, finite set of function symbols,
+g1, ..., gk.  Generally speaking, the set of function symbols handled
+by ev is chosen to be exactly the function symbols recognized and
+manipulated by the metafunctions being introduced.  For example, if fn
+manipulates expressions in which 'equal and 'binary-append occur as
+function symbols, then ev is generally specified to handle equal and
+binary-append.  The actual requirements on ev become clear when the
+metatheorem is proved.  The standard way to introduce an evaluator is
+to use the ACL2 macro defevaluator, though this is not strictly
+necessary.  See *Note DEFEVALUATOR:: for details.
+
+Why are we justified in using metafunctions this way?  Suppose (fn
+'term1) is 'term2.  What justifies replacing term1 by term2?  The first
+step is to assert that term1 is (ev 'term1 a), where a is an alist that
+maps 'var to var, for each variable var in term1.  This step is
+incorrect, because 'term1 may contain function symbols other than the
+ones, g1, ..., gk, that ev knows how to handle.  But we can grow ev to
+a "larger" evaluator, ev*, an evaluator for all of the symbols that
+occur in term1 or term2.  We can prove that ev* satisfies the
+constraints on ev.  Hence, the metatheorem holds for ev* in place of
+ev, by functional instantiation.  We can then carry out the proof of the
+equivalence of term1 and term2 as follows: Fix a to be an alist that
+maps the quotations of the variables of term1 and term2 to themselves.
+Then,
+
+     term1 = (ev* 'term1 a)      ; (1) by construction of ev* and a
+           = (ev* (fn 'term1) a) ; (2) by the metatheorem for ev*
+           = (ev* 'term2 a)      ; (3) by evaluation of fn
+           = term2               ; (4) by construction of ev* and a
+
+Note that in line (2) above, where we appeal to the (functional
+instantiation of the) metatheorem, we can relieve its (optional)
+pseudo-termp and alistp hypotheses by appealing to the facts that term1
+is a term and a is an alist by construction.
+
+Finally, we turn to the second case, in which there is a hypothesis
+metafunction.  In that case, consider as before what happens when the
+simplifier encounters a term, (h t1 ... tn), where h is listed in
+:trigger-fns.  This time, after it applies fn to '(h t1 ... tn) to
+obtain the quotation of some new term, 'val, it then applies the
+hypothesis metafunction, hyp-fn.  That is, it evaluates (hyp-fn '(h t1
+... tn)) to obtain some result, which can be written as 'hyp-val.  If
+hyp-val is not in fact a term, the metafunction is not used.  Provided
+hyp-val is a term, the simplifier attempts to establish (by
+conventional backchaining) that this term is non-nil in the current
+context.  If this attempt fails, then the meta rule is not applied.
+Otherwise, (h t1...tn) is replaced by val as in the previous case
+(where there was no hypothesis metafunction).
+
+Why is it justified to make this extension to the case of hypothesis
+metafunctions?  First, note that the rule
+
+     (implies (and (pseudo-termp x)
+                   (alistp a)
+                   (ev (hyp-fn x) a))
+              (equal (ev x a)
+                     (ev (fn x) a)))
+
+is logically equivalent to the rule
+
+     (implies (and (pseudo-termp x)
+                   (alistp a))
+              (equal (ev x a)
+                     (ev (new-fn x) a)))
+
+where (new-fn x) is defined to be (list 'if (hyp-fn x) (fn x) x).  (If
+we're careful, we realize that this argument depends on making an
+extension of ev to an evaluator ev* that handles if and the functions
+manipulated by hyp-fn.)  If we write 'term for the quotation of the
+present term, and if (hyp-fn 'term) and (fn 'term) are both terms, say
+hyp1 and term1, then by the previous argument we know it is sound to
+rewrite term to (if hyp1 term1 term).  But since we have established in
+the current context that hyp1 is non-nil, we may simplify (if hyp1
+term1 term) to term1, as desired.
+
+We now discuss the role of the pseudo-termp hypothesis.  (Pseudo-termp
+x) checks that x has the shape of a term.  Roughly speaking, it ensures
+that x is a symbol, a quoted constant, or a true list consisting of a
+lambda expression or symbol followed by some pseudo-terms.  Among the
+properties of terms not checked by pseudo-termp are that variable
+symbols never begin with ampersand, lambda expressions are closed, and
+function symbols are applied to the correct number of arguments.  See
+*Note PSEUDO-TERMP::.
+
+There are two possible roles for pseudo-termp in the development of a
+metatheorem:  it may be used as the guard of the metafunction and/or
+hypothesis metafunction and it may be used as a hypothesis of the
+metatheorem.  Generally speaking, the pseudo-termp hypothesis is
+included in a metatheorem only if it makes it easier to prove.  The
+choice is yours.  (An extreme example of this is when the metatheorem
+is invalid without the hypothesis!)  We therefore address ourselves the
+question:  should a metafunction have a pseudo-termp guard?  A
+pseudo-termp guard for a metafunction, in connection with other
+considerations described below, improves the efficiency with which the
+metafunction is used by the simplifier.
+
+To make a metafunction maximally efficient you should (a) provide it
+with a pseudo-termp guard and exploit the guard when possible in coding
+the body of the function (see *note GUARDS-AND-EVALUATION::, especially
+the section on efficiency issues), (b) verify the guards of the
+metafunction (see *note VERIFY-GUARDS::), and (c) compile the
+metafunction (see *note COMP::).  When these three steps have been
+taken the simplifier can evaluate (fn 'term1) by running the compiled
+"primary code" (see *note GUARDS-AND-EVALUATION::) for fn directly in
+Common Lisp.
+
+Before discussing efficiency issues further, let us review for a moment
+the general case in which we wish to evaluate (fn `obj) for some :logic
+function.  We must first ask whether the guards of fn have been
+verified.  If not, we must evaluate fn by executing its logic
+definition.  This effectively checks the guards of every subroutine and
+so can be slow.  If, on the other hand, the guards of fn have been
+verified, then we can run the primary code for fn, provided 'obj
+satisfies the guard of fn.  So we must next evaluate the guard of fn on
+'obj.  If the guard is met, then we run the primary code for fn,
+otherwise we run the logic code.
+
+Now in the case of a metafunction for which the three steps above have
+been followed, we know the guard is (implied by) pseudo-termp and that
+it has been verified.  Furthermore, we know without checking that the
+guard is met (because term1 is a term and hence 'term1 is a
+pseudo-termp).  Hence, we can use the compiled primary code directly.
+
+We strongly recommend that you compile your metafunctions, as well as
+all their subroutines.  Guard verification is also recommended.
+
+Finally, we present a very simple example of the use of :meta rules,
+based on one provided by Robert Krug.  This example illustrates a trick
+for avoiding undesired rewriting after applying a metafunction or any
+other form of rewriting.  To elaborate: in general, the term t2
+obtained by applying a metafunction to a term t1 is then handed
+immediately to the rewriter, which descends recursively through the
+arguments of function calls to rewrite t2 completely.  But if t2 shares
+a lot of structure with t1, then it might not be worthwhile to rewrite
+t2 immediately.  (A rewrite of t2 will occur anyhow the next time a
+goal is generated.)  The trick involves avoiding this rewrite by
+wrapping t2 inside a call of hide, which in turn is inside a call of a
+user-defined "unhiding" function, unhide.
+
+     (defun unhide (x)
+       (declare (xargs :guard t))
+       x)
+     
+     (defthm unhide-hide
+       (equal (unhide (hide x))
+              x)
+       :hints (("Goal" :expand ((hide x)))))
+     
+     (in-theory (disable unhide))
+     
+     (defun my-plus (x y)
+       (+ x y))
+     
+     (in-theory (disable my-plus))
+     
+     (defevaluator evl evl-list
+       ((my-plus x y)
+        (binary-+ x y)
+        (unhide x)
+        (hide x)))
+     
+     (defun meta-fn (term)
+       (declare (xargs :guard (pseudo-termp term)))
+       (if (and (consp term)
+                (equal (length term) 3)
+                (equal (car term) 'my-plus))
+           `(UNHIDE (HIDE (BINARY-+ ,(cadr term) ,(caddr term))))
+         term))
+     
+     (defthm my-meta-lemma
+       (equal (evl term a)
+              (evl (meta-fn term) a))
+       :hints (("Goal" :in-theory (enable my-plus)))
+       :rule-classes ((:meta :trigger-fns (my-plus))))
+
+Notice that in the following (silly) conjectre, ACL2 initially does
+only does the simplification directed by the metafunction; a second
+goal is generated before the commuativity of addition can be applied.
+If the above calls of UNHIDE and HIDE had been stripped off, then Goal'
+would have been the term printed in Goal" below.
+
+     ACL2 !>(thm
+             (equal (my-plus b a)
+                    ccc))
+     
+     This simplifies, using the :meta rule MY-META-LEMMA and the :rewrite
+     rule UNHIDE-HIDE, to
+     
+     Goal'
+     (EQUAL (+ B A) CCC).
+     
+     This simplifies, using the :rewrite rule COMMUTATIVITY-OF-+, to
+     
+     Goal''
+     (EQUAL (+ A B) CCC).
+
+The discussion above probably suffices to make good use of this (UNHIDE
+(HIDE ...)) trick.  However, we invite the reader who wishes to
+understand the trick in depth to evaluate the following form before
+submitting the thm form above.
+
+     (trace$ (rewrite :entry (list (take 2 arglist))
+                      :exit (list (car values)))
+             (rewrite-with-lemma :entry (list (take 2 arglist))
+                                 :exit (take 2 values)))
+
+The following annotated subset of the trace output (which may appear a
+bit different depending on the underlying Common Lisp implementation)
+explains how the trick works.
+
+         2> (REWRITE ((MY-PLUS B A) NIL))>
+           3> (REWRITE-WITH-LEMMA
+                   ((MY-PLUS B A)
+                    (REWRITE-RULE (:META MY-META-LEMMA)
+                                  1822
+                                  NIL EQUAL META-FN NIL META NIL NIL)))>
+     
+     We apply the meta rule, then recursively rewrite the result, which is the
+     (UNHIDE (HIDE ...)) term shown just below.
+     
+             4> (REWRITE ((UNHIDE (HIDE (BINARY-+ B A)))
+                          ((A . A) (B . B))))>
+               5> (REWRITE ((HIDE (BINARY-+ B A))
+                            ((A . A) (B . B))))>
+     
+     The HIDE protects its argument from being touched by the rewriter.
+     
+               <5 (REWRITE (HIDE (BINARY-+ B A)))>
+               5> (REWRITE-WITH-LEMMA
+                       ((UNHIDE (HIDE (BINARY-+ B A)))
+                        (REWRITE-RULE (:REWRITE UNHIDE-HIDE)
+                                      1806 NIL EQUAL (UNHIDE (HIDE X))
+                                      X ABBREVIATION NIL NIL)))>
+     
+     Now we apply UNHIDE-HIDE, then recursively rewrite its right-hand
+     side in an environment where X is bound to (BINARY-+ B A).
+     
+                 6> (REWRITE (X ((X BINARY-+ B A))))>
+     
+     Notice that at this point X is cached, so REWRITE just returns
+     (BINARY-+ B A).
+     
+                 <6 (REWRITE (BINARY-+ B A))>
+               <5 (REWRITE-WITH-LEMMA T (BINARY-+ B A))>
+             <4 (REWRITE (BINARY-+ B A))>
+           <3 (REWRITE-WITH-LEMMA T (BINARY-+ B A))>
+         <2 (REWRITE (BINARY-+ B A))>
+
+
+File: acl2-doc-emacs.info,  Node: REFINEMENT,  Next: REWRITE,  Prev: META,  Up: RULE-CLASSES
+
+REFINEMENT    record that one equivalence relation refines another
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :refinement rule might be built is:
+
+     Example:
+     (implies (bag-equal x y) (set-equal y x)).
+
+Also see *note DEFREFINEMENT::.
+
+     General Form:
+     (implies (equiv1 x y) (equiv2 x y))
+
+Equiv1 and equiv2 must be known equivalence relations.  The effect of
+such a rule is to record that equiv1 is a refinement of equiv2.  This
+means that equiv1 :rewrite rules may be used while trying to maintain
+equiv2.  See *Note EQUIVALENCE:: for a general discussion of the issues.
+
+The macro form (defrefinement equiv1 equiv2) is an abbreviation for a
+defthm of rule-class :refinement that establishes that equiv1 is a
+refinement of equiv2.  See *Note DEFREFINEMENT::.
+
+Suppose we have the :rewrite rule
+
+     (bag-equal (append a b) (append b a))
+
+which states that append is commutative modulo bag-equality.  Suppose
+further we have established that bag-equality refines set-equality.
+Then when we are simplifying append expressions while maintaining
+set-equality we use append's commutativity property, even though it was
+proved for bag-equality.
+
+Equality is known to be a refinement of all equivalence relations.  The
+transitive closure of the refinement relation is maintained, so if
+set-equality, say, is shown to be a refinement of some third sense of
+equivalence, then bag-equality will automatially be known as a
+refinement of that third equivalence.
+
+:refinement lemmas cannot be disabled.  That is, once one equivalence
+relation has been shown to be a refinement of another, there is no way
+to prevent the system from using that information.  Of course,
+individual :rewrite rules can be disabled.
+
+More will be written about this as we develop the techniques.
+
+
+File: acl2-doc-emacs.info,  Node: REWRITE,  Next: TYPE-PRESCRIPTION,  Prev: REFINEMENT,  Up: RULE-CLASSES
+
+REWRITE    make some :rewrite rules (possibly conditional ones)
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  Example :corollary
+formulas from which :rewrite rules might be built are:
+
+     Example:
+     (equal (+ x y) (+ y x))            replace (+ a b) by (+ b a) provided
+                                        certain heuristics approve the
+                                        permutation.
+     
+     (implies (true-listp x)            replace (append a nil) by a, if
+              (equal (append x nil) x)) (true-listp a) rewrites to t
+     
+     (implies                           replace (member a (append b c)) by
+         (and (eqlablep e)              (member a (append c b)) in contexts
+              (true-listp x)            in which propositional equivalence
+              (true-listp y))           is sufficient, provided (eqlablep a)
+         (iff (member e (append x y))   (true-listp b) and (true-listp c)
+              (member e (append y x)))) rewrite to t and the permutative
+                                        heuristics approve
+     
+     General Form:
+     (and ...
+          (implies (and ...hi...)
+                   (implies (and ...hk...)
+                            (and ...
+                                 (equiv lhs rhs)
+                                 ...)))
+          ...)
+
+Note: One :rewrite rule class object might create many rewrite rules
+from the :corollary formula.  To create the rules, we first translate
+the formula (expanding all macros; also see *note TRANS::).  Next, we
+eliminate all lambdas; one may think of this step as simply
+substituting away every let, let*, and mv-let in the formula.  We then
+flatten the and and implies structure of the formula, transforming it
+into a conjunction of formulas, each of the form
+
+     (implies (and h1 ... hn) concl)
+
+where no hypothesis is a conjunction and concl is neither a conjunction
+nor an implication.  If necessary, the hypothesis of such a conjunct
+may be vacuous.  We then further coerce each concl into the form (equiv
+lhs rhs), where equiv is a known equivalence relation, by replacing any
+concl not of that form by (iff concl t).  A concl of the form (not
+term) is considered to be of the form (iff term nil).  By these steps
+we reduce the given :corollary to a sequence of conjuncts, each of
+which is of the form
+
+     (implies (and h1 ... hn)
+              (equiv lhs rhs))
+
+where equiv is a known equivalence relation.  See *Note EQUIVALENCE::
+for a general discussion of the introduction of new equivalence
+relations.
+
+We create a :rewrite rule for each such conjunct, if possible, and
+otherwise cause an error.  It is possible to create a rewrite rule from
+such a conjunct provided lhs is not a variable, a quoted constant, a
+let-expression, a lambda application, or an if-expression.
+
+A :rewrite rule is used when any instance of the lhs occurs in a
+context in which the equivalence relation is operative.  First, we find
+a substitution that makes lhs equal to the target term.  Then we attempt
+to relieve the instantiated hypotheses of the rule.  Hypotheses that are
+fully instantiated are relieved by recursive rewriting.  Hypotheses that
+contain "free variables" (variables not assigned by the unifying
+substitution) are relieved by attempting to guess a suitable instance
+so as to make the hypothesis equal to some known assumption in the
+context of the target.  If the hypotheses are relieved, and certain
+restrictions that prevent some forms of infinite regress are met (see
+*note LOOP-STOPPER::), the target is replaced by the instantiated rhs,
+which is then recursively rewritten.
+
+ACL2's rewriting process has undergone some optimization.  In
+particular, when a term t1 is rewritten to a new term t2, the rewriter
+is then immediately applied to t2.  On rare occasions you may find that
+you do not want this behavior, in which case you may wish to use a
+trick involving hide that is described near the end of the
+documentation for meta; see *note META::.
+
+At the moment, the best description of how ACL2 :rewrite rules are used
+is perhaps in the discussion of "Replacement Rules" on page 279 of A
+Computational Logic Handbook (second edition).
+
+
+File: acl2-doc-emacs.info,  Node: TYPE-PRESCRIPTION,  Next: TYPE-SET-INVERTER,  Prev: REWRITE,  Up: RULE-CLASSES
+
+TYPE-PRESCRIPTION    make a rule that specifies the type of a term
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  Some example
+:corollary formulas from which :type-prescription rules might be built
+are:
+
+     Examples:
+     (implies                           (nth n lst) is of type characterp
+      (and (character-listp lst)        provided the two hypotheses can
+           (< n (length lst)))          be established by type reasoning
+      (characterp (nth n lst))).
+     
+     (implies                           (demodulize a lst 'value ans) is
+      (and (atom a)                     either a nonnegative integer or
+           (true-listp lst)             of the same type as ans, provided
+           (member-equal a lst))        the hyps can be established by type
+      (or (and                          reasoning
+            (integerp
+             (demodulize a lst 'value ans))
+            (>= (demodulize a lst 'value ans) 0))
+          (equal (demodulize a lst 'value ans) ans))).
+
+To specify the term whose type (see *note TYPE-SET::) is described by
+the rule, provide that term as the value of the :typed-term field of
+the rule class object.
+
+     General Form:
+     (implies hyps
+              (or type-restriction1-on-pat
+                  ...
+                  type-restrictionk-on-pat
+                  (equal pat var1)
+                  ...
+                  (equal pat varj)))
+
+where pat is the application of some function symbol to some arguments,
+each type-restrictioni-on-pat is a term involving pat and containing no
+variables outside of the occurrences of pat, and each vari is one of
+the variables of pat.  Generally speaking, the type-restriction terms
+ought to be terms that inform us as to the type of pat.  Ideally, they
+should be "primitive recognizing expressions" about pat; see *note
+COMPOUND-RECOGNIZER::.
+
+If the :typed-term is not provided in the rule class object, it is
+computed heuristically by looking for a term in the conclusion whose
+type is being restricted.  An error is caused if no such term is found.
+
+Roughly speaking, the effect of adding such a rule is to inform the
+ACL2 typing mechanism that pat has the type described by the
+conclusion, when the hypotheses are true.  In particular, the type of
+pat is within the union of the types described by the several
+disjuncts.  The "type described by" (equal pat vari) is the type of
+vari.
+
+More operationally, when asked to determine the type of a term that is
+an instance of pat, ACL2 will first attempt to establish the
+hypotheses.  *This is done by type reasoning alone, not rewriting!* Of
+course, if some hypothesis is to be forced, it is so treated; see *note
+FORCE:: and see *note CASE-SPLIT::.  So-called free variables in
+hypotheses are treated specially; see *note FREE-VARIABLES::.  Provided
+the hypotheses are established by type reasoning, ACL2 then unions the
+types described by the type-restrictioni-on-pat terms together with the
+types of those subexpressions of pat identified by the vari.  The final
+type computed for a term is the intersection of the types implied by
+each applicable rule.  Type prescription rules may be disabled.
+
+Because only type reasoning is used to establish the hypotheses of
+:type-prescription rules, some care must be taken with the hypotheses.
+Suppose, for example, that the non-recursive function my-statep is
+defined as
+
+       (defun my-statep (x)
+         (and (true-listp x)
+              (equal (length x) 2)))
+
+and suppose (my-statep s) occurs as a hypothesis of a
+:type-prescription rule that is being considered for use in the proof
+attempt for a conjecture with the hypothesis (my-statep s).  Since the
+hypothesis in the conjecture is rewritten, it will become the
+conjunction of (true-listp s) and (equal (length s) 2).  Those two
+terms will be assumed to have type t in the context in which the
+:type-prescription rule is tried.  But type reasoning will be unable to
+deduce that (my-statep s) has type t in this context.  Thus, either
+my-statep should be disabled (see *note DISABLE::) during the proof
+attempt or else the occurrence of (my-statep s) in the
+:type-prescription rule should be replaced by the conjunction into
+which it rewrites.
+
+While this example makes it clear how non-recursive predicates can
+cause problems, non-recursive functions in general can cause problems.
+For example, if (mitigate x) is defined to be (if (rationalp x) (1- x)
+x) then the hypothesis (pred (mitigate s)) in the conjecture will
+rewrite, opening mitigate and splitting the conjecture into two
+subgoals, one in which (rationalp s) and (pred (1- x)) are assumed and
+the other in which (not (rationalp s)) and (pred x) are assumed.  But
+(pred (mitigate s)) will not be typed as t in either of these contexts.
+The moral is: beware of non-recursive functions occuring in the
+hypotheses of :type-prescription rules.
+
+Because of the freedom one has in forming the conclusion of a
+type-prescription, we have to use heuristics to recover the pattern,
+pat, whose type is being specified.  In some cases our heuristics may
+not identify the intended term and the :type-prescription rule will be
+rejected as illegal because the conclusion is not of the correct form.
+When this happens you may wish to specify the pat directly.  This may
+be done by using a suitable rule class token.  In particular, when the
+token :type-prescription is used it means ACL2 is to compute pat with
+its heuristics; otherwise the token should be of the form
+(:type-prescription :typed-term pat), where pat is the term whose type
+is being specified.
+
+The defun event may generate a :type-prescription rule.  Suppose fn is
+the name of the function concerned.  Then (:type-prescription fn) is
+the rune given to the type-prescription, if any, generated for fn by
+defun.  (The trivial rule, saying fn has unknown type, is not stored,
+but defun still allocates the rune and the corollary of this rune is
+known to be t.)
+
+
+File: acl2-doc-emacs.info,  Node: TYPE-SET-INVERTER,  Next: WELL-FOUNDED-RELATION,  Prev: TYPE-PRESCRIPTION,  Up: RULE-CLASSES
+
+TYPE-SET-INVERTER    exhibit a new decoding for an ACL2 type-set
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.
+
+     Example Rule Class:
+     (:type-set-inverter
+       :corollary (equal (and (counting-number x) (not (equal x 0)))
+                         (and (integerp x) (< x 0)))
+       :type-set 2)
+     
+     General Forms of Rule Class:
+     :type-set-inverter, or
+     (:type-set-inverter :type-set n)
+     
+     General Form of Theorem or Corollary:
+     (EQUAL new-expr old-expr)
+
+where n is a type-set (see *note TYPE-SET::) and old-expr is the term
+containing x as a free variable that ACL2 currently uses to recognize
+type-set n.  For a given n, the exact form of old-expr is generated by
+
+     (convert-type-set-to-term 'x n (ens state) (w state) nil)].
+
+If the :type-set field of the rule-class is omitted, we attempt to
+compute it from the right-hand side, old-expr, of the corollary.  That
+computation is done by type-set-implied-by-term (see *note TYPE-SET::).
+However, it is possible that the type-set we compute from lhs does not
+have the required property that when inverted with
+convert-type-set-to-term the result is lhs.  If you omit :type-set and
+an error is caused because lhs has the incorrect form, you should
+manually specify both :type-set and the lhs generated by
+convert-type-set-to-term.
+
+The rule generated will henceforth make new-expr be the term used by
+ACL2 to recognize type-set n.  If this rule is created by a defthm
+event named name then the rune of the rule is (:type-set-inverter name)
+and by disabling that rune you can prevent its being used to decode
+type-sets.
+
+Type-sets are inverted when forced assumptions are turned into formulas
+to be proved.  In their internal form, assumptions are essentially
+pairs consisting of a context and a goal term, which was forced.
+Abstractly a context is just a list of hypotheses which may be assumed
+while proving the goal term.  But actually contexts are alists which
+pair terms with type-sets, encoding the current hypotheses.  For
+example, if the original conjecture contained the hypothesis (integerp
+x) then the context used while working on that conjecture will include
+the assignment to x of the type-set *ts-integer*.
+
+
+File: acl2-doc-emacs.info,  Node: WELL-FOUNDED-RELATION,  Prev: TYPE-SET-INVERTER,  Up: RULE-CLASSES
+
+WELL-FOUNDED-RELATION    show that a relation is well-founded on a set
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :well-founded-relation rule might be built is as
+follows.  (Of course, the functions pairp, lex2p, and ordinate would
+have to be defined first.)
+
+     Example:
+     (and (implies (pairp x) (o-p (ordinate x)))
+          (implies (and (pairp x)
+                        (pairp y)
+                        (lex2p x y))
+                   (o< (ordinate x) (ordinate y))))
+
+The above example establishes that lex2p is a well-founded relation on
+pairps.  We explain and give details below.
+
+Exactly two general forms are recognized:
+
+     General Forms
+     (AND (IMPLIES (mp x) (O-P (fn x)))              ; Property 1
+          (IMPLIES (AND (mp x)                       ; Property 2
+                        (mp y)
+                        (rel x y))
+                   (O< (fn x) (fn y)))),
+
+or
+
+     (AND (O-P (fn x))                               ; Property 1
+          (IMPLIES (rel x y)                         ; Property 2
+                   (O< (fn x) (fn y))))
+
+where mp, fn, and rel are function symbols, x and y are distinct
+variable symbols, and no other :well-founded-relation theorem about fn
+has been proved.  When the second general form is used, we act as
+though the first form were used with mp being the function that ignores
+its argument and returns t.  The discussion below therefore considers
+only the first general form.
+
+Note: We are very rigid when checking that the submitted formula is of
+one of these forms.  For example, in the first form, we insist that all
+the conjuncts appear in the order shown above.  Thus, interchanging the
+two properties in the top-level conjunct or rearranging the hyptheses
+in the second conjunct both produce unrecognized forms.  The
+requirement that each fn be proved well-founded at most once ensures
+that for each well-founded relation, fn, there is a unique mp that
+recognizes the domain on which rel is well-founded.  We impose this
+requirement simply so that rel can be used as a short-hand when
+specifying the well-founded relations to be used in definitions;
+otherwise the specification would have to indicate which mp was to be
+used.
+
+Mp is a predicate that recognizes the objects that are supposedly
+ordered in a well-founded way by rel.  We call such an object an
+"mp-measure" or simply a "measure" when mp is understood.  Property 1
+tells us that every measure can be mapped into an ACL2 ordinal.  (See
+*Note O-P::.)  This mapping is performed by fn.  Property 2 tells us
+that if the measure x is smaller than the measure y according to rel
+then the image of x under fn is a smaller than that of y, according to
+the well-founded relation o<.  (See *Note O<::.)  Thus, the general
+form of a :well-founded-relation formula establishes that there exists a
+rel-order preserving embedding (namely via fn) of the mp-measures into
+the ordinals.  We can thus conclude that rel is well-founded on
+mp-measures.
+
+Such well-founded relations are used in the admissibility test for
+recursive functions, in particular, to show that the recursion
+terminates.  To illustrate how such information may be used, consider a
+generic function definition
+
+     (defun g (x) (if (test x) (g (step x)) (base x))).
+
+If rel has been shown to be well-founded on mp-measures, then g's
+termination can be ensured by finding a measure, (m x), with the
+property that m produces a measure:
+
+     (mp (m x)),                                     ; Defun-goal-1
+
+and that the argument to g gets smaller (when measured by m and
+compared by rel) in the recursion,
+
+     (implies (test x) (rel (m (step x)) (m x))).    ; Defun-goal-2
+
+If rel is selected as the :well-founded-relation to be used in the
+definition of g, the definitional principal will generate and attempt
+to prove defun-goal-1 and defun-goal-2 to justify g.  We show later why
+these two goals are sufficient to establish the termination of g.
+Observe that neither the ordinals nor the embedding, fn, of the
+mp-measures into the ordinals is involved in the goals generated by the
+definitional principal.
+
+Suppose now that a :well-founded-relation theorem has been proved for
+mp and rel.  How can rel be "selected as the :well-founded-relation" by
+defun?  There are two ways.  First, an xargs keyword to the defun event
+allows the specification of a :well-founded-relation.  Thus, the
+definition of g above might be written
+
+     (defun g (x)
+      (declare (xargs :well-founded-relation (mp . rel)))
+      (if (test x) (g (step x)) (base x)))
+
+Alternatively, rel may be specified as the
+:default-well-founded-relation in acl2-defaults-table by executing the
+event
+
+     (set-default-well-founded-relation rel).
+
+When a defun event does not explicitly specify the relation in its
+xargs the default relation is used.  When ACL2 is initialized, the
+default relation is o<.
+
+Finally, though it is probably obvious, we now show that defun-goal-1
+and defun-goal-2 are sufficient to ensure the termination of g provided
+property-1 and property-2 of mp and rel have been proved.  To this end,
+assume we have proved defun-goal-1 and defun-goal-2 as well as
+property-1 and property-2 and we show how to admit g under the
+primitive ACL2 definitional principal (i.e., using only the ordinals).
+In particular, consider the definition event
+
+     (defun g (x)
+      (declare (xargs :well-founded-relation o<
+                      :measure (fn (m x))))
+      (if (test x) (g (step x)) (base x)))
+
+Proof that g is admissible:  To admit the definition of g above we must
+prove
+
+     (o-p (fn (m x)))                        ; *1
+
+and
+
+     (implies (test x)                               ; *2
+              (o< (fn (m (step x))) (fn (m x)))).
+
+But *1 can be proved by instantiating property-1 to get
+
+     (implies (mp (m x)) (o-p (fn (m x)))),
+
+and then relieving the hypothesis with defun-goal-1, (mp (m x)).
+
+Similarly, *2 can be proved by instantiating property-2 to get
+
+     (implies (and (mp (m (step x)))
+                   (mp (m x))
+                   (rel (m (step x)) (m x)))
+              (o< (fn (m (step x))) (fn (m x))))
+
+and relieving the first two hypotheses by appealing to two instances of
+defun-goal-1, thus obtaining
+
+     (implies (rel (m (step x)) (m x))
+              (o< (fn (m (step x))) (fn (m x)))).
+
+By chaining this together with defun-goal-2,
+
+     (implies (test x)
+              (rel (m (step x)) (m x)))
+
+we obtain *2.  Q.E.D.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ,  Next: THEORIES,  Prev: RULE-CLASSES,  Up: Top
+
+STOBJ    single-threaded objects or ``von Neumann bottlenecks''
+
+In ACL2, a "single-threaded object" is a data structure whose use is so
+syntactically restricted that only one instance of the object need ever
+exist and its fields can be updated by destructive assignments.
+
+The documentation in this section is laid out in the form of a tour
+that visits the documented topics in a reasonable order.  We recommend
+that you follow the tour the first time you read about stobjs.  The
+list of all stobj topics is shown below.  The tour starts immediately
+afterwards.
+
+* Menu:
+
+* DECLARE-STOBJS:: declaring a formal parameter name to be a single-threaded object
+
+* RESIZE-LIST:: list resizer in support of stobjs
+
+* STOBJ-EXAMPLE-1:: an example of the use of single-threaded objects
+
+* STOBJ-EXAMPLE-1-DEFUNS:: the defuns created by the counters stobj
+
+* STOBJ-EXAMPLE-1-IMPLEMENTATION:: the implementation of the counters stobj
+
+* STOBJ-EXAMPLE-1-PROOFS:: some proofs involving the counters stobj
+
+* STOBJ-EXAMPLE-2:: an example of the use of arrays in single-threaded objects
+
+* STOBJ-EXAMPLE-3:: another example of a single-threaded object
+
+* WITH-LOCAL-STOBJ:: locally bind a single-threaded object
+
+As noted, a "single-threaded object" is a data structure whose use is
+so syntactically restricted that only one instance of the object need
+ever exist.  Updates to the object must be sequentialized.  This allows
+us to update its fields with destructive assignments without wrecking
+the axiomatic semantics of update-by-copy.  For this reason,
+single-threaded objects are sometimes called "von Neumann bottlenecks."
+
+From the logical perspective, a single-threaded object is an ordinary
+ACL2 object, e.g., composed of integers and conses.  Logically
+speaking, ordinary ACL2 functions are defined to allow the user to
+"access" and "update" its fields.  Logically speaking, when fields in
+the object, obj, are "updated" with new values, a new object, obj', is
+constructed.
+
+But suppose that by syntactic means we could ensure that there were no
+more references to the "old" object, obj.  Then we could create obj' by
+destructively modifying the memory locations involved in the
+representation of obj.  The syntactic means is pretty simple but
+draconian: the only reference to obj is in the variable named OBJ.
+
+The consequences of this simple rule are far-reaching and require some
+getting used to.  For example, if OBJ has been declared as a
+single-threaded object name, then:
+
+* OBJ is a top-level global variable that contains the current
+object, obj.
+
+* If a function uses the formal parameter OBJ, the only   "actual
+expression" that can be passed into that slot is the variable   OBJ,
+not merely a term that "evaluates to an obj";   thus, such functions
+can only operate on the current object.  So for   example, instead of
+(FOO (UPDATE-FIELD1 3 ST)) write   (LET ((ST (UPDATE-FIELD1 3 ST)))
+(FOO ST)).
+
+* The accessors and updaters have a formal parameter named OBJ,   thus,
+those functions can only be applied to the current object.
+
+* The ACL2 primitives, such as CONS, CAR and CDR, may not   be applied
+to the variable OBJ.  Thus, for example, obj may not   be consed into a
+list (which would create another pointer to it) or   accessed or copied
+via "unapproved" means.
+
+* The updaters return a "new OBJ object", i.e., obj'; thus, when   an
+updater is called, the only variable which can hold its result is   OBJ.
+
+* If a function calls an OBJ updater, it must return an OBJ object
+(either as the sole value returned, or in (mv ... OBJ ...); see *note
+MV::).
+
+* When a top-level expression involving OBJ returns an OBJ   object,
+that object becomes the new current value of OBJ.
+
+What makes ACL2 different from other functional languages supporting
+such operations (e.g., Haskell's "monads" and Clean's "uniqueness type
+system") is that ACL2 also gives single-threaded objects an explicit
+axiomatic semantics so that theorems can be proved about them.  In
+particular, the syntactic restrictions noted above are enforced only
+when single-threaded objects are used in function definitions (which
+might be executed outside of the ACL2 read-eval-print loop in Common
+Lisp).  The accessor and update functions for single-threaded objects
+may be used without restriction in formulas to be proved.  Since
+function evaluation is sometimes necessary during proofs, ACL2 must be
+able to evaluate these functions on logical constants representing the
+object, even when the constant is not "the current object."  Thus, ACL2
+supports both the efficient von Neumann semantics and the clean
+applicative semantics, and uses the first in contexts where execution
+speed is paramount and the second during proofs.
+
+To start the stobj tour, see *note STOBJ-EXAMPLE-1::.
+
+
+File: acl2-doc-emacs.info,  Node: DECLARE-STOBJS,  Next: RESIZE-LIST,  Prev: STOBJ,  Up: STOBJ
+
+DECLARE-STOBJS    declaring a formal parameter name to be a single-threaded object
+
+When a defun uses one of its formals as a single-threaded object
+(stobj), the defun _must_ include a declaration that the formal is to
+be so used.  An exception is the formal "state," which if not declared
+as explained below, may still be used provided an appropriate global
+"declaration" is issued: see *note SET-STATE-OK::.
+
+If the formal in question is counters then an appropriate declaration is
+
+     (declare (xargs :stobjs counters))
+
+or, more generally,
+
+     (declare (xargs :stobjs (... counters ...)))
+
+where all the single-threaded formals are listed.
+
+For such a declaration to be legal it must be the case that all the
+names have previously been defined as single-threaded objects with
+defstobj.
+
+When an argument is declared to be single-threaded the guard of the
+function is augmented by conjoining to it the condition that the
+argument satisfy the recognizer for the single-threaded object.
+Furthermore, the syntactic checks done to enforce the legal use of
+single-threaded objects are also sufficient to allow these guard
+conjuncts to be automatically proved.
+
+The obvious question arises:  Why does ACL2 insist that you declare
+stobj names before using them in defuns if you can only declare names
+that have already been defined with defstobj?  What would go wrong if a
+formal were treated as a single-threaded object if and only if it had
+already been so defined?
+
+Suppose that one user, say Jones, creates a book in which counters is
+defined as a single-threaded object.  Suppose another user, Smith,
+creates a book in which counters is used as an ordinary formal
+parameter.  Finally, suppose a third user, Brown, wishes to use both
+books.  If Brown includes Jones' book first and then Smith's, then
+Smith's function treats counters as single-threaded.  But if Brown
+includes Smith's book first, the argument is treated as ordinary.
+
+ACL2 insists on the declaration to ensure that the definition is
+processed the same way no matter what the context.
+
+
+File: acl2-doc-emacs.info,  Node: RESIZE-LIST,  Next: STOBJ-EXAMPLE-1,  Prev: DECLARE-STOBJS,  Up: STOBJ
+
+RESIZE-LIST    list resizer in support of stobjs
+
+(Resize-list lst n default-value) takes a list, lst, and a desired
+length, n, for the result list, as well as a default-value to use for
+the extra elements if n is greater than the length of lst.
+
+Resize-list has a guard of t.  This function is called in the body of
+function, resize-<a> where <a> is an array field of a stobj.  See *Note
+STOBJ:: and see *note DEFSTOBJ::.
+

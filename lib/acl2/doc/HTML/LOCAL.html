@@ -1,0 +1,48 @@
+<html>
+<head><title>LOCAL.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LOCAL</h2>hiding an event in an encapsulation or book
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(local (defthm hack1
+         (implies (and (acl2-numberp x)
+                       (acl2-numberp y)
+                       (equal (* x y) 1))
+                  (equal y (/ x)))))<p>
+
+(local (defun double-naturals-induction (a b)
+         (cond ((and (integerp a) (integerp b) (&lt; 0 a) (&lt; 0 b))
+                (double-naturals-induction (1- a) (1- b)))
+               (t (list a b)))))
+<p>
+General Form:
+(local ev)
+</pre>
+
+where <code>ev</code> is an event form.  If the current default <a href="DEFUN-MODE.html">defun-mode</a>
+(see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) is <code>:</code><code><a href="LOGIC.html">logic</a></code> and <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is
+<code>nil</code> or <code>t</code>, then <code>(local ev)</code> is equivalent to <code>ev</code>.  But if
+the current default <a href="DEFUN-MODE.html">defun-mode</a> is <code>:</code><code><a href="PROGRAM.html">program</a></code> or if
+<code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, then <code>(local ev)</code> is a
+<code>no-op</code>.  Thus, if such forms are in the event list of an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> event or in a book, they are processed when the
+encapsulation or book is checked for admissibility in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode
+but are skipped when extending the host <a href="WORLD.html">world</a>.  Such <a href="EVENTS.html">events</a> are thus
+considered ``local'' to the verification of the encapsulation or
+book.  The non-local <a href="EVENTS.html">events</a> are the ones ``exported'' by the
+encapsulation or book.  See <a href="ENCAPSULATE.html">encapsulate</a> for a thorough
+discussion.  Also see <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a> for a discussion of
+a commonly encountered problem with such event hiding:  you can't
+make an event local if its presence is required to make sense of a
+non-local one.<p>
+
+Note that <a href="EVENTS.html">events</a> that change the default <a href="DEFUN-MODE.html">defun-mode</a>, and in fact any
+<a href="EVENTS.html">events</a> that set the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>, are disallowed inside
+the scope of <code>local</code>.  See <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

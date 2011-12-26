@@ -1,0 +1,94 @@
+<html>
+<head><title>FORWARD-CHAINING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>FORWARD-CHAINING</h2>make a rule to forward chain when a certain trigger arises
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:forward-chaining</code> rule might be
+built is:
+
+<pre>
+Example:
+(implies (and (p x) (r x))        when (p a) appears in a formula to be
+         (q (f x)))               simplified, try to establish (r a) and
+                                  if successful, add (q (f a)) to the
+                                  known assumptions
+</pre>
+
+To specify the triggering terms provide a non-empty list of terms
+as the value of the <code>:trigger-terms</code> field of the rule class object.
+<p>
+
+<pre>
+General Form:
+Any theorem, provided an acceptable triggering term exists.
+</pre>
+
+Forward chaining rules are generated from the corollary term as
+follows.  If that term has the form <code>(implies hyp concl)</code>, then the
+<code><a href="LET.html">let</a></code> expressions in <code>concl</code> (formally, lambda expressions) are expanded
+away, and the result is treated as a conjunction, with one forward
+chaining rule with hypothesis <code>hyp</code> created for each conjunct.  In the
+other case, where the corollary term is not an <code><a href="IMPLIES.html">implies</a></code>, we process
+it as we process the conclusion in the first case.<p>
+
+The <code>:trigger-terms</code> field of a <code>:forward-chaining</code> rule class object
+should be a non-empty list of terms, if provided, and should have
+certain properties described below.  If the <code>:trigger-terms</code> field is
+not provided, it defaults to the singleton list containing the
+``atom'' of the first hypothesis of the formula.  (The atom of
+<code>(not x)</code> is <code>x</code>; the atom of any other term is the term itself.)  If
+there are no hypotheses and no <code>:trigger-terms</code> were provided, an
+error is caused.<p>
+
+A triggering term is acceptable if it is not a variable, a quoted
+constant, a lambda application, a <code><a href="LET.html">let</a></code>-expression, or a
+<code><a href="NOT.html">not</a></code>-expression, and every variable symbol in the conclusion of the
+theorem either occurs in the hypotheses or occurs in the trigger.<p>
+
+<code>:Forward-chaining</code> rules are used by the simplifier before it begins
+to rewrite the literals of the goal.  (Forward chaining is thus carried
+out from scratch for each goal.)  If any term in the goal is an
+instance of a trigger of some forward chaining rule, we try to
+establish the hypotheses of that forward chaining theorem (from the
+negation of the goal).  To relieve a hypothesis we only use type
+reasoning, evaluation of ground terms, and presence among our known
+assumptions.  We do not use rewriting.  So-called free variables in
+hypotheses are treated specially; see <a href="FREE-VARIABLES.html">free-variables</a>.  If all hypotheses
+are relieved, we add the instantiated conclusion to our known assumptions.<p>
+
+<em>Caution</em>.  Forward chaining does not actually add terms to the goals
+displayed during proof attempts.  Instead, it extends an associated
+<em>context</em>, called ``assumptions'' in the preceding paragraph, that
+ACL2 builds from the goal currently being proved.  The context
+starts out with ``obvious'' consequences of the negation of the
+goal.  For example, if the goal is
+
+<pre>
+(implies (and (p x) (q (f x)))
+         (c x))
+</pre>
+
+then the context notes that <code>(p x)</code> and <code>(q (f x))</code> are non-<code>nil</code> and<p>
+
+<code>(c x)</code> is <code>nil</code>.  Forward chaining is then used to expand the context.
+For example, if a forward chaining rule has <code>(f x)</code> as a trigger term
+and has body <code>(implies (p x) (r (f x)))</code>, then the context is extended
+by binding <code>(r (f x))</code> to non-<code>nil</code>.  Note however that since <code>(r (f x))</code>
+is put into the context, not the goal, it is <em>not</em> further simplified.
+If <code>f</code> is an enabled nonrecursive function symbol then this forward
+chaining rule may well be useless, since calls of <code>f</code> may be expanded
+away.<p>
+
+Another common misconception is this:  Suppose that you forward
+chain and put <code>(&lt; (f x) (g x))</code> into the context.  Then does it go
+into the linear arithmetic data base?  Answer: no.  Alternative
+question: do we go looking for linear lemmas about <code>(g x)</code>?  Answer:
+no.  The linear arithmetic data base is built up by a process very
+similar to but independent of forward chaining.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

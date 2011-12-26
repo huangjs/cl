@@ -1,0 +1,48 @@
+<html>
+<head><title>Analyzing_Common_Lisp_Models.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>Analyzing Common Lisp Models</h2>
+<p>
+To analyze a model you must be able to reason about the operations
+and relations involved.  Perhaps, for example, some aspect of the
+model depends upon the fact that the concatenation operation is associative.<p>
+
+In any Common Lisp you can confirm that
+
+<pre>
+(app '(A B) (app '(C D) '(E F)))
+</pre>
+
+and
+
+<pre>
+(app (app '(A B) '(C D)) '(E F)))
+</pre>
+
+both evaluate to the same thing, <code>(A B C D E F)</code>.<p>
+
+But what distinguishes ACL2 (the logic) from applicative Common Lisp (the
+language) is that in ACL2 you can <b>prove</B> that the concatenation
+function <code>app</code> is associative when its arguments are true-lists,
+whereas in Common Lisp all you can do is test that proposition.<p>
+
+That is, in ACL2 it makes sense to say that the following
+formula is a ``theorem.''
+
+<pre>
+<b>Theorem</B> Associativity of App
+(implies (and (true-listp a)
+              (true-listp b))
+         (equal (app (app a b) c)
+                (app a (app b c))))
+</pre>
+<p>
+
+Theorems about the properties of models are proved by symbolically
+manipulating the operations and relations involved.  If the
+concatenation of sequences is involved in your model, then you may
+well need the theorem above in order to that your model has some
+particular property.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

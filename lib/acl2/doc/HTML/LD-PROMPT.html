@@ -1,0 +1,46 @@
+<html>
+<head><title>LD-PROMPT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-PROMPT</h2>determines the <a href="PROMPT.html">prompt</a> printed by <code><a href="LD.html">ld</a></code>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Ld-prompt</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor is
+<code>(ld-prompt state)</code> and the updater is <code>(set-ld-prompt val state)</code>.
+<code>Ld-prompt</code> must be either <code>nil</code>, <code>t</code>, or a function symbol that, when
+given an open output character channel and <a href="STATE.html">state</a>, prints the desired
+<a href="PROMPT.html">prompt</a> to the channel and returns two values: the number of
+<a href="CHARACTERS.html">characters</a> printed and the <a href="STATE.html">state</a>.  The initial value of <code>ld-prompt</code> is
+<code>t</code>.
+<p>
+The general-purpose ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>, reads forms from
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, evaluates them and prints the result to <code><a href="STANDARD-CO.html">standard-co</a></code>.
+However, there are various flags that control <code><a href="LD.html">ld</a></code>'s behavior and
+<code>ld-prompt</code> is one of them.  <code>Ld-prompt</code> determines whether <code><a href="LD.html">ld</a></code> prints a
+<a href="PROMPT.html">prompt</a> before reading the next form from <code><a href="STANDARD-OI.html">standard-oi</a></code>.  If <code>ld-prompt</code>
+is <code>nil</code>, <code><a href="LD.html">ld</a></code> prints no <a href="PROMPT.html">prompt</a>.  If <code>ld-prompt</code> is <code>t</code>, the default <a href="PROMPT.html">prompt</a>
+printer is used, which displays information that includes the
+current package, default <a href="DEFUN-MODE.html">defun-mode</a>, <a href="GUARD.html">guard</a> checking status (on or
+off), and <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code>; see <a href="DEFAULT-PRINT-PROMPT.html">default-print-prompt</a>.<p>
+
+If <code>ld-prompt</code> is neither <code>nil</code> nor <code>t</code>, then it should be a function
+name, <code>fn</code>, such that <code>(fn channel state)</code> will print the desired <a href="PROMPT.html">prompt</a>
+to <code>channel</code> in <code><a href="STATE.html">state</a></code> and return <code>(mv col state)</code>, where <code>col</code> is the
+number of <a href="CHARACTERS.html">characters</a> output (on the last line output).  You may
+define your own <a href="PROMPT.html">prompt</a> printing function.<p>
+
+If you supply an inappropriate <a href="PROMPT.html">prompt</a> function, i.e., one that
+causes an error or does not return the correct number and type of
+results, the following odd <a href="PROMPT.html">prompt</a> will be printed instead:
+
+<pre>
+Bad Prompt
+See :DOC ld-prompt&gt;
+</pre>
+
+which will lead you to this message.  You should either call <code><a href="LD.html">ld</a></code>
+appropriately next time or assign an appropriate value to
+<code>ld-prompt</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

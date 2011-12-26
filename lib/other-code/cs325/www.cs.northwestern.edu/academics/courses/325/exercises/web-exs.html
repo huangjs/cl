@@ -1,0 +1,771 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Lisp Web Exercises</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Lisp Web Exercises</DIV>
+
+<P>These exercises all involve use of the web, i.e.,
+HTTP and/or HTML. They assume you have 
+<a href="http://opensource.franz.com/aserve/">AllegroServe</a>
+or <a href="http://sourceforge.net/projects/portableaserve/">Portable AllegroServe</a>.</P>
+
+<p>Different exercises emphasize different Lisp skills. Some exercises can be
+done independently, others form a sequence.</p>
+
+<ul>
+<li><a href="#updater">File Updater</a>, 
+<a href="#parameters">with-request-parameters</a>
+<a href="#handler">Path Handlers</a>,
+<a href="#rpc-server">Lisp XML-RPC Services</a>, and
+<a href="#read-kb">reading OWL ontologies</a>
+are independent exercises.</li>
+
+<li><a href="#browser">Rule Browser</a>, <a href="#editor">Rule Editor</a>,
+<a href="#tester">Rule Tester</a>, <a href="#test-editor">Test Maker</a>,
+and <a href="#saver">Data Saver</a>.
+are a sequence of tasks, each depending on the previous one, though
+you can stop at any point.</li>
+</ul>
+
+
+<a name="updater"></a>
+<hr>
+<h2>Exercise: File Updater</h2>
+
+<p class="quote">Submit your entire code for this exercise as one submission. Run the
+Lisp Critic on your code before sending.</p>
+
+<P>A common problem with code libraries is keeping them
+up to date. One solution is to have an update function 
+that uses the web to check for and download new versions of 
+files. Two examples of this are
+<b>Windows Update</b> for Windows, and
+<a href="http://java.sun.com/products/javawebstart/">Web Start</a> for 
+Java applications. In this exercise, you'll write a file updater for Lisp.</p>
+
+<p>Define a function <span class="code-syntax">(update-file <em>file dir url</em>)</span> that 
+compares <em>file</em> in the 
+local directory <em>dir</em> against the version at <em>url</em>. 
+If there is no such file in <em>dir</em>, 
+or the file at <em>url</em> is newer, it should ask you if you want to 
+download the version at <em>url</em>. 
+If you say yes, it should copy the content of the 
+version at <em>url</em> to the 
+local directory <em>dir</em>.</p>
+
+<p>Example:</p>
+
+<blockquote><pre>(update-file "exercise-tests.lisp"
+   "c:/cs/cs325/code/"
+   "http://www.cs.northwestern.edu/academics/courses/325/programs/")</pre></blockquote>
+      
+<p>will replace</p>
+
+<blockquote><pre>c:/cs/cs325/code/exercise-tests.lisp</pre></blockquote>
+
+<p>with the contents of</p>
+
+<blockquote><pre>http://www.cs.northwestern.edu/academics/courses/325/programs/exercise-tests.lisp</pre></blockquote>
+
+<p>if it is newer.</p>
+
+<p>To do this, you need to learn how to:</p>
+
+<ul>
+<li>make pathnames and URL's in a portable way</li>
+<li>get a local file's last write date</li>
+<li>get a URL's last modified date</li>
+<li>parse and compare dates</li>
+<li>write the contents of a URL to a file</li>
+</ul>
+
+<p>Graham doesn't have a chapter on Lisp's file functions, but they're all described 
+briefly in the glossary, pp 371 - 379. Full details are in
+Chapters 19 - 21 of 
+<A HREF="http://www.lisp.org/HyperSpec/FrontMatter/index.html">the Common
+Lisp HyperSpec&#153;</A>.</p>
+
+<p>To get both the contents of a URL and information about the file that
+contains that content, use 
+AllegroServe's <code>do-http-request</code> function.</p>
+
+<p>You can get modification
+information <em>without</em> getting the entire file first, 
+using the HTTP <code>head</code>
+method instead of the default <code>get</code>:</p>
+
+<blockquote><pre>(net.aserve.client:do-http-request <em>url</em> :method :head)</pre></blockquote>
+
+<p>See <a href="http://opensource.franz.com/aserve/">the AServe documentation</a>
+and play with some examples in the Listener.</p>
+
+<p>To parse the date-time string you get from the web server, 
+don't reinvent the wheel and write your own parser. Use the date-time parser in
+<tt>date.lisp</tt> in the <a href="http://sourceforge.net/projects/clocc">the CLOCC Library</a>.
+(This is the library that has the XML parser we use.) 
+Look at the functions exported by that file, and read the comments,
+to find a function that parses dates and times.</p>
+
+<p>There are usually two ways that dates are represented in 
+in programming language:</p>
+
+<ul>
+<li>As an integer, representing the date and time as so many seconds or
+milliseconds from some standard base date</li>
+<li>As a data structure with fields for day, month, year, hours, minutes
+and second.</li>
+</ul>
+
+<p>The integer format is the simplest to use for comparing two date-times,
+or for calculating the difference between two date-times. Details
+on the standard representations of time in Common Lisp are in
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/25_ad.htm">the Hyperspec</a>.</p>
+
+<p>Test the function or functions you think you want to use from
+<tt>date.lisp</tt> in a listener window, using the
+date-time strings returned by the HTTP <code>head</code> method.
+Make sure the function you pick does what you want.</p>
+
+
+<a name="handler"></a>
+<hr>
+<h2>Exercise: Path Handlers</h2>
+
+<p class="quote">Submit your entire code for this exercise as one submission. 
+Include both <tt>define-path-handler</tt> and <tt>test-path-handler</tt>. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>When defining and publishing a function
+to respond to a URL, many of the same tasks occur over and over. For example,
+below is code for a web form that calls the Lisp Critic. I've 
+underlined patterns of code that are commonly repeated:</p>
+
+<blockquote><pre><u>(publish :path "/critic" :function 'critique-code)</u>
+
+(defun critique-code (req ent)    
+  <u>(with-http-response (req ent)</u>
+    <u>(with-http-body (req ent)</u>
+      (make-critique-page <u>(request-query-value "code" req)</u>))))
+
+(defun make-critique-page (text)
+  (html 
+   (:html
+    ...
+      ((:textarea :name "code" :rows 5 :cols 60)
+        <u>(unless (null text) (html (:princ text))</u>))))
+    ...
+      <u>(unless (null text)</u>
+        (html (:pre (:princ-safe (critique-code-string text)))))))
+   )))
+
+(defun critique-code-string (s)
+  <u>(let ((*read-eval* nil))</u>
+    ...
+    (critique-definition <u>(read-from-string s)</u>))
+    ...))</pre></blockquote>
+
+<p>While none of this is all that complex, it is tedious,
+and, in some cases, easy to get wrong, e.g., forgetting to
+set <code>*read-eval*</code> to <code>nil</code>, or forgetting
+to check for a request parameter value being null, before printing,
+or an empty string, before reading.</p>
+
+<p>On top of all this, you have to remember to define
+subfunctions, such as <code>make-critique-page</code>, so that you can test
+your code outside the context of responding to HTTP requests.
+You need an extra function because an AllegroServe request
+handler function needs a request and a response entity. 
+To test a request handler, you would need to create
+both kinds of objects, and these normally are created only by a 
+web server responding to a web client.</p>
+
+<p class="quote">What follows is one of many similar approaches for making
+web pages more testable and easier to define. Like all designs, it has
+strengths and weaknesses. If you think you have a better macro design, submit
+some examples of using the macro for approval. Once approved, implement
+your idea.</p>
+
+<p>A better way is to define</p>
+
+<ul>
+<li>a macro <code>define-path-handler</code> for defining web page code
+more simply</li>
+
+<li>a function <code>test-path-handler</code> for testing web page code
+without needing to run the web server</li>
+
+</ul>
+
+<p>I use the term <em>path handler</em> to distinguish these from AllegroServe's 
+request handler functions that require request and response entities.</p>
+
+<p>Here's an example use to <code>define-path-handler</code>:</p>
+
+<blockquote><pre>(define-path-handler "/critic" (code)
+  (html 
+   (:html
+    ...
+      ((:textarea :name "code" :rows 5 :cols 60)
+        <u>(when (text) (html (:princ (text :string))))</u>))))
+    ...
+      <u>(when (text)</u>
+        (html (:pre (:princ-safe (critique-code-string <u>(text :string)</u>)))))))
+   )))</pre></blockquote>
+   
+<p>In general, <code>define-path-handler</code> takes</p>
+
+<ul>
+<li>a path, the same as is given to <code>publish</code></li>
+
+<li>a list of zero or more <em>parameter accessors</em>,
+described below</li>
+
+<li>a body, i.e., a list of one or
+more expressions.</em>
+</ul>
+
+<p><code>define-path-handler</code> expands into code that 
+calls <code>publish</code> with 
+the given path, e.g., <code>/critic</code>, and the body, wrapped inside
+the standard <code>(with-http-response ... (with-http-body ...))</code>
+forms.
+</p>
+
+<p>In addition, the handler is stored so that it can be
+easily tested with <code>test-path-handler</code>.
+<code>test-path-handler</code></p>
+
+<ul>
+<li>takes a path and an a-list</li>
+
+<li>passes the a-list to the handler associated with the path</li>
+
+<li>returns a string containing all output sent by
+the handler to <code>*HTML-STREAM*</code></li>
+</ul>
+
+<p>For example, we could test our Lisp Critic with:</p>
+
+<blockquote><pre>> (test-path-handler "/critic"
+    '(("code" . "(defun foo (x) (setq x (+ x 1)))")))
+    
+"&lt;html>&lt;head>&lt;title>Lisp Critic&lt;/title>..."
+</pre></blockquote>
+
+<p>Inside the body of a path handler, the parameter accessors
+listed, e.g., <code>code</code>, are bound to <b>locally defined
+functions</b> that scan the association list returned
+by <code>request-query</code> for entries whose
+key, i.e., <code>CAR</code>,
+is <code>STRING-EQUAL</code> to the symbol's name.</p>
+
+<p>Parameter accessor functions take one argument, a keyword, for
+specifying in what form you want the parameter value:</p>
+
+<ul>
+<li><code>(<em>accessor</em> :string)</code> returns the first
+non-empty string value, or the empty string if there is none</li>
+
+<li><code>(<em>accessor</em> :strings)</code> returns a list of the non-empty string values for all
+matching entries</li>
+
+<li><code>(<em>accessor</em> :value)</code> returns the result of <em>safely reading</em>
+one value from the first non-empty string value</li>
+
+<li><code>(<em>accessor</em> :values)</code> returns a list of the results of <em>safely reading</em>
+all values from the non-empty string values for all matching entries</li>
+</ul>
+
+<p>The term <em>safely reading</em> means that</p>
+
+<ul>
+<li>null is returned, not an error, in the case of null and empty string values</li>
+
+<li>values are read from
+strings with <code>*READ-EVAL*</code> set to <code>NIL</code></li>
+</ul>
+
+<a name="rpc-server"></a>
+<hr>
+<h2>Exercise Name: Lisp XML-RPC Services</h2>
+
+<p class="quote">Submit your entire code for this exercise as one submission. 
+Include the test XML-RPC calls and results for both your Lisp client
+and whatever other client you used. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>Set up at least 3 potentially useful Lisp-based XML-RPC services, using 
+<a href="http://common-lisp.net/project/s-xml-rpc/">the S-XML-RPC library</a>.
+Do this only after you've read <a href="../readings/xml-rpc.html">my notes on S-XML-RPC</a> and have
+installed and tested that library.</p>
+
+<h3>Number Formatting Service</h3>
+
+<p>Lisp is unusual in providing, through <code>FORMAT</code>
+directives, the ability to format integers in 
+
+<ul>
+<li><strong>binary</strong>, e.g., 1574 as "110 0010 0110"</li>
+
+<li><strong>Roman numerals</strong>, e.g., 1574 as "MDLXXIV"</li>
+
+<li><strong>old style Roman numerals</strong>, e.g., 1574 as "MDLXXIIII"</li>
+
+<li><strong>English cardinals</strong>, e.g., 1547 
+as "one thousand five hundred and seventy-four"</li>
+
+<li><strong>English ordinals</strong>, e.g., 1547 
+as "one thousand five hundred and seventy-fourth"</li>
+</ul>
+
+<p>Define an XML-RPC method <code>lisp.formatNumber</code> that takes two arguments:</p>
+
+<ul>
+<li>a format style, either <tt>"binary"</tt>, <tt>"roman"</tt>, <tt>"old-roman"</tt>, <tt>"cardinal"</tt>, or
+<tt>"ordinal"</tt></li>
+
+<li>an integer</li>
+</ul>
+
+<p>and returns a string formatted accordingly.</p>
+
+<h3>Lisp Critic</h3>
+
+<p>Define an XML-RPC method <code>critic.critique</code> that takes one argument,
+a string containing Lisp code, e.g., <tt>"(defun foo (x) (setq x (+ x 1)))"</tt>,
+and returns a string (possibly empty) of Lisp critiques, as returned
+by the Lisp Critic.</p>
+
+<h3>A Service of Your Design</h3>
+
+<p>Define an XML-RPC method of your choice. Like the above examples,
+a good XML-RPC service is one that:</p>
+
+<ul>
+<li>involves modest amounts of data traffic</li>
+
+<li>requires modest computational requirements on the server</li>
+
+<li>would not be easily doable on the client without additional software</li>
+</ul>
+
+<h3>Implementing XML-RPC Methods</h3>
+
+<p>Implementing a service is relatively simple. You just need to define
+a function in the <code>s-xml-rpc-exports</code> package, like this:</p>
+
+<blockquote><pre>(defun s-xml-rpc-exports::|lisp.formatNumber| (...)
+ ...)</pre></blockquote>
+ 
+<p>The vertical bars force Lisp to preserve the camelcase function name,
+because that's the way XML-RPC methods are commonly named. Other than naming,
+an XML-RPC method is a normal Lisp function. The parameters
+should be kept simple, i.e., numbers, strings, and simple lists
+and structures, because of that's what the XML-RPC protocol allows.
+Similarly, the function should return either a number, string,
+simple list, or structure.</p>
+
+<p>"Structure" here means an XML-RPC structure,
+which is a list of name-value pairs. In S-XML-RPC client code
+in Lisp, you create an XML-RPC structure with
+<code class="code-syntax">(s-xml-rpc:xml-rpc-struct <em>key value key value ...</em>)</code>.
+In XML-RPC server code in Lisp, you get at parts of an XML-RPC
+structure with 
+<code class="code-syntax">(s-xml-rpc:get-xml-rpc-struct-member <em>struct key</em>)</code>.
+
+<h3>Testing XML-RPC Methods</h3>
+
+<p>Test this code by starting the server, using</p>
+
+<blockquote><pre>(setq *xml-server* (start-xml-rpc-server :port 8080))</pre></blockquote>
+
+<p>We store the name of the server in <code>*xml-server*</code> so
+that we can easily stop it later.</p>
+
+<p>Then call your three XML-RPC methods, with different arguments, <em>with
+at least two different clients</em>. One client should be Lisp, e.g.,</p>
+
+<blockquote><pre>> (xml-rpc-call (encode-xml-rpc-call "lisp.formatNumber" "roman" 1574) :port 8080)
+"MDLXXIV"</pre></blockquote>
+
+<p class="quote">If no <tt>:host</tt> argument is given, <tt>XML-RPC-CALL</tt>
+assumes <tt>localhost</tt>.</p>
+
+<p>The other client can be anything you want, e.g., Perl, Python, C++, Java, etc.
+A number of examples in various languages is given at 
+<a href="http://www.tldp.org/HOWTO/XML-RPC-HOWTO/">the XML-RPC How To site</a>,
+and there is also
+<a href="http://www.xmlrpc.com/directory/1568/implementations">a long list of implementations of XML-RPC</a>.
+</p>
+
+<p>If you want to use Python or
+Java, see <a href="../readings/xml-rpc.html#testing-xml-rpc">my XML RPC testing notes</a>. In that
+case, an example Java call to test the format code might be:</p>
+
+<blockquote><pre><span class="input">java -jar xml-rpc-test.jar http://localhost:8080/RPC2 lisp.formatNumber roman 1574</span>
+MDLXXIV</pre></blockquote>
+
+<p>When you're done, for safety, be sure to stop the XML-RPC server, with</p>
+
+<blockquote><pre>(stop-server *xml-server*)</pre></blockquote>
+
+<a name="browser"></a>
+<hr>
+<h2>Exercise Name: Rule Browser</h2>
+
+<p class="quote">Submit your entire code for this exercise as one submission. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>Fairly simple <a href="http://www.htmlhelp.com/reference/html40/">HTML</a>
+and <a href="http://www.htmlhelp.com/reference/css/">CSS</a>
+can be used to make a very nice web-based interface for browsing knowledge bases.
+For example, here's a browsing interface I've built for the Lisp Critic's
+rule base:</p>
+
+<p style="text-align:center">
+<img src="../images/critic-browse1.gif" alt="critic browser v1" />
+</p>
+
+<p class="quote">This and other screen shots 
+are to clarify what needs to be built. Feel free to do something 
+you think it would be better. If, however,
+you have a drastically different interface design in mind, 
+<b>get it approved first</b> by submitting a description
+of it, with a Subject line such as <tt>Proposed Rule Editor Interface</tt>.
+</p>
+
+<p>Using AServe and 
+<a href="http://opensource.franz.com/aserve/aserve-dist/doc/htmlgen.html">the HTML generator macro</a>, 
+create a dynamic web page
+that displays the names and response format strings for all of
+the critiquing rules in the Lisp Critic, similar to the output shown
+in the example image. Use the function <code>get-pattern-names</code>
+in the Lisp Critic package to get the set of Lisp rule names. 
+</p>
+
+
+<a name="editor"></a>
+<hr>
+<h2>Exercise Name: Rule Editor</h2>
+
+<p class="quote">Submit your entire code for this exercise as one submission. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>It would be nice to have a web-based editor
+for creating and modifying the rules in the Lisp Critic.
+This would allow users to edit the knowledge base at 
+any time from any place. We'd probably want 
+some form of login to control who can do this, but we
+won't do that in these exercises.
+</p>
+
+<p>A good way to design real software is to start
+with <a href="http://en.wikipedia.org/wiki/Use_case">use cases</a>.
+Even simple systems will usually have at least
+half a dozen use cases. We'll pick just one here:</p>
+
+<div class="use-case">
+<h4>Lisp Critic Rule Editor Use Case: Edit a Rule</h4>
+
+<ul>
+<li>The user begins editing by selecting a rule from
+a list of rules displayed by the system.</li>
+
+<li>The system displays the rule in a simple form, including
+the rule's pattern, message string, and test cases.</li>
+
+<li>The user modifies one or more fields of the form.
+In response, the system shows how the rule performs on the test cases.
+</li>
+
+<li>The user tells the system to save the changes.</li>
+</ul>
+</div>
+
+<p>A use case describes <strong>functionality</strong>
+not interface or implementation. There are many ways
+to implement the above use case. I have built my
+own solution to this problem. To do the first step,
+where users select a rule to edit, I made a small change to 
+<a href="#browser">the Rule Browser</a> so that the rule
+names became links that, when clicked on, opened a
+Rule Editor page with that rule's data. The new
+Rule Browser page looks like this:</p>
+
+<p style="text-align:center">
+<img alt="Rule Browser V2)" src="../images/critic-browse2.gif">
+</p>
+
+<p>Clicking on any rule name takes you to a page for editing
+that rule that looks like this:</p>
+
+<p style="text-align:center">
+<img alt="Rule Browser V2)" src="../images/critic-edit1.gif">
+</p>
+
+<p>The user can change the text in one or more fields of the form.
+When the user clicks <span class="button">Save</span>, the rule
+in memory is updated with the modified fields. (I used   
+the <code>add-lisp-pattern</code>
+function in the <code>lisp-critic</code> package. Note that if the
+user changes the name, then I also have to remove the old rule,
+using <code>remove-lisp-pattern</code>.)</p>
+
+<p>The user can test her changes, <em>after saving the changes</em>, by
+clicking the
+<span class="button">Run Lisp Critic</span> button to go
+to the Lisp Critic web page (as defined by 
+<a href="../programs/test-aserve.lisp">test-aserve.lisp</a>), 
+and trying some examples. (The next exercise is about
+a much better way to test changes.)</p>
+
+<p>Note: making rule names into links is not very hard. For example,
+in my sample solution, here's the HTML my Lisp code generates
+for the <code>CAR-CDR</code> table entry:</p>
+
+<blockquote><pre>&lt;tr>
+&lt;th>&lt;a href="/critic/edit?rule=CAR-CDR">CAR-CDR&lt;/a>&lt;/th>
+&lt;td>Use CADR ...&lt;/td>
+&lt;/tr></pre></blockquote>
+
+<p>I use AServe to map the URL <tt>/critic/edit</tt> to a Lisp function that generates
+the rule editing page, and that page uses the value of the <code>rule</code>
+request parameter to determine what rule to show.</p>
+
+<a name="parameters"></a>
+<hr>
+<h2>Exercise: <tt>with-request-parameters</tt></h2>
+
+<p class="quote">Submit your code for
+<tt>with-request-parameters</tt> as one submission. Include
+at least one example of real usage of this macro. One good place
+to use this macro is when
+defining your <a href="#editor">Rule Editor</a> function.
+Run the
+Lisp Critic on your code before sending.</p>
+
+<p>While it's easy to get a single request parameter
+with <code>request-query-value</code> and put it in a local variable,
+things quickly become tedious if you have to get four or five such values, 
+and convert all or most of the string values 
+to Lisp numbers, symbols or lists.
+</p>
+
+<p>This is where a macro can make code much more readable and
+maintainable. There are many possible macro designs. The one given here
+is fairly simple yet flexible. Define</p>
+
+<blockquote><pre class="code-syntax">
+(with-request-parameters (<em>var-spec</em><sub>1</sub> <em>var-spec</em><sub>2</sub> ...)
+     <em>request</em>
+  <em>exp</em><sub>1</sub> 
+  <em>exp</em><sub>2</sub> 
+  ...)  
+</pre></blockquote>
+
+<p>to expand into code that evaluates the expressions, with local variables
+bound to values from <em>request</em>, as specified by the 
+<em>var-spec</em>'s. A <em>var-spec</em> can be either a 
+list of the form <span class="code-syntax">(<em>
+name function</em> [ <em>default-value</em> ])</span>, or a simple
+name, which is equivalent to the list 
+<span class="code-syntax">(<em>name</em> safe-read)</span>.
+</p>
+
+<a name="tester"></a>
+<hr>
+<h2>Exercise: Rule Tester</h2>
+
+<p class="quote">Submit all your <b>new</b> code for this exercise as one submission. Put your
+test cases first, followed by the code you added or changed to run
+the test cases. Don't send code that was unchanged, or modified in
+only minor ways. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>Manually testing changes to rules using the Lisp Critic
+is both tedious and unlikely to be very complete. A much better way is
+to maintain a database of examples for each rule and re-test
+the rule against that database whenever the rule is changed.
+</p>
+
+<p>With any kind of pattern-based rules, we need two kinds
+of examples: <b>positive</b> cases that the rules should match, and 
+<b>negative</b> cases that
+the rules should not match.</p>
+
+<p>For this exercise, create a small file with 
+positive and negative test cases for
+two or three rules, represented in some simple form of your
+design. Load this file into your Lisp.</p>
+
+<p>Define a function 
+<span class="code-syntax">(rule-ok-p <em>name</em>)</span>
+that returns true if and only if the rule named 
+matches all its positive test cases, and none of its
+negative test cases. Use <code>apply-critique-rule</code>
+in the Lisp Critic package to see if a rule 
+matches a piece of code.</p>
+
+<p>Change the <a href="#editor">Rule Editor</a> page to display all the test cases
+in a readable way, with all the rules that fail clearly marked.
+This will make it easy for a user to see which cases are and are
+not working.</p>
+
+<p>
+Change the <a href="#browser">Rule Browser</a> page to similarly mark all rules
+that fail one or more of their test cases. This will make it
+easy for a user to see which rules have problems.</p>
+
+<p>In my sample solution, I created several test cases for
+the <code>CAR-CDR</code> rule, including one positive case that it does not
+currently catch. Here's how I did show the test case results on my 
+Rule Editor page:</p>
+
+<a name="edit2"></a>
+<p style="text-align:center">
+<img alt="Rule Browser V2)" src="../images/critic-edit2.gif">
+</p>
+
+<p>Here's how I changed my Rule Browser to show that <code>CAR-CDR</code>
+is not passing all its test cases:</p>
+
+<p style="text-align:center">
+<img alt="Rule Browser V2)" src="../images/critic-browse3.gif">
+</p>
+
+<a name="test-editor"></a>
+<hr>
+<h2>Exercise: Test Editor</h2>
+
+<p class="quote">Submit all your <b>new</b> code for this exercise as one submission. 
+Don't send code that was unchanged, or modified in
+only minor ways. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>Add a page for editing test cases. This means displaying the existing
+tests cases in a form, with a way to edit or delete any test, plus a
+way to add a new test.</p>
+
+<p>Change your <a href="#editor">Rule Editor</a> page to have buttons to let you edit
+the test cases for the rule being edited. Note that in 
+<a href="#edit2">my sample solution</a>, I put separate <span class="button">Edit Test List</span>
+buttons on positive and negative test cases, but this is not
+a requirement. It may not even be a good idea!</p>
+
+
+<a name="saver"></a>
+<hr>
+<h2>Exercise: Data Saver</h2>
+
+<p class="quote">Submit all your <b>new</b> code for this exercise as one submission. 
+Don't send code that was unchanged, or modified in
+only minor ways. Run the
+Lisp Critic on your code before sending.</p>
+
+<p>Right now, all of the changes your editor makes are 
+only changes to the rules and test cases in memory. When
+you exit your Lisp code, all your changes are lost.
+To make the changes permanent, the changes need to be
+saved to a file.</p>
+
+<p>Add a <span class="button">Make Changes Permanent</span>
+button to both the Rule Browser and Rule Editor. Clicking this
+button should cause your Lisp code to write both the rules
+and the test cases out to whatever file they were loaded from.
+The rules should be written in one file, 
+using <code>define-lisp-pattern</code>
+forms. The test cases should be written in a separate file,
+using whatever Lisp form you feel is appropriate.
+</p>
+
+<p class="quote">Because it's quite likely you're going to
+make mistakes writing files, always keep a backup copy of
+your rules and test cases files.</p>
+
+<HR>
+<h2><a name="read-kb"></a>Exercise: Reading OWL Ontologies</h2>
+
+<p>This is an "exercise-in-progress." The basic idea is to 
+define a function that can convert 
+<a href="http://www.w3.org/TR/owl-features/">OWL</a> ontologies, such as the
+ones available at
+<a href="http://www.schemaweb.info/">SchemaWeb</a>,
+into machine-usable knowledge.</p>
+
+<p>Specifically, define a function <code>(read-kb-from-url <em>url</em>)</code>
+to return a list of assertions suitable for feeding to the 
+<code>init-kb</code> function in the <a href="../readings/ddr.html">Deductive Retriever</a>.  
+</p>
+
+<p>
+Ontologies are mostly about class relationships
+and class restrictions on predicates, e.g., that the actor of
+a "tell" has to be some kind of intelligent agent.
+These relationships can be captured and used in the 
+Deductive Retriever as backchaining rules. For example, to say that
+tree is a subclass of plant, we make tree and plant predicates, and say
+</p>
+
+<blockquote><pre>(tell '(&lt;- (plant ?x) (tree ?x))</pre></blockquote>
+
+<p>Similarly, if we wanted to say that buyers are humans,</p>
+
+<blockquote><pre>(tell '(&lt;- (human ?x) (buy ?x ?y))</pre></blockquote>
+
+<p>From these rules, if the system hears about someone buying a tree, it can
+infer that a human bought a plant.</p>
+
+<p>Here's an example of possible output in this form for one simple
+OWL ontology at SchemaWeb:</p>
+
+<blockquote><pre>> (pprint (read-kb-from-url "http://pervasive.semanticweb.org/ont/2004/01/agent"))
+
+<em>... harmless warnings about entities being redefined ...</em>
+
+((&lt;- (AGENT ?X) (DESIRES ?X ?Y))
+ (&lt;- (STATE-CONDITION ?Y) (DESIRES ?X ?Y))
+ (&lt;- (AGENT ?X) (INTENDS ?X ?Y))
+ (&lt;- (ACTION ?Y) (INTENDS ?X ?Y))
+ (&lt;- (AGENT ?X) (BELIEVES ?X ?Y))
+ (&lt;- (FACT ?Y) (BELIEVES ?X ?Y))
+ (&lt;- (ACTION ?X) (OBJECT ?X ?Y))
+ (&lt;- (TARGET-OBJECT ?Y) (OBJECT ?X ?Y))
+ (&lt;- (ACTION ?X) (EFFECT ?X ?Y))
+ (&lt;- (ACTION-EFFECT ?Y) (EFFECT ?X ?Y))
+ (&lt;- (STATEMENT ?X) (FACT ?X)))</pre></blockquote>
+ 
+<p>Make your code modular. Most of your functions should be very short
+and well-named and re-usable. The one annoyingly messy part
+is converting RDF strings into readable Lisp symbols, e.g., 
+<tt>"ActionEffect"</tt> into <tt>action-effect</tt>,
+<tt>"#Agent"</tt> into <tt>agent</tt>, and 
+<tt>"&amp;rdfs;fact"</tt> into <tt>fact</tt>. One way to do
+this is to adapt Graham's buffer reading code, but that's not very pretty
+code.</p>
+
+<p>Use <tt>net.aserve.client:do-http-request</tt> 
+from <a href="../admin/current-quarter/assignment3.html">Assignment 3</a> to access the URL,
+and the CLOCC XML parser from 
+<a href="../admin/current-quarter/assignment4.html">Assignment 4</a> to parse the XML.</tt>
+</p>
+
+<p>Final warning: start simple. The agent ontology is pretty small
+and doesn't do any complicated. But full OWL (even OWL Lite) can 
+have all kinds of nested relationships.</p>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

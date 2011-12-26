@@ -1,0 +1,201 @@
+<html>
+<head><title>WELL-FOUNDED-RELATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WELL-FOUNDED-RELATION</h2>show that a relation is well-founded on a set
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:well-founded-relation</code> rule might be
+built is as follows.  (Of course, the functions <code>pairp</code>, <code>lex2p</code>, and
+<code>ordinate</code> would have to be defined first.)
+
+<pre>
+Example:
+(and (implies (pairp x) (o-p (ordinate x)))
+     (implies (and (pairp x)
+                   (pairp y)
+                   (lex2p x y))
+              (o&lt; (ordinate x) (ordinate y))))
+</pre>
+
+The above example establishes that <code>lex2p</code> is a well-founded
+relation on <code>pairp</code>s.  We explain and give details below.
+<p>
+Exactly two general forms are recognized:
+
+<pre>
+General Forms
+(AND (IMPLIES (mp x) (O-P (fn x)))              ; Property 1
+     (IMPLIES (AND (mp x)                       ; Property 2
+                   (mp y)
+                   (rel x y))
+              (O&lt; (fn x) (fn y)))),
+</pre>
+
+or
+
+<pre>
+(AND (O-P (fn x))                               ; Property 1
+     (IMPLIES (rel x y)                         ; Property 2
+              (O&lt; (fn x) (fn y))))
+</pre>
+
+where <code>mp</code>, <code>fn</code>, and <code>rel</code> are function symbols, <code>x</code> and <code>y</code> are distinct
+variable symbols, and no other <code>:well-founded-relation</code> theorem about
+<code>fn</code> has been proved.  When the second general form is used, we act as
+though the first form were used with <code>mp</code> being the function that
+ignores its argument and returns <code>t</code>.  The discussion below therefore
+considers only the first general form.<p>
+
+Note: We are very rigid when checking that the submitted formula is
+of one of these forms.  For example, in the first form, we insist
+that all the conjuncts appear in the order shown above.  Thus,
+interchanging the two properties in the top-level conjunct or
+rearranging the hyptheses in the second conjunct both produce
+unrecognized forms.  The requirement that each <code>fn</code> be proved
+well-founded at most once ensures that for each well-founded
+relation, <code>fn</code>, there is a unique <code>mp</code> that recognizes the domain on
+which <code>rel</code> is well-founded.  We impose this requirement simply so
+that <code>rel</code> can be used as a short-hand when specifying the
+well-founded relations to be used in definitions; otherwise the
+specification would have to indicate which <code>mp</code> was to be used.<p>
+
+<code>Mp</code> is a predicate that recognizes the objects that are supposedly
+ordered in a well-founded way by <code>rel</code>.  We call such an object an
+``<code>mp</code>-measure'' or simply a ``measure'' when <code>mp</code> is understood.
+Property 1 tells us that every measure can be mapped into an ACL2
+ordinal.  (See <a href="O-P.html">o-p</a>.)  This mapping is performed by <code>fn</code>.
+Property 2 tells us that if the measure <code>x</code> is smaller than the
+measure <code>y</code> according to <code>rel</code> then the image of <code>x</code> under <code>fn</code> is a smaller
+than that of <code>y</code>, according to the well-founded relation <code><a href="O_lt_.html">o&lt;</a></code>.
+(See <a href="O_lt_.html">o&lt;</a>.)  Thus, the general form of a
+<code>:well-founded-relation</code> formula establishes that there exists a
+<code>rel</code>-order preserving embedding (namely via <code>fn</code>) of the <code>mp</code>-measures
+into the ordinals.  We can thus conclude that <code>rel</code> is well-founded on
+<code>mp</code>-measures.<p>
+
+Such well-founded relations are used in the admissibility test for
+recursive functions, in particular, to show that the recursion
+terminates.  To illustrate how such information may be used,
+consider a generic function definition
+
+<pre>
+(defun g (x) (if (test x) (g (step x)) (base x))).
+</pre>
+
+If <code>rel</code> has been shown to be well-founded on <code>mp</code>-measures, then <code>g</code>'s
+termination can be ensured by finding a measure, <code>(m x)</code>, with the
+property that <code>m</code> produces a measure:
+
+<pre>
+(mp (m x)),                                     ; Defun-goal-1
+</pre>
+
+and that the argument to <code>g</code> gets smaller (when measured by <code>m</code> and
+compared by <code>rel</code>) in the recursion,
+
+<pre>
+(implies (test x) (rel (m (step x)) (m x))).    ; Defun-goal-2
+</pre>
+
+If <code>rel</code> is selected as the <code>:well-founded-relation</code> to be used in the
+definition of <code>g</code>, the definitional principal will generate and
+attempt to prove <code>defun-goal-1</code> and <code>defun-goal-2</code> to justify <code>g</code>.  We
+show later why these two goals are sufficient to establish the
+termination of <code>g</code>.  Observe that neither the ordinals nor the
+embedding, <code>fn</code>, of the <code>mp</code>-measures into the ordinals is involved in
+the goals generated by the definitional principal.<p>
+
+Suppose now that a <code>:well-founded-relation</code> theorem has been proved
+for <code>mp</code> and <code>rel</code>.  How can <code>rel</code> be ``selected as the
+<code>:well-founded-relation</code>'' by <code><a href="DEFUN.html">defun</a></code>?  There are two ways.
+First, an <code><a href="XARGS.html">xargs</a></code> keyword to the <code><a href="DEFUN.html">defun</a></code> event allows the
+specification of a <code>:well-founded-relation</code>.  Thus, the definition
+of <code>g</code> above might be written
+
+<pre>
+(defun g (x)
+ (declare (xargs :well-founded-relation (mp . rel)))
+ (if (test x) (g (step x)) (base x)))
+</pre>
+
+Alternatively, <code>rel</code> may be specified as the
+<code>:default-well-founded-relation</code> in <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> by
+executing the event
+
+<pre>
+(set-default-well-founded-relation rel).
+</pre>
+
+When a <code><a href="DEFUN.html">defun</a></code> event does not explicitly specify the relation in its
+<code><a href="XARGS.html">xargs</a></code> the default relation is used.  When ACL2 is initialized, the
+default relation is <code><a href="O_lt_.html">o&lt;</a></code>.<p>
+
+Finally, though it is probably obvious, we now show that
+<code>defun-goal-1</code> and <code>defun-goal-2</code> are sufficient to ensure the
+termination of <code>g</code> provided <code>property-1</code> and <code>property-2</code> of <code>mp</code> and <code>rel</code>
+have been proved.  To this end, assume we have proved <code>defun-goal-1</code>
+and <code>defun-goal-2</code> as well as <code>property-1</code> and <code>property-2</code> and we show
+how to admit <code>g</code> under the primitive ACL2 definitional principal
+(i.e., using only the ordinals).  In particular, consider the
+definition event
+
+<pre>
+(defun g (x)
+ (declare (xargs :well-founded-relation o&lt;
+                 :measure (fn (m x))))
+ (if (test x) (g (step x)) (base x)))
+</pre>
+
+Proof that <code>g</code> is admissible:  To admit the definition of <code>g</code> above we
+must prove
+
+<pre>
+(o-p (fn (m x)))                        ; *1
+</pre>
+
+and
+
+<pre>
+(implies (test x)                               ; *2
+         (o&lt; (fn (m (step x))) (fn (m x)))).
+</pre>
+
+But *1 can be proved by instantiating <code>property-1</code> to get
+
+<pre>
+(implies (mp (m x)) (o-p (fn (m x)))),
+</pre>
+
+and then relieving the hypothesis with <code>defun-goal-1</code>, <code>(mp (m x))</code>.<p>
+
+Similarly, *2 can be proved by instantiating <code>property-2</code> to get
+
+<pre>
+(implies (and (mp (m (step x)))
+              (mp (m x))
+              (rel (m (step x)) (m x)))
+         (o&lt; (fn (m (step x))) (fn (m x))))
+</pre>
+
+and relieving the first two hypotheses by appealing to two
+instances of <code>defun-goal-1</code>, thus obtaining
+
+<pre>
+(implies (rel (m (step x)) (m x))
+         (o&lt; (fn (m (step x))) (fn (m x)))).
+</pre>
+
+By chaining this together with <code>defun-goal-2</code>,
+
+<pre>
+(implies (test x)
+         (rel (m (step x)) (m x)))
+</pre>
+
+we obtain *2.  Q.E.D.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

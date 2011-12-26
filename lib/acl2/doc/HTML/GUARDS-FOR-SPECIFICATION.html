@@ -1,0 +1,66 @@
+<html>
+<head><title>GUARDS-FOR-SPECIFICATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARDS-FOR-SPECIFICATION</h3>guards as a specification device
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+A use of guard verification that has nothing to do with efficiency
+is as a way to gain confidence in specifications.  This use has the
+feel of ``types'' in many traditional <a href="PROGRAMMING.html">programming</a> languages, though
+guards allow much greater expressiveness than most systems of types
+(and unfortunately, as a result they are not syntactically
+checkable).<p>
+
+For more discussion of guards in general, see <a href="GUARD.html">guard</a>.
+<p>
+Suppose you have written a collection of function definitions that
+are intended to specify the behavior of some system.  Perhaps
+certain functions are only intended to be called on certain sorts of
+inputs, so you attach guards to those functions in order to
+``enforce'' that requirement.  And then, you verify the guards for
+all those functions.<p>
+
+Then what have you gained, other than somewhat increased efficiency
+of execution (as explained above), which quite possibly isn't your
+main concern?  You have gained the confidence that when evaluating
+any call of a (specification) function whose arguments satisfy that
+function's guard, all subsequent function calls during the course of
+evaluation will have this same property, that the arguments satisfy
+the guard of the calling function.  In logical terms, we can say
+that the equality of the original call with the returned value is
+provable from weakened versions of the definitions, where each
+definitional axiom is replaced by an implication whose antecedent is
+the requirement that the arguments satisfy the guard and whose
+consequent is the original axiom.  For example,
+
+<pre>
+(defun foo (x)
+  (declare (xargs :guard (consp x)))
+  (cons 1 (cdr x)))
+</pre>
+
+originally generates the axiom
+
+<pre>
+(equal (foo x)
+       (cons 1 (cdr x)))
+</pre>
+
+but in fact, when evaluation involves no guard violation then the
+following weaker axiom suffices in the justification of the
+evaluation.
+
+<pre>
+(implies (consp x)
+         (equal (foo x)
+                (cons 1 (cdr x))))
+</pre>
+
+If you are following links to read this documentation as a hypertext
+style document, then please see <a href="GUARD-MISCELLANY.html">guard-miscellany</a>.  This
+concludes our discussion of guards with miscellaneous remarks, and
+also contains pointers to related topics.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<html>
+<head><title>NOTE-2-9.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9</h2>ACL2 Version  2.9 (October, 2004) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+
+<pre>
+<strong>TABLE OF CONTENTS.</strong><br>
+
+==============================
+BUG FIXES.
+NEW FUNCTIONALITY.
+CHANGES IN PROOF ENGINE.
+GUARD-RELATED CHANGES.
+PROOF-CHECKER CHANGES.
+SYSTEM-LEVEL CHANGES.
+BOOK CHANGES.
+MISCELLANEOUS CHANGES.
+==============================
+</pre>
+<p>
+
+<strong>BUG FIXES.</strong><p>
+
+We fixed a soundness bug due to a conflict between user-supplied package
+names and internal package names (obtained by prepending a Lisp constant,
+<code>*1*-package-prefix*</code>) and user-supplied package names.  For example, the
+form <code>(defpkg "ACL2_*1*_MYPKG" ())</code> is no longer legal.  Thanks to Robert
+Krug for asking a question that led directly to the discovery of this bug.<p>
+
+We fixed a soundness bug that allows <code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions to call
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  The fix furthermore prevents functions
+with <a href="GUARD.html">guard</a>s verified from calling functions with guards not verified.
+We had thought we already prevented all this, but there was a problem with
+the interaction of <code><a href="LOCAL.html">local</a></code> definitions and redundancy checking
+(see <a href="REDUNDANT-EVENTS.html">redundant-events</a>).<p>
+
+We fixed a soundness bug that could occur when built-in functions were called
+during macroexpansion (a hole in so-called ``safe-mode'').<p>
+
+Fixed a minor bug in system functions <code>genvar1</code> and <code>genvar</code>, where
+<code><a href="EQ.html">eq</a></code> had been used in place of <code><a href="EQL.html">eql</a></code>.  This bug was discovered during
+the plugging of a hole in safe-mode, mentioned just above.<p>
+
+We fixed handling of the <code>:inline</code> keyword for <code><a href="DEFSTOBJ.html">defstobj</a></code>, which
+previously could cause raw Lisp errors in OpenMCL and CMU Common Lisp.
+Thanks to John Matthews for bringing this issue to our attention.<p>
+
+Calls of <code><a href="INCLUDE-BOOK.html">include-book</a></code> could result in a state for which some function
+definitions were not compiled that should have been.  The result could be
+performance degradation or even stack overflows.  This situation could arise
+in the following two ways.
+<blockquote><p>
+
+o Inclusion of a book with an absolute pathname that differs from the
+absolute pathname at certification time, presumably because of the use of
+soft links.  Thanks to Bob Boyer and Warren Hunt for bringing a stack
+overflow to our attention that led us to this fix.<p>
+
+o Large <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nests (more than 20 functions) are executed
+in a superior book.<p>
+
+</blockquote>
+
+We fixed some performance bugs that can increase the speed of
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> calls by a factor of close to 2.  Thanks to Eric Smith for
+asking if we could speed up <code><a href="INCLUDE-BOOK.html">include-book</a></code> processing; we have done so in
+the past, but primarily focusing on large <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nests (which
+have nothing in particular to do with the current improvements).  Also,
+thanks to Rob Sumners for a very useful remark early in the process that kept
+us from drawing an incorrect conclusion at that point.<p>
+
+We fixed <code>:</code><code><a href="PL.html">pl</a></code> so that it can be run on a form that returns multiple
+values, which it could not do previouslly.  Thanks to Eric Smith for pointing
+out this problem.<p>
+
+Fixed a bug in the Allegro ACL2 trace utility (see <a href="TRACE$.html">trace$</a>) that was causing
+``<code>10&gt;</code>'' to be printed as ``<code>9&gt;</code>'', ``<code>11&gt;</code>'' to be printed as
+``<code>10 &gt;</code>'', ``<code>12&gt;</code>'' to be printed as ``<code>11 &gt;</code>'', and so on.<p>
+
+Fixed a <a href="PROOF-CHECKER.html">proof-checker</a> bug that was preventing the use of the <code>DV</code>
+command (or a numerical command) on <code><a href="LET.html">let</a></code> expressions.  Thanks to Bill
+Young for pointing out this problem.<p>
+
+Fixed a bug in a comment on how to set <code>ACL2_BOOKS_DIR</code> in the makefile.
+Thanks to Dave Greve for pointing out this problem.<p>
+
+Fixed a potential soundness bug in the linear arithmetic routines.  Thanks to
+Jared Davis for noticing this problem and to Robert Krug for implementing the
+fix.  (Technical details: We had been assuming that polynomials were being
+normalized -- see the definition of good-polyp in linear-a.lisp -- but this
+assumption was false.)<p>
+
+When the macro <code><a href="OPEN-TRACE-FILE.html">open-trace-file</a></code> is opened twice in succession, it now
+automatically closes the first trace output channel before opening another.<p>
+
+It is now possible to use <code>make</code> to build ACL2 on Windows systems that
+support <code>make</code>.  Thanks to Pete Manolios and Mike Thomas for pointing out
+the problem, to Jared Davis and Mike for helping us to analyze the problem,
+and to Jared for testing the fix.<p>
+
+Fixed a bug in the <a href="GUARD.html">guard</a> of <code><a href="WITH-OUTPUT.html">with-output</a></code> that was causing a
+needless guard violation.<p>
+
+<strong>NEW FUNCTIONALITY.</strong><p>
+
+The new events <code><a href="ADD-DEFAULT-HINTS.html">add-default-hints</a></code> and <code><a href="REMOVE-DEFAULT-HINTS.html">remove-default-hints</a></code> allow
+one to append to or subtract from the current list of default hints.  The
+event <code><a href="SET-DEFAULT-HINTS.html">set-default-hints</a></code> continues to set the list of default hints,
+discarding the previous value of the <code><a href="DEFAULT-HINTS.html">default-hints</a></code>.  Note that
+<code><a href="SET-DEFAULT-HINTS.html">set-default-hints</a></code> is still <code><a href="LOCAL.html">local</a></code> to the <code><a href="ENCAPSULATE.html">encapsulate</a></code> or book
+in which it occurs, and <code><a href="ADD-DEFAULT-HINTS.html">add-default-hints</a></code> has the same property,
+although neither is implemented any longer using the
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>.  New events <code><a href="ADD-DEFAULT-HINTS_bang_.html">add-default-hints!</a></code>,
+<code><a href="REMOVE-DEFAULT-HINTS_bang_.html">remove-default-hints!</a></code>, and <code><a href="SET-DEFAULT-HINTS_bang_.html">set-default-hints!</a></code> are the same as
+<code><a href="ADD-DEFAULT-HINTS.html">add-default-hints</a></code>, <code><a href="REMOVE-DEFAULT-HINTS.html">remove-default-hints</a></code>, and
+<code><a href="SET-DEFAULT-HINTS.html">set-default-hints</a></code>, respectively, except that the former three events
+are not <code><a href="LOCAL.html">local</a></code> to their enclosing <code><a href="ENCAPSULATE.html">encapsulate</a></code> or book.  Thanks to
+Jared Davis for suggesting these enhancements.<p>
+
+OpenMCL's tracing routines have been modified in a similar manner as those
+of Allegro CL.  Thanks to Robert Krug for providing this enhancement.<p>
+
+Guard-checking can now be caused to happen on recursive calls.
+See ``GUARD-RELATED CHANGES'' below for details.<p>
+
+Advanced users can now inhibit compilation of so-called ``*1* functions''
+with the <code>:comp</code> command; see <a href="COMP.html">comp</a>.  Thanks to Rob Sumners for suggesting
+this enhancement.<p>
+
+Added new legal argument <code>hard?</code> for the <code><a href="ER.html">er</a></code> macro, which is now
+documented.  See <a href="ER.html">er</a>.  Thanks to Rob Sumners for a discussion leading to this
+change.  Also, the three legal first arguments to <code><a href="ER.html">er</a></code> -- <code>hard</code>,
+<code>hard?</code>, and <code>soft</code> -- may now be in any package (thanks to Jared Davis
+for bringing this issue to our attention).<p>
+
+We have removed the requirement that for a rule's hypothesis
+<code>(bind-free term var-list)</code>, at least one variable must occur free in
+<code>term</code>.  For example, the expression <code>(bind-free (bind-divisor a b) (x))</code>
+was legal because <code>a</code> and <code>b</code> occur free in <code>(bind-divisor a b)</code>; but
+<code>(bind-free (foo (bar)) (x))</code> was not legal.  The latter is no longer
+disallowed. (Technical note: this allows <code><a href="BIND-FREE.html">bind-free</a></code> to be used to create
+explicit substitutions in metafunction hypotheses.)<p>
+
+The following two enhancements have been implemented for rules of class
+<code>:</code><code><a href="META.html">meta</a></code>.  Thanks to Eric Smith for requesting more control of
+reasoning with <code>:</code><code><a href="META.html">meta</a></code> rules, which led to these enhancements, and to
+him and Robert Krug for helpful discussions.
+<blockquote><p>
+
+o It is now possible to control backchaining in rules of class
+<code>:</code><code><a href="META.html">meta</a></code> by providing a <code>:backchain-limit-lst</code> argument, as was
+already allowed for rules of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> and <code>:</code><code><a href="LINEAR.html">linear</a></code>.
+See <a href="RULE-CLASSES.html">rule-classes</a>.  However, unlike those other two rule classes, the value
+for <code>:backchain-limit-lst</code> is prohibited from being a non-empty list; it
+must be either <code>nil</code> or a non-negative integer.<p>
+
+o (For advanced users.) It is now legal for hypothesis metafunctions to
+generate, in essense, calls of <code><a href="SYNTAXP.html">syntaxp</a></code> and <code><a href="BIND-FREE.html">bind-free</a></code>, handled
+essentially as they are handled in hypotheses of <code>:</code><code><a href="REWRITE.html">rewrite</a></code> and
+<code>:</code><code><a href="LINEAR.html">linear</a></code> rules.  We say ``essentially'' primarily because both
+<code><a href="SYNTAXP.html">syntaxp</a></code> and <code><a href="BIND-FREE.html">bind-free</a></code> are actually macros, but hypothesis
+metafunctions must generate translated terms (see <a href="TERM.html">term</a>).  The enterprising
+advanced user can call <code>:</code><code><a href="TRANS.html">trans</a></code> to see examples of translated terms
+corresponding to calls of <code><a href="SYNTAXP.html">syntaxp</a></code> and <code><a href="BIND-FREE.html">bind-free</a></code>.<p>
+
+</blockquote>
+A new command <code>:</code><code><a href="TRANS_bang_.html">trans!</a></code> has been added, which is like
+<code>:</code><code><a href="TRANS.html">trans</a></code> except that <code>:</code><code><a href="TRANS_bang_.html">trans!</a></code> ignored issues of
+single-threadedness.  See <a href="TRANS_bang_.html">trans!</a>.  Thanks to Eric Smith for suggesting this
+addition.<p>
+
+The <code>:</code><code><a href="PF.html">pf</a></code> command now works when the argument is the name of a macro
+associated with a function by <a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a>.<p>
+
+<strong>CHANGES IN PROOF ENGINE.</strong><p>
+
+The simplifier has been changed slightly in order to avoid using
+<a href="FORWARD-CHAINING.html">forward-chaining</a> facts derived from a literal (essentially, a top-level
+hypothesis or conclusion) that has been rewritten.  As a practical matter,
+this may mean that the user should not expect forward-chaining to take place
+on a term that can be rewritten for any reason (generally function expansion
+or application of rewrite rules).  Formerly, the restriction was less severe:
+forward-chaining facts from a hypothesis could be used as long as the
+hypothesis was not rewritten to <code>t</code>.  Thanks to Art Flatau for providing an
+example that led us to make this change; see the comments in source function
+<code>rewrite-clause</code> for details.<p>
+
+The rewriter has been modified to work slightly harder in relieving
+hypotheses.  Thanks to Eric Smith for providing an example that inspired the
+following, which illustrates the issue.  Suppose we introduce functions
+<code>foo</code> and <code>bar</code> with the (non-<code><a href="LOCAL.html">local</a></code>) properties shown below.
+
+<pre>
+ (encapsulate
+  (((foo *) =&gt; *)
+   ((bar *) =&gt; *))<p>
+
+  (local (defun foo (x) (declare (ignore x)) t))
+  (local (defun bar (x) (declare (ignore x)) t))<p>
+
+  (defthm foo-holds
+    (implies x
+             (equal (foo x) t)))
+  (defthm bar-holds-propositionally
+    (iff (bar x) t)))
+</pre>
+
+Consider what happens when ACL2's rewriter is used to prove the following
+theorem.
+
+<pre>
+(thm (foo (bar y)))
+</pre>
+
+With ACL2's inside-out rewriting, <code>(bar y)</code> is first considered, but
+rewrite rule <code>bar-holds-propositionally</code> does not apply because the context
+requires preserving equality, not mere Boolean (<code>iff</code>) equivalence.  Then
+the rewriter moves its attention outward and sees the term <code>(foo (bar y))</code>.
+It attempts to apply the rule <code>foo-holds</code>, in a context created by binding
+its variable <code>x</code> to the term <code>(bar y)</code>.  It then attempts to relieve the
+hypothesis <code>x</code> of rule <code>foo-holds</code> in that context.  Before this change,
+ACL2 basically assumed that since rewriting was inside out, then <code>(bar y)</code>
+had already been rewritten as much as possible, so the rewrite of <code>x</code> in
+the aforementioned context (binding <code>x</code> to <code>(bar y)</code>) simply returned
+<code>(bar y)</code>, and the attempt to relieve the hypothesis of <code>foo-holds</code>
+failed.  The change is essentially for ACL2's rewriter to make a second pass
+through the rewriter when the attempt fails to rewrite a variable to <code>t</code>,
+this time using the fact that we are in a Boolean context.  (We mention that
+source function <code>rewrite-solidify-plus</code> implements this idea, for those who
+want to dig deeply into this issue.)  In our example, that means that the
+rewriter considers <code>(bar y)</code> in a Boolean context, where it may apply the
+rule <code>bar-holds-propositionally</code> to relieve the hypothesis successfully.<p>
+
+When <code>(</code><code><a href="SET-NON-LINEARP.html">set-non-linearp</a></code><code> t)</code> has been executed,
+<a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a> can now be applied in some cases for which it
+previously was not.  Thanks to Robert Krug for supplying this modification
+and to Julien Schmaltz for providing a motivating example.<p>
+
+We modified the rewriter to avoid certain infinite loops caused by an
+interaction of the opening of recursive functions with equality reasoning.
+(This change is documented in detail in the source code, in particular
+functions <code>rewrite-fncall</code> and <code>fnstack-term-member</code>.)  Thanks to Fares
+Fraij for sending us an example that led us to make this change.<p>
+
+The <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of function <code><a href="HIDE.html">hide</a></code> is now disabled
+when ACL2 starts up.  This removes an anomoly, for example that
+
+<pre>
+(thm (not (equal 1 (* (hide 0) a))))
+</pre>
+
+succeeded while
+
+<pre>
+(thm (equal (foo (equal 1 (* (hide 0) a))) (foo nil)))
+</pre>
+
+failed.  Now both fail.<p>
+
+The theory <code>*s-prop-theory*</code> is no longer used by the <i>proof-checker</i>;
+it has been replaced by <code>(theory '</code><code><a href="MINIMAL-THEORY.html">minimal-theory</a></code>.  We have left
+the constant <code>*s-prop-theory*</code> defined in the source code in support of
+existing books, however.  This change eliminates annoying theory warnings
+printed upon invocation of <a href="PROOF-CHECKER.html">proof-checker</a> commands <code>s-prop</code>, <code>sl</code>,
+and <code>split</code>.<p>
+
+Terms are now kept in an internal form that avoids calls of primitive
+functions (built-ins without explicit definitions; see code for <code>cons-term</code>
+for details), in favor of the constants that result from evlaluating those
+calls.  So for example, the internal form for <code>(cons 1 2)</code> is
+<code>(quote (1 . 2))</code>.  This change was made at around the same time as changes
+in support of <code><a href="BIND-FREE.html">bind-free</a></code>; see above.  One consequence is that the
+splitting of goals into cases (technically, source function <code>clausify</code> and
+even more technically, source function <code>call-stack</code>) has been modified,
+which can cause subgoal numbers to change.<p>
+
+<strong>GUARD-RELATED CHANGES.</strong><p>
+
+Guard-checking can now be caused to happen on recursive calls, where this was
+formerly not the case for <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions and, perhaps more
+important, for <code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions whose <a href="GUARD.html">guard</a>s have not
+been verified.  Moreover, a warning is printed when ACL2 does not rule out
+the exclusion of guard-checking on recursive calls.  See <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.
+Thanks to David Rager for bringing this issue to our attention, and to Rob
+Sumners and the Univ. of Texas ACL2 seminar in general for their feedback.<p>
+
+Guard violations are reported with less of the offending term hidden.  Thanks
+to Jared Davis for suggesting that we look at this issue.<p>
+
+<strong>PROOF-CHECKER CHANGES.</strong><p>
+
+We fixed the <a href="PROOF-CHECKER.html">proof-checker</a> so that diving works as you might expect for
+a macro call <code>(op a b c)</code> representing <code>(binary-op a (binary-op b c))</code>.
+In the past, if the current term was of the form <code>(append t1 t2 t3)</code>, then
+<code>(DV 3)</code> (and <code>3</code>) would dive to <code>t3</code> even though the corresponding
+function call is <code>(binary-append t1 (binary-append t2 t3))</code>.  This is still
+the case, but now this behavior holds for any macro associated with a
+function in <code><a href="BINOP-TABLE.html">binop-table</a></code> (see <a href="ADD-BINOP.html">add-binop</a>).  Moreover, users can now
+write customized diving functions; see <a href="DIVE-INTO-MACROS-TABLE.html">dive-into-macros-table</a>, and also see
+<code>books/misc/rtl-untranslate.lisp</code> for example calls to
+<code><a href="ADD-DIVE-INTO-MACRO.html">add-dive-into-macro</a></code>.  Of course, the old behavior can still be obtained
+using the <a href="PROOF-CHECKER.html">proof-checker</a>'s <code>DIVE</code> command; see <a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a>.<p>
+
+The <code>runes</code> command in the <a href="PROOF-CHECKER.html">proof-checker</a> now shows only the <a href="RUNE.html">rune</a>s
+used by the most recent primitive or macro command (as shown by <code>:comm</code>),
+unless it is given a non-<code>nil</code> argument.  Also, <a href="PROOF-CHECKER.html">proof-checker</a> command
+<code>lemmas-used</code> has been added as, in essence, an alias for <code>runes</code>.<p>
+
+(The following two items are also mentioned above under ``BUG FIXES.'')<p>
+
+Fixed a <a href="PROOF-CHECKER.html">proof-checker</a> bug that was preventing the use of the <code>DV</code>
+command (or a numerical command) on <code><a href="LET.html">let</a></code> expressions.  Thanks to Bill
+Young for pointing out this problem.<p>
+
+The theory <code>*s-prop-theory*</code> is no longer used by the <i>proof-checker</i>;
+it has been replaced by <code>(theory '</code><code><a href="MINIMAL-THEORY.html">minimal-theory</a></code>.  We have left
+the constant <code>*s-prop-theory*</code> defined in the source code in support of
+existing books, however.  This change eliminates annoying theory warnings
+printed upon invocation of <a href="PROOF-CHECKER.html">proof-checker</a> commands <code>s-prop</code>, <code>sl</code>,
+and <code>split</code>.<p>
+
+<strong>SYSTEM-LEVEL CHANGES.</strong><p>
+
+Fixed a problem with building ACL2 on CMUCL in some systems (source function
+<code>save-acl2-in-cmulisp</code>).  Thanks to Bill Pase for bringing this to our
+attention.<p>
+
+The installation instructions have been extended to include instructions for
+building on GCL in Mac OS X.  Thanks to Jun Sawada and Camm Maguire.<p>
+
+Initial pre-allocation of space has been updated for GCL to reflect more
+current GCL executables (we considered GCL 2.6.1-38).  This can help avoid
+running out of memory for large ACL2 sessions.<p>
+
+The main <code>Makefile</code> has been replaced by <code>GNUmakefile</code>, in order to
+enforce the use of GNU <code>make</code>.  If you use another <code>make</code> program, you'll
+get an error message that may help you proceed.<p>
+
+(GCL only) SGC is no longer turned on for GCL 2.6 sub-versions through 2.6.3
+if <code>si::*optimize-maximum-pages*</code> is bound to <code>T</code>, due to an apparent
+issue with their interaction in those sub-versions.  Also, we have eliminated
+preallocation for all versions after 2.6.1 because GCL doesn't need it
+(comments are in source function <code>save-acl2-in-akcl</code>).  Thanks to Camm
+Maguire for excellent GCL help and guidance, and to Camm and Bob Boyer for
+useful discussions.<p>
+
+We have removed support for so-called ``small'' images.  Thus,
+<code>:</code><code><a href="DOC.html">doc</a></code>, <code>:</code><code><a href="PE.html">pe</a></code> and <code>:</code><code><a href="PC.html">pc</a></code>, <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code>,
+and other commands are fully supported in ACL2 saved images.  Because of this
+and other changes in the generation of the so-called ``*1*'' logical
+functions, related to guards (as described above in -GUARD-RELATED CHANGES'',
+and related to the discussion of safe-mode in ``BUG FIXES'' above), image
+sizes have increased substantially.<p>
+
+We no longer <code>time</code> or run ``<code>nice</code>'' the certification of individual
+books.  The file <code>books/Makefile-generic</code> had done these by default, and
+some individual distributed and workshop book directories had <code>Makefile</code>s
+that did so as well.  Thanks to Mike Thomas, who pointed out the lack of
+<code>nice</code> on some Windows systems (and we decided on this simple solution).
+Overall targets in <code>books/Makefile</code> still <code>time</code> their runs by default,
+and the partiular <code>time</code> program is now controlled by a <code>Makefile</code>
+variable.<p>
+
+Failures during <code>make certify-books</code> or <code>make regression</code> now show up
+in the log as ``<code>**CERTIFICATION FAILED**</code>'', regardless of the operating
+system (as long as it supports <code>make</code>).  Formerly, one searched for
+``<code>**</code>'' but this did not appear in openMCL runs.<p>
+
+We have eliminated ``Undefined function'' warnings that could occur in
+OpenMCL.<p>
+
+<strong>BOOK CHANGES.</strong><p>
+
+Reconciled the definitions of <code>firstn</code> in <code>book/misc/csort.lisp</code>,
+<code>books/bdd/bdd-primitives.lisp</code>,
+<code>books/ordinals/ordinal-definitions.lisp</code>, and
+<code>books/data-structures/list-defuns.lisp</code>.  Thanks to Ray Richards for
+bringing this issue to our attention.<p>
+
+Distributed book <code>books/misc/defpun</code> now can handle <a href="STOBJ.html">stobj</a>s where it
+did not previously.  Thanks to John Matthews for bringing this issue to our
+attention.<p>
+
+The "make" variable <code>COMPILE_FLG</code> in file <code>books/Makefile-generic</code>
+formerly only had an effect if there was a <code>cert.acl2</code> file present.  That
+oversight has been remedied.<p>
+
+File <code>"books/arithmetic/certify.lsp"</code> was missing a <code><a href="CERTIFY-BOOK.html">certify-book</a></code>
+command for <code>"natp-posp"</code>.  Thanks to John Cowles for noticing this
+deficiency and supplying a fix.  (This file is of use to those who want to
+certify the <code>"books/arithmetic/"</code> books without using <code>"make"</code>.)<p>
+
+A few small changes have been made to <code>"books/rtl/rel4"</code>.<p>
+
+Small changes were made to books <code>misc/symbol-btree</code> and
+<code>misc/rtl-untranslate</code>.  In particular, the definition of <code>symbol-btreep</code>
+was strengthened.<p>
+
+We made a minor fix to <code>books/ordinals/e0-ordinal.lisp</code>, adding
+<code>(verify-guards ob+)</code> and hence <code>(verify-guards ocmp)</code> as well.  This was
+necessitated by the fix prohibiting functions with guards verified from
+calling functions with guards not verified (see also the related discussion
+under ``BUG FIXES'' above).<p>
+
+<strong>MISCELLANEOUS CHANGES.</strong><p>
+
+Further sped up processing of large <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nests (extending
+what was done for Version_2.7), perhaps by a factor of two in some cases.<p>
+
+As promised in Version_2.5 (see <a href="NOTE-2-5.html">note-2-5</a>), structured pathnames are no
+longer supported.  So for example, the argument to <code><a href="INCLUDE-BOOK.html">include-book</a></code> must
+now be a string constant.<p>
+
+Some documentation has been improved, for <a href="STOBJ.html">stobj</a>s thanks to suggestions
+by John Matthews and much of the rest thanks to feedback from Eric Smith.<p>
+
+The function <code><a href="CURRENT-PACKAGE.html">current-package</a></code> is now available to users (it has been
+taken off the list of so-called ``untouchables'').  Thanks to Jared Davis for
+bringing this issue to our attention.<p>
+
+The documentation for topic <a href="USING-COMPUTED-HINTS-7.html">using-computed-hints-7</a> has been improved.
+Thanks to Doug Harper and Eric Smith for inspiring this improvement.<p>
+
+We added several symbols to <code>*acl2-exports*</code>: <code><a href="CW.html">cw</a></code>, <code><a href="ER.html">er</a></code>,
+<code><a href="INTERN$.html">intern$</a></code>, <code><a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a></code>, and <code><a href="SET-DIFFERENCE-EQ.html">set-difference-eq</a></code>.
+Thanks to Jared Davis for suggesting most of these.<p>
+
+Now, a <code><a href="TABLE.html">table</a></code> event that sets the value for a key,
+<code>(table tbl key val :put)</code>, is redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>) when it
+does not change the value associated with an existing key of the table.  In
+particular, <code><a href="DEFINE-PC-MACRO.html">define-pc-macro</a></code> is now fully redundant when it does not
+change an existing <a href="PROOF-CHECKER.html">proof-checker</a> macro-command definition.  Thanks to
+Bill Young for bringing the latter issue to our attention.<p>
+
+The definitions of unused system functions <code>ev-w</code> and <code>ev-w-lst</code> have
+been deleted.<p>
+
+ACL2 now prints a warning if a <code><a href="DEFPKG.html">defpkg</a></code> event introduces a package name
+with lower-case letters, since there is opportunity for later confusion in
+that case.  Thanks to Frederic Peschanski for bringing this problem to our
+attention and Sandip Ray for encouragement.<p>
+
+ACL2 now works in Version 19 of CMU Common Lisp.<p>
+
+The function <code><a href="SYS-CALL.html">sys-call</a></code> has been modified so that for ACL2 built on
+Allegro Common Lisp in Unix or Linux, the existing environment is used.
+Thanks to Erik Reeber for bringing this issue to our attention.<p>
+
+The function <code><a href="DISABLEDP.html">disabledp</a></code> can now be given a macro name that has a
+corresponding function; see <a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a>.  Also, <code><a href="DISABLEDP.html">disabledp</a></code> now
+has a <a href="GUARD.html">guard</a> of <code>t</code> but causes a hard error on an inappropriate
+argument.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

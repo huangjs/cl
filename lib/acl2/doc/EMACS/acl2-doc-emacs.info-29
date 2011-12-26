@@ -1,0 +1,1529 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: SET-INHIBIT-OUTPUT-LST,  Next: SET-LD-REDEFINITION-ACTION,  Prev: SET-GUARD-CHECKING,  Up: OTHER
+
+SET-INHIBIT-OUTPUT-LST    control output
+
+     Examples:
+     (set-inhibit-output-lst '(warning))
+     (set-inhibit-output-lst '(proof-tree prove proof-checker))
+     :set-inhibit-output-lst (proof-tree prove)
+     
+     General Form:
+     (set-inhibit-output-lst lst)
+
+where lst is a form (which may mention state) that evaluates to a list
+of names, each of which is the name of one of the following "kinds" of
+output produced by ACL2.
+
+       error          error messages
+       warning        warnings other than those related to soundness
+       warning!       warnings (of all degrees of importance)
+       observation    observations
+       prove          commentary produced by the theorem prover
+       proof-checker  commentary produced by the proof-checker
+       event          non-proof commentary produced by events such as defun
+                      and encapsulate
+       expansion      commentary produced by make-event expansion
+       summary        the summary at the successful conclusion of an event
+       proof-tree     proof-tree output
+
+It is possible to inhibit each kind of output by putting the
+corresponding name into lst.  For example, if 'warning is included in
+(the value of) lst, then no warnings are printed except those related
+to soundness, e.g., the inclusion of an uncertified book.  Note that
+proof-tree output is affected by set-inhibit-output-lst; see *note
+PROOF-TREE::.
+
+Printing of events on behalf of certify-book, encapsulate, or defstobj
+is inhibited when both 'event and 'prove belong to lst.  Otherwise,
+printing of events is controlled by the ld special ld-pre-eval-print.
+
+
+File: acl2-doc-emacs.info,  Node: SET-LD-REDEFINITION-ACTION,  Next: SET-LD-SKIP-PROOFSP,  Prev: SET-INHIBIT-OUTPUT-LST,  Up: OTHER
+
+SET-LD-REDEFINITION-ACTION    See *Note LD-REDEFINITION-ACTION::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-LD-SKIP-PROOFSP,  Next: SET-PRINT-CLAUSE-IDS,  Prev: SET-LD-REDEFINITION-ACTION,  Up: OTHER
+
+SET-LD-SKIP-PROOFSP    See *Note LD-SKIP-PROOFSP::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-PRINT-CLAUSE-IDS,  Next: SET-RAW-MODE,  Prev: SET-LD-SKIP-PROOFSP,  Up: OTHER
+
+SET-PRINT-CLAUSE-IDS    cause subgoal numbers to be printed when 'prove output is inhibited
+
+     General Forms:
+     (set-print-clause-ids t)
+     :set-print-clause-ids t
+     (set-print-clause-ids nil)
+     :set-print-clause-ids nil
+
+This command affects output from the theorem prover only when 'prove
+output is inhibited; see *note SET-INHIBIT-OUTPUT-LST::.  Calling this
+macro with value t as shown above will cause subsequent proof attempts
+with 'prove output inhibited to print the subgoal number, so that you
+can see the progress of the proof; value nil reverts to the default
+behavior, where this is not the case.  On a related note, we point out
+that you can cause output to be saved for later display; see *note
+PSO:: and see *note PSO!::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-RAW-MODE,  Next: SET-RAW-MODE-ON!,  Prev: SET-PRINT-CLAUSE-IDS,  Up: OTHER
+
+SET-RAW-MODE    enter or exit ``raw mode,'' a raw Lisp environment
+
+ACL2 users often find its careful syntax checking to be helpful during
+code development.  Sometimes it is even useful to do code development in
+:logic mode, where ACL2 can be used to check termination of (mutually)
+recursive functions, verify guards, or even prove properties of the
+functions.
+
+However, loading code using include-book is much slower than using
+Common Lisp load in raw Lisp, and in this sense ACL2 can get in the way
+of efficient execution.  Unfortunately, it is error-prone to use ACL2
+sources (or their compilations) in raw Lisp, primarily because a number
+of ACL2 primitives will not let you do so.  Perhaps you have seen this
+error message when trying to do so:
+
+     HARD ACL2 ERROR in ACL2-UNWIND-PROTECT:  Apparently you have tried
+     to execute a form in raw Lisp that is only intended to be executed
+     inside the ACL2 loop.
+
+Even without this problem it is important to enter the ACL2 loop (see
+*note LP::), for example in order to set the cbd and (to get more
+technical) the readtable.
+
+ACL2 provides a "raw mode" for execution of raw Lisp forms.  In this
+mode, include-book reduces essentially to a Common Lisp load.  More
+generally, the ACL2 logical world is not routinely extended in raw mode
+(some sneaky tricks are probably required to make that happen).  To
+turn raw mode off or on:
+
+     :set-raw-mode t   ; turn raw mode on
+     :set-raw-mode nil ; turn raw mode off
+
+* Menu:
+
+* ADD-RAW-ARITY:: add arity information for raw mode
+
+* REMOVE-RAW-ARITY:: remove arity information for raw mode
+
+The way you can tell that you are in raw mode is by looking at the
+prompt (see *note DEFAULT-PRINT-PROMPT::), which uses a capital "P"
+(suggesting something like program mode, but more so).
+
+     ACL2 P>
+
+Typical benefits of raw mode are fast loading of source and compiled
+files and the capability to hack arbitrary Common Lisp code in an
+environment with the ACL2 sources loaded (and hence with ACL2
+primitives available).  In addition, ACL2 hard errors will put you into
+the Lisp debugger, rather than returning you to the ACL2 loop, and this
+may be helpful for debugging; see *note HARD-ERROR:: and see *note
+ILLEGAL::, but also see *note BREAK-ON-ERROR::.  However, it probably
+is generally best to avoid raw mode unless these advantages seem
+important.  We expect the main benefit of raw mode to be in deployment
+of applications, where load time is much faster than the time required
+for a full-blown include-book, although in certain cases the fast
+loading of books and treatment of hard errors discussed above may be
+useful during development.
+
+Raw mode is also useful for those who want to build extensions of ACL2.
+For example, the following form can be put into a certifiable book to
+load an arbitrary Common Lisp source or compiled file.
+
+     (progn! (defttag my-application)
+             (set-raw-mode t)
+             (load "some-file"))
+
+Also see with-raw-mode defined in books/misc/hacker.lisp, see *note
+DEFTTAG::, and see *note PROGN!::.
+
+Below are several disadvantages to raw mode.  These should discourage
+users from using it for general code development, as :program mode is
+generally preferable.
+
+     -- Forms are in essence executed in raw Lisp.  Hence:
+        -- Syntax checking is turned off; and
+        -- Guard checking is completely disabled.
+     -- Table events, including logic, are ignored, as are many
+        other events, including defthm and comp.
+     -- Soundness claims are weakened for any ACL2 session in which raw
+        mode was ever entered; see *note DEFTTAG::.
+     -- The normal undoing mechanism (see *note UBT::) is not supported.
+
+We conclude with some details.
+
+_Printing results_.  The rules for printing results are unchanged for
+raw mode, with one exception.  If the value to be printed would contain
+any Lisp object that is not a legal ACL2 object, then the print routine
+is used from the host Lisp, rather than the usual ACL2 printing
+routine.  The following example illustrates the printing used when an
+illegal ACL2 object needs to be printed.  Notice how that "command
+conventions" are observed (see *note LD-POST-EVAL-PRINT::); the "[Note"
+occurs one space over in the second example, and no result is printed
+in the third example.
+
+     ACL2 P>(find-package "ACL2")
+     [Note:  Printing non-ACL2 result.]
+     #<The ACL2 package>
+     ACL2 P>(mv nil (find-package "ACL2") state)
+      [Note:  Printing non-ACL2 result.]
+     #<The ACL2 package>
+     ACL2 P>(mv t (find-package "ACL2") state)
+     ACL2 P>(mv 3 (find-package "ACL2"))
+     [Note:  Printing non-ACL2 result.]
+     (3 #<The ACL2 package>)
+     ACL2 P>
+
+If you have trouble with large structures being printed out, you might
+want to execute appropriate Common Lisp forms in raw mode, for example,
+(setq *print-length* 5) and (setq *print-level* 5).
+
+_Packages_.  Raw mode disallows the use of defpkg.  If you want to
+create a new package, first exit raw mode with :set-raw-mode nil; you
+can subsequently re-enter raw mode with :set-raw-mode t if you wish.
+
+
+File: acl2-doc-emacs.info,  Node: ADD-RAW-ARITY,  Next: REMOVE-RAW-ARITY,  Prev: SET-RAW-MODE,  Up: SET-RAW-MODE
+
+ADD-RAW-ARITY    add arity information for raw mode
+
+Technical note: This macro is a no-op, and is not necessary, when ACL2
+is built with #-acl2-mv-as-values.
+
+Users of raw mode (see *note SET-RAW-MODE::) can use arbitrary raw Lisp
+functions that are not known inside the usual ACL2 loop.  In such
+cases, ACL2 may not know how to display a multiple value returned by
+ACL2's mv macro.  The following example should make this clear.
+
+     ACL2 P>(defun foo (x y) (mv y x))
+     FOO
+     ACL2 P>(foo 3 4)
+     
+     Note: Unable to compute number of values returned by this evaluation
+     because function FOO is not known in the ACL2 logical world.  Presumably
+     it was defined in raw Lisp or in raw mode.  Returning the first (perhaps
+     only) value for calls of FOO.
+     4
+     ACL2 P>(add-raw-arity foo 2)
+      RAW-ARITY-ALIST
+     ACL2 P>(foo 3 4)
+     (4 3)
+     ACL2 P>
+
+The first argument of add-raw-arity should be a symbol, representing the
+name of a function, macro, or special form, and the second argument
+should either be a non-negative integer (denoting the number of values
+returned by ACL2) or else the symbol :LAST, meaning that the number of
+values returned by the call is the number of values returned by the last
+argument.
+
+The current arity assignments can be seen by evaluating (@
+raw-arity-alist).  See *Note REMOVE-RAW-ARITY:: for how to undo a call
+of add-raw-arity.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-RAW-ARITY,  Prev: ADD-RAW-ARITY,  Up: SET-RAW-MODE
+
+REMOVE-RAW-ARITY    remove arity information for raw mode
+
+Technical note: This macro is a no-op, and is not necessary, when ACL2
+is built with #-acl2-mv-as-values.
+
+The form (remove-raw-arity fn) undoes the effect of an earlier
+(remove-raw-arity fn val).  See *Note ADD-RAW-ARITY::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-RAW-MODE-ON!,  Next: SET-SAVED-OUTPUT,  Prev: SET-RAW-MODE,  Up: OTHER
+
+SET-RAW-MODE-ON!    enter ``raw mode,'' a raw Lisp environment
+
+This is the same as (set-raw-mode t) except that it first introduces a
+so-called "trust tag" ("ttag") so that set-raw-mode will be legal.  See
+*Note DEFTTAG:: for a discussion of ttags and how they affect
+certify-book and include-book.
+
+
+File: acl2-doc-emacs.info,  Node: SET-SAVED-OUTPUT,  Next: SET-TAINTED-OKP,  Prev: SET-RAW-MODE-ON!,  Up: OTHER
+
+SET-SAVED-OUTPUT    save proof output for later display with :pso or :pso!
+
+     Examples:
+     (set-saved-output t t)    ; save proof output for later, but inhibit it now
+     (set-saved-output :all t) ; same as the line above
+     :set-saved-output t t     ; same as the two lines above
+     (set-saved-output t nil)  ; save proof output for later, but print it now too
+     (set-saved-output nil t)  ; do not save proof output, and print it now
+     (set-saved-output nil nil); do not save or inhibit output
+     (set-saved-output nil :normal)  ; default: do not save output, and only
+                                     ; inhibit proof-tree output
+     
+     General Form:
+     (set-saved-output save-flg inhibit-flg)
+
+Parameter save-flg is t or :all to cause output to be saved for later
+display using pso or pso!; see *note PSO:: and see *note PSO!::, and
+see the documentation for proof-checker commands of the same names.  Set
+save-flg to nil to turn off this feature; except, it always stays on in
+proof-checker sessions entered with verify.  The other argument,
+inhibit-flg, controls whether output should be inhibited when it is
+created (normally, during a proof attempt).  So a common combination is
+to set both arguments to t, to indicate that output should be
+suppressed for now but saved for printing with pso or pso!.  The
+examples above give a good summary of the functionality, including the
+meaning of values :all and :normal for the first and second arguments
+(respectively).
+
+Saved output is cleared at the start of every event, and also at the
+start of every proof-checker commands that invoke the prover.  Note that
+interactive proof-checker commands, that is, from a proof-checker
+session entered with verify, are always run with output saved.
+
+Also see *note SET-PRINT-CLAUSE-IDS::, which causes subgoal numbers to
+be printed during proof attempts when output is inhibited.
+
+
+File: acl2-doc-emacs.info,  Node: SET-TAINTED-OKP,  Next: SKIP-PROOFS,  Prev: SET-SAVED-OUTPUT,  Up: OTHER
+
+SET-TAINTED-OKP    control output
+
+     Forms:
+     (set-tainted-okp nil) ; do not allow incremental version mismatches (default)
+     (set-tainted-okp t)   ; allow incremental version mismatches
+
+Set-tainted-okp is of use only in the presence of incremental releases.
+In short, evaluation of (set-tainted-okp t) instructs ACL2 to consider
+an incremental release to have the same ACL2 version as the most
+recently preceding normal release.  BUT THIS IS NOT THE CASE BY DEFAULT
+BECAUSE ACL2 IS POTENTIALLY UNSOUND WHEN SET-TAINTED-OKP IS EVALUATED.
+
+Incremental releases have an incremental (incrl) version field, for
+example the number 1 in version  2.9.1.  (Also see *note VERSION::.)
+Ordinary releases have an implicit incrl version field of 0 (for
+example, in version 2.9).  By default, include-book and certify-book
+consider all fields of ACL2 version strings, including their incrl
+fields, in order to decide if there are version mismatches.  But it may
+be convenient to treat an incremental release as the same as the
+corresponding (immediately preceding) normal release, in order to avoid
+recertification of existing certified books.  SUCH RECERTIFICATION IS
+LOGICALLY REQUIRED, but we provide (set-tainted-okp t) as a mechanism
+to allow users to experiment with incremental releases.
+
+Below we describe how books can be certified even though their
+certification has depended on ignoring mismatches of incrl version
+fields.  We call such certified books "tainted".
+
+If (set-tainted-okp t) is evaluated, then any discrepancy is ignored
+between the incrl version field of an included book (representing the
+version of ACL2 in which that book was certified) and the current ACL2
+version, namely the value of (@ acl2-version).  Thus, with
+(set-tainted-okp t) we allow certification of books that depend on
+included books that have such version mismatches with the current ACL2
+version or are themselves tainted.  Any book thus certified will have
+the string "(tainted)" included in its certificate's version string.
+Indeed, when ACL2 detects that a book may depend either on a book whose
+version's incrl field differs from that of the current ACL2 version, or
+on a tainted book, then such a book is marked as tainted.
+
+When (set-tainted-okp t) has been executed, then even though ACL2
+"ignores" issues of tainting as discussed above, a "Tainted" warning is
+printed whenever a tainted book is included or certified.
+
+
+File: acl2-doc-emacs.info,  Node: SKIP-PROOFS,  Next: THM,  Prev: SET-TAINTED-OKP,  Up: OTHER
+
+SKIP-PROOFS    skip proofs for a given form --- a quick way to introduce unsoundness
+
+     Example Form:
+     (skip-proofs
+       (defun foo (x)
+         (if (atom x) nil (cons (car x) (foo (reverse (cdr x)))))))
+     
+     General Form:
+     (skip-proofs form)
+
+where form is processed as usual except that the proof obligations
+usually generated are merely assumed.
+
+Normally form is an event; see *note EVENTS::.  If you want to put
+skip-proofs around more than one event, consider the following (see
+*note PROGN::): (skip-proofs (progn event1 event2 ... eventk)).
+
+WARNING:  Skip-proofs allows inconsistent events to be admitted to the
+logic.  Use it at your own risk!
+
+Sometimes in the development of a formal model or proof it is
+convenient to skip the proofs required by a given event.  By embedding
+the event in a skip-proofs form, you can avoid the proof burdens
+generated by the event, at the risk of introducing unsoundness.  Below
+we list four illustrative situations in which you might find
+skip-proofs useful.
+
+1. The termination argument for a proposed function definition is
+complicated.  You presume you could admit it, but are not sure that
+your definition has the desired properties.  By embedding the defun
+event in a skip-proofs you can "admit" the function and experiment with
+theorems about it before undoing (see *note UBT::) and then paying the
+price of its admission.  Note however that you might still have to
+supply a measure.  The set of formals used in some valid measure, known
+as the "measured subset" of the set of formals, is used by ACL2's
+induction heuristics and therefore needs to be suitably specified.  You
+may wish to specify the special measure of (:? v1 ... vk), where (v1
+... vk) enumerates the measured subset.
+
+2. You intend eventually to verify the guards for a definition but do
+not want to take the time now to pursue that.  By embedding the
+verify-guards event in a skip-proofs you can get the system to behave
+as though the guards were verified.
+
+3. You are repeatedly recertifying a book while making many
+experimental changes.  A certain defthm in the book takes a very long
+time to prove and you believe the proof is not affected by the changes
+you are making.  By embedding the defthm event in a skip-proofs you
+allow the theorem to be assumed without proof during the experimental
+recertifications.
+
+4. You are constructing a proof top-down and wish to defer the proof of
+a defthm until you are convinced of its utility.  You can embed the
+defthm in a skip-proofs.  Of course, you may find later (when you
+attempt prove the theorem) that the proposed defthm is not a theorem.
+
+Unsoundness or Lisp errors may result if the presumptions underlying a
+use of skip-proofs are incorrect.  Therefore, skip-proofs must be
+considered a dangerous (though useful) tool in system development.
+
+Roughly speaking, a defthm embedded in a skip-proofs is essentially a
+defaxiom, except that it is not noted as an axiom for the purposes of
+functional instantiation (see *note LEMMA-INSTANCE::).  But a skipped
+defun is much more subtle since not only is the definitional equation
+being assumed but so are formulas relating to termination and type.
+The situation is also difficult to characterize if the skip-proofs
+events are within the scope of an encapsulate in which constrained
+functions are being introduced.  In such contexts no clear logical
+story is maintained; in particular, constraints aren't properly tracked
+for definitions.  A proof script involving skip-proofs should be
+regarded as work-in-progress, not as a completed proof with some
+unproved assumptions.  A skip-proofs event represents a promise by the
+author to admit the given event without further axioms.  In other
+words, skip-proofs should only be used when the belief is that the
+proof obligations are indeed theorems in the existing ACL2 logical
+world.
+
+ACL2 allows the certification of books containing skip-proofs events.
+This is contrary to the spirit of certified books, since one is
+supposedly assured by a valid certificate that a book has been
+"blessed."  But certification, too, takes the view of skip-proofs as
+"work-in-progress" and so allows the author of the book to promise to
+finish.  When such books are certified, a warning to the author is
+printed, reminding him or her of the incurred obligation.  When books
+containing skip-proofs are included into a session, a warning to the
+user is printed, reminding the user that the book is in fact incomplete
+and possibly inconsistent.  This warning is in fact an error if
+:skip-proofs-okp is nil in the include-book form; see *note
+INCLUDE-BOOK::.
+
+
+File: acl2-doc-emacs.info,  Node: THM,  Next: TIME$,  Prev: SKIP-PROOFS,  Up: OTHER
+
+THM    prove a theorem
+
+     Example:
+     (thm (equal (app (app a b) c)
+                 (app a (app b c))))
+
+Also see *note DEFTHM::.  Unlike defthm, thm does not create an event;
+it merely causes the theorem prover to attempt a proof.
+
+     General Form:
+     (thm term
+          :hints        hints
+          :otf-flg      otf-flg
+          :doc          doc-string)
+
+where term is a term alleged to be a theorem, and hints, otf-flg and
+doc-string are as described in the corresponding :doc entries.  The
+three keyword arguments above are all optional.
+
+
+File: acl2-doc-emacs.info,  Node: TIME$,  Next: TRANS,  Prev: THM,  Up: OTHER
+
+TIME$    time a form
+
+     Examples:
+     (time$ (foo 3 4))
+     (time$ (mini-proveall))
+     (defun bar (x) (time$ (f x)))
+     
+     General Form:
+     (time$ form)
+
+where form is processed as usual except that the host Common Lisp times
+its evaluation.
+
+Semantically, (time$ x) equals x.  However, its evaluation produces
+timing output, via the time utility in the host Common Lisp.
+
+Note: In some Common Lisp implementations, for example OpenMCL, you may
+see that the form being timed is a call of the ACL2 evaluator function
+ev-rec.  This is normal.
+
+
+File: acl2-doc-emacs.info,  Node: TRANS,  Next: TRANS!,  Prev: TIME$,  Up: OTHER
+
+TRANS    print the macroexpansion of a form
+
+     Examples:
+     :trans (list a b c)
+     :trans (caddr x)
+     :trans (cond (p q) (r))
+
+This function takes one argument, an alleged term, and translates it,
+expanding the macros in it completely.  Either an error is caused or
+the formal meaning of the term is printed.  We also print the "output
+signature" which indicates how many results are returned and which are
+single-threaded objects.  For example, a term that returns one ordinary
+object (e.g., an object other than STATE or a user-defined
+single-threaded object (see *note DEFSTOBJ::)) has the output signature
+
+     => *
+
+A term that returns the single-threaded object STATE has the output
+signature
+
+     => STATE
+
+and a term that returns four results might have the output signature
+
+     => (MV $MEM * * STATE)
+
+This signature indicates that the first result is the (user defined)
+single-threaded object $MEM, that the next two results are ordinary,
+and that the last result is STATE.
+
+See *Note TRANS!:: for a corresponding command that does not enforce
+restrictions of single-threaded objects.
+
+It is sometimes more convenient to use trans1 which is like trans but
+which only does top-level macroexpansion.
+
+For more, see *note TERM::.
+
+
+File: acl2-doc-emacs.info,  Node: TRANS!,  Next: TRANS1,  Prev: TRANS,  Up: OTHER
+
+TRANS!    print the macroexpansion of a form without single-threadedness concerns
+
+     Examples:
+     :trans! (list a b c)
+     :trans! (append x state)
+
+:Trans! is identical to :trans, except that unlike :trans, :trans!
+ignores single-threadedness restrictions.  Thus, the second form above
+is legal for :trans!.  Also see *note TRANS:: and see *note TRANS1::.
+
+
+File: acl2-doc-emacs.info,  Node: TRANS1,  Next: WITH-PROVER-TIME-LIMIT,  Prev: TRANS!,  Up: OTHER
+
+TRANS1    print the one-step macroexpansion of a form
+
+     Examples:
+     :trans1 (list a b c)
+     :trans1 (caddr x)
+     :trans1 (cond (p q) (r))
+
+This function takes one argument, an alleged term, and expands the
+top-level macro in it for one step only.  Either an error is caused,
+which happens when the form is not a call of a macro, or the result is
+printed.  Also see *note TRANS::, which translates the given form
+completely.
+
+
+File: acl2-doc-emacs.info,  Node: WITH-PROVER-TIME-LIMIT,  Prev: TRANS1,  Up: OTHER
+
+WITH-PROVER-TIME-LIMIT    limit the time for proofs
+
+     Examples:
+     
+     ; Limit (mini-proveall) to about 1/4 second:
+     (with-prover-time-limit 1/4 (mini-proveall))
+     
+     ; Limit (mini-proveall) to about 1/4 second, even if surrounding call of
+     ; with-prover-time-limit provides for a more restrictive bound:
+     (with-prover-time-limit '(1/4) (mini-proveall))
+     
+     ; Limit the indicated theorem to about 1/50 second, and if the proof does not
+     ; complete or it fails, then put down a label instead.
+     (mv-let (erp val state)
+             (with-prover-time-limit
+              1/50
+              (thm (equal (append (append x x) x)
+                          (append x x x))))
+             (if erp
+                 (deflabel foo :doc "Attempt failed.")
+               (value (list :succeeded-with val))))
+     
+     General Form:
+     (with-prover-time-limit time form &key loosen-ok)
+
+where time evaluates to a positive rational number or to a list
+containing such, and form is arbitrary.  Logically,
+(with-prover-time-limit time form) is equivalent to form.  However, if
+the runtime for evaluation of form exceeds the value specified by time,
+and if ACL2 notices this fact during a proof, then that proof will
+abort, for example like this:
+
+     ACL2 Error in ( DEFTHM PERM-REFLEXIVE ...):  Out of time in rewrite.
+
+If there is already a surrounding call of with-prover-time-limit that
+has set up an expiration time, the present with-prover-time-limit is not
+allowed to push that time further into the future unless the time is
+specified as a list containing a rational rather than as a rational.
+
+If you find that the time limit appears to be implemented too loosely,
+you are encouraged to email an example to the ACL2 implementors with
+instructions on how to observe the undesirable behavior.  This
+information can probably be used to improve ACL2 by the insertion of
+more checks for expiration of the time limit.
+
+The rest of this documentation topic explains the rather subtle logical
+story, and is not necessary for understanding how to use
+with-prover-time-limit.  The ACL2 state object logically contains a
+field called the acl2-oracle, which is an arbitrary true list of
+objects.  This field can be read by a function called read-acl2-oracle,
+which however is untouchable (see *note PUSH-UNTOUCHABLE::), meaning
+that it is cannot be called by ACL2 users.  The acl2-oracle field is
+thus "secret".  Our claim is that any ACL2 session makes sense for
+*some* value of acl2-oracle in the initial state for that session.
+Logically, with-prover-time-limit is a no-op, just returning its second
+value.  But under the hood, it provides a "hint" for the acl2-oracle,
+so that (logically speaking) when its first element (car) is consulted
+by ACL2's prover to see if the time limit has expired, it gets the
+"right" answer (specifically, either nil if all is well or else a
+message to print if the time limit has expired).  Logically, the
+acl2-oracle is then cdr'ed -- that is, its first element is popped off
+-- so that future results from read-acl2-oracle are independent of the
+one just obtained.
+
+
+File: acl2-doc-emacs.info,  Node: PROGRAMMING,  Next: PROOF-CHECKER,  Prev: OTHER,  Up: Top
+
+PROGRAMMING    built-in ACL2 functions
+
+The built-in ACL2 functions that one typically uses in writing programs
+are listed below.  See their individual documentations.  We do not
+bother to document the some of the more obscure functions provided by
+ACL2 that do not correspond to functions of Common Lisp.
+
+* Menu:
+
+* *:: multiplication macro
+
+* *STANDARD-CI*:: an ACL2 character-based analogue of CLTL's *standard-input*
+
+* *STANDARD-CO*:: the ACL2 analogue of CLTL's *standard-output*
+
+* *STANDARD-OI*:: an ACL2 object-based analogue of CLTL's *standard-input*
+
+* +:: addition macro
+
+* -:: macro for subtraction and negation
+
+* /:: macro for division and reciprocal
+
+* /=:: test inequality of two numbers
+
+* 1+:: increment by 1
+
+* 1-:: decrement by 1
+
+* <:: less-than
+
+* <=:: less-than-or-equal test
+
+* =:: test equality of two numbers
+
+* >:: greater-than test
+
+* >=:: greater-than-or-equal test
+
+* ABS:: the absolute value of a real number
+
+* ACL2-NUMBERP:: recognizer for numbers
+
+* ACL2-USER:: a package the ACL2 user may prefer
+
+* ACONS:: constructor for association lists
+
+* ADD-TO-SET-EQ:: add a symbol to a list
+
+* ADD-TO-SET-EQL:: add an object to a list
+
+* ADD-TO-SET-EQUAL:: add an object to a list
+
+* ALISTP:: recognizer for association lists
+
+* ALLOCATE-FIXNUM-RANGE:: set aside fixnums in GCL
+
+* ALPHA-CHAR-P:: recognizer for alphabetic characters
+
+* ALPHORDER:: total order on atoms
+
+* AND:: conjunction
+
+* APPEND:: concatenate two or more lists
+
+* ASH:: arithmetic shift operation
+
+* ASSERT$:: cause a hard error if the given test is false
+
+* ASSOC:: look up key in association list, using eql as test
+
+* ASSOC-EQ:: look up key in association list, using eq as test
+
+* ASSOC-EQUAL:: look up key in association list
+
+* ASSOC-KEYWORD:: look up key in a keyword-value-listp
+
+* ASSOC-STRING-EQUAL:: look up key, a string, in association list
+
+* ATOM:: recognizer for atoms
+
+* ATOM-LISTP:: recognizer for a true list of atoms
+
+* BINARY-*:: multiplication function
+
+* BINARY-+:: addition function
+
+* BINARY-APPEND:: concatenate two lists
+
+* BOOLEANP:: recognizer for booleans
+
+* BUTLAST:: all but a final segment of a list
+
+* CAAAAR:: car of the caaar
+
+* CAAADR:: car of the caadr
+
+* CAAAR:: car of the caar
+
+* CAADAR:: car of the cadar
+
+* CAADDR:: car of the caddr
+
+* CAADR:: car of the cadr
+
+* CAAR:: car of the car
+
+* CADAAR:: car of the cdaar
+
+* CADADR:: car of the cdadr
+
+* CADAR:: car of the cdar
+
+* CADDAR:: car of the cddar
+
+* CADDDR:: car of the cdddr
+
+* CADDR:: car of the cddr
+
+* CADR:: car of the cdr
+
+* CAR:: returns the first element of a non-empty list, else nil
+
+* CASE:: conditional based on if-then-else using eql
+
+* CASE-MATCH:: pattern matching or destructuring
+
+* CDAAAR:: cdr of the caaar
+
+* CDAADR:: cdr of the caadr
+
+* CDAAR:: cdr of the caar
+
+* CDADAR:: cdr of the cadar
+
+* CDADDR:: cdr of the caddr
+
+* CDADR:: cdr of the cadr
+
+* CDAR:: cdr of the car
+
+* CDDAAR:: cdr of the cdaar
+
+* CDDADR:: cdr of the cdadr
+
+* CDDAR:: cdr of the cdar
+
+* CDDDAR:: cdr of the cddar
+
+* CDDDDR:: cdr of the cdddr
+
+* CDDDR:: cdr of the cddr
+
+* CDDR:: cdr of the cdr
+
+* CDR:: returns the second element of a cons pair, else nil
+
+* CEILING:: division returning an integer by truncating toward positive infinity
+
+* CHAR:: the nth element (zero-based) of a string
+
+* CHAR-CODE:: the numeric code for a given character
+
+* CHAR-DOWNCASE:: turn upper-case characters into lower-case characters
+
+* CHAR-EQUAL:: character equality without regard to case
+
+* CHAR-UPCASE:: turn lower-case characters into upper-case characters
+
+* CHAR<:: less-than test for characters
+
+* CHAR<=:: less-than-or-equal test for characters
+
+* CHAR>:: greater-than test for characters
+
+* CHAR>=:: greater-than-or-equal test for characters
+
+* CHARACTER-LISTP:: recognizer for a true list of characters
+
+* CHARACTERP:: recognizer for characters
+
+* CHARACTERS:: characters in ACL2
+
+* CLOSE-INPUT-CHANNEL:: See *Note IO::.
+
+* CLOSE-OUTPUT-CHANNEL:: See *Note IO::.
+
+* CODE-CHAR:: the character corresponding to a given numeric code
+
+* COERCE:: coerce a character list to a string and a string to a list
+
+* COMPILATION:: compiling ACL2 functions
+
+* COMPLEX:: create an ACL2 number
+
+* COMPLEX-RATIONALP:: recognizes complex rational numbers
+
+* COMPLEX/COMPLEX-RATIONALP:: recognizer for complex numbers
+
+* CONCATENATE:: concatenate lists or strings together
+
+* COND:: conditional based on if-then-else
+
+* CONJUGATE:: complex number conjugate
+
+* CONS:: pair and list constructor
+
+* CONSP:: recognizer for cons pairs
+
+* CW:: print to the comment window
+
+* DECLARE:: declarations
+
+* DENOMINATOR:: divisor of a ratio in lowest terms
+
+* DIGIT-CHAR-P:: the number, if any, corresponding to a given character
+
+* DIGIT-TO-CHAR:: map a digit to a character
+
+* E0-ORD-<:: the old ordering function for ACL2 ordinals
+
+* E0-ORDINALP:: the old recognizer for ACL2 ordinals
+
+* EIGHTH:: eighth member of the list
+
+* ENDP:: recognizer for empty lists
+
+* EQ:: equality of symbols
+
+* EQL:: test equality (of two numbers, symbols, or characters)
+
+* EQLABLE-ALISTP:: recognizer for a true list of pairs whose cars are suitable for eql
+
+* EQLABLE-LISTP:: recognizer for a true list of objects each suitable for eql
+
+* EQLABLEP:: the guard for the function eql
+
+* EQUAL:: true equality
+
+* ER:: print an error message and ``cause an error''
+
+* ER-PROGN:: perform a sequence of state-changing ``error triples''
+
+* ERROR1:: print an error message and cause a ``soft error''
+
+* EVENP:: test whether an integer is even
+
+* EXPLODE-NONNEGATIVE-INTEGER:: the list of characters in the radix-r form of a number
+
+* EXPT:: exponential function
+
+* FIFTH:: fifth member of the list
+
+* FIRST:: first member of the list
+
+* FIX:: coerce to a number
+
+* FIX-TRUE-LIST:: coerce to a true list
+
+* FLOOR:: division returning an integer by truncating toward negative infinity
+
+* FMS:: :(str alist co-channel state evisc) => state
+
+* FMS!:: :(str alist co-channel state evisc) => state
+
+* FMT:: formatted printing
+
+* FMT!:: :(str alist co-channel state evisc) => state
+
+* FMT-TO-COMMENT-WINDOW:: print to the comment window
+
+* FMT1:: :(str alist col co-channel state evisc) => (mv col state)
+
+* FMT1!:: :(str alist col channel state evisc) => (mv col state)
+
+* FOURTH:: fourth member of the list
+
+* GETENV$:: read an environment variable
+
+* HARD-ERROR:: print an error message and stop execution
+
+* IDENTITY:: the identity function
+
+* IF:: if-then-else function
+
+* IFF:: logical ``if and only if''
+
+* IFIX:: coerce to an integer
+
+* ILLEGAL:: print an error message and stop execution
+
+* IMAGPART:: imaginary part of a complex number
+
+* IMPLIES:: logical implication
+
+* IMPROPER-CONSP:: recognizer for improper (non-null-terminated) non-empty lists
+
+* INT=:: test equality of two integers
+
+* INTEGER-LENGTH:: number of bits in two's complement integer representation
+
+* INTEGER-LISTP:: recognizer for a true list of integers
+
+* INTEGERP:: recognizer for whole numbers
+
+* INTERN:: create a new symbol in a given package
+
+* INTERN$:: create a new symbol in a given package
+
+* INTERN-IN-PACKAGE-OF-SYMBOL:: create a symbol with a given name
+
+* INTERSECTP-EQ:: test whether two lists of symbols intersect
+
+* INTERSECTP-EQUAL:: test whether two lists intersect
+
+* IO:: input/output facilities in ACL2
+
+* IRRELEVANT-FORMALS:: formals that are used but only insignificantly
+
+* KEYWORD-VALUE-LISTP:: recognizer for true lists whose even-position elements are keywords
+
+* KEYWORDP:: recognizer for keywords
+
+* LAST:: the last cons (not element) of a list
+
+* LEN:: length of a list
+
+* LENGTH:: length of a string or proper list
+
+* LET:: binding of lexically scoped (local) variables
+
+* LET*:: binding of lexically scoped (local) variables
+
+* LEXORDER:: total order on ACL2 objects
+
+* LIST:: build a list
+
+* LIST*:: build a list
+
+* LISTP:: recognizer for (not necessarily proper) lists
+
+* LOGAND:: bitwise logical `and' of zero or more integers
+
+* LOGANDC1:: bitwise logical `and' of two ints, complementing the first
+
+* LOGANDC2:: bitwise logical `and' of two ints, complementing the second
+
+* LOGBITP:: the ith bit of an integer
+
+* LOGCOUNT:: number of ``on'' bits in a two's complement number
+
+* LOGEQV:: bitwise logical equivalence of zero or more integers
+
+* LOGIOR:: bitwise logical inclusive or of zero or more integers
+
+* LOGNAND:: bitwise logical `nand' of two integers
+
+* LOGNOR:: bitwise logical `nor' of two integers
+
+* LOGNOT:: bitwise not of a two's complement number
+
+* LOGORC1:: bitwise logical inclusive or of two ints, complementing the first
+
+* LOGORC2:: bitwise logical inclusive or of two ints, complementing the second
+
+* LOGTEST:: test if two integers share a `1' bit
+
+* LOGXOR:: bitwise logical exclusive or of zero or more integers
+
+* LOWER-CASE-P:: recognizer for lower case characters
+
+* MAKE-CHARACTER-LIST:: coerce to a list of characters
+
+* MAKE-LIST:: make a list of a given size
+
+* MAKE-ORD:: a constructor for ordinals.
+
+* MAX:: the larger of two numbers
+
+* MBE:: attach code for execution
+
+* MBT:: introduce a test not to be evaluated
+
+* MEMBER:: membership predicate, using eql as test
+
+* MEMBER-EQ:: membership predicate, using eq as test
+
+* MEMBER-EQUAL:: membership predicate
+
+* MIN:: the smaller of two numbers
+
+* MINUSP:: test whether a number is negative
+
+* MOD:: remainder using floor
+
+* MOD-EXPT:: exponential function
+
+* MUST-BE-EQUAL:: attach code for execution
+
+* MV:: returning a multiple value
+
+* MV-LET:: calling multi-valued ACL2 functions
+
+* MV-NTH:: the mv-nth element (zero-based) of a list
+
+* NATP:: a recognizer for the natural numbers
+
+* NFIX:: coerce to a natural number
+
+* NINTH:: ninth member of the list
+
+* NO-DUPLICATESP:: check for duplicates in a list (using eql for equality)
+
+* NO-DUPLICATESP-EQUAL:: check for duplicates in a list (using equal for equality)
+
+* NONNEGATIVE-INTEGER-QUOTIENT:: natural number division function
+
+* NOT:: logical negation
+
+* NTH:: the nth element (zero-based) of a list
+
+* NTHCDR:: final segment of a list
+
+* NULL:: recognizer for the empty list
+
+* NUMERATOR:: dividend of a ratio in lowest terms
+
+* O-FINP:: recognizes if an ordinal is finite
+
+* O-FIRST-COEFF:: returns the first coefficient of an ordinal
+
+* O-FIRST-EXPT:: the first exponent of an ordinal
+
+* O-INFP:: recognizes if an ordinal is infinite
+
+* O-P:: a recognizer for the ordinals up to epsilon-0
+
+* O-RST:: returns the rest of an infinite ordinal
+
+* O<:: the well-founded less-than relation on ordinals up to epsilon-0
+
+* O<=:: the less-than-or-equal relation for the ordinals
+
+* O>:: the greater-than relation for the ordinals
+
+* O>=:: the greater-than-or-equal relation for the ordinals
+
+* ODDP:: test whether an integer is odd
+
+* OPEN-INPUT-CHANNEL:: See *Note IO::.
+
+* OPEN-INPUT-CHANNEL-P:: See *Note IO::.
+
+* OPEN-OUTPUT-CHANNEL:: See *Note IO::.
+
+* OPEN-OUTPUT-CHANNEL-P:: See *Note IO::.
+
+* OR:: disjunction
+
+* PAIRLIS:: See *Note PAIRLIS$::
+
+* PAIRLIS$:: zipper together two lists
+
+* PEEK-CHAR$:: See *Note IO::.
+
+* PKG-WITNESS:: return a specific symbol in the indicated package
+
+* PLUSP:: test whether a number is positive
+
+* POSITION:: position of an item in a string or a list, using eql as test
+
+* POSITION-EQ:: position of an item in a string or a list, using eq as test
+
+* POSITION-EQUAL:: position of an item in a string or a list
+
+* POSP:: a recognizer for the positive integers
+
+* PPROGN:: evaluate a sequence of forms that return state
+
+* PRINT-OBJECT$:: See *Note IO::.
+
+* PROG2$:: execute two forms and return the value of the second one
+
+* PROOFS-CO:: the proofs character output channel
+
+* PROPER-CONSP:: recognizer for proper (null-terminated) non-empty lists
+
+* PUT-ASSOC-EQ:: modify an association list by associating a value with a key
+
+* PUT-ASSOC-EQL:: modify an association list by associating a value with a key
+
+* PUT-ASSOC-EQUAL:: modify an association list by associating a value with a key
+
+* RASSOC:: look up value in association list, using eql as test
+
+* RASSOC-EQ:: look up value in association list, using eq as test
+
+* RASSOC-EQUAL:: look up value in association list, using equal as test
+
+* RATIONAL-LISTP:: recognizer for a true list of rational numbers
+
+* RATIONALP:: recognizer for rational numbers (ratios and integers)
+
+* READ-BYTE$:: See *Note IO::.
+
+* READ-CHAR$:: See *Note IO::.
+
+* READ-OBJECT:: See *Note IO::.
+
+* REAL/RATIONALP:: recognizer for rational numbers (including real number in ACL2(r))
+
+* REALFIX:: coerce to a real number
+
+* REALPART:: real part of a complex number
+
+* REDEFINING-PROGRAMS:: an explanation of why we restrict redefinitions
+
+* REM:: remainder using truncate
+
+* REMOVE:: remove all occurrences, testing using eql
+
+* REMOVE-DUPLICATES:: remove duplicates from a string or (using eql) a list
+
+* REMOVE-DUPLICATES-EQUAL:: remove duplicates from a list
+
+* REMOVE-EQ:: remove all occurrences, testing using eq
+
+* REMOVE-EQUAL:: remove all occurrences, testing using equal
+
+* REMOVE1:: remove first occurrences, testing using eql
+
+* REMOVE1-EQ:: remove first occurrences, testing using eq
+
+* REMOVE1-EQUAL:: remove first occurrences, testing using equal
+
+* REST:: rest (cdr) of the list
+
+* REVAPPEND:: concatentate the reverse of one list to another
+
+* REVERSE:: reverse a list or string
+
+* RFIX:: coerce to a rational number
+
+* ROUND:: division returning an integer by rounding off
+
+* SECOND:: second member of the list
+
+* SET-DIFFERENCE-EQ:: elements of one list that are not elements of another
+
+* SET-DIFFERENCE-EQUAL:: elements of one list that are not elements of another
+
+* SETENV$:: set an environment variable
+
+* SEVENTH:: seventh member of the list
+
+* SIGNUM:: indicator for positive, negative, or zero
+
+* SIXTH:: sixth member of the list
+
+* STANDARD-CHAR-LISTP:: recognizer for a true list of standard characters
+
+* STANDARD-CHAR-P:: recognizer for standard characters
+
+* STANDARD-CO:: the character output channel to which ld prints
+
+* STANDARD-OI:: the standard object input ``channel''
+
+* STANDARD-STRING-ALISTP:: recognizer for association lists with standard strings as keys
+
+* STRING:: coerce to a string
+
+* STRING-APPEND:: concatenate two strings
+
+* STRING-DOWNCASE:: in a given string, turn upper-case characters into lower-case
+
+* STRING-EQUAL:: string equality without regard to case
+
+* STRING-LISTP:: recognizer for a true list of strings
+
+* STRING-UPCASE:: in a given string, turn lower-case characters into upper-case
+
+* STRING<:: less-than test for strings
+
+* STRING<=:: less-than-or-equal test for strings
+
+* STRING>:: greater-than test for strings
+
+* STRING>=:: less-than-or-equal test for strings
+
+* STRINGP:: recognizer for strings
+
+* STRIP-CARS:: collect up all first components of pairs in a list
+
+* STRIP-CDRS:: collect up all second components of pairs in a list
+
+* SUBLIS:: substitute an alist into a tree
+
+* SUBSEQ:: subsequence of a string or list
+
+* SUBSETP:: test if every member of one list is a member of the other
+
+* SUBSETP-EQUAL:: check if all members of one list are members of the other
+
+* SUBST:: a single substitution into a tree
+
+* SUBSTITUTE:: substitute into a string or a list, using eql as test
+
+* SYMBOL-<:: less-than test for symbols
+
+* SYMBOL-ALISTP:: recognizer for association lists with symbols as keys
+
+* SYMBOL-LISTP:: recognizer for a true list of symbols
+
+* SYMBOL-NAME:: the name of a symbol (a string)
+
+* SYMBOL-PACKAGE-NAME:: the name of the package of a symbol (a string)
+
+* SYMBOLP:: recognizer for symbols
+
+* SYS-CALL:: make a system call to the host operating system
+
+* SYS-CALL-STATUS:: exit status from the preceding system call
+
+* TAKE:: initial segment of a list
+
+* TENTH:: tenth member of the list
+
+* THE:: run-time type check
+
+* THIRD:: third member of the list
+
+* TRUE-LIST-LISTP:: recognizer for true (proper) lists of true lists
+
+* TRUE-LISTP:: recognizer for proper (null-terminated) lists
+
+* TRUNCATE:: division returning an integer by truncating toward 0
+
+* TYPE-SPEC:: type specifiers in declarations
+
+* UNARY--:: arithmetic negation function
+
+* UNARY-/:: reciprocal function
+
+* UNION-EQ:: union of two lists of symbols
+
+* UNION-EQUAL:: union of two lists
+
+* UPDATE-NTH:: modify a list by putting the given value at the given position
+
+* UPPER-CASE-P:: recognizer for upper case characters
+
+* WRITE-BYTE$:: See *Note IO::.
+
+* ZERO-TEST-IDIOMS:: how to test for 0
+
+* ZEROP:: test an acl2-number against 0
+
+* ZIP:: testing an ``integer'' against 0
+
+* ZP:: testing a ``natural'' against 0
+
+* ZPF:: testing a nonnegative fixnum against 0
+
+
+Related topics other than immediate subtopics:
+* ACL2-CUSTOMIZATION:: file of initial commands for ACL2 to run at startup
+
+* ARRAYS:: an introduction to ACL2 arrays
+
+* CERTIFY-BOOK:: how to produce a certificate for a book
+
+* COMP-GCL:: compile some ACL2 functions leaving .c and .h files
+
+* DEFCONST:: define a constant
+
+* DEFPKG:: define a new symbol package
+
+* DEFUN:: define a function symbol
+
+* MUTUAL-RECURSION:: define some mutually recursive functions
+
+* SET-BOGUS-MUTUAL-RECURSION-OK:: allow unnecessary ``mutual recursion''
+
+* SET-COMPILE-FNS:: have each function compiled as you go along.
+
+* SET-IGNORE-OK:: allow unused formals and locals without an ignore or ignorable declaration
+
+* SET-IRRELEVANT-FORMALS-OK:: allow irrelevant formals in definitions
+
+* SET-STATE-OK:: allow the use of STATE as a formal parameter
+
+See any documentation for Common Lisp for more details on many of these
+functions.
+
+
+File: acl2-doc-emacs.info,  Node: *,  Next: *STANDARD-CI*,  Prev: PROGRAMMING,  Up: PROGRAMMING
+
+*    multiplication macro
+
+* is really a macro that expands to calls of the function binary-*.  So
+for example
+
+     (* x y 4 z)
+
+represents the same term as
+
+     (binary-* x (binary-* y (binary-* 4 z))).
+
+See *Note BINARY-*::.
+
+* is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: *STANDARD-CI*,  Next: *STANDARD-CO*,  Prev: *,  Up: PROGRAMMING
+
+*STANDARD-CI*    an ACL2 character-based analogue of CLTL's *standard-input*
+
+The value of the ACL2 constant *standard-ci* is an open character input
+channel that is synonymous to Common Lisp's *standard-input*.
+
+ACL2 character input from *standard-ci* is actually obtained by reading
+characters from the stream named by Common Lisp's *standard-input*.
+That is, by changing the setting of *standard-input* in raw Common Lisp
+you can change the source from which ACL2 reads on the channel
+*standard-ci*.  See *Note *STANDARD-CO*::.
+
+
+File: acl2-doc-emacs.info,  Node: *STANDARD-CO*,  Next: *STANDARD-OI*,  Prev: *STANDARD-CI*,  Up: PROGRAMMING
+
+*STANDARD-CO*    the ACL2 analogue of CLTL's *standard-output*
+
+The value of the ACL2 constant *standard-co* is an open character
+output channel that is synonymous to Common Lisp's *standard-output*.
+
+ACL2 character output to *standard-co* will go to the stream named by
+Common Lisp's *standard-output*.  That is, by changing the setting of
+*standard-output* in raw Common Lisp you can change the actual
+destination of ACL2 output on the channel named by *standard-co*.
+Observe that this happens without changing the logical value of
+*standard-co* (which is some channel symbol).  Changing the setting of
+*standard-output* in raw Common Lisp essentially just changes the map
+that relates ACL2 to the physical world of terminals, files, etc.
+
+To see the value of this observation, consider the following.  Suppose
+you write an ACL2 function which does character output to the constant
+channel *standard-co*.  During testing you see that the output actually
+goes to your terminal.  Can you use the function to output to a file?
+Yes, if you are willing to do a little work in raw Common Lisp: open a
+stream to the file in question, set *standard-output* to that stream,
+call your ACL2 function, and then close the stream and restore
+*standard-output* to its nominal value.  Similar observations can be
+made about the two ACL2 input channels, *standard-oi* and
+*standard-ci*, which are analogues of *standard-input*.
+
+Another reason you might have for wanting to change the actual streams
+associated with *standard-oi* and *standard-co* is to drive the ACL2
+top-level loop, ld, on alternative input and output streams.  This end
+can be accomplished easily within ACL2 by either calling ld on the
+desired channels or file names or by resetting the ACL2 state global
+variables 'standard-oi and 'standard-co which are used by ld.  See
+*Note STANDARD-OI:: and see *note STANDARD-CO::.
+
+
+File: acl2-doc-emacs.info,  Node: *STANDARD-OI*,  Next: +,  Prev: *STANDARD-CO*,  Up: PROGRAMMING
+
+*STANDARD-OI*    an ACL2 object-based analogue of CLTL's *standard-input*
+
+The value of the ACL2 constant *standard-oi* is an open object input
+channel that is synonymous to Common Lisp's *standard-input*.
+
+ACL2 object input from *standard-oi* is actually obtained by reading
+from the stream named by Common Lisp's *standard-input*.  That is, by
+changing the setting of *standard-input* in raw Common Lisp you can
+change the source from which ACL2 reads on the channel *standard-oi*.
+See *Note *STANDARD-CO*::.
+
+
+File: acl2-doc-emacs.info,  Node: +,  Next: -,  Prev: *STANDARD-OI*,  Up: PROGRAMMING
+
++    addition macro
+
++ is really a macro that expands to calls of the function binary-+.  So
+for example
+
+     (+ x y 4 z)
+
+represents the same term as
+
+     (binary-+ x (binary-+ y (binary-+ 4 z))).
+
+See *Note BINARY-+::.
+
+
+File: acl2-doc-emacs.info,  Node: -,  Next: /,  Prev: +,  Up: PROGRAMMING
+
+-    macro for subtraction and negation
+
+See *Note BINARY-+:: for addition and see *note UNARY--:: for negation.
+
+Note that - represents subtraction as follows:
+
+     (- x y)
+
+represents the same term as
+
+     (+ x (- y))
+
+which is really
+
+     (binary-+ x (unary-- y)).
+
+Also note that - represents arithmetic negation as follows:
+
+     (- x)
+
+expands to
+
+     (unary-- x).
+
+
+File: acl2-doc-emacs.info,  Node: /,  Next: /=,  Prev: -,  Up: PROGRAMMING
+
+/    macro for division and reciprocal
+
+See *Note BINARY-*:: for multiplication and see *note UNARY-/:: for
+reciprocal.
+
+Note that / represents division as follows:
+
+     (/ x y)
+
+represents the same term as
+
+     (* x (/ y))
+
+which is really
+
+     (binary-* x (unary-/ y)).
+
+Also note that / represents reciprocal as follows:
+
+     (/ x)
+
+expands to
+
+     (unary-/ x).
+
+/ is a Common Lisp macro.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: /=,  Next: 1+,  Prev: /,  Up: PROGRAMMING
+
+/=    test inequality of two numbers
+
+(/= x y) is logically equivalent to (not (equal x y)).
+
+Unlike equal, /= has a guard requiring both of its arguments to be
+numbers.  Generally, /= is executed more efficiently than a combination
+of not and equal.
+
+For a discussion of the various ways to test against 0, See *Note
+ZERO-TEST-IDIOMS::.
+
+/= is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: 1+,  Next: 1-,  Prev: /=,  Up: PROGRAMMING
+
+1+    increment by 1
+
+(1+ x) is the same as (+ 1 x).  See *Note +::.
+
+1+ is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: 1-,  Next: <,  Prev: 1+,  Up: PROGRAMMING
+
+1-    decrement by 1
+
+(1- x) is the same as (- x 1).  See *Note -::.
+
+1- is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+

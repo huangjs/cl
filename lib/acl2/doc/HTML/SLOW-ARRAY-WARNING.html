@@ -1,0 +1,101 @@
+<html>
+<head><title>SLOW-ARRAY-WARNING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>SLOW-ARRAY-WARNING</h3>a warning issued when <a href="ARRAYS.html">arrays</a> are used inefficiently
+<pre>Major Section:  <a href="ARRAYS.html">ARRAYS</a>
+</pre><p>
+
+If you use ACL2 <a href="ARRAYS.html">arrays</a> you may sometimes see a <strong>slow array</strong> warning.
+We here explain what that warning means and some likely ``mistakes''
+it may signify.
+<p>
+The discussion in the documentation for <a href="ARRAYS.html">arrays</a> defines what we
+mean by the semantic value of a name.  As noted there, behind the
+scenes ACL2 maintains the invariant that with some names there is
+associated a pair consisting of an ACL2 array <code>alist</code>, called the
+semantic value of the name, and an equivalent raw lisp array.
+Access to ACL2 array elements, as in <code>(aref1 name alist i)</code>, is
+executed in constant time when the array alist is the semantic value
+of the name, because we can just use the corresponding raw lisp
+array to obtain the answer.  <code><a href="ASET1.html">Aset1</a></code> and <code><a href="COMPRESS1.html">compress1</a></code> modify the raw lisp
+array appropriately to maintain the invariant.<p>
+
+If <code><a href="AREF1.html">aref1</a></code> is called on a name and alist, and the alist is not the
+then-current semantic value of the name, the correct result is
+computed but it requires linear time because the alist must be
+searched.  When this happens, <code><a href="AREF1.html">aref1</a></code> prints a <strong>slow array</strong> warning
+message to the comment window.  <code><a href="ASET1.html">Aset1</a></code> behaves similarly because the
+array it returns will cause the <strong>slow array</strong> warning every time it is
+used.<p>
+
+From the purely logical perspective there is nothing ``wrong'' about
+such use of <a href="ARRAYS.html">arrays</a> and it may be spurious to print a warning
+message.  But because <a href="ARRAYS.html">arrays</a> are generally used to achieve
+efficiency, the <strong>slow array</strong> warning often means the user's
+intentions are not being realized.  Sometimes merely performance
+expectations are not met; but the message may mean that the
+functional behavior of the program is different than intended.<p>
+
+Here are some ``mistakes'' that might cause this behavior.  In the
+following we suppose the message was printed by <code><a href="ASET1.html">aset1</a></code> about an array
+named <code>name</code>.  Suppose the alist supplied <code><a href="ASET1.html">aset1</a></code> is <code>alist</code>.<p>
+
+(1) <code><a href="COMPRESS1.html">Compress1</a></code> was never called on <code>name</code> and <code>alist</code>.  That is, perhaps
+you created an alist that is an <code><a href="ARRAY1P.html">array1p</a></code> and then proceeded to access
+it with <code><a href="AREF1.html">aref1</a></code> but never gave ACL2 the chance to create a raw lisp
+array for it.  After creating an alist that is intended for use as
+an array, you must do <code>(compress1 name alist)</code> and pass the resulting
+<code>alist'</code> as the array.<p>
+
+(2) <code>Name</code> is misspelled.  Perhaps the array was compressed under the
+name <code>'delta-1</code> but accessed under <code>'delta1</code>?<p>
+
+(3) An <code><a href="ASET1.html">aset1</a></code> was done to modify <code>alist</code>, producing a new array,
+<code>alist'</code>, but you subsequently used <code>alist</code> as an array.  Inspect all
+<code>(aset1 name ...)</code> occurrences and make sure that the alist modified
+is never used subsequently (either in that function or any other).
+It is good practice to adopt the following syntactic style.  Suppose
+the alist you are manipulating is the value of the local variable
+<code>alist</code>.  Suppose at some point in a function definition you wish to
+modify <code>alist</code> with <code><a href="ASET1.html">aset1</a></code>.  Then write
+
+<pre>
+(let ((alist (aset1 name alist i val))) ...)
+</pre>
+
+and make sure that the subsequent function body is entirely within
+the scope of the <code><a href="LET.html">let</a></code>.  Any uses of <code>alist</code> subsequently will refer
+to the new alist and it is impossible to refer to the old alist.
+Note that if you write
+
+<pre>
+ (foo (let ((alist (aset1 name alist i val))) ...)  ; arg 1
+      (bar alist))                                  ; arg 2
+</pre>
+
+you have broken the rules, because in <code>arg 1</code> you have modified
+<code>alist</code> but in <code>arg 2</code> you refer to the old value.  An appropriate
+rewriting is to lift the <code><a href="LET.html">let</a></code> out:
+
+<pre>
+ (let ((alist (aset1 name alist alist i val)))
+   (foo ...                                         ; arg 1
+        (bar alist)))                               ; arg 2
+</pre>
+
+Of course, this may not mean the same thing.<p>
+
+(4) A function which takes <code>alist</code> as an argument and modifies it with
+<code><a href="ASET1.html">aset1</a></code> fails to return the modified version.  This is really the same
+as (3) above, but focuses on function interfaces.  If a function
+takes an array <code>alist</code> as an argument and the function uses <code><a href="ASET1.html">aset1</a></code> (or
+a subfunction uses <code><a href="ASET1.html">aset1</a></code>, etc.), then the function probably
+``ought'' to return the result produced by <code><a href="ASET1.html">aset1</a></code>.  The reasoning
+is as follows.  If the array is passed into the function, then the
+caller is holding the array.  After the function modifies it, the
+caller's version of the array is obsolete.  If the caller is going
+to make further use of the array, it must obtain the latest version,
+i.e., that produced by the function.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

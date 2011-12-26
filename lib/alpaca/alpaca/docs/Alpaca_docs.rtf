@@ -1,0 +1,830 @@
+{\rtf1\mac\ansicpg10000\cocoartf102
+{\fonttbl\f0\fswiss\fcharset77 Helvetica-Bold;\f1\fswiss\fcharset77 Helvetica;\f2\fswiss\fcharset77 Helvetica-Oblique;
+\f3\fmodern\fcharset77 CourierNewPSMT;\f4\fmodern\fcharset77 CourierNewPS-BoldMT;}
+{\colortbl;\red255\green255\blue255;}
+\vieww12100\viewh13120\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+
+\f0\b\fs36 \cf0 Alpaca 0.5\
+
+\f1\b0\fs24 November 23, 2003\
+copyright 2003 by mikel evins\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 Acknowledgments
+\f1\b0\fs24 \
+\
+	Alpaca is built on the work of other people. Without the tools and libraries those other people made and shared, Alpaca would not exist. Alpaca 0.5 is built on the following work:\
+\
+	
+\f0\b OpenMCL
+\f1\b0  0.14 by Gary Byers\
+		http://openmcl.clozure.com/\
+	
+\f0\b The OpenMCL Cocoa Bridge
+\f1\b0  by Randall Beer\
+		(distributed as part of OpenMCL 0.14)\
+	
+\f0\b ASDF
+\f1\b0  by Daniel Barlow and contributors\
+		http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/cclan/asdf/\
+	
+\f0\b Bosco
+\f1\b0  0.3 by mikel evins\
+		http://evins.net\
+	
+\f0\b remote-repl
+\f1\b0  by Sven Van Caekenberghe\
+		http://homepage.mac.com/svc/\
+	
+\f0\b Mac OS X 10.3 "Panther"
+\f1\b0 \
+		http://www.apple.com/macosx\
+\
+
+\f0\b\fs28 Introduction
+\f1\b0\fs24 \
+\
+	Alpaca 0.5 is a programmable text editor designed for authors. Alpaca is built in Common Lisp for Mac OS X, and includes a complete Common Lisp development environment built right into it. Alpaca is distributed under the LLGPL (see the accompanying "LICENSE" file for details), and full sources are available.\
+\
+	
+\f2\i NOTE: The Alpaca.app bundle in the bin subdirectory of the source distribution iis not a fully-functional application. To build it and make it work, see the section below, "Building Alpaca".
+\f1\i0 \
+\
+
+\f0\b\fs28 What's New in 0.5\
+
+\f1\b0\fs24 \
+	Release 0.5 includes the following new features:\
+\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li860\ql\qnatural
+\cf0 1. Alpaca now works on Panther (Mac OS X 10.3)\
+\
+2. Alpaca is now built on the Bosco application framework (see http://evins.net for more information about Bosco).\
+\
+3. Thanks to Bosco, Alpaca now supports socket listener sessions. You can connect from the terminal to a running Alpaca using the command "
+\f3 telnet localhost 10101
+\f1 ". For security reasons, Alpaca supports sessions created on the local machine only; you can't connect to Alpaca over a network connection. The socket connects to an OpenMCL listener session; you have full access to Alpaca's Lisp environment.\
+\
+4. The RTF view now removes empty pages at the ends of documents.\
+\
+5. The Alpaca Listener uses an extended AlpacaTextView for text editing, and so the key-bindings in the listener are programmable using the same methods used in other Alpaca text views.\
+\
+6. Alpaca now supports multiple keymaps; the listener, for example, uses an extended keymap with a few extra bindings.\
+\
+7. Undo now works.\
+\
+8. Alpaca now provides the beginnings of a lisp API to Alpaca documents and projects. For example, with a text document open you can do the following in an open listener:\
+\
+
+\f3 ? (word-count (first *documents*))\
+7\
+\
+? (character-count (first *documents*))\
+35\
+\
+
+\f1 With an rtf document open you can also do:\
+\
+
+\f3 ? (page-count (second *documents*))\
+2
+\f1 \
+\
+The project class enables you to create projects that contain multiple documents, and that can map the API functions over all the documents (for example, you can get a page-count for all the documents in a project), but projects do not yet have any UI other than lisp functions accessible in the listener, and do not yet know how to save or load their data.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 Known Bugs in 0.5\
+
+\f1\b0\fs24 \
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li860\ql\qnatural
+\cf0 1. The Help menu works only if the Help Viewer application is already running.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 Running Alpaca
+\f1\b0\fs24 \
+\
+	Launch Alpaca by double-clicking the Alpaca icon in the Finder. You can open either RTF or plain-text documents from the File menu. You can also. Alpaca automatically paginates RTF documents and displays them in a paged view. The dimensions of the page are taken from your system's print info, and so should be reasonably accurate.\
+\
+	Open a Lisp listener using the New Listener item in the Lisp menu. The Listener open in the CCL package, where most of the interesting Alpaca functions are. The Listener is connected to Alpaca's OpenMCL environment, and the full OpenMCL and Common Lisp feature sets are available for your use.\
+\
+
+\f0\b\fs28 Building Alpaca
+\f1\b0\fs24 \
+\
+	If you want to build Alpaca from sources you will first need OpenMCL (the darwin version), version 0.14-030901 or later. To obtain a copy of OpenMCL, see \
+\
+	http://openmcl.clozure.com/\
+\
+Assuming your copy of OpenMCL is running correctly, and that it includes the OpenMCL sources and darwin interfaces, you can build Alpaca by following these steps:\
+\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li860\ql\qnatural
+\cf0 1. In a Terminal window, cd to the root of the Alpaca source distribution\
+\
+2. Copy asdf.lisp to the "library' subdirectory of your OpenMCL distribution. For example, if you have installed OpenMCL in \
+	/usr/local/openmcl/ccl\
+then you should copy asdf.lisp to\
+	/usr/local/openmcl/ccl/library\
+\
+3. execute 
+\f3 openmcl -l alpaca.asd -e "(make)"\
+\
+
+\f1 The build script loads alpaca.asd, which contains the ASDF system definition and some build utilities, then evaluates "(make)", which copies your OpenMCL kernel into the right place in the Alpaca application bundle, loads the Alpaca sources, and saves an image file. You can then double-click Alpaca to run the application.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 Alpaca key-bindings
+\f1\b0\fs24 \
+\
+	Alpaca uses key-bindings similar to those in Emacs, though Alpaca's standard bindings are not nearly as extensive as those of Emacs. They are completely extensible and customizable, however; see the next section for details.\
+\
+	Pressing a key in Alpaca runs a command. If no special command is bound to a key, the default command inserts the character associated with the key. Certain keys, though, have Alpaca editing commands bound to them. The Following tables show the standard editing commands defined in Alpaca editing windows and in Lisp listener windows.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f2\i \cf0 Note: the notation S-<key> means that the Shift key is held down when pressing <key>. C-<key> means that the Control key is held down; M-<key> means the Meta key (also called the Option or Alt key) is held down. You can combine these modifier keys; for example, "S-M-C-c" means the "c" key is pressed while holding down the Shift, Meta, and Control keys.\
+\
+Note: Alpaca does not (yet) implement multiple-press sequences like those in Emacs, such as C-x or C-h sequences. It also does not (yet) support support M-x command-entry.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\i0\b \cf0 Editor bindings\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1\b0 \cf0 \
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li500\ql\qnatural
+\cf0 C-g		cancel-operation\
+M-c		capitalize-word \
+C-l		center-selection\
+DEL		delete-backward\
+C-d		delete-forward\
+C-k		kill\
+C-w		delete-to-mark\
+C-DEL 	delete-word-backward\
+M-DEL 	delete-word-forward\
+C-o 		insert-newline\
+TAB 		insert-tab\
+M-l 		lowercase-word\
+C-b 		backward-char\
+C-n 		next-line\
+C-f 		forward-char\
+S-M-< 	beginning-of-document\
+C-a 		beginning-of-line\
+S-M-\{ 	beginning-of-paragraph\
+S-M-> 	end-of-document\
+C-e 		end-of-line\
+S-M-\} 	end-of-paragraph\
+M-b 		backward-word\
+M-f 		forward-word\
+M-v 		page-up\
+C-v 		page-down\
+M-h 		select-paragraph\
+C-  		set-mark\
+C-m 		select-to-mark\
+C-t 		transpose\
+M-u 		uppercase-word\
+C-y 		yank\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b \cf0 Listener bindings\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li500\ql\qnatural
+
+\f1\b0 \cf0 \
+M-p 		insert-previous-history-form\
+M-n 		insert-next-history-form\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+\cf0 \
+	The names given are the names of predefined editing functions written in Lisp. You can write your own editing functions and bind them to Alpaca keys. For more information on how to do that, see the next section.
+\f0\b\fs28 \
+\
+Customizing Alpaca
+\f1\b0\fs24 \
+\
+	You can extend Alpaca's behavior by writing Lisp code. When Alpaca launches it looks for a file named "~/.alpaca". If it finds such a file, Alpaca assumes that the file contains Common Lisp code and loads it into its running image. You can therefore add Lisp forms to your ".alpaca" file to extend and customize Alpaca.\
+\
+	If there is no "~/.alpaca" file, then Alpaca gets the value of the environment variable ALPACA_INIT_FILE and looks for a file at the path stored in that variable.\
+\
+	Common Lisp is both Alpaca's implementation language and its extension language; in other words, you can extend Alpaca to do anything that can be done in Common Lisp. Moreover, your compiled Lisp code becomes part of the running Alpaca image, linked against the same classes and methods that define the application, so you have essentially unlimited power to change Alpaca's behavior using code in your init file.\
+\
+	Here are a few sample definitions that show how Alpaca can be extended. These definitions are part of Alpaca's source code, and define key-bindings in the standard editor and listener environments.\
+\
+	Following is the Common Lisp definition of Alpaca's 
+\f3 capitalize-word
+\f1  function. This definition uses the Objective C bridge to send a message to the current key target:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f3 \cf0 (defun capitalize-word (&optional target)\
+  (let ((target (or target (key-target))))\
+	(send target :capitalize-word (%null-ptr))\
+	t))
+\f1 \
+\
+The 
+\f3 capitalize-word
+\f1  function is bound in the *alpaca-keymap* to the key-combination Meta-C. Following is the Lisp form that sets up that binding:\
+\
+
+\f3 (define-key *alpaca-keymap* "M-c" 'capitalize-word)
+\f1 \
+\
+	Editing functions can be more involved than this. In fact, they can do anything you can write in Common Lisp. Consider the definition for the Listener window's 
+\f3 insert-previous-history-form
+\f1  command:\
+\
+
+\f3 (defun insert-previous-history-form (&optional target)\
+  (let* ((target (or target (key-target)))\
+		 (max (1- (length *read-history*))))\
+	(when (> *last-read-history-access-index* max)\
+	  (setq *last-read-history-access-index* max))\
+	(let* ((form (elt *read-history* *last-read-history-access-index*))\
+		   (form-string (%make-nsstring (format nil "~S" form)))\
+		   (has-marked-text? (send target 'has-marked-text)))\
+	  (if has-marked-text?\
+		  (slet ((marked-range (send target 'marked-range)))\
+				(send target\
+					  :set-marked-text form-string\
+					  :selected-range marked-range))\
+		(slet ((selected-range (send target 'selected-range)))\
+				(send target\
+					  :set-marked-text form-string\
+					  :selected-range selected-range))))\
+	(incf *last-read-history-access-index*)\
+	t))
+\f1 \
+\
+	This command is bound in 
+\f3 *alpaca-listener-keymap*
+\f1 , but not in 
+\f3 *alpaca-keymap*
+\f1 , which means that it works in listener windows but not in text-editing windows. Here is the form that defines this binding:\
+\
+
+\f3 (define-key *alpaca-listener-keymap* "M-p" \
+  'insert-previous-history-form)
+\f1 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 \
+\
+Alpaca Key-names
+\f1\b0\fs24 \
+\
+	When binding functions to key-sequences you need to know the name of the key-sequence you want to bind. This section lists the names of Alpaca keys and explains how modifier keys are named.\
+\
+	Key-sequences are named by strings. The most common keys, those that enter letters, digits, and other ordinary characters, are named by the characters they enter. For example, the name of the "a" key is 
+\f3 "a"
+\f1 .\
+\
+\
+	Other keys don't have such conveniently obvious names; for these keys we use conventions documented in this section. For example, holding down the Control key and hitting "c" generates the keystroke named "C-c".\
+\
+	The names of the modifier keys in Alpaca are:\
+\
+	"S-"	Shift\
+	"C-"	Control\
+	"M-"	Meta (or Alt, or Option)\
+\
+	The name of the Space key is " " (a literal space). It combines with modifiers in the same way as other literal keys; for example, you can bind a command to Control-Space by writing "C- " for the key name.\
+\
+	When naming a key with modifiers, always put the modifier names in the order "Shift-Control-Meta". For example, you can write "S-M-b", but don't write "M-S-b"; Alpaca will not recognize it.\
+\
+	Finally, there are a number of keys that fit neither of the previous categories, and are just assigned conventional names. Those names are listed below.\
+\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li560\ql\qnatural
+\cf0 DEL \
+<UP> <DOWN> <LEFT> <RIGHT>\
+<F1> ... <F35>\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f0\b\fs28 \cf0 \
+Alpaca's API
+\f1\b0\fs24 \
+\
+	Because Alpaca is implemented in Lisp, and because you can easily add function definitions of your own and evaluate Lisp forms in its Listener window, you can, with a little effort, reprogram Alpaca to do whatever you want. That doesn't necessarily mean that it's easy to make it do exactly what you want, though.\
+\
+	In version 0.5 Alpaca has just the beginnings of an API designed to make it easier to customize. Alpaca provides a few variables, classes, and functions designed to make it easy to get and change the states of Alpaca objects. This section describes that API.\
+\
+	Astute Cocoa programmers will notice that the majority of the functions are simply Lisp wrappers for NSResponder messages that are designed to emulate Emacs features, but there are also features unique to Alpaca.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 *alpaca-keymap*
+\f1\b0 \
+	VARIABLE\
+	This variable stores a reference to the keymap that Alpaca uses to map key events to editing functions. You can use the define-key function to add bindings to the keymap. Don't store anything but a keymap in this variable; doing so will make Alpaca misbehave.\
+\
+
+\f4\b backward-char
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point backward one character in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is thee value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b backward-word
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point backward one word in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b beginning-of-document
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the beginning of the document in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b beginning-of-line
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the beginning of the current line in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b beginning-of-paragraph
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the beginning of the current paragraph in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b cancel-operation
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Cancels a time-consuming operation in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b capitalize-word
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Capitalizes the current word in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b center-selection
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Scrolls the target text so that the selection is centered in the view. Works more reliably with plain-text than with RTF windows. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b character-count
+\f3\b0  (document)
+\f1 \
+	FUNCTION\
+	Returns the number of characters in the document.\
+\
+
+\f4\b character-count
+\f3\b0  (project)
+\f1 \
+	FUNCTION\
+	Returns the total number of characters in all documents in the project.\
+\
+
+\f4\b copy-keymap
+\f3\b0  (keymap)
+\f1 \
+	FUNCTION\
+	Returns a new keymap, a copy of the supplied keymap. The new keymap has the same defined key-bindings as the old keymap. Useful for creating a new keymap for purposes of customization, when you want the new keymap to start with the same bindings as an existing keymap.\
+\
+
+\f4\b define-key
+\f3\b0  (keymap string function)
+\f1 \
+
+\f4\b define-key
+\f3\b0  (keymap string symbol)
+\f1 \
+	FUNCTION\
+	Defines a new key-binding in the supplied keymap. The supplied function is bound to the key-sequence named in the string. If the third argument is a symbol then the value of its SYMBOL-FUNCTION is bound to the key-sequence. See the section "Alpaca Key Names" for more about the names of keys used in key-bindings.\
+\
+
+\f4\b delete-backward
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes one character before the insertion point in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b delete-forward
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes one character after the insertion point in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b delete-to-mark
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes all text between the current insertion point and the 
+\f0\b mark
+\f1\b0  in the target. See 
+\f3 set-mark
+\f1  for more about the mark. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b delete-word-backward
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes one word before the insertion point in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b delete-word-forward
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes one word after the insertion point in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b end-of-document
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the end of the document in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b end-of-line
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the end of the current line in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b end-of-paragraph
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point to the end of the current paragraph in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b filename
+\f3\b0  (document)
+\f1 \
+	FUNCTION\
+	Returns the file pathname of the document, or NIL if the document has not been saved to disk.\
+\
+
+\f4\b find-document
+\f3\b0  (tagnum)
+\f1 \
+	FUNCTION\
+	Returns the document with the supplied tag number. Each document is assigned a tag number when it is created. The first document's tag is 1; each tag number after that increases by one.\
+\
+
+\f4\b forward-char
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point forward one character in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b forward-word
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point forward one word in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b get-key-function
+\f3\b0  (keymap string)
+\f1 \
+	FUNCTION\
+	Returns the key function bound to the key named by the string. The key name follows the conventions described in the section "Alpaca Key Names".\
+\
+
+\f4\b insert-previous-history-form
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Inserts the last form read by the Lisp read-eval-print loop in the target. Pressing this key-combination repeatedly moves backward through the reader's history. Listener windows bind this function to 
+\f3 "M-p"
+\f1 . The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b insert-newline
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Inserts a newline character, opening a line in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 insert-next-history-form
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Inserts the last form read by the Lisp read-eval-print loop in the target. Pressing this key-combination repeatedly moves forward through the reader's history. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b insert-tab
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Inserts a tab character in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b insert-text
+\f3\b0  (string &optional target)
+\f1 \
+	KEY FUNCTION\
+	Inserts the supplied string in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b keymap
+\f1\b0 \
+	CLOS CLASS\
+	The class of keymaps.\
+\
+
+\f4\b kill
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Deletes text from the insertion point to the end of the current line in the target, adding the killed text to Alpaca's kill buffer. Subsequent 
+\f3 yank
+\f1  commands insert the killed text in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b key-target
+\f3\b0  ()
+\f1 \
+	FUNCTION\
+	key-target returns the application's current key target\'d1that is, the object that receives and processes key events. This function is especially useful in defining editing commands, because you can use it to fetch the key target and then send messages to the target to effect editing changes.\
+\
+
+\f4\b lowercase-word
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Converts the selected text or current word to lowercase in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b next-line
+\f3\b0  (&optional target)
+\f1 \
+	KEY FUNCTION\
+	Moves the insertion point down one line in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+
+\f4\b page-count
+\f3\b0  (project)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	FUNCTION\
+	Returns the total number of pages in all documents in the supplied project. Alpaca paginates only RTF documents; if the project contains a plain-text document then 
+\f3 page-count
+\f1  returns NIL.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 page-count
+\f3\b0  (rtf-document)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	FUNCTION\
+	Returns thee total number of pages in the RTF document.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 page-down
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Scrolls the view down one page in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 page-up
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Scrolls the view up one page in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 project
+\f1\b0 \
+	CLOS CLASS\
+	The class of Alpaca projects. Projects contain documents, and provide an abstraction for operating on collections of documents. Alpaca UI for projects is not yet implemented; saving and loading project objects is also not yet implemented. You can create a project by evaluating 
+\f3 (make-instance 'project)
+\f1 . To create a project that contains a group of documents, pass a list of the documents to 
+\f3 make-instance
+\f1  like this: 
+\f3 (make-instance 'project :project-documents my-documents)
+\f1 .\
+\
+
+\f4\b select-all
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Selects all the text in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 select-line
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Selects the current line in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 select-paragraph
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Selects the current paragraph in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 select-to-mark
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Selects all the text between thee insertion point and the 
+\f0\b mark
+\f1\b0  in the target. See 
+\f3 set-mark
+\f1  for more about the mark. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 select-word
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Selects the current word in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 set-mark
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Sets the 
+\f0\b mark
+\f1\b0  at the current location of the insertion point in the target. The mark can be used in combination with the insertion point to select and operate on ranges of text. For example, you can set the mark, move the insertion point, and then use 
+\f3 select-to-mark
+\f1  to select all the text in between for cutting, replacement, or other operations. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 swap-with-mark
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Swaps the locations of the insertion point and the 
+\f0\b mark
+\f1\b0  in the target. See 
+\f3 set-mark
+\f1  for more about the mark. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 transpose
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Switches the characters before and after the insertion point in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 uppercase-word
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Changes thee current word to upper case in the target. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 word-count
+\f3\b0  (document)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	FUNCTION\
+	Returns the total number of words in the document.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 word-count
+\f3\b0  (project)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	FUNCTION\
+	Returns the total number of words in all the documents in the project.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f4\b \cf0 yank
+\f3\b0  (&optional target)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural
+
+\f1 \cf0 	KEY FUNCTION\
+	Inserts a block of text from the kill buffer in the target. Commands that delete ranges of text add text to the kill buffer. The target argument must be an NSResponder subclass, such as NSTextView, that implements key-event handling. In normal event-handling the target passed to this function is the value of 
+\f3 (key-target)
+\f1 .\
+\
+\
+\
+\
+}

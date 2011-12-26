@@ -1,0 +1,48 @@
+<html>
+<head><title>OK-IF.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>OK-IF</h2>conditional exit from <code>break-rewrite</code>
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+:ok-if (null (brr@ :wonp))
+<p>
+General Form:
+:ok-if expr
+</pre>
+
+where <code>expr</code> is a term involving no free variables other than <code>state</code>
+and returning one non-<code>state</code> result which is treated as Boolean.
+This form is intended to be executed from within <code>break-rewrite</code>
+(see <a href="BREAK-REWRITE.html">break-rewrite</a>).<p>
+
+Consider first the simple situation that the <code>(ok-if term)</code> is a
+command read by <code>break-rewrite</code>.  Then, if the term is non-<code>nil</code>,
+<code>break-rewrite</code> exits and otherwise it does not.<p>
+
+More generally, <code>ok-if</code> returns an ACL2 error triple
+<code>(mv erp val state)</code>.  (See <a href="LD.html">ld</a> for more on error triples.)  If
+any form being evaluated as a command by <code>break-rewrite</code> returns
+the triple returned by <code>(ok-if term)</code> then the effect of that form
+is to exit <a href="BREAK-REWRITE.html">break-rewrite</a> if term is non-<code>nil</code>.  Thus, one
+might define a function or macro that returns the value of <code>ok-if</code>
+expressions on all outputs and thus create a convenient new way to
+exit <code>break-rewrite</code>.<p>
+
+The exit test, <code>term</code>, generally uses <code>brr@</code> to access context sensitive
+information about the attempted rule application.  See <a href="BRR_at_.html">brr@</a>.
+<code>Ok-if</code> is useful inside of command sequences produced by break
+conditions.  See <a href="MONITOR.html">monitor</a>.  <code>:ok-if</code> is most useful after an <code>:eval</code>
+command has caused <code>break-rewrite</code> to try to apply the rule because in
+the resulting break environment <code>expr</code> can access such things as
+whether the rule succeeded, if so, what term it produced, and if
+not, why.  There is no need to use <code>:ok-if</code> before <code>:eval</code>ing the rule
+since the same effects could be achieved with the break condition on
+the rule itself.  Perhaps we should replace this concept with
+<code>:eval-and-break-if</code>?  Time will tell.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

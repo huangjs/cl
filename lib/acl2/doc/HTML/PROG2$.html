@@ -1,0 +1,72 @@
+<html>
+<head><title>PROG2$.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PROG2$</h2>execute two forms and return the value of the second one
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+See <a href="HARD-ERROR.html">hard-error</a>, see <a href="ILLEGAL.html">illegal</a>, and see <a href="CW.html">cw</a> for examples of functions
+to call in the first argument of <code>prog2$</code>.
+<p>
+Semantically, <code>(Prog2$ x y)</code> equals <code>y</code>; the value of <code>x</code> is ignored.
+However, <code>x</code> is first evaluated for side effect.  Since the ACL2
+<a href="PROGRAMMING.html">programming</a> language is applicative, there can be no logical impact
+of evaluating <code>x</code>.  However, <code>x</code> may involve a call of a function such
+as <code><a href="HARD-ERROR.html">hard-error</a></code> or <code><a href="ILLEGAL.html">illegal</a></code>, which can cause so-called ``hard errors'',
+or a call of <code><a href="CW.html">cw</a></code> to perform output.<p>
+
+Here is a simple, contrived example using <code><a href="HARD-ERROR.html">hard-error</a></code>.  The intention
+is to check at run-time that the input is appropriate before calling
+function <code>bar</code>.
+
+<pre>
+(defun foo-a (x)
+  (declare (xargs :guard (consp x)))
+  (prog2$
+   (or (good-car-p (car x))
+       (hard-error 'foo-a
+                   "Bad value for x: ~p0"
+                   (list (cons #\0 x))))
+   (bar x)))
+</pre>
+
+The following similar function uses <code><a href="ILLEGAL.html">illegal</a></code> instead of <code>hard-error</code>.
+Since <code>illegal</code> has a guard of <code>nil</code>, <a href="GUARD.html">guard</a> verification would
+guarantee that the call of <code>illegal</code> below will never be made (at
+least when guard checking is on; see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>).
+
+<pre>
+(defun foo-b (x)
+  (declare (xargs :guard (and (consp x) (good-car-p (car x)))))
+  (prog2$
+   (or (good-car-p (car x))
+       (illegal 'foo-b
+                "Bad value for x: ~p0"
+                (list (cons #\0 x))))
+   (bar x)))
+</pre>
+<p>
+
+We conclude with a simple example using <code><a href="CW.html">cw</a></code> from the ACL2 sources.<p>
+
+
+<pre>
+(defun print-terms (terms iff-flg wrld)<p>
+
+; Print untranslations of the given terms with respect to iff-flg, following
+; each with a newline.<p>
+
+; We use cw instead of the fmt functions because we want to be able to use this
+; function in print-type-alist-segments (used in brkpt1), which does not return
+; state.<p>
+
+  (if (endp terms)
+      terms
+    (prog2$
+     (cw "~q0" (untranslate (car terms) iff-flg wrld))
+     (print-terms (cdr terms) iff-flg wrld))))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

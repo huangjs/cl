@@ -1,0 +1,923 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: COMPOUND-RECOGNIZER,  Next: CONGRUENCE,  Prev: BUILT-IN-CLAUSES,  Up: RULE-CLASSES
+
+COMPOUND-RECOGNIZER    make a rule used by the typing mechanism
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :compound-recognizer rule might be built is:
+
+     Example:
+     (implies (alistp x)         When (alistp x) is assumed true,
+              (true-listp x))    add the additional hypothesis that x
+                                 is of primitive type true-listp.
+     
+     General Forms:
+     (implies (fn x) concl)               ; (1)
+     (implies (not (fn x)) concl)         ; (2)
+     (and (implies (fn x) concl1)         ; (3)
+          (implies (not (fn x)) concl2))
+     (if (fn x) concl1 concl2)            ; (4)
+     (iff (fn x) concl)                   ; (5)
+     (equal (fn x) concl)                 ; (6)
+
+where fn is a Boolean valued function of one argument, x is a variable
+symbol, and the system can deduce some restriction on the primitive
+type of x from the assumption that concl holds.  The third restriction
+is vague but one way to understand it is to weaken it a little to "and
+concl is a non-tautological conjunction or disjunction of the primitive
+type recognizers listed below."
+
+The primitive ACL2 types and a suitable primitive recognizing
+expression for each are listed below.
+
+       type                suitable primitive recognizer
+     
+       zero                (equal x 0)
+       negative integers   (and (integerp x) (< x 0))
+       positive integers   (and (integerp x) (> x 0))
+       negative ratio      (and (rationalp x)
+                                (not (integerp x))
+                                (< x 0))
+       positive ratio      (and (rationalp x)
+                                (not (integerp x))
+                                (> x 0))
+       complex rational    (complex-rationalp x)
+       nil                 (equal x nil)
+       t                   (equal x t)
+       other symbols       (and (symbolp x)
+                                (not (equal x nil))
+                                (not (equal x t)))
+       proper conses       (and (consp x)
+                                (true-listp x))
+       improper conses     (and (consp x)
+                                (not (true-listp x)))
+       strings             (stringp x)
+       characters          (characterp x)
+
+Thus, a suitable concl to recognize the naturals would be (or (equal x
+0) (and (integerp x) (> x 0))) but it turns out that we also permit
+(and (integerp x) (>= x 0)).  Similarly, the true-lists could be
+specified by
+
+     (or (equal x nil) (and (consp x) (true-listp x)))
+
+but we in fact allow (true-listp x).  When time permits we will
+document more fully what is allowed or implement a macro that permits
+direct specification of the desired type in terms of the primitives.
+
+There are essentially four forms of :compound-recognizer rules, as the
+third and fourth forms are equivalent, as are the fifth and sixth.  We
+explain how such rules are used by considering the individual forms.
+
+Consider a rule of the first form, (implies (fn x) concl).  The effect
+of such a rule is that when the rewriter assumes (fn x) true, as it
+would while diving through (if (fn x) xxx ...) to rewrite xxx, it
+restricts the type of x as specified by concl.  However, when assuming
+(fn x) false, as necessary in (if (fn x) ... xxx), the rule permits no
+additional assumptions about the type of x.  For example, if fn is
+primep, i.e., the predicate that recognizes prime numbers, then
+(implies (primep x) (and (integerp x) (>= x 0))) is a compound
+recognizer rule of the first form.  When (primep x) is assumed true,
+the rewriter gains the additional information that x is a natural
+number.  When (primep x) is assumed false, no additional information is
+gained -- since x may be a non-prime natural or may not even be a
+natural.
+
+The second general form addresses itself to the symmetric case, when
+assuming (fn x) false permits type restrictions on x but assuming (fn
+x) true permits no such restrictions.  For example, if we defined exprp
+to be the recognizer for well-formed expressions for some language in
+which all symbols, numbers, character objects and strings were
+well-formed -- e.g., the well-formedness rules only put restrictions on
+expressions represented by consps -- then the theorem (implies (not
+(exprp x)) (consp x)) is a rule of the second form.  Assuming (exprp x)
+true tells us nothing about the type of x; assuming it false tells us x
+is a consp.
+
+The third and fourth general forms, which are really equivalent, address
+themselves to the case where one type may be deduced from (fn x) and a
+generally unrelated type may be deduced from its negation.  If we
+modified the expression recognizer above so that character objects are
+illegal, then rules of the third and fourth forms are
+
+     (and (implies (exprp x) (not (characterp x)))
+          (implies (not (exprp x)) (or (consp x) (characterp x)))).
+     (if (exprp x)
+         (not (characterp x))
+       (or (consp x) (characterp x)))
+
+Finally, rules of the fifth and sixth classes address the case where fn
+recognizes all and only the objects whose type is described.  In these
+cases, fn is really just a new name for some "compound recognizers."
+The classic example is (booleanp x), which is just a handy combination
+of two primitive types:
+
+     (iff (booleanp x) (or (equal x t) (equal x nil))).
+
+Often it is best to disable fn after proving that it is a compound
+recognizer, since (fn x) will not be recognized as a compound
+recognizer once it has been expanded.
+
+Every time you prove a new compound recognizer rule about fn it
+overrides all previously proved compound recognizer rules about fn.
+Thus, if you want to establish the type implied by (fn x) and you want
+to establish the type implied by (not (fn x)), you must prove a
+compound recognizer rule of the third, fourth, fifth, or sixth forms.
+Proving a rule of the first form followed by one of the second only
+leaves the second fact in the data base.
+
+Compound recognizer rules can be disabled with the effect that older
+rules about fn, if any, are exposed.
+
+If you prove more than one compound recognizer rule for a function, you
+may see a *warning* message to the effect that the new rule is not as
+"restrictive" as the old.  That is, the new rules do not give the
+rewriter strictly more type information than it already had.  The new
+rule is stored anyway, overriding the old, if enabled.  You may be
+playing subtle games with enabling or rewriting.  But two other
+interpretions are more likely, we think.  One is that you have
+forgotten about an earlier rule and should merely print it out to make
+sure it says what you know and then forget your new rule.  The other is
+that you meant to give the system more information and the system has
+simply been unable to extract the intended type information from the
+term you placed in the conclusion of the new rule.  Given our lack of
+specificity in saying how type information is extracted from rules, you
+can hardly blame yourself for this problem.  Sorry.  If you suspect
+you've been burned this way, you should rephrase the new rule in terms
+of the primitive recognizing expressions above and see if the warning
+is still given.  It would also be helpful to let us see your example so
+we can consider it as we redesign this stuff.
+
+Compound recognizer rules are similar to :forward-chaining rules in
+that the system deduces new information from the act of assuming
+something true or false.  If a compound recognizer rule were stored as
+a forward chaining rule it would have essentially the same effect as
+described, when it has any effect at all.  The important point is that
+:forward-chaining rules, because of their more general and expensive
+form, are used "at the top level" of the simplification process: we
+forward chain from assumptions in the goal being proved.  But compound
+recognizer rules are built in at the bottom-most level of the
+simplifier, where type reasoning is done.
+
+All that said, compound recognizer rules are a rather fancy,
+specialized mechanism.  It may be more appropriate to create
+:forward-chaining rules instead of :compound-recognizer rules.
+
+
+File: acl2-doc-emacs.info,  Node: CONGRUENCE,  Next: DEFINITION,  Prev: COMPOUND-RECOGNIZER,  Up: RULE-CLASSES
+
+CONGRUENCE    the relations to maintain while simplifying arguments
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :congruence rule might be built is:
+
+     Example:
+     (implies (set-equal x y)
+              (iff (memb e x) (memb e y))).
+
+Also see *note DEFCONG:: and see *note EQUIVALENCE::.
+
+     General Form:
+     (implies (equiv1 xk xk-equiv)
+              (equiv2 (fn x1... xk       ...xn)
+                      (fn x1... xk-equiv ...xn)))
+
+where equiv1 and equiv2 are known equivalence relations, fn is an n-ary
+function symbol and the xi and xk-equiv are all distinct variables.
+The effect of such a rule is to record that the equiv2-equivalence of
+fn-expressions can be maintained if, while rewriting the kth argument
+position, equiv1-equivalence is maintained.  See *Note EQUIVALENCE::
+for a general discussion of the issues.  We say that equiv2, above, is
+the "outside equivalence" in the rule and equiv1 is the "inside
+equivalence for the kth argument"
+
+The macro form (defcong equiv1 equiv2 (fn x1 ... x1) k) is an
+abbreviation for a defthm of rule-class :congruence that attempts to
+establish that equiv2 is maintained by maintaining equiv1 in fn's kth
+argument.  The defcong macro automatically generates the general
+formula shown above.  See *Note DEFCONG::.
+
+The memb example above tells us that (memb e x) is propositionally
+equivalent to (memb e y), provided x and y are set-equal.  The outside
+equivalence is iff and the inside equivalence for the second argument
+is set-equal.  If we see a memb expression in a propositional context,
+e.g., as a literal of a clause or test of an if (but not, for example,
+as an argument to cons), we can rewrite its second argument maintaining
+set-equality.  For example, a rule stating the commutativity of append
+(modulo set-equality) could be applied in this context.  Since equality
+is a refinement of all equivalence relations, all equality rules are
+always available.  See *Note REFINEMENT::.
+
+All known :congruence rules about a given outside equivalence and fn
+can be used independently.  That is, consider two :congruence rules
+with the same outside equivalence, equiv, and about the same function
+fn.  Suppose one says that equiv1 is the inside equivalence for the
+first argument and the other says equiv2 is the inside equivalence for
+the second argument.  Then (fn a b) is equiv (fn a' b') provided a is
+equiv1 to a' and b is equiv2 to b'.  This is an easy consequence of the
+transitivity of equiv.  It permits you to think independently about the
+inside equivalences.
+
+Furthermore, it is possible that more than one inside equivalence for a
+given argument slot will maintain a given outside equivalence.  For
+example, (length a) is equal to (length a') if a and a' are related
+either by list-equal or by string-equal.  You may prove two (or more)
+:congruence rules for the same slot of a function.  The result is that
+the system uses a new, "generated" equivalence relation for that slot
+with the result that rules of both (or all) kinds are available while
+rewriting.
+
+:Congruence rules can be disabled.  For example, if you have two
+different inside equivalences for a given argument position and you
+find that the :rewrite rules for one are unexpectedly preventing the
+application of the desired rule, you can disable the rule that
+introduced the unwanted inside equivalence.
+
+More will be written about this as we develop the techniques.
+
+
+File: acl2-doc-emacs.info,  Node: DEFINITION,  Next: ELIM,  Prev: CONGRUENCE,  Up: RULE-CLASSES
+
+DEFINITION    make a rule that acts like a function definition
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :definition rule might be built is:
+
+     Example:
+     (implies (true-listp x)
+              (equal (len x)
+                     (if (null x)
+                         0
+                         (if (null (cdr x))
+                             1
+                             (+ 2 (len (cddr x)))))))
+     
+     General Form:
+     (implies hyp (equiv (fn a1 ... an) body))
+
+where equiv is an equivalence relation and fn is a function symbol
+other than if, hide, force or case-split.  Such rules allow
+"alternative" definitions of fn to be proved as theorems but used as
+definitions.  These rules are not true "definitions" in the sense that
+they (a) cannot introduce new function symbols and (b) do not have to
+be terminating recursion schemes.  They are just conditional rewrite
+rules that are controlled the same way we control recursive
+definitions.  We call these "definition rules" or "generalized
+definitions".
+
+Consider the general form above.  Generalized definitions are stored
+among the :rewrite rules for the function "defined," fn above, but the
+procedure for applying them is a little different.  During rewriting,
+instances of (fn a1 ... an) are replaced by corresponding instances of
+body provided the hyps can be established as for a :rewrite rule and
+the result of rewriting body satisfies the criteria for function
+expansion.  There are two primary criteria, either of which permits
+expansion.  The first is that the "recursive" calls of fn in the
+rewritten body have arguments that already occur in the goal
+conjecture.  The second is that the "controlling" arguments to fn are
+simpler in the rewritten body.
+
+The notions of "recursive call" and "controllers" are complicated by
+the provisions for mutually recursive definitions.  Consider a "clique"
+of mutually recursive definitions.  Then a "recursive call" is a call
+to any function defined in the clique and an argument is a "controller"
+if it is involved in the measure that decreases in all recursive calls.
+These notions are precisely defined by the definitional principle and
+do not necessarily make sense in the context of generalized
+definitional equations as implemented here.
+
+But because the heuristics governing the use of generalized definitions
+require these notions, it is generally up to the user to specify which
+calls in body are to be considered recursive and what the controlling
+arguments are.  This information is specified in the :clique and
+:controller-alist fields of the :definition rule class.
+
+The :clique field is the list of function symbols to be considered
+recursive calls of fn.  In the case of a non-recursive definition, the
+:clique field is empty; in a singly recursive definition, it should
+consist of the singleton list containing fn; otherwise it should be a
+list of all of the functions in the mutually recursive clique with this
+definition of fn.
+
+If the :clique field is not provided it defaults to nil if fn does not
+occur as a function symbol in body and it defaults to the singleton
+list containing fn otherwise.  Thus, :clique must be supplied by the
+user only when the generalized definition rule is to be treated as one
+of several in a mutually recursive clique.
+
+The :controller-alist is an alist that maps each function symbol in the
+:clique to a mask specifying which arguments are considered
+controllers.  The mask for a given member of the clique, fn, must be a
+list of t's and nil's of length equal to the arity of fn.  A t should
+be in each argument position that is considered a "controller" of the
+recursion.  For a function admitted under the principle of definition,
+an argument controls the recursion if it is one of the arguments
+measured in the termination argument for the function.  But in
+generalized definition rules, the user is free to designate any subset
+of the arguments as controllers.  Failure to choose wisely may result
+in the "infinite expansion" of definitional rules but cannot render
+ACL2 unsound since the rule being misused is a theorem.
+
+If the :controller-alist is omitted it can sometimes be defaulted
+automatically by the system.  If the :clique is nil, the
+:controller-alist defaults to nil.  If the :clique is a singleton
+containing fn, the :controller-alist defaults to the controller alist
+computed by (defun fn args body).  If the :clique contains more than
+one function, the user must supply the :controller-alist specifying the
+controllers for each function in the clique.  This is necessary since
+the system cannot determine and thus cannot analyze the other
+definitional equations to be included in the clique.
+
+For example, suppose fn1 and fn2 have been defined one way and it is
+desired to make "alternative" mutually recursive definitions available
+to the rewriter.  Then one would prove two theorems and store each as a
+:definition rule.  These two theorems would exhibit equations
+"defining" fn1 and fn2 in terms of each other.  No provision is here
+made for exhibiting these two equations as a system of equations.  One
+is proved and then the other.  It just so happens that the user intends
+them to be treated as mutually recursive definitions.  To achieve this
+end, both :definition rules should specify the :clique (fn1 fn2) and
+should specify a suitable :controller-alist.  If, for example, the new
+definition of fn1 is controlled by its first argument and the new
+definition of fn2 is controlled by its second and third (and they each
+take three arguments) then a suitable :controller-alist would be ((fn1
+t nil nil) (fn2 nil t t)).  The order of the pairs in the alist is
+unimportant, but there must be a pair for each function in the clique.
+
+Inappropriate heuristic advice via :clique and :controller-alist can
+cause "infinite expansion" of generalized definitions, but cannot
+render ACL2 unsound.
+
+Note that the actual definition of fn1 has the runic name (:definition
+fn1).  The runic name of the alternative definition is (:definition
+lemma), where lemma is the name given to the event that created the
+generalized :definition rule.  This allows theories to switch between
+various "definitions" of the functions.
+
+By default, a :definition rule establishes the so-called "body" of a
+function.  The body is used by :expand hints, and it is also used
+heuristically by the theorem prover's preprocessing (the initial
+simplification using "simple" rules that is controlled by the
+preprocess symbol in :do-not hints), induction analysis, and the
+determination for when to warn about non-recursive functions in rules.
+The body is also used by some heuristics involving whether a function is
+recursively defined, and by the expand, x, and x-dumb commands of the
+proof-checker.
+
+See *Note RULE-CLASSES:: for a discussion of the optional field
+:install-body of :definition rules, which controls whether a
+:definition rule is used as described in the paragraph above.  Note
+that even if :install-body nil is supplied, the rewriter will still
+rewrite with the :definition rule; in that case, ACL2 just won't
+install a new body for the top function symbol of the left-hand side of
+the rule, which for example affects the application :expand hints as
+described in the preceding paragraph.  Also see *note SET-BODY:: and
+see *note SHOW-BODIES:: for how to change the body of a function symbol.
+
+Note only that if you prove a definition rule for function foo, say,
+foo-new-def, you will need to refer to that definition as foo-new-def
+or as (:DEFINITION foo-new-def).  That is because a :definition rule
+does not change the meaning of the symbol foo for :use hints, nor does
+it change the meaning of the symbol foo in theory expressions; see
+*note THEORIES::, in particular the discussion there of runic
+designators.  Similarly :pe foo and :pf foo will still show the
+original definition of foo.
+
+The definitional principle, defun, actually adds :definition rules.
+Thus the handling of generalized definitions is exactly the same as for
+"real" definitions because no distinction is made in the
+implementation.  Suppose (fn x y) is defun'd to be body.  Note that
+defun (or defuns or mutual-recursion) can compute the clique for fn
+from the syntactic presentation and it can compute the controllers from
+the termination analysis.  Provided the definition is admissible, defun
+adds the :definition rule (equal (fn x y) body).
+
+
+File: acl2-doc-emacs.info,  Node: ELIM,  Next: EQUIVALENCE,  Prev: DEFINITION,  Up: RULE-CLASSES
+
+ELIM    make a destructor elimination rule
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  Here we describe the
+class of :elim rules, which is fundamentally quite different from the
+more common class of :rewrite rules.  Briefly put, a :rewrite rule
+replaces instances of its left-hand side with corresponding instances
+of its right-hand side.  But an :elim rule, on the other hand, has the
+effect of generalizing so-called "destructor" function applications to
+variables.  In essence, applicability of a :rewrite rule is based on
+matching its left-hand side, while applicability of an :elim rule is
+based on the presence of at least one destructor term.
+
+For example, a conjecture about (car x) and (cdr x) can be replaced by
+a conjecture about new variables x1 and x2, as shown in the following
+example.  (Run the command :mini-proveall and search for CAR-CDR-ELIM
+to see the full proof containing this excerpt.)
+
+     Subgoal *1/1'
+     (IMPLIES (AND (CONSP X)
+                   (TRUE-LISTP (REV (CDR X))))
+              (TRUE-LISTP (APP (REV (CDR X)) (LIST (CAR X))))).
+     
+     The destructor terms (CAR X) and (CDR X) can be eliminated by using
+     CAR-CDR-ELIM to replace X by (CONS X1 X2), (CAR X) by X1 and (CDR X)
+     by X2.  This produces the following goal.
+     
+     Subgoal *1/1''
+     (IMPLIES (AND (CONSP (CONS X1 X2))
+                   (TRUE-LISTP (REV X2)))
+              (TRUE-LISTP (APP (REV X2) (LIST X1)))).
+     
+     This simplifies, using primitive type reasoning, to
+     
+     Subgoal *1/1'''
+     (IMPLIES (TRUE-LISTP (REV X2))
+              (TRUE-LISTP (APP (REV X2) (LIST X1)))).
+
+The resulting conjecture is often simpler and hence more amenable to
+proof.
+
+The application of an :elim rule thus replaces a variable by a term that
+contains applications of so-called "destructor" functions to that
+variable.  The example above is typical: the variable x is replaced by
+the term (cons (car x) (cdr x)), which applies a so-called "constructor"
+function, cons, to applications (car x) and (cdr x) of destructor
+functions car and cdr to that same variable, x.  But that is only part
+of the story.  ACL2 then generalizes the destructor applications (car
+x) and (cdr x) to new variables x1 and x2, respectively, and ultimately
+the result is a simpler conjecture.
+
+More generally, the application of an :elim rule replaces a variable by
+a term containing applications of destructors; there need not be a
+clear-cut notion of "constructor."  But the situation described above
+is typical, and we will focus on it, giving full details when we
+introduce the "General Form" below.
+
+The example above employs the following built-in :elim rule named
+car-cdr-elim.
+
+     Example:
+     (implies (consp x)                      when (car v) or (cdr v) appears
+              (equal (cons (car x) (cdr x))  in a conjecture, and v is a
+                     x))                     variable, consider replacing v by
+                                             (cons a b), for two new variables
+                                             a and b.
+     
+     Notice that the situation is complicated a bit by the fact that this
+     replacement is only valid if the variable being replaced a cons structure.
+     Thus, when ACL2 applies car-cdr-elim to replace a variable v, it will
+     split into two cases: one case in which (consp v) is true, in which v
+     is replaced by (cons (car v) (cdr v)) and then (car v) and
+     (cdr v) are generalized to new variables; and one case in which
+     (consp v) is false.  In practice, (consp v) is often provable,
+     perhaps even literally present as a hypotheses; then of course there is no
+     need to introduce the second case.  That is why there is no such second case
+     in the example above.
+     
+     You might find :elim rules to be useful whenever you have in mind a data
+     type that can be built up from its fields with a ``constructor'' function and
+     whose fields can be accessed by corresponding ``destructor'' functions.  So
+     for example, if you have a ``house'' data structure that represents a house
+     in terms of its address, price, and color, you might have a rule like the
+     following.
+          Example:
+          (implies (house-p x)
+                   (equal (make-house (address x)
+                                      (price x)
+                                      (color x))
+                          x))
+     
+     The application of such a rule is entirely analogous to the application of
+     the rule car-cdr-elim discussed above.  We discuss such rules and their
+     application more carefully below.
+     
+     General Form:
+     (implies hyp (equiv lhs x))
+
+where equiv is a known equivalence relation (see *note DEFEQUIV::); x
+is a variable symbol; and lhs contains one or more terms (called
+"destructor terms") of the form (fn v1 ... vn), where fn is a function
+symbol and the vi are distinct variable symbols, v1, ..., vn include
+all the variable symbols in the formula, no fn occurs in lhs in more
+than one destructor term, and all occurrences of x in lhs are inside
+destructor terms.
+
+To use an :elim rule, the theorem prover waits until a conjecture has
+been maximally simplified.  It then searches for an instance of some
+destructor term (fn v1 ... vn) in the conjecture, where the instance for
+x is some variable symbol, vi, and every occurrence of vi outside the
+destructor terms is in an equiv-hittable position.  If such an instance
+is found, then the theorem prover instantiates the :elim formula as
+indicated by the destructor term matched; splits the conjecture into two
+goals, according to whether the instantiated hypothesis, hyp, holds; and
+in the case that it does hold, generalizes all the instantiated
+destructor terms in the conjecture to new variables and then replaces
+vi in the conjecture by the generalized instantiated lhs.  An
+occurrence of vi is "equiv-hittable" if sufficient congruence rules
+(see *note DEFCONG::) have been proved to establish that the
+propositional value of the clause is not altered by replacing that
+occurrence of vi by some equiv-equivalent term.
+
+If an :elim rule is not applied when you think it should have been, and
+the rule uses an equivalence relation, equiv, other than equal, it is
+most likely that there is an occurrence of the variable that is not
+equiv-hittable.  Easy occurrences to overlook are those in the
+governing hypotheses.  If you see an unjustified occurrence of the
+variable, you must prove the appropriate congruence rule to allow the
+:elim to fire.
+
+Further examples of how ACL2 :elim rules are used may be found in the
+corresponding discussion of "Elimation of Destructors" for Nqthm, in
+Section 10.4 of A Computational Logic Handbook.
+
+
+File: acl2-doc-emacs.info,  Node: EQUIVALENCE,  Next: FORWARD-CHAINING,  Prev: ELIM,  Up: RULE-CLASSES
+
+EQUIVALENCE    mark a relation as an equivalence relation
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :equivalence rule might be built is as follows.
+(We assume that r-equal has been defined.)
+
+     Example:
+     (and (booleanp (r-equal x y))
+          (r-equal x x)
+          (implies (r-equal x y) (r-equal y x))
+          (implies (and (r-equal x y)
+                        (r-equal y z))
+                   (r-equal x z))).
+
+Also see *note DEFEQUIV::.
+
+     General Form:
+     (and (booleanp (equiv x y))
+          (equiv x x)
+          (implies (equiv x y) (equiv y x))
+          (implies (and (equiv x y)
+                        (equiv y z))
+                   (equiv x z)))
+
+except that the order of the conjuncts and terms and the choice of
+variable symbols is unimportant.  The effect of such a rule is to
+identify equiv as an equivalence relation.  Note that only Boolean
+2-place function symbols can be treated as equivalence relations.  See
+*Note CONGRUENCE:: and see *note REFINEMENT:: for closely related
+concepts.
+
+The macro form (defequiv equiv) is an abbreviation for a defthm of
+rule-class :equivalence that establishes that equiv is an equivalence
+relation.  It generates the formula shown above.  See *Note DEFEQUIV::.
+
+When equiv is marked as an equivalence relation, its reflexivity,
+symmetry, and transitivity are built into the system in a deeper way
+than via :rewrite rules.  More importantly, after equiv has been shown
+to be an equivalence relation, lemmas about equiv, e.g.,
+
+     (implies hyps (equiv lhs rhs)),
+
+when stored as :rewrite rules, cause the system to rewrite certain
+occurrences of (instances of) lhs to (instances of) rhs.  Roughly
+speaking, an occurrence of lhs in the kth argument of some
+fn-expression, (fn ... lhs' ...), can be rewritten to produce (fn ...
+rhs' ...), provided the system "knows" that the value of fn is
+unaffected by equiv-substitution in the kth argument.  Such knowledge
+is communicated to the system via "congruence lemmas."
+
+For example, suppose that r-equal is known to be an equivalence
+relation.  The :congruence lemma
+
+     (implies (r-equal s1 s2)
+              (equal (fn s1 n) (fn s2 n)))
+
+informs the rewriter that, while rewriting the first argument of
+fn-expressions, it is permitted to use r-equal rewrite-rules.  See
+*Note CONGRUENCE:: for details about :congruence lemmas.
+Interestingly, congruence lemmas are automatically created when an
+equivalence relation is stored, saying that either of the equivalence
+relation's arguments may be replaced by an equivalent argument.  That
+is, if the equivalence relation is fn, we store congruence rules that
+state the following fact:
+
+     (implies (and (fn x1 y1)
+                   (fn x2 y2))
+              (iff (fn x1 x2) (fn y1 y2)))
+
+Another aspect of equivalence relations is that of "refinement."  We
+say equiv1 "refines" equiv2 iff (equiv1 x y) implies (equiv2 x y).
+:refinement rules permit you to establish such connections between your
+equivalence relations.  The value of refinements is that if the system
+is trying to rewrite something while maintaining equiv2 it is permitted
+to use as a :rewrite rule any refinement of equiv2.  Thus, if equiv1 is
+a refinement of equiv2 and there are equiv1 rewrite-rules available,
+they can be brought to bear while maintaining equiv2.  See *Note
+REFINEMENT::.
+
+The system initially has knowledge of two equivalence relations,
+equality, denoted by the symbol equal, and propositional equivalence,
+denoted by iff.  Equal is known to be a refinement of all equivalence
+relations and to preserve equality across all arguments of all
+functions.
+
+Typically there are five steps involved in introducing and using a new
+equivalence relation, equiv.
+
+     (1) Define equiv,
+
+     (2) prove the :equivalence lemma about equiv,
+
+     (3) prove the :congruence lemmas that show where equiv can be used
+     to maintain known relations,
+
+     (4) prove the :refinement lemmas that relate equiv to known
+     relations other than equal, and
+
+     (5) develop the theory of conditional :rewrite rules that drive
+     equiv rewriting.
+
+More will be written about this as we develop the techniques.  For now,
+here is an example that shows how to make use of equivalence relations
+in rewriting.
+
+Among the theorems proved below is
+
+     (defthm insert-sort-is-id
+       (perm (insert-sort x) x))
+
+Here perm is defined as usual with delete and is proved to be an
+equivalence relation and to be a congruence relation for cons and
+member.
+
+Then we prove the lemma
+
+     (defthm insert-is-cons
+       (perm (insert a x) (cons a x)))
+
+which you must think of as you would (insert a x) = (cons a x).
+
+Now prove (perm (insert-sort x) x).  The base case is trivial.  The
+induction step is
+
+        (consp x)
+      & (perm (insert-sort (cdr x)) (cdr x))
+     
+     -> (perm (insert-sort x) x).
+
+Opening insert-sort makes the conclusion be
+
+        (perm (insert (car x) (insert-sort (cdr x))) x).
+
+Then apply the induction hypothesis (rewriting (insert-sort (cdr x)) to
+(cdr x)), to make the conclusion be
+
+     (perm (insert (car x) (cdr x)) x)
+
+Then apply insert-is-cons to get (perm (cons (car x) (cdr x)) x).  But
+we know that (cons (car x) (cdr x)) is x, so we get (perm x x) which is
+trivial, since perm is an equivalence relation.
+
+Here are the events.
+
+     (encapsulate (((lt * *) => *))
+       (local (defun lt (x y) (declare (ignore x y)) nil))
+       (defthm lt-non-symmetric (implies (lt x y) (not (lt y x)))))
+     
+     (defun insert (x lst)
+       (cond ((atom lst) (list x))
+             ((lt x (car lst)) (cons x lst))
+             (t (cons (car lst) (insert x (cdr lst))))))
+     
+     (defun insert-sort (lst)
+       (cond ((atom lst) nil)
+             (t (insert (car lst) (insert-sort (cdr lst))))))
+     
+     (defun del (x lst)
+       (cond ((atom lst) nil)
+             ((equal x (car lst)) (cdr lst))
+             (t (cons (car lst) (del x (cdr lst))))))
+     
+     (defun mem (x lst)
+       (cond ((atom lst) nil)
+             ((equal x (car lst)) t)
+             (t (mem x (cdr lst)))))
+     
+     (defun perm (lst1 lst2)
+       (cond ((atom lst1) (atom lst2))
+             ((mem (car lst1) lst2)
+              (perm (cdr lst1) (del (car lst1) lst2)))
+             (t nil)))
+     
+     (defthm perm-reflexive
+       (perm x x))
+     
+     (defthm perm-cons
+       (implies (mem a x)
+                (equal (perm x (cons a y))
+                       (perm (del a x) y)))
+       :hints (("Goal" :induct (perm x y))))
+     
+     (defthm perm-symmetric
+       (implies (perm x y) (perm y x)))
+     
+     (defthm mem-del
+       (implies (mem a (del b x)) (mem a x)))
+     
+     (defthm perm-mem
+       (implies (and (perm x y)
+                     (mem a x))
+                (mem a y)))
+     
+     (defthm mem-del2
+       (implies (and (mem a x)
+                     (not (equal a b)))
+                (mem a (del b x))))
+     
+     (defthm comm-del
+       (equal (del a (del b x)) (del b (del a x))))
+     
+     (defthm perm-del
+       (implies (perm x y)
+                (perm (del a x) (del a y))))
+     
+     (defthm perm-transitive
+       (implies (and (perm x y) (perm y z)) (perm x z)))
+     
+     (defequiv perm)
+     
+     (in-theory (disable perm
+                         perm-reflexive
+                         perm-symmetric
+                         perm-transitive))
+     
+     (defcong perm perm (cons x y) 2)
+     
+     (defcong perm iff (mem x y) 2)
+     
+     (defthm atom-perm
+       (implies (not (consp x)) (perm x nil))
+       :rule-classes :forward-chaining
+       :hints (("Goal" :in-theory (enable perm))))
+     
+     (defthm insert-is-cons
+       (perm (insert a x) (cons a x)))
+     
+     (defthm insert-sort-is-id
+       (perm (insert-sort x) x))
+     
+     (defun app (x y) (if (consp x) (cons (car x) (app (cdr x) y)) y))
+     
+     (defun rev (x)
+       (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
+     
+     (defcong perm perm (app x y) 2)
+     
+     (defthm app-cons
+       (perm (app a (cons b c)) (cons b (app a c))))
+     
+     (defthm app-commutes
+       (perm (app a b) (app b a)))
+     
+     (defcong perm perm (app x y) 1
+       :hints (("Goal" :induct (app y x))))
+     
+     (defthm rev-is-id (perm (rev x) x))
+     
+     (defun == (x y)
+       (if (consp x)
+           (if (consp y)
+               (and (equal (car x) (car y))
+                    (== (cdr x) (cdr y)))
+               nil)
+           (not (consp y))))
+     
+     (defthm ==-reflexive (== x x))
+     
+     (defthm ==-symmetric (implies (== x y) (== y x)))
+     
+     (defequiv ==)
+     
+     (in-theory (disable ==-symmetric ==-reflexive))
+     
+     (defcong == == (cons x y) 2)
+     
+     (defcong == iff (consp x) 1)
+     
+     (defcong == == (app x y) 2)
+     
+     (defcong == == (app x y) 1)
+     
+     (defthm rev-rev (== (rev (rev x)) x))
+
+
+File: acl2-doc-emacs.info,  Node: FORWARD-CHAINING,  Next: FREE-VARIABLES,  Prev: EQUIVALENCE,  Up: RULE-CLASSES
+
+FORWARD-CHAINING    make a rule to forward chain when a certain trigger arises
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :forward-chaining rule might be built is:
+
+     Example:
+     (implies (and (p x) (r x))        when (p a) appears in a formula to be
+              (q (f x)))               simplified, try to establish (r a) and
+                                       if successful, add (q (f a)) to the
+                                       known assumptions
+
+To specify the triggering terms provide a non-empty list of terms as
+the value of the :trigger-terms field of the rule class object.
+
+     General Form:
+     Any theorem, provided an acceptable triggering term exists.
+
+Forward chaining rules are generated from the corollary term as
+follows.  If that term has the form (implies hyp concl), then the let
+expressions in concl (formally, lambda expressions) are expanded away,
+and the result is treated as a conjunction, with one forward chaining
+rule with hypothesis hyp created for each conjunct.  In the other case,
+where the corollary term is not an implies, we process it as we process
+the conclusion in the first case.
+
+The :trigger-terms field of a :forward-chaining rule class object
+should be a non-empty list of terms, if provided, and should have
+certain properties described below.  If the :trigger-terms field is not
+provided, it defaults to the singleton list containing the "atom" of
+the first hypothesis of the formula.  (The atom of (not x) is x; the
+atom of any other term is the term itself.)  If there are no hypotheses
+and no :trigger-terms were provided, an error is caused.
+
+A triggering term is acceptable if it is not a variable, a quoted
+constant, a lambda application, a let-expression, or a not-expression,
+and every variable symbol in the conclusion of the theorem either
+occurs in the hypotheses or occurs in the trigger.
+
+:Forward-chaining rules are used by the simplifier before it begins to
+rewrite the literals of the goal.  (Forward chaining is thus carried
+out from scratch for each goal.)  If any term in the goal is an
+instance of a trigger of some forward chaining rule, we try to
+establish the hypotheses of that forward chaining theorem (from the
+negation of the goal).  To relieve a hypothesis we only use type
+reasoning, evaluation of ground terms, and presence among our known
+assumptions.  We do not use rewriting.  So-called free variables in
+hypotheses are treated specially; see *note FREE-VARIABLES::.  If all
+hypotheses are relieved, we add the instantiated conclusion to our
+known assumptions.
+
+_Caution_.  Forward chaining does not actually add terms to the goals
+displayed during proof attempts.  Instead, it extends an associated
+_context_, called "assumptions" in the preceding paragraph, that ACL2
+builds from the goal currently being proved.  The context starts out
+with "obvious" consequences of the negation of the goal.  For example,
+if the goal is
+
+     (implies (and (p x) (q (f x)))
+              (c x))
+
+then the context notes that (p x) and (q (f x)) are non-nil and
+
+(c x) is nil.  Forward chaining is then used to expand the context.
+For example, if a forward chaining rule has (f x) as a trigger term and
+has body (implies (p x) (r (f x))), then the context is extended by
+binding (r (f x)) to non-nil.  Note however that since (r (f x)) is put
+into the context, not the goal, it is _not_ further simplified.  If f
+is an enabled nonrecursive function symbol then this forward chaining
+rule may well be useless, since calls of f may be expanded away.
+
+Another common misconception is this:  Suppose that you forward chain
+and put (< (f x) (g x)) into the context.  Then does it go into the
+linear arithmetic data base?  Answer: no.  Alternative question: do we
+go looking for linear lemmas about (g x)?  Answer: no.  The linear
+arithmetic data base is built up by a process very similar to but
+independent of forward chaining.
+

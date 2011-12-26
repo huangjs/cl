@@ -1,0 +1,392 @@
+<html>
+<head><title>FREE-VARIABLES-EXAMPLES-REWRITE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>FREE-VARIABLES-EXAMPLES-REWRITE</h4>examples pertaining to free variables in <a href="REWRITE.html">rewrite</a> rules
+<pre>Major Section:  <a href="FREE-VARIABLES-EXAMPLES.html">FREE-VARIABLES-EXAMPLES</a>
+</pre><p>
+
+The following examples illustrate ACL2's handling of free variables in
+<a href="REWRITE.html">rewrite</a> rules, as well as user control over how such free variables are
+handled.  See <a href="FREE-VARIABLES.html">free-variables</a> for a background discussion.
+<p>
+
+<pre>
+(defstub p2 (x y) t) ; introduce unconstrained function<p>
+
+; Get warning because of free variable.  This would be an error if you had
+; first executed (set-match-free-error t) in order to force yourself to
+; specify :match-free (illustrated later, below).
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (p2 x z)))<p>
+
+; Succeeds.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+; The following causes an error because p2-trans is not a rune.
+(add-match-free-override :once p2-trans)<p>
+
+; After the following, the rewrite rule p2-trans will only allow one
+; attempt per hypothesis to bind free variables.
+(add-match-free-override :once (:rewrite p2-trans))<p>
+
+; Now this same theorem fails to be proved.  Here's why.  The
+; context for proving (p2 a d) happens to include the hypotheses in
+; reverse order.  So when the first hypothesis of p2-trans, namely
+; (p2 x y), is relieved, where x is bound to a (as we are attempting
+; to rewrite the current literal (p2 a d)), we find (p2 a b) in the
+; context before (p2 a c) and hence y is bound to b.  The
+; instantiated second hypothesis of p2-trans is thus (p2 b d), and
+; the proof fails.  Before the add-match-free-override form above,
+; the proof succeeded because the rewriter was allowed to backtrack
+; and find the other binding for the first hypothesis of p2-trans,
+; namely, y bound to c.  Then the instantiated second hypothesis of
+; p2-trans is (p2 c d), which is known to be true in the current
+; context.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+; Return to original behavior for binding free variables.
+(add-match-free-override :all t)<p>
+
+; Succeeds once again.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+(u) ; undo (add-match-free-override :all t)<p>
+
+; This is an error, since no further arguments should appear after
+; :clear.
+(add-match-free-override :clear t)<p>
+
+; Return all rules to original behavior for binding free variables,
+; regardless of which previous add-match-free-override forms have
+; been executed.
+(add-match-free-override :clear)<p>
+
+; This succeeds just as it did originally.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+(ubt! 'p2-trans) ; back to the start, except retain the defstub<p>
+
+; Require that :match-free be specified for :linear and :rewrite rules with
+; free variables.
+(set-match-free-error t)<p>
+
+; Fails because :match-free is missing.
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (p2 x z)))<p>
+
+; Fails because :match-free must be followed by :once or :all.
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (p2 x z))
+  :rule-classes ((:rewrite :match-free nil)))<p>
+
+; Succeeds, this time with no warning at all.
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (p2 x z))
+  :rule-classes ((:rewrite :match-free :once)))<p>
+
+; Fails because we only bind once (see earlier long comment).
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+; Treat p2-trans as though `:match-free :all' had been specified.
+(add-match-free-override :all (:rewrite p2-trans))<p>
+
+; Succeeds since more than one binding is allowed for p2-trans.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+(u)
+(u)<p>
+
+; Specify that future :linear and :rewrite rules with free variables
+; that do not have :match-free specified are treated as though
+; `:match-free :once' were specified.
+(set-match-free-default :once)<p>
+
+; Succeeds without error since `:match-free' is specified, as described
+; above.  But there is a warning, since :match-free is not specified for this
+; :rewrite rule.
+(defaxiom p2-trans
+  (implies (and (p2 x y)
+                (p2 y z))
+           (p2 x z)))<p>
+
+; Fails since only single bindings are allowed for p2-trans.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+; Treat p2-trans as though `:match-free :all' had been specified.
+(add-match-free-override :all t)<p>
+
+; Succeeds.
+(thm (implies (and (p2 a c)
+                   (p2 a b)
+                   (p2 c d))
+              (p2 a d)))<p>
+
+;;; Test searching of ground units, i.e. rewrite rules without
+;;; variables on the left side of the conclusion, for use in
+;;; relieving hypotheses with free variables.  This is a very
+;;; contrived example.<p>
+
+(ubt! 1) ; back to the start<p>
+
+(encapsulate
+ (((p1 *) =&gt; *)
+  ((p2 * *) =&gt; *)
+  ((p3 *) =&gt; *)
+  ((a) =&gt; *)
+  ((b) =&gt; *))
+ (local (defun p1 (x) x))
+ (local (defun p2 (x y) (list x y)))
+ (local (defun p3 (x) x))
+ (local (defun a () 0))
+ (local (defun b () 0)))<p>
+
+; Allow default of :match-free :all (form may be omitted).
+(set-match-free-error nil)<p>
+
+(defaxiom ax1
+  (implies (and (p2 x y)
+                (p1 y))
+           (p3 x)))<p>
+
+(defaxiom p2-a-b
+  (p2 (a) (b)))<p>
+
+(defaxiom p2-a-a
+  (p2 (a) (a)))<p>
+
+(defaxiom p1-b
+  (p1 (b)))<p>
+
+; Succeeds; see long comment below on next attempt to prove this
+; theorem.
+(thm (implies (p2 (a) y)
+              (p3 (a))))<p>
+
+; Now ax1 will only relieve hypothesis (p2 x y) for one binding of y:
+(add-match-free-override :once t)<p>
+
+; Fails when ax1 attempts to rewrite the conclusion to true, because
+; the most recent ground unit for hypothesis (p2 x y) with x bound
+; to (a) is rule p2-a-a, which binds y to (a).  If more than one ground
+; unit could be used then we would backtrack and apply rule p2-a-b,
+; which binds y to (b) and hence hypothesis (p1 y) of ax1 is
+; relieved by rule p1-b.
+(thm (implies (p2 (a) y)
+              (p3 (a))))<p>
+
+; Return rules to original :match-free behavior.
+(add-match-free-override :clear)<p>
+
+; Succeeds once again.
+(thm (implies (p2 (a) y)
+              (p3 (a))))<p>
+
+; Just for kicks, change the behavior of a built-in rule irrelevant
+; to the proof at hand.
+(add-match-free-override :once (:rewrite string&lt;-l-trichotomy))<p>
+
+; Still succeeds.
+(thm (implies (p2 (a) y)
+              (p3 (a))))<p>
+
+;;;;;;;;;;
+</pre>
+<p>
+
+FINALLY, here is an example illustrating the use of the <a href="BREAK-REWRITE.html">break-rewrite</a>
+facility to get information about handling of free variables by the
+rewriter.  Explanation is given after this (edited) transcript.  Input
+begins on lines with a prompt (search for ``ACL2''); the rest is output.<p>
+
+
+<pre>
+ACL2 !&gt;(encapsulate
+        ((p1 (u x) t)
+         (bad (x) t)
+         (p2 (x y z) t)
+         (bar (x y) t)
+         (foo (x y) t)
+         (poo (x y) t)
+         (prop (u) t))<p>
+
+        (local (defun p1 (u x) (declare (ignore u x)) nil))
+        (local (defun bad (x) (declare (ignore x)) nil))
+        (local (defun p2 (x y z) (declare (ignore x y z)) nil))
+        (local (defun bar (x y) (declare (ignore x y)) nil))
+        (local (defun foo (x y) (declare (ignore x y)) nil))
+        (local (defun poo (x y) (declare (ignore x y)) nil))
+        (local (defun prop (u) (declare (ignore u)) t))<p>
+
+        (defthm foo-poo
+          (implies (syntaxp (equal y 'y3))
+                   (equal (foo x y)
+                          (poo x y))))<p>
+
+        (defthm lemma-1
+          (implies (and (p1 u x)
+                        (bad x)
+                        (p2 x y z)
+                        (bar x y)
+                        (equal x x) ; admittedly silly!
+                        (foo x y))
+                   (prop u))
+          :rule-classes ((:rewrite :match-free :all))))<p>
+
+; [[ output omitted ]]<p>
+
+Summary
+Form:  ( ENCAPSULATE ((P1 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+Time:  0.08 seconds (prove: 0.00, print: 0.01, other: 0.06)
+ T
+ACL2 !&gt;:brr t
+The monitored runes are:
+NIL
+ T
+ACL2 !&gt;:monitor (:rewrite lemma-1) t
+(((:REWRITE LEMMA-1) 'T))
+ACL2 !&gt;(thm (implies (and (p1 u0 x1)
+                          (bad x1)
+                          (bad x3)
+                          (bar x3 y1)
+                          (bar x3 y3)
+                          (p1 u0 x2)
+                          (p1 u0 x3)
+                          (p2 x3 y1 z1)
+                          (p2 x3 y3 z1))
+                     (prop u0)))<p>
+
+(1 Breaking (:REWRITE LEMMA-1) on (PROP U0):
+1 ACL2 &gt;:eval<p>
+
+1x (:REWRITE LEMMA-1) failed because :HYP 1 contains free variables.
+The following display summarizes the attempts to relieve hypotheses
+by binding free variables; see :DOC free-variables and see :DOC set-
+brr-term-evisc-tuple.<p>
+
+    [1] X : X1
+Failed because :HYP 3 contains free variables Y and Z, for which no
+suitable bindings were found.
+    [1] X : X2
+Failed because :HYP 2 rewrote to (BAD X2).
+    [1] X : X3
+        [3] Z : Z1
+            Y : Y1
+Failed because :HYP 6 rewrote to (FOO X3 Y1).
+        [3] Z : Z1
+            Y : Y3
+Failed because :HYP 6 rewrote to (POO X3 Y3).<p>
+
+1 ACL2 &gt;:unify-subst
+     U : U0
+1 ACL2 &gt;
+</pre>
+
+The <code>:eval</code> command above asks the rewriter to attempt to apply the rewrite
+rule <code>lemma-1</code> to the term <code>(prop u0)</code>, shown just above the line with
+<code>:eval</code>.  As we can see at the end, the variable <code>u</code> in the conclusion of
+<code>lemma-1</code> is being bound to the variable <code>u0</code> in the conjecture.  The
+first hypothesis of <code>lemma-1</code> is <code>(p1 u x)</code>, so the rewriter looks for
+some <code>x</code> for which <code>(p1 u0 x)</code> is known to be true.  It finds <code>x1</code>, and
+then goes on to consider the second hypothesis, <code>(bad x)</code>.  Since the
+theorem we are proving has <code>(bad x1)</code> in the hypothesis and <code>x</code> is
+currently bound to <code>x1</code>, the rewriter is satisfied and moves on to the
+third hypothesis of <code>lemma-1</code>, <code>(p2 x y z)</code>.  However, <code>x</code> is bound
+to <code>x1</code> and there are no instances of <code>y</code> and <code>z</code> for which
+<code>(p2 x1 y z)</code> is known in the current context.  All of the above analysis
+is summarized in the first part of the output from <code>:eval</code> above:
+
+<pre>
+    [1] X : X1
+Failed because :HYP 3 contains free variables Y and Z, for which no
+suitable bindings were found.
+</pre>
+
+Thus, the binding of <code>x</code> to <code>x1</code> on behalf of the first hypothesis has
+failed.<p>
+
+The rewriter now backs up to look for other values of <code>x</code> that satisfy the
+first hypothesis, and finds <code>x2</code> because our current theorem has a
+hypothesis of <code>(p1 u0 x2)</code>.  But this time, the second hypothesis of
+<code>lemma-1</code>, <code>(bad x)</code>, is not known to be true for <code>x</code>; that is,
+<code>(bad x2)</code> does not rewrite to <code>t</code>; in fact, it rewrites to itself.  That
+explains the next part of the output from <code>:eval</code> above:
+
+<pre>
+    [1] X : X2
+Failed because :HYP 2 rewrote to (BAD X2).
+</pre>
+<p>
+
+The rewriter now backs up again to look for other values of <code>x</code> that
+satisfy the first hypothesis, and finds <code>x3</code> because our current theorem
+has a hypothesis of <code>(p1 u0 x3)</code>.  This time, the second hypothesis of
+<code>lemma-1</code> is not a problem, and moreover, the rewriter is able to bind
+<code>y</code> and <code>z</code> to <code>y1</code> and <code>z1</code>, respectively, in order to satisfy the
+third hypothesis, <code>(p2 x y z)</code>: that is, <code>(p2 x2 y1 z1)</code> is known in the
+current context.  That explains more of the above output from <code>:eval</code>:
+
+<pre>
+    [1] X : X3
+        [3] Z : Z1
+            Y : Y1
+</pre>
+
+Unfortunately, the sixth hypothesis, <code>(foo x y)</code>, rewrites to itself
+under the above bindings:
+
+<pre>
+Failed because :HYP 6 rewrote to (FOO X3 Y1).
+</pre>
+
+So the rewriter looks for other bindings to satisfy the third hypothesis and
+finds these.
+
+<pre>
+        [3] Z : Z1
+            Y : Y3
+</pre>
+
+This time, the sixth hypothesis can be rewritten under the above bindings,
+from <code>(foo x3 y3)</code> to <code>(poo x3 y3)</code> by lemma <code>foo-poo</code>, but still not
+to <code>t</code>.
+
+<pre>
+Failed because :HYP 6 rewrote to (POO X3 Y3).
+</pre>
+
+There are no more free variable bindings to try, so this concludes the output
+from <code>:eval</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

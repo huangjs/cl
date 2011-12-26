@@ -1,0 +1,172 @@
+<html>
+<head><title>EMBEDDED-EVENT-FORM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>EMBEDDED-EVENT-FORM</h2>forms that may be embedded in other <a href="EVENTS.html">events</a>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defun hd (x) (if (consp x) (car x) 0))
+(local (defthm lemma23 ...))
+(progn (defun fn1 ...)
+       (local (defun fn2 ...))
+       ...)
+<p>
+General Form:
+An embedded event form is a term, x, such that:</pre>
+
+<blockquote><p>
+
+  <code>x</code> is a call of an event function other than <code><a href="DEFPKG.html">DEFPKG</a></code> (see <a href="EVENTS.html">events</a> for
+  a listing of the event functions);<p>
+
+  <code>x</code> is of the form <code>(</code><code><a href="LOCAL.html">LOCAL</a></code><code> x1)</code> where <code>x1</code> is an embedded
+  event form;<p>
+
+  <code>x</code> is of the form <code>(</code><code><a href="SKIP-PROOFS.html">SKIP-PROOFS</a></code><code> x1)</code> where <code>x1</code> is an
+  embedded event form;<p>
+
+  <code>x</code> is of the form <code>(</code><code><a href="MAKE-EVENT.html">MAKE-EVENT</a></code><code> &amp;)</code>, where <code>&amp;</code> is any term
+  whose expansion is an embedded event (see <a href="MAKE-EVENT.html">make-event</a>);<p>
+
+  <code>x</code> is of the form <code>(</code><code><a href="WITH-OUTPUT.html">WITH-OUTPUT</a></code><code> ... x1)</code> where <code>x1</code> is an
+  embedded event form;<p>
+
+  <code>x</code> is of the form <code>(VALUE-TRIPLE &amp;)</code>, where <code>&amp;</code> is any term;<p>
+
+  <code>x</code> is a call of <code><a href="ENCAPSULATE.html">ENCAPSULATE</a></code>, <code><a href="PROGN.html">PROGN</a></code>, <code><a href="PROGN_bang_.html">PROGN!</a></code>, or
+  <code><a href="INCLUDE-BOOK.html">INCLUDE-BOOK</a></code>;<p>
+
+  <code>x</code> macroexpands to one of the forms above; or<p>
+
+  [intended only for the implementation] <code>x</code> is
+  <code>(RECORD-EXPANSION x1 x2)</code>, where <code>x1</code> and <code>x2</code> are embedded event
+  forms.<p>
+
+</blockquote>
+
+An exception: an embedded event form may not set the
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> when in the context of <code><a href="LOCAL.html">local</a></code>.  Thus for example,
+the form
+
+<pre>
+(local (table acl2-defaults-table :defun-mode :program))
+</pre>
+
+is not an embedded event form, nor is the form <code>(local (program))</code>,
+since the latter sets the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> implicitly.  An
+example at the end of the discussion below illustrates why there is
+this restriction.<p>
+
+Only embedded event forms are allowed in a book after its initial
+<code><a href="IN-PACKAGE.html">in-package</a></code> form.  See <a href="BOOKS.html">books</a>.  However, you may find that
+<code><a href="MAKE-EVENT.html">make-event</a></code> allows you to get the effect you want for a form that is not
+an embedded event form.  For example, you can put the following into a book,
+which assigns the value 17 to <code><a href="STATE.html">state</a></code> global variable <code>x</code>:
+
+<pre>
+(make-event (er-progn (assign x 17)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+</pre>
+<p>
+
+When an embedded event is executed while <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, those parts of it inside <code><a href="LOCAL.html">local</a></code> forms are ignored.
+Thus,
+
+<pre>
+   (progn (defun f1 () 1)
+          (local (defun f2 () 2))
+          (defun f3 () 3))
+</pre>
+
+will define <code>f1</code>, <code>f2</code>, and <code>f3</code> when <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is <code>nil</code> but will
+define only <code>f1</code> and <code>f3</code> when <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+<em>Discussion:</em><p>
+
+<code><a href="ENCAPSULATE.html">Encapsulate</a></code>, <code><a href="PROGN.html">progn</a></code>, and <code><a href="INCLUDE-BOOK.html">include-book</a></code> place restrictions on
+the kinds of forms that may be processed.  These restrictions ensure that the
+non-local <a href="EVENTS.html">events</a> are indeed admissible provided that the sequence of
+<code><a href="LOCAL.html">local</a></code> and non-local <a href="EVENTS.html">events</a> is admissible when proofs are done,
+i.e., when <code>ld-skip-proofs</code> is <code>nil</code>.  But <code><a href="PROGN_bang_.html">progn!</a></code> places no such
+restrictions, hence is potentially dangerous and should be avoided unless you
+understand the ramifications; so it is illegal unless there is an active
+trust tag (see <a href="DEFTTAG.html">defttag</a>).<p>
+
+<code><a href="LOCAL.html">Local</a></code> permits the hiding of an event or group of <a href="EVENTS.html">events</a> in the
+sense that <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> are processed when we are trying to
+establish the admissibility of a sequence of <a href="EVENTS.html">events</a> embedded in
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> forms or in <a href="BOOKS.html">books</a>, but are ignored when we are
+constructing the <a href="WORLD.html">world</a> produced by assuming that sequence.  Thus, for
+example, a particularly ugly and inefficient <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule might be
+made <code><a href="LOCAL.html">local</a></code> to an <a href="ENCAPSULATE.html">encapsulate</a> that ``exports'' a desirable theorem
+whose proof requires the ugly lemma.<p>
+
+To see why we can't allow just anything in as an embedded event,
+consider allowing the form
+
+<pre>
+(if (ld-skip-proofsp state)
+    (defun foo () 2)
+    (defun foo () 1))
+</pre>
+
+followed by
+
+<pre>
+(defthm foo-is-1 (equal (foo) 1)).
+</pre>
+
+When we process the <a href="EVENTS.html">events</a> with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code>, <code>nil</code> the second
+<code><a href="DEFUN.html">defun</a></code> is executed and the <code><a href="DEFTHM.html">defthm</a></code> succeeds.  But when we process the
+<a href="EVENTS.html">events</a> with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, the second <code><a href="DEFUN.html">defun</a></code> is
+executed, so that <code>foo</code> no longer has the same definition it did when
+we proved <code>foo-is-1</code>.  Thus, an invalid formula is assumed when we
+process the <code><a href="DEFTHM.html">defthm</a></code> while skipping proofs.  Thus, the first form
+above is not a legal embedded event form.<p>
+
+If you encounter a situation where these restrictions seem to prevent you
+from doing what you want to do, then you may find <code>make-event</code> to be
+helpful.  See <a href="MAKE-EVENT.html">make-event</a>.<p>
+
+<code><a href="DEFPKG.html">Defpkg</a></code> is not allowed because it affects how things are read after
+it is executed.  But all the forms embedded in an event are read
+before any are executed.  That is,
+
+<pre>
+(encapsulate nil
+             (defpkg "MY-PKG" nil)
+             (defun foo () 'my-pkg::bar))
+</pre>
+
+makes no sense since <code>my-pkg::bar</code> must have been read before the
+<code><a href="DEFPKG.html">defpkg</a></code> for <code>"MY-PKG"</code> was executed.<p>
+
+Finally, let us elaborate on the restriction mentioned earlier
+related to the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>.  Consider the following form.
+
+<pre>
+(encapsulate
+ ()
+ (local (program))
+ (defun foo (x)
+   (if (equal 0 x)
+       0
+     (1+ (foo (- x))))))
+</pre>
+
+See <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a> for a discussion of how <code><a href="ENCAPSULATE.html">encapsulate</a></code>
+processes event forms.  Briefly, on the first pass through the
+<a href="EVENTS.html">events</a> the definition of <code>foo</code> will be accepted in <code><a href="DEFUN.html">defun</a></code> mode
+<code>:</code><code><a href="PROGRAM.html">program</a></code>, and hence accepted.  But on the second pass the form
+<code>(local (program))</code> is skipped because it is marked as <code><a href="LOCAL.html">local</a></code>, and
+hence <code>foo</code> is accepted in <code><a href="DEFUN.html">defun</a></code> mode <code>:</code><code><a href="LOGIC.html">logic</a></code>.  Yet, no proof has been
+performed in order to admit <code>foo</code>, and in fact, it is not hard to
+prove a contradiction from this definition!
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<html>
+<head><title>ACL2-PC_colon__colon_TYPE-ALIST.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::TYPE-ALIST</h3>(macro)
+<code>   </code>display the type-alist from the current context
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(type-alist t t) ; display type-alist based on both conclusion and governors
+type-alist       ; same as (type-alist nil t) -- governors only
+(type-alist nil) ; same as (type-alist nil t) -- governors only
+(type-alist t)   ; same as (type-alist t nil) -- conclusion only
+(type-alist nil nil) ; display type-alist without considering
+                     ; conclusion or governors
+<p>
+General Form:
+(type-alist &amp;optional concl-flg govs-flg)
+</pre>
+
+where if <code>govs-flg</code> is omitted, it defaults to <code>(not concl-flg)</code>.<p>
+
+Display the current assumptions as a type-alist.  Note that this
+display includes the result of forward chaining.<p>
+
+There are two basic reasons contemplated for using this command.<p>
+
+1. The theorem prover has failed (either outside the proof-checker or using a
+proof-checker command such as <code>bash</code> or <code>reduce</code> and you want to
+debug by getting an idea of what the prover knows about the context.
+<blockquote><p>
+
+a. You really are interested in the context for the current term.  Include
+hypotheses and governors (i.e., accounting for tests of surrounding
+<code>if</code>-expressions that must be true or false) but not the current conclusion
+(which the theorem prover's heuristics would generally ignore for contextual
+information).  Command:<br>
+
+<code>(type-alist nil t)</code> ; equivalently, <code>type-alist</code> or <code>(type-alist nil)</code><p>
+
+b. You are not thinking in particular about the current term; you just want
+to get an idea of the context that the prover would build at the top-level,
+for forward-chaining.  Incorporate the conclusion but not the governors.
+Command:<br>
+
+<code>(type-alist t nil)</code> ; equivalently, <code>(type-alist t)</code></blockquote>
+<p>
+
+2. You intend to use one of the <a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a> that does
+simplification, such as <code>s</code> or <code>x</code>, and you want to see the context.
+Then include the surrounding <code>if</code>-term governors but not the goal's
+conclusion.  Command:<br>
+
+<code>(type-alist nil t)</code> ; equivalently, <code>type-alist</code> or <code>(type-alist nil)</code><p>
+
+See <a href="TYPE-SET.html">type-set</a> (also see <a href="TYPE-PRESCRIPTION.html">type-prescription</a>) for information about
+ACL2's type system, which can assist in understanding the output of the
+<code>type-alist</code> command.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

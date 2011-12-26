@@ -1,0 +1,103 @@
+<html>
+<head><title>OOPS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>OOPS</h2>undo a <code>:u</code> or <code>:</code><code><a href="UBT.html">ubt</a></code>
+<pre>Major Section:  <a href="HISTORY.html">HISTORY</a>
+</pre><p>
+
+The keyword <a href="COMMAND.html">command</a> <code>:oops</code> will undo the most recent <code>:</code><code><a href="UBT.html">ubt</a></code> (or <code>:u</code>,
+which we here consider just another <code>:</code><code><a href="UBT.html">ubt</a></code>).  A second <code>:oops</code> will undo
+the next most recent <code>:</code><code><a href="UBT.html">ubt</a></code>, a third will undo the <code>:</code><code><a href="UBT.html">ubt</a></code> before that
+one, and a fourth <code>:oops</code> will return the logical <a href="WORLD.html">world</a> to its
+configuration before the first <code>:oops</code>.
+<p>
+Consider the logical world (see <a href="WORLD.html">world</a>) that represents the
+current extension of the logic and ACL2's rules for dealing with it.
+The <code>:</code><code><a href="UBT.html">ubt</a></code> and <code>:u</code> <a href="COMMAND.html">command</a>s ``roll back'' to some previous <a href="WORLD.html">world</a>
+(see <a href="UBT.html">ubt</a>).  Sometimes these <a href="COMMAND.html">command</a>s are used to inadvertently
+undo useful work and user's wish they could ``undo the last undo.''
+That is the function provided by <code>:oops</code>.<p>
+
+<code>:Oops</code> is best described in terms of an implementation.  Imagine a
+ring of four <a href="WORLD.html">world</a>s and a marker (<code>*</code>) indicating the current ACL2
+<a href="WORLD.html">world</a>:
+
+<pre>
+             *
+           w0 
+         /    \
+       w3      w1
+         \    /
+           w2
+</pre>
+
+This is called the ``kill ring'' and it is maintained as follows.
+When you execute an event the current <a href="WORLD.html">world</a> is extended and the kill
+ring is not otherwise affected.  When you execute <code>:</code><code><a href="UBT.html">ubt</a></code> or <code>:u</code>, the
+current <a href="WORLD.html">world</a> marker is moved one step counterclockwise and that
+<a href="WORLD.html">world</a> in the ring is replaced by the result, say <code>w0'</code>, of the <code>:</code><code><a href="UBT.html">ubt</a></code> or
+<code>:u</code>.
+
+<pre>
+           w0 
+         /    \
+      *w0'     w1
+         \    /
+           w2
+</pre>
+
+If you were to execute <a href="EVENTS.html">events</a> at this point, <code>w0'</code> would be extended
+and no other changes would occur in the kill ring.<p>
+
+When you execute <code>:oops</code>, the marker is moved one step clockwise.
+Thus the kill ring becomes
+
+<pre>
+             *
+           w0 
+         /    \
+       w0'     w1
+         \    /
+           w2
+</pre>
+
+and the current ACL2 <a href="WORLD.html">world</a> is <code>w0</code> once again.  That is, <code>:oops</code>
+``undoes'' the <code>:</code><code><a href="UBT.html">ubt</a></code> that produced <code>w0'</code> from <code>w0</code>.  Similarly,
+a second <code>:oops</code> will move the marker to <code>w1</code>, undoing the undo that
+produced <code>w0</code> from <code>w1</code>.  A third <code>:oops</code> makes <code>w2</code> the current
+<a href="WORLD.html">world</a>.  Note however that a fourth <code>:oops</code> restores us to the
+configuration previously displayed above in which <code>w0'</code> has the marker.<p>
+
+In general, the kill ring contains the current <a href="WORLD.html">world</a> and the three
+most recent <a href="WORLD.html">world</a>s in which a <code>:</code><code><a href="UBT.html">ubt</a></code> or <code>:u</code> were done.<p>
+
+While <code>:</code><code><a href="UBT.html">ubt</a></code> may appear to discard the information in the <a href="EVENTS.html">events</a>
+undone, we can see that the <a href="WORLD.html">world</a> in which the <code>:</code><code><a href="UBT.html">ubt</a></code> occurred is
+still available.  No information has been lost about that <a href="WORLD.html">world</a>.
+But <code>:</code><code><a href="UBT.html">ubt</a></code> does discard information!  <code>:</code><code><a href="UBT.html">Ubt</a></code> discards the information
+necessary to recover from the third most recent <code><a href="UBT.html">ubt</a></code>!  An <code>:oops</code>, on
+the other hand, discards no information, it just selects the next
+available <a href="WORLD.html">world</a> on the kill ring and doing enough <code>:oops</code>es will
+return you to your starting point.<p>
+
+We can put this another way.  You can freely type <code>:oops</code> and inspect
+the <a href="WORLD.html">world</a> that you thus obtain with <code>:</code><code><a href="PE.html">pe</a></code>, <code>:</code><code><a href="PC.html">pc</a></code>, and other <a href="HISTORY.html">history</a>
+<a href="COMMAND.html">command</a>s.  You can repeat this as often as you wish without risking
+the permanent loss of any information.  But you must be more careful
+typing <code>:</code><code><a href="UBT.html">ubt</a></code> or <code>:u</code>.  While <code>:oops</code> makes <code>:</code><code><a href="UBT.html">ubt</a></code> seem ``safe'' because the
+most recent <code>:</code><code><a href="UBT.html">ubt</a></code> can always be undone, information is lost when you
+execute <code>:</code><code><a href="UBT.html">ubt</a></code>.<p>
+
+We note that <code>:ubt</code> and <code>:u</code> may remove compiled definitions (except in
+Lisps such as OpenMCL, in which functions are always compiled).  When the
+original world is restored using <code>:oops</code>, restored functions will not
+generally be compiled, though the user can remedy this situation; see <a href="COMP.html">comp</a>.<p>
+
+Finally, we note that our implementation of <code>oops</code> can use a significant
+amount of memory, because of the saving of old logical <a href="WORLD.html">world</a>s.  Most
+users are unlikely to experience a memory problem, but if you do, then you
+may want to disable <code>oops</code> by evaluting <code>(reset-kill-ring 0 state)</code>;
+see <a href="RESET-KILL-RING.html">reset-kill-ring</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<html>
+<head><title>ACL2-PC_colon__colon_HYPS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::HYPS</h3>(macro)
+<code>   </code>print the hypotheses
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+hyps               -- print all (top-level) hypotheses
+(hyps (1 3) (2 4)) -- print hypotheses 1 and 3 and governors 2 and 4
+(hyps (1 3) t)     -- print hypotheses 1 and 3 and all governors
+<p>
+General Form:
+(hyps &amp;optional hyps-indices govs-indices)
+</pre>
+
+Print the indicated top-level hypotheses and governors.  (The notion
+of ``governors'' is defined below.)  Here, <code>hyps-indices</code> and
+<code>govs-indices</code> should be lists of indices of hypotheses and governors
+(respectively), except that the atom <code>t</code> may be used to indicate that
+one wants all hypotheses or governors (respectively).<p>
+
+The list of ``governors'' is defined as follows.  Actually, we
+define here the notion of the governors for a pair of the form
+<code>&lt;term</code>, address&gt;]; we're interested in the special case where the
+term is the conclusion and the address is the current address.  If
+the address is <code>nil</code>, then there are no governors, i.e., the list of
+governors is <code>nil</code>.  If the term is of the form <code>(if x y z)</code> and the
+address is of the form <code>(2 . rest)</code> or <code>(3 . rest)</code>, then the list of
+governors is the result of <code>cons</code>ing <code>x</code> or its negation (respectively)
+onto the list of governors for the pair <code>&lt;y, rest&gt;</code> or the pair
+<code>&lt;z, rest&gt;</code> (respectively).  If the term is of the form <code>(implies x y)</code>
+and the address is of the form <code>(2 . rest)</code>, then the list of
+governors is the result of <code>cons</code>ing <code>x</code> onto the list of governors for
+the pair <code>&lt;y, rest&gt;</code>.  Otherwise, the list of governors for the pair
+<code>&lt;term, (n .  rest)&gt;</code> is exactly the list of governors for the pair
+<code>&lt;argn, rest&gt;</code> where <code>argn</code> is the <code>n</code>th argument of <code>term</code>.<p>
+
+If all goals have been proved, a message saying so will be printed.
+(as there will be no current hypotheses or governors!).<p>
+
+The <code>hyps</code> command never causes an error.  It ``succeeds'' (in fact
+its value is <code>t</code>) if the arguments (when supplied) are appropriate,
+i.e.  either <code>t</code> or lists of indices of hypotheses or governors,
+respectively.  Otherwise it ``fails'' (its value is <code>nil</code>).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

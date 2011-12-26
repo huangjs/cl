@@ -1,0 +1,47 @@
+<html>
+<head><title>LD-EVISC-TUPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-EVISC-TUPLE</h2>determines whether <code><a href="LD.html">ld</a></code> suppresses details when printing
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Ld-evisc-tuple</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor is
+<code>(ld-evisc-tuple state)</code> and the updater is
+<code>(set-ld-evisc-tuple val state)</code>.  <code>Ld-evisc-tuple</code> must be either
+<code>nil</code> or a list of the form
+
+<pre>
+(alist print-level print-length hiding-cars)
+</pre>
+
+where <code>alist</code> is an alist that pairs objects to strings, <code>print-level</code>
+and <code>print-length</code> are either <code>nil</code> or non-negative integers, and
+<code>hiding-cars</code> is a list of symbols.  The initial value of
+<code>ld-evisc-tuple</code> is <code>nil</code>.
+<p>
+The general-purpose ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>, reads forms from
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, evaluates them and prints the result to <code><a href="STANDARD-CO.html">standard-co</a></code>.
+However, there are various flags that control <code><a href="LD.html">ld</a></code>'s behavior and
+<code>ld-evisc-tuple</code> is one of them.  <code><a href="LD.html">Ld</a></code> may print the forms it is
+evaluating and/or the results of evaluation.  If the value of
+<code>ld-evisc-tuple</code> is a list as shown above, then <code><a href="LD.html">ld</a></code> ``eviscerates'' the
+objects it prints before printing them.  To ``eviscerate'' an object
+we replace certain substructures within it by strings which are
+printed in their stead.  <code>Print-level</code> and <code>print-length</code>, above, are
+used as described in CLTL (pp 372) to replace those substructures
+deeper than <code>print-level</code> by ``<code>#</code>'' and those longer than <code>print-length</code>
+by ``<code>...</code>''.  <code>Alist</code> is used to replace any substructure occuring as a
+key in <code>alist</code> by the corresponding string.  Finally, any <code><a href="CONSP.html">consp</a></code> <code>x</code>
+that starts with one of the symbols in <code>hiding-cars</code> is printed as
+<code>&lt;hidden&gt;</code>.<p>
+
+The printing of error messages and warnings, as well as certain other output,
+uses a different such evisc-tuple, <code>(default-evisc-tuple state)</code>.  The
+advanced user can override this evisc-tuple with the <a href="STATE.html">state</a> global
+<code>user-default-evisc-tuple</code>.  Similarly, some other printing uses yet
+another evisc-tuple, <code>(term-evisc-tuple t state)</code>, which can be overridden
+with <a href="STATE.html">state</a> global <code>user-term-evisc-tuple</code>.  We may document these
+mechanisms more fully if there is sufficient user interest.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<html>
+<head><title>ARRAYS-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ARRAYS-EXAMPLE</h3>an example illustrating ACL2 arrays
+<pre>Major Section:  <a href="ARRAYS.html">ARRAYS</a>
+</pre><p>
+
+The example below illustrates the use of ACL2 arrays.  It is not, of
+course, a substitute for the detailed explanations provided
+elsewhere (see <a href="ARRAYS.html">arrays</a>, including subtopics).
+<p>
+
+<pre>
+ACL2 !&gt;(defun defarray (name size initial-element)
+         (compress1 name
+                    (cons (list :HEADER
+                                :DIMENSIONS (list size)
+                                :MAXIMUM-LENGTH (1+ size)
+                                :DEFAULT initial-element
+                                :NAME name)
+                          nil)))<p>
+
+Since DEFARRAY is non-recursive, its admission is trivial.  We observe
+that the type of DEFARRAY is described by the theorem 
+(AND (CONSP (DEFARRAY NAME SIZE INITIAL-ELEMENT))
+     (TRUE-LISTP (DEFARRAY NAME SIZE INITIAL-ELEMENT))).
+We used the :type-prescription rule COMPRESS1.<p>
+
+Summary
+Form:  ( DEFUN DEFARRAY ...)
+Rules: ((:TYPE-PRESCRIPTION COMPRESS1))
+Warnings:  None
+Time:  0.02 seconds (prove: 0.00, print: 0.02, other: 0.00)
+ DEFARRAY
+ACL2 !&gt;(assign my-ar (defarray 'a1 5 17))
+ ((:HEADER :DIMENSIONS (5)
+           :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+ACL2 !&gt;(aref1 'a1 (@ my-ar) 3)
+17
+ACL2 !&gt;(aref1 'a1 (@ my-ar) 8)<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol AREF1,
+which is 
+(AND (ARRAY1P NAME L) (INTEGERP N) (&gt;= N 0) (&lt; N (CAR (DIMENSIONS NAME L)))),
+is violated by the arguments in the call (AREF1 'A1 '(#) 8).<p>
+
+ACL2 !&gt;(assign my-ar (aset1 'a1 (@ my-ar) 3 'xxx))
+ ((3 . XXX)
+  (:HEADER :DIMENSIONS (5)
+           :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+ACL2 !&gt;(aref1 'a1 (@ my-ar) 3)
+XXX
+ACL2 !&gt;(aset1 'a1 (@ my-ar) 3 'yyy) ; BAD: (@ my-ar) now points to
+                                    ;      an old copy of the array!
+((3 . YYY)
+ (3 . XXX)
+ (:HEADER :DIMENSIONS (5)
+          :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+ACL2 !&gt;(aref1 'a1 (@ my-ar) 3) ; Because of "BAD" above, the array
+                               ; access is done using assoc rather
+                               ; than Lisp aref, hence is slower;
+                               ; but the answer is still correct,
+                               ; reflecting the value in (@ my-ar),
+                               ; which was not changed above.<p>
+
+
+**********************************************************
+Slow Array Access!  A call of AREF1 on an array named
+A1 is being executed slowly.  See :DOC slow-array-warning
+**********************************************************<p>
+
+XXX
+ACL2 !&gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

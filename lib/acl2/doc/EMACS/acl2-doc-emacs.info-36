@@ -1,0 +1,1316 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||HYPS,  Next: ACL2-PC||ILLEGAL,  Prev: ACL2-PC||HELP-LONG,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||HYPS    (macro)
+print the hypotheses
+
+     Examples:
+     hyps               -- print all (top-level) hypotheses
+     (hyps (1 3) (2 4)) -- print hypotheses 1 and 3 and governors 2 and 4
+     (hyps (1 3) t)     -- print hypotheses 1 and 3 and all governors
+     
+     General Form:
+     (hyps &optional hyps-indices govs-indices)
+
+Print the indicated top-level hypotheses and governors.  (The notion of
+"governors" is defined below.)  Here, hyps-indices and govs-indices
+should be lists of indices of hypotheses and governors (respectively),
+except that the atom t may be used to indicate that one wants all
+hypotheses or governors (respectively).
+
+The list of "governors" is defined as follows.  Actually, we define
+here the notion of the governors for a pair of the form <term,
+address>]; we're interested in the special case where the term is the
+conclusion and the address is the current address.  If the address is
+nil, then there are no governors, i.e., the list of governors is nil.
+If the term is of the form (if x y z) and the address is of the form (2
+. rest) or (3 . rest), then the list of governors is the result of
+consing x or its negation (respectively) onto the list of governors for
+the pair <y, rest> or the pair <z, rest> (respectively).  If the term
+is of the form (implies x y) and the address is of the form (2 . rest),
+then the list of governors is the result of consing x onto the list of
+governors for the pair <y, rest>.  Otherwise, the list of governors for
+the pair <term, (n .  rest)> is exactly the list of governors for the
+pair <argn, rest> where argn is the nth argument of term.
+
+If all goals have been proved, a message saying so will be printed.
+(as there will be no current hypotheses or governors!).
+
+The hyps command never causes an error.  It "succeeds" (in fact its
+value is t) if the arguments (when supplied) are appropriate, i.e.
+either t or lists of indices of hypotheses or governors, respectively.
+Otherwise it "fails" (its value is nil).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||ILLEGAL,  Next: ACL2-PC||IN-THEORY,  Prev: ACL2-PC||HYPS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||ILLEGAL    (macro)
+illegal instruction
+
+     Example:
+     (illegal -3)
+     
+     General Form:
+     (illegal instruction)
+
+Probably not of interest to most users; always "fails" since it expands
+to the fail command.
+
+The illegal command is used mainly in the implementation.  For example,
+the instruction 0 is "read" as (illegal 0), since dive expects positive
+integers.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||IN-THEORY,  Next: ACL2-PC||INDUCT,  Prev: ACL2-PC||ILLEGAL,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||IN-THEORY    (primitive)
+set the current proof-checker theory
+
+     Example:
+     (in-theory
+        (union-theories (theory 'minimal-theory) '(true-listp binary-append)))
+     
+     General Form:
+     (in-theory &optional atom-or-theory-expression)
+
+If the argument is not supplied, then this command sets the current
+proof-checker theory (see below for explanation) to agree with the
+current ACL2 theory.  Otherwise, the argument should be a theory
+expression, and in that case the proof-checker theory is set to the
+value of that theory expression.
+
+The current proof-checker theory is used in all calls to the ACL2
+theorem prover and rewriter from inside the proof-checker.  Thus, the
+most recent in-theory instruction in the current state-stack has an
+effect in the proof-checker totally analogous to the effect caused by
+an in-theory hint or event in ACL2.  All in-theory instructions before
+the last are ignored, because they refer to the current theory in the
+ACL2 state, not to the existing proof-checker theory.  For example:
+
+        ACL2 !>:trans1 (enable bar)
+         (UNION-THEORIES (CURRENT-THEORY :HERE)
+                         '(BAR))
+        ACL2 !>:trans1 (CURRENT-THEORY :HERE)
+         (CURRENT-THEORY-FN :HERE WORLD)
+        ACL2 !>
+
+Thus (in-theory (enable bar)) modifies the current theory of the current
+ACL2 world.  So for example, suppose that foo is disabled outside the
+proof checker and you execute the following instructions, in this order.
+
+        (in-theory (enable foo))
+        (in-theory (enable bar))
+
+Then after the second of these, bar will be enabled in the
+proof-checker, but foo will be disabled.  The reason is that (in-theory
+(enable bar)) instructs the proof-checker to modify the current theory
+(from outside the proof-checker, not from inside the proof-checker) by
+enabling bar.
+
+Note that in-theory instructions in the proof-checker have no effect
+outside the proof-checker's interactive loop.
+
+If the most recent in-theory instruction in the current state of the
+proof-checker has no arguments, or if there is no in-theory instruction
+in the current state of the proof-checker, then the proof-checker will
+use the current ACL2 theory.  This is true even if the user has
+interrupted the interactive loop by exiting and changing the global
+ACL2 theory.  However, if the most recent in-theory instruction in the
+current state of the proof-checker had an argument, then global changes
+to the current theory will have no effect on the proof-checker state.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||INDUCT,  Next: ACL2-PC||LEMMAS-USED,  Prev: ACL2-PC||IN-THEORY,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||INDUCT    (atomic macro)
+generate subgoals using induction
+
+     Examples:
+     induct, (induct t)
+        -- induct according to a heuristically-chosen scheme, creating
+           a new subgoal for each base and induction step
+     (induct (append (reverse x) y))
+        -- as above, but choose an induction scheme based on the term
+           (append (reverse x) y) rather than on the current goal
+     
+     General Form:
+     (induct &optional term)
+
+Induct as in the corresponding :induct hint given to the theorem
+prover, creating new subgoals for the base and induction steps.  If
+term is t or is not supplied, then use the current goal to determine
+the induction scheme; otherwise, use that term.
+
+*Note:*  As usual, abbreviations are allowed in the term.
+
+*Note:*  Induct actually calls the prove command with all processes
+turned off.  Thus, you must be at top of the goal for an induct
+instruction.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||LEMMAS-USED,  Next: ACL2-PC||LISP,  Prev: ACL2-PC||INDUCT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||LEMMAS-USED    (macro)
+print the runes (definitions, lemmas, ...) used
+
+This is just an alias for runes.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||LISP,  Next: ACL2-PC||MORE,  Prev: ACL2-PC||LEMMAS-USED,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||LISP    (meta)
+evaluate the given form in Lisp
+
+     Example:
+     (lisp (assign xxx 3))
+     
+     General Form:
+     (lisp form)
+
+Evaluate form.  The lisp command is mainly of interest for side
+effects.  See also print, skip, and fail.
+
+The rest of the documentation for lisp is of interest only to those who
+use it in macro commands.  If the Lisp evaluation (by trans-eval) of
+form returns an "error triple" of the form (mv erp ((NIL NIL STATE) .
+(erp-1 val-1 &)) state), then the lisp command returns the appropriate
+error triple
+
+     (mv (or erp erp-1)
+         val-1
+         state) .
+
+Otherwise, the trans-eval of form must return an "error triple" of the
+form (mv erp (cons stobjs-out val) &), and the lisp command returns the
+appropriate error triple
+
+     (mv erp
+         val
+         state).
+
+Note that the output signature of the form has been lost.  The user
+must know the signature in order to use the output of the lisp command.
+Trans-eval, which is undocumented except by comments in the ACL2
+source code, has replaced, in val, any occurrence of the current state
+or the current values of stobjs by simple symbols such as
+REPLACED-STATE.  The actual values of these objects may be recovered,
+in principle, from the state returned and the user-stobj-alist within
+that state.  However, in practice, the stobjs cannot be recovered
+because the user is denied access to user-stobj-alist.  The moral is:
+do not try to write macro commands that manipulate stobjs.  Should the
+returned val contain REPLACED-STATE the value may simply be ignored and
+state used, since that is what REPLACED-STATE denotes.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||MORE,  Next: ACL2-PC||MORE!,  Prev: ACL2-PC||LISP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||MORE    (macro)
+proof-checker help facility
+
+Continues documentation of last proof-checker command visited with help.
+
+Invoke help for documentation about the proof-checker help facility.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||MORE!,  Next: ACL2-PC||NEGATE,  Prev: ACL2-PC||MORE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||MORE!    (macro)
+proof-checker help facility
+
+Continues documentation of last proof-checker command visited with
+help, until all documentation on that command is printed out.
+
+Invoke help for documentation about the proof-checker help facility.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||NEGATE,  Next: ACL2-PC||NIL,  Prev: ACL2-PC||MORE!,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||NEGATE    (macro)
+run the given instructions, and ``succeed'' if and only if they ``fail''
+
+Example: (negate prove)
+
+     General form:
+     (negate &rest instruction-list)
+
+Run the indicated instructions exactly in the sense of do-all, and
+"succeed" if and only if they "fail".
+
+*Note:*  Negate instructions will never produce hard "failures".
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||NIL,  Next: ACL2-PC||NOISE,  Prev: ACL2-PC||NEGATE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||NIL    (macro)
+used for interpreting control-d
+
+     Example and General form:
+     nil
+
+(or, control-d).
+
+The whole point of this command is that in some Lisps (including akcl),
+if you type control-d then it seems, on occasion, to get interpreted as
+nil.  Without this command, one seems to get into an infinite loop.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||NOISE,  Next: ACL2-PC||NX,  Prev: ACL2-PC||NIL,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||NOISE    (meta)
+run instructions with output
+
+     Example:
+     (noise induct prove)
+     
+     General Form:
+     (noise &rest instruction-list)
+
+Run the instruction-list through the top-level loop with output.
+
+In fact, having output is the default.  Noise is useful inside a
+surrounding call of quiet, when one temporarily wants output.  For
+example, if one wants to see output for a prove command immediately
+following an induct command but before an s command, one may want to
+submit an instruction like (quiet induct (noise prove) s).  See also
+quiet.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||NX,  Next: ACL2-PC||ORELSE,  Prev: ACL2-PC||NOISE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||NX    (atomic macro)
+move forward one argument in the enclosing term
+
+     Example and General Form:
+     nx
+
+For example, if the conclusion is (= x (* (- y) z)) and the current
+subterm is x, then after executing nx, the current subterm will be (*
+(- y) z).
+
+This is the same as up followed by (dive n+1), where n is the position
+of the current subterm in its parent term in the conclusion.  Thus in
+particular, the nx command fails if one is already at the top of the
+conclusion.
+
+See also up, dive, top, and bk.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||ORELSE,  Next: ACL2-PC||P,  Prev: ACL2-PC||NX,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||ORELSE    (macro)
+run the first instruction; if (and only if) it ``fails'', run the
+second
+
+     Example:
+     (orelse top (print "Couldn't move to the top"))
+     
+     General form:
+     (orelse instr1 instr2)
+
+Run the first instruction.  Then if it "fails", run the second
+instruction also; otherwise, stop after the first.
+
+This instruction "succeeds" if and only if either instr1 "succeeds", or
+else instr2 "succeeds".  If it "fails", then the failure is soft.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||P,  Next: ACL2-PC||P-TOP,  Prev: ACL2-PC||ORELSE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||P    (macro)
+prettyprint the current term
+
+     Example and General Form:
+     p
+
+Prettyprint the current term.  The usual user syntax is used, so that
+for example one would see (and x y) rather than (if x y 'nil).  (See
+also pp.)  Also, abbreviations are inserted where appropriate; see
+add-abbreviation.
+
+The "current term" is the entire conclusion unless dive commands have
+been given, in which case it may be a subterm of the conclusion.
+
+If all goals have been proved, a message saying so will be printed (as
+there will be no current term!).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||P-TOP,  Next: ACL2-PC||PP,  Prev: ACL2-PC||P,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||P-TOP    (macro)
+prettyprint the conclusion, highlighting the current term
+
+     Example and General Form:
+     p-top
+
+For example, if the conclusion is (equal (and x (p y)) (foo z)) and the
+current subterm is (p y), then p-top will print (equal (and x (*** (p
+y) ***)) (foo z)).
+
+Prettyprint the the conclusion, highlighting the current term.  The
+usual user syntax is used, as with the command p (as opposed to pp).
+This is illustrated in the example above, where one would *not* see
+(equal (if x (*** (p y) ***) 'nil) (foo z)).
+
+*Note* (obscure):  In some situations, a term of the form (if x t y)
+occurring inside the current subterm will not print as (or x y), when x
+isn't a call of a boolean primitive.  There's nothing incorrect about
+this, however.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PP,  Next: ACL2-PC||PRINT,  Prev: ACL2-PC||P-TOP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PP    (macro)
+prettyprint the current term
+
+     Example and General Form:
+     pp
+
+This is the same as p (see its documentation), except that raw syntax
+(internal form) is used.  So for example, one would see (if x y 'nil)
+rather than (and x y).  Abbreviations are however still inserted, as
+with p.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PRINT,  Next: ACL2-PC||PRINT-ALL-CONCS,  Prev: ACL2-PC||PP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PRINT    (macro)
+print the result of evaluating the given form
+
+     Example:
+     (print (append '(a b) '(c d)))
+     Print the list (a b c d) to the terminal
+     
+     General Form:
+     (print form)
+
+Prettyprints the result of evaluating form.  The evaluation of form
+should return a single value that is not state or a single-threaded
+object (see *note STOBJ::).
+
+If the form you want to evaluate does not satisfy the criterion above,
+you should create an appropriate call of the lisp command instead.
+Notice that this command always returns (mv nil nil state) where the
+second result will always be REPLACED-STATE.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PRINT-ALL-CONCS,  Next: ACL2-PC||PRINT-ALL-GOALS,  Prev: ACL2-PC||PRINT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PRINT-ALL-CONCS    (macro)
+print all the conclusions of (as yet unproved) goals
+
+Example and General Form: print-all-concs
+
+Prints all the conclusions of goals that remain to be proved, in a
+pleasant format.  See also the proof-checker command print-all-goals.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PRINT-ALL-GOALS,  Next: ACL2-PC||PRINT-MAIN,  Prev: ACL2-PC||PRINT-ALL-CONCS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PRINT-ALL-GOALS    (macro)
+print all the (as yet unproved) goals
+
+Example and General Form: print-all-goals
+
+Prints all the goals that remain to be proved, in a pleasant format.
+See also the proof-checker command print-all-concs.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PRINT-MAIN,  Next: ACL2-PC||PRO,  Prev: ACL2-PC||PRINT-ALL-GOALS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PRINT-MAIN    (macro)
+print the original goal
+
+     Example and General Form:
+     print-main
+
+Print the goal as originally entered.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PRO,  Next: ACL2-PC||PROMOTE,  Prev: ACL2-PC||PRINT-MAIN,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PRO    (atomic macro)
+repeatedly apply promote
+
+     Example and General Form:
+     pro
+
+Apply the promote command until there is no change.  This command
+"succeeds" exactly when at least one call of promote "succeeds".  In
+that case, only a single new proof-checker state will be created.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PROMOTE,  Next: ACL2-PC||PROTECT,  Prev: ACL2-PC||PRO,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PROMOTE    (primitive)
+move antecedents of conclusion's implies term to top-level
+hypotheses
+
+     Examples:
+     promote
+     (promote t)
+
+For example, if the conclusion is (implies (and x y) z), then after
+execution of promote, the conclusion will be z and the terms x and y
+will be new top-level hypotheses.
+
+     General Form:
+     (promote &optional do-not-flatten-flag)
+
+Replace conclusion of (implies hyps exp) or (if hyps exp t) with simply
+exp, adding hyps to the list of top-level hypotheses.  Moreover, if
+hyps is viewed as a conjunction then each conjunct will be added as a
+separate top-level hypothesis.  An exception is that if
+do-not-flatten-flag is supplied and not nil, then only one top-level
+hypothesis will be added, namely hyps.
+
+*Note*:  You must be at the top of the conclusion in order to use this
+command.  Otherwise, first invoke top.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PROTECT,  Next: ACL2-PC||PROVE,  Prev: ACL2-PC||PROMOTE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PROTECT    (macro)
+run the given instructions, reverting to existing state upon
+failure
+
+     Example:
+     (protect induct p prove)
+     
+     General Form:
+     (protect &rest instruction-list)
+
+Protect is the same as do-strict, except that as soon as an instruction
+"fails", the state-stack reverts to what it was before the protect
+instruction began, and restore is given the same meaning that it had
+before the protect instruction began.  See the documentation for
+do-strict.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PROVE,  Next: ACL2-PC||PSO,  Prev: ACL2-PC||PROTECT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PROVE    (primitive)
+call the ACL2 theorem prover to prove the current goal
+
+     Examples:
+     prove -- attempt to prove the current goal
+     (prove :otf-flg t
+            :hints (("Subgoal 2" :by foo) ("Subgoal 1" :use bar)))
+           -- attempt to prove the current goal, with the indicated hints
+              and with OTF-FLG set
+     
+     General Form:
+     (prove &rest rest-args)
+
+Attempt to prove the current goal, where rest-args is as in the keyword
+arguments to defthm except that only :hints and :otf-flg are allowed.
+The command succeeds exactly when the corresponding defthm would
+succeed, except that it is all right for some goals to be given "bye"s.
+Each goal given a "bye" will be turned into a new subgoal.  (See *Note
+HINTS:: for an explanation of :by hints.)
+
+*Note:*  Use (= t) instead if you are not at the top of the conclusion.
+Also note that if there are any hypotheses in the current goal, then
+what is actually attempted is a proof of (implies hyps conc), where
+hyps is the conjunction of the top-level hypotheses and conc is the
+goal's conclusion.
+
+*Note:*  It is allowed to use abbreviations in the hints.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PSO,  Next: ACL2-PC||PSO!,  Prev: ACL2-PC||PROVE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PSO    (macro)
+print the most recent proof attempt from inside the proof-checker
+
+     Example and General Form:
+     sp
+
+Print the most recent proof attempt from inside the proof-checker,
+assuming that you haven't left the proof-checker loop and subsequently
+saved output (see *note SET-SAVED-OUTPUT::).  This includes all calls
+to the prover, including for example proof-checker commands induct,
+split, and bash, in addition to prove.  So for example, you can follow
+(quiet prove) with pso to see the proof if it failed.
+
+See documentation for the similar proof-checker command pso! for
+including proof-tree output.  Also see *note SET-SAVED-OUTPUT:: for a
+general discussion of the output-saving mechanism.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PSO!,  Next: ACL2-PC||PUT,  Prev: ACL2-PC||PSO,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PSO!    (macro)
+print the most recent proof attempt from inside the proof-checker
+
+     Example and General Form:
+     pso!
+
+Print the most recent proof attempt from inside the proof-checker,
+including proof-tree output, assuming that you haven't left the
+proof-checker loop and subsequently saved output (see *note
+SET-SAVED-OUTPUT::).  This includes all calls to the prover, including
+for example proof-checker commands induct, split, and bash, in addition
+to prove.  So for example, you can follow (quiet prove) with pso! to
+see the proof, including proof-tree output, if it failed.
+
+See documentation for the similar proof-checker command pso for
+inhibiting proof-tree output.  Also see *note SET-SAVED-OUTPUT:: for a
+general discussion of the output-saving mechanism.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||PUT,  Next: ACL2-PC||QUIET,  Prev: ACL2-PC||PSO!,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||PUT    (macro)
+substitute for a ``free variable''
+
+     Example:
+     (put x 17)
+     
+     General Form:
+     (put var expr)
+
+Substitute expr for the "free variable" var, as explained below.
+
+A "free variable" is, for our purposes, a variable var such that the
+instruction (free var) has been executed earlier in the state-stack.
+What (free var) really does is to let var be an abbreviation for the
+term (hide var) (see documentation for add-abbreviation).  What (put
+var expr) really does is to unwind the state-stack, replacing that free
+instruction with the instruction (add-abbreviation var expr), so that
+future references to (? var) become reference to expr rather than to
+(hide var), and then to replay all the other instructions that were
+unwound.  Because hide was used, the expectation is that in most cases,
+the instructions will replay successfully and put will "succeed".
+However, if any replayed instruction "fails", then the entire replay
+will abort and "fail", and the state-stack will revert to its value
+before the put instruction was executed.
+
+If (put var expr) "succeeds", then (remove-abbreviation var) will be
+executed at the end.
+
+*Note*:  The restore command will revert the state-stack to its value
+present before the put instruction was executed.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||QUIET,  Next: ACL2-PC||R,  Prev: ACL2-PC||PUT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||QUIET    (meta)
+run instructions without output
+
+     Example:
+     (quiet induct prove)
+     
+     General Form:
+     (quiet &rest instruction-list)
+
+Run the instruction-list through the top-level loop with no output.
+
+See also noise.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||R,  Next: ACL2-PC||REDUCE,  Prev: ACL2-PC||QUIET,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||R    (macro)
+same as rewrite
+
+     Example:
+     (r 3)
+
+See the documentation for rewrite, as r and rewrite are identical.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REDUCE,  Next: ACL2-PC||REDUCE-BY-INDUCTION,  Prev: ACL2-PC||R,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REDUCE    (atomic macro)
+call the ACL2 theorem prover's simplifier
+
+     Examples:
+     reduce -- attempt to prove the current goal without using induction
+     (reduce ("Subgoal 2" :by foo) ("Subgoal 1" :use bar))
+            -- attempt to prove the current goal without using
+               induction, with the indicated hints
+     
+     General Form:
+     (reduce &rest hints)
+
+Attempt to prove the current goal without using induction, using the
+indicated hints (if any).  A subgoal will be created for each goal that
+would have been pushed for proof by induction in an ordinary proof.
+
+Notice that unlike prove, the arguments to reduce are spread out, and
+are all hints.
+
+Reduce is similar to bash in that neither of these allows induction.
+But bash only allows simplification, while reduce allows processes
+eliminate-destructors, fertilize, generalize, and eliminate-irrelevance.
+
+*Note:*  Induction will be used to the extent that it is ordered
+explicitly in the hints.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REDUCE-BY-INDUCTION,  Next: ACL2-PC||REMOVE-ABBREVIATIONS,  Prev: ACL2-PC||REDUCE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REDUCE-BY-INDUCTION    (macro)
+call the ACL2 prover without induction, after going into
+induction
+
+     Examples:
+     reduce-by-induction
+       -- attempt to prove the current goal after going into induction,
+          with no further inductions
+     
+     (reduce-by-induction ("Subgoal 2" :by foo) ("Subgoal 1" :use bar))
+       -- attempt to prove the current goal after going into induction,
+          with no further inductions, using the indicated hints
+     
+     General Form:
+     (reduce-by-induction &rest hints)
+
+A subgoal will be created for each goal that would have been pushed for
+proof by induction in an ordinary proof, except that the proof begins
+with a top-level induction.
+
+Notice that unlike prove, the arguments to reduce-by-induction are
+spread out, and are all hints.  See also prove, reduce, and bash.
+
+*Note*:  Induction and the various processes will be used to the extent
+that they are ordered explicitly in the :induct and :do-not hints.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REMOVE-ABBREVIATIONS,  Next: ACL2-PC||REPEAT,  Prev: ACL2-PC||REDUCE-BY-INDUCTION,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REMOVE-ABBREVIATIONS    (primitive)
+remove one or more abbreviations
+
+     Examples:
+     remove-abbreviations -- remove all abbreviations
+     (remove-abbreviations v w)
+                          -- assuming that V and W currently abbreviate
+                             terms, then they are ``removed'' in the
+                             sense that they are no longer considered to
+                             abbreviate those terms
+     
+     General Forms:
+     (remove-abbreviations &rest vars)
+
+If vars is not empty (i.e., not nil), remove the variables in vars from
+the current list of abbreviations, in the sense that each variable in
+vars will no longer abbreviate a term.
+
+*Note:*  The instruction fails if at least one of the arguments fails
+to be a variable that abbreviates a term.
+
+See also the documentation for add-abbreviation, which contains a
+discussion of abbreviations in general, and show-abbreviations.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REPEAT,  Next: ACL2-PC||REPEAT-REC,  Prev: ACL2-PC||REMOVE-ABBREVIATIONS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REPEAT    (macro)
+repeat the given instruction until it ``fails''
+
+     Example:
+     (repeat promote)
+     
+     General Form:
+     (repeat instruction)
+
+The given instruction is run repeatedly until it "fails".
+
+*Note:*  There is nothing here in general to prevent the instruction
+from being run after all goals have been proved, though this is indeed
+the case for primitive instructions.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REPEAT-REC,  Next: ACL2-PC||REPLAY,  Prev: ACL2-PC||REPEAT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REPEAT-REC    (macro)
+auxiliary to repeat
+
+See documentation for repeat.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REPLAY,  Next: ACL2-PC||RESTORE,  Prev: ACL2-PC||REPEAT-REC,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REPLAY    (macro)
+replay one or more instructions
+
+     Examples:
+     REPLAY     -- replay all instructions in the current session
+                   (i.e., state-stack)
+     (REPLAY 5) -- replay the most recent 5 instructions
+     (REPLAY 5
+             (COMMENT deleted dive command here))
+                -- replace the 5th most recent instruction with the
+                   indicated comment instruction, and then replay it
+                   followed by the remaining 4 instructions
+     
+     General Form:
+     (REPLAY &OPTIONAL n replacement-instruction)
+
+Replay the last n instructions if n is a positive integer; else n
+should be nil or not supplied, and replay all instructions.  However,
+if replacement-instruction is supplied and not nil, then before the
+replay, replace the nth instruction (from the most recent, as shown by
+commands) with replacement-instruction.
+
+If this command "fails", then the restore command will revert the
+state-stack to its value present before the replay instruction was
+executed.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RESTORE,  Next: ACL2-PC||RETAIN,  Prev: ACL2-PC||REPLAY,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RESTORE    (meta)
+remove the effect of an UNDO command
+
+     Example and General Form:
+     restore
+
+Restore removes the effect of an undo command.  This always works as
+expected if restore is invoked immediately after undo, without
+intervening instructions.  However, other commands may also interact
+with restore, notably "sequencing" commands such as do-all, do-strict,
+protect, and more generally, sequence.
+
+*Note:*  Another way to control the saving of proof-checker state is
+with the save command; see the documentation for save.
+
+The restore command always "succeeds"; it returns (mv nil t state).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RETAIN,  Next: ACL2-PC||RETRIEVE,  Prev: ACL2-PC||RESTORE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RETAIN    (atomic macro)
+drop all *but* the indicated top-level hypotheses
+
+     Example:
+     (RETAIN 2 3) -- keep the second and third hypotheses, and drop
+                     the rest
+     
+     General Form:
+     (retain &rest args)
+
+Drop all top-level hypotheses *except* those with the indicated indices.
+
+There must be at least one argument, and all must be in range (i.e.
+integers between one and the number of top-level hypotheses, inclusive).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RETRIEVE,  Next: ACL2-PC||REWRITE,  Prev: ACL2-PC||RETAIN,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RETRIEVE    (macro)
+re-enter the proof-checker
+
+     Examples:
+     (retrieve associativity-of-permutationp)
+     retrieve
+     
+     General Form:
+     (retrieve &optional name)
+
+Must be used from outside the interactive proof-checker loop.  If name
+is supplied and not nil, this causes re-entry to the interactive
+proof-checker loop in the state at which save was last executed for the
+indicated name.  (See documentation for save.)  If name is nil or is
+not supplied, then the user is queried regarding which proof-checker
+state to re-enter.  The query is omitted, however, if there only one
+proof-checker state is present that was saved with save, in which case
+that is the one that is used.  See also unsave.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||REWRITE,  Next: ACL2-PC||RUN-INSTR-ON-GOAL,  Prev: ACL2-PC||RETRIEVE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||REWRITE    (primitive)
+apply a rewrite rule
+
+     Examples:
+     (rewrite reverse-reverse)
+        -- apply the rewrite rule `reverse-reverse'
+     (rewrite (:rewrite reverse-reverse))
+        -- same as above
+     (rewrite 2)
+        -- apply the second rewrite rule, as displayed by show-rewrites
+     rewrite
+        -- apply the first rewrite rule, as displayed by show-rewrites
+     (rewrite transitivity-of-< ((y 7)))
+        -- apply the rewrite rule transitivity-of-< with the substitution
+           that associates 7 to the ``free variable'' y
+     (rewrite foo ((x 2) (y 3)) t)
+        -- apply the rewrite rule foo by substituting 2 and 3 for free
+           variables x and y, respectively, and also binding all other
+           free variables possible by using the current context
+           (hypotheses and governors)
+     
+     General Form:
+     (rewrite &optional rule-id substitution instantiate-free)
+
+Replace the current subterm with a new term by applying a rewrite rule.
+The replacement will be done according to the information provided by
+the show-rewrites (sr) command.
+
+If rule-id is a positive integer n, then the nth rewrite rule as
+displayed by show-rewrites is the one that is applied.  If rule-id is
+nil or is not supplied, then it is treated as the number 1.  Otherwise,
+rule-id should be either a rune of or name of a rewrite rule.  If a
+name is supplied, then any rule of that name may be used.  We say more
+about this, and describe the other optional arguments, below.
+
+Consider first the following example.  Suppose that the current subterm
+is (reverse (reverse y)) and that there is a rewrite rule called
+reverse-reverse of the form
+
+     (implies (true-listp x)
+              (equal (reverse (reverse x)) x)) .
+
+Then the instruction (rewrite reverse-reverse) would cause the current
+subterm to be replaced by y and would create a new goal with conclusion
+(true-listp y).  An exception is that if the top-level hypotheses imply
+(true-listp y) using only "trivial reasoning" (more on this below),
+then no new goal is created.
+
+If the rule-id argument is a number or is not supplied, then the system
+will store an instruction of the form (rewrite name ...), where name is
+the name of a rewrite rule; this is in order to make it easier to replay
+instructions when there have been changes to the history.  Actually,
+instead of the name (whether the name is supplied or calculated), the
+system stores the rune if there is any chance of ambiguity.  (Formally,
+"ambiguity" here means that the rune being applied is of the form
+(:rewrite name . index), where index is not nil.)
+
+Speaking in general, then, a rewrite instruction works as follows:
+
+First, a rewrite rule is selected according to the arguments of the
+rewrite instruction.  The selection is made as explained under "General
+Form" above.
+
+Next, the left-hand side of the rule is matched with the current
+subterm, i.e., a substitution unify-subst is found such that if one
+instantiates the left-hand side of the rule with unify-subst, then one
+obtains the current subterm.  If this match fails, then the instruction
+fails.
+
+Next, an attempt is made to relieve (discharge) the hypotheses, much as
+the theorem prover relieves hypotheses except that there is no call to
+the rewriter.  First, the substitution unify-subst is extended with the
+substitution argument, which may bind free variables (see *note
+FREE-VARIABLES::).  Each hypothesis of the rewrite rule is then
+considered in turn, from first to last.  For each hypothesis, first the
+current substitution is applied, and then the system checks whether the
+hypothesis is "clearly" true in the current context.  If there are
+variables in the hypotheses of the rewrite rule that are not bound by
+the current substitution, then a weak attempt is made to extend that
+substitution so that the hypothesis is present in the current context
+(see the documentation for the proof-checker hyps command under
+proof-checker-commands), much as would be done by the theorem prover's
+rewriter.
+
+If in the process above there are free variables, but the proof-checker
+can see how to bind them to relieve all hypotheses, then it will do so
+in both the show-rewrites (sr) and rewrite commands.  But normally, if
+even one hypothesis remains unrelieved, then no automatic extension of
+the substitution is made.  Except, if instantiate-free is not nil, then
+that extension to the substitution is kept.
+
+Finally, the instruction is applied as follows.  The current subterm is
+replaced by applying the final substitution described above to the
+right-hand side of the selected rewrite rule.  And, one new subgoal is
+created for each unrelieved hypothesis of the rule, whose top-level
+hypotheses are the governors and top-level hypotheses of the current
+goal and whose conclusion and current subterm are the instance, by that
+same final substitution, of that unrelieved hypothesis.
+
+*Note:*  The substitution argument should be a list whose elements have
+the form (variable term), where term may contain abbreviations.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RUN-INSTR-ON-GOAL,  Next: ACL2-PC||RUN-INSTR-ON-NEW-GOALS,  Prev: ACL2-PC||REWRITE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RUN-INSTR-ON-GOAL    (macro)
+auxiliary to THEN
+
+See documentation for then.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RUN-INSTR-ON-NEW-GOALS,  Next: ACL2-PC||RUNES,  Prev: ACL2-PC||RUN-INSTR-ON-GOAL,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RUN-INSTR-ON-NEW-GOALS    (macro)
+auxiliary to then
+
+See documentation for then.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||RUNES,  Next: ACL2-PC||S,  Prev: ACL2-PC||RUN-INSTR-ON-NEW-GOALS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||RUNES    (macro)
+print the runes (definitions, lemmas, ...) used
+
+     Examples and general forms:
+     (runes t)   ; print all runes used during this interactive proof
+     (runes nil) ; print all runes used by the most recent command
+     (runes)     ; same as (runes nil)
+     runes       ; same as (runes nil)
+
+This command does not change the proof-checker state.  Rather, it
+simply reports runes (see *note RUNE::) that have participated in the
+interactive proof.
+
+Note that (runes nil) will show the runes used by the most recent
+primitive or macro command (as displayed by :comm).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||S,  Next: ACL2-PC||S-PROP,  Prev: ACL2-PC||RUNES,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||S    (primitive)
+simplify the current subterm
+
+     Examples:
+     S  -- simplify the current subterm
+     (S :backchain-limit 2 :normalize t :expand (append x z))
+        -- simplify the current subterm, but during the rewriting
+           process first ``normalize'' it by pushing IFs to the
+           top-level, and also force the term (append x z) to be
+           expanded during the rewriting process
+     
+     General Form:
+     (s &key rewrite normalize backchain-limit repeat in-theory hands-off
+             expand)
+
+Simplify the current subterm according to the keyword parameters
+supplied.  First if-normalization is applied (unless the normalize
+argument is nil), i.e., each subterm of the form (f ... (if test x y)
+...)  is replaced by the term (if test (f ... x ...) (f ... y ...))
+except, of course, when f is if and the indicated if subterm is in the
+second or third argument position.  Then rewriting is applied (unless
+the rewrite argument is nil).  Finally this pair of actions is repeated
+-- until the rewriting step causes no change in the term.  A
+description of each parameter follows.
+
+     :rewrite -- default t
+
+When non-nil, instructs the system to use ACL2's rewriter (or,
+something close to it) during simplification.
+
+     :normalize -- default t
+
+When non-nil, instructs the system to use if-normalization (as
+described above) during simplification.
+
+     :backchain-limit -- default 0
+
+Sets the number of recursive calls to the rewriter that are allowed for
+backchaining.  Even with the default of 0, some reasoning is allowed
+(technically speaking, type-set reasoning is allowed) in the relieving
+of hypotheses.
+
+     :repeat -- default 0
+
+Sets the number of times the current term is to be rewritten.  If this
+value is t, then the default is used (as specified by the constant
+*default-s-repeat-limit*).
+
+     :in-theory, :hands-off, :expand
+
+These have their usual meaning; see *note HINTS::.
+
+*Note:*  if conditional rewrite rules are used that cause case splits
+because of the use of force, then appropriate new subgoals will be
+created, i.e., with the same current subterm (and address) but with
+each new (forced) hypothesis being negated and then used to create a
+corresponding new subgoal.  In that case, the current goal will have
+all such new hypotheses added to the list of top-level hypotheses.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||S-PROP,  Next: ACL2-PC||SAVE,  Prev: ACL2-PC||S,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||S-PROP    (atomic macro)
+simplify propositionally
+
+     Example:
+     s-prop
+     
+     General Form:
+     (s-prop &rest names)
+
+Simplify, using the default settings for s (which include
+if-normalization and rewriting without real backchaining), but with
+respect to a theory in which only basic functions and rules (the ones in
+(theory 'minimal-theory)), together with the names (or parenthesized
+names) in the &rest argument names, are enabled.
+
+See also the documentation for s.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SAVE,  Next: ACL2-PC||SEQUENCE,  Prev: ACL2-PC||S-PROP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SAVE    (macro)
+save the proof-checker state (state-stack)
+
+     Example:
+     (save lemma3-attempt)
+     
+     General Form:
+     (save &optional name do-it-flg)
+
+Saves the current proof-checker state by "associating" it with the
+given name.  Submit (retrieve name) to Lisp to get back to this
+proof-checker state.  If verify was originally supplied with an event
+name, then the argument can be omitted in favor of that name as the
+default.
+
+*Note* that if a save has already been done with the indicated name (or
+the default event name), then the user will be queried regarding
+whether to go ahead with the save -- except, if do-it-flg is supplied
+and not nil, then there will be no query and the save will be effected.
+
+See also the documentation for retrieve and unsave.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SEQUENCE,  Next: ACL2-PC||SHOW-ABBREVIATIONS,  Prev: ACL2-PC||SAVE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SEQUENCE    (meta)
+run the given list of instructions according to a multitude of
+options
+
+     Example:
+     (sequence (induct p prove) t)
+
+See also the definitions of commands do-all, do-strict, protect, and
+succeed.
+
+     General Form:
+     (sequence
+      instruction-list
+      &optional
+      strict-flg protect-flg success-expr no-prompt-flg no-restore-flg)
+
+Each instruction in the list instruction-list is run, and the
+instruction "succeeds" if every instruction in instruction-list
+"succeeds".  However, it might "succeed" even if some instructions in
+the list "fail"; more generally, the various arguments control a number
+of aspects of the running of the instructions.  All this is explained
+in the paragraphs below.  First we embark on a general discussion of
+the instruction interpreter, including the notions of "succeed" and
+"fail".
+
+*Note:*  The arguments are *not* evaluated, except (in a sense) for
+success-expr, as described below.
+
+Each primitive and meta instruction can be thought of as returning an
+error triple (in the standard ACL2 sense), say (erp val state).  An
+instruction (primitive or meta) "succeeds" if erp is nil and val is not
+nil; otherwise it "fails".  (When we use the words "succeed" or "fail"
+in this technical sense, we'll always include them in double quotes.)
+If an instruction "fails," we say that that the failure is "soft" if
+erp is nil; otherwise the failure is "hard".  The sequence command
+gives the user control over how to treat "success" and "failure" when
+sequencing instructions, though we have created a number of handy macro
+commands for this purpose, notably do-all, do-strict and protect.
+
+Here is precisely what happens when a sequence instruction is run.  The
+instruction interpreter is run on the instructions supplied in the
+argument instruction-list (in order).  The interpreter halts the first
+time there is a hard "failure." except that if strict-flg is supplied
+and not nil, then the interpreter halts the first time there is any
+"failure."  The error triple (erp val state) returned by the sequence
+instruction is the triple returned by the last instruction executed
+(or, the triple (nil t state) if instruction-list is nil), except for
+the following provision.  If success-expr is supplied and not nil, then
+it is evaluated with the state global variables erp and val (in ACL2
+package) bound to the corresponding components of the error triple
+returned (as described above).  At least two values should be returned,
+and the first two of these will be substituted for erp and val in the
+triple finally returned by sequence.  For example, if success-expr is
+(mv erp val), then no change will be made to the error triple, and if
+instead it is (mv nil t), then the sequence instruction will "succeed".
+
+That concludes the description of the error triple returned by a
+sequence instruction, but it remains to explain the effects of the
+arguments protect-flg and no-prompt-flg.
+
+If protect-flg is supplied and not nil and if also the instruction
+"fails" (i.e., the error component of the triple is not nil or the
+value component is nil), then the state is reverted so that the
+proof-checker's state (including the behavior of restore) is set back
+to what it was before the sequence instruction was executed.
+Otherwise, unless no-restore-flg is set, the state is changed so that
+the restore command will now undo the effect of this sequence
+instruction (even if there were nested calls to sequence).
+
+Finally, as each instruction in instruction-list is executed, the
+prompt and that instruction will be printed, unless the global state
+variable print-prompt-and-instr-flg is unbound or nil and the parameter
+no-prompt-flg is supplied and not nil.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SHOW-ABBREVIATIONS,  Next: ACL2-PC||SHOW-REWRITES,  Prev: ACL2-PC||SEQUENCE,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SHOW-ABBREVIATIONS    (macro)
+display the current abbreviations
+
+     Examples:
+     (show-abbreviations v w)
+        -- assuming that v and w currently abbreviate terms,
+           then this instruction displays them together with
+           the terms they abbreviate
+     show-abbreviations
+        -- display all abbreviations
+
+See also add-abbreviation and remove-abbreviations.  In particular, the
+documentation for add-abbreviation contains a general discussion of
+abbreviations.
+
+     General Form:
+     (show-abbreviations &rest vars)
+
+Display each argument in vars together with the term it abbreviates (if
+any).  If there are no arguments, i.e. the instruction is simply
+show-abbreviations, then display all abbreviations together with the
+terms they abbreviate.
+
+If the term abbreviated by a variable, say v, contains a proper subterm
+that is also abbreviate by (another) variable, then both the
+unabbreviated term and the abbreviated term (but not using (? v) to
+abbreviate the term) are displayed with together with v.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SHOW-REWRITES,  Next: ACL2-PC||SKIP,  Prev: ACL2-PC||SHOW-ABBREVIATIONS,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SHOW-REWRITES    (macro)
+display the applicable rewrite rules
+
+     Example:
+     show-rewrites
+     
+     General Form:
+     (show-rewrites &optional rule-id enabled-only-flg)
+
+Display rewrite rules whose left-hand side matches the current subterm.
+This command shows how the rewrite command can be applied.  If rule-id
+is supplied and is a name (non-nil symbol) or a rune, then only the
+corresponding rewrite rule(s) will be displayed, while if rule-id is a
+positive integer n, then only the nth rule that would be in the list is
+displayed.  In each case, the display will point out when a rule is
+currently disabled (in the interactive environment), except that if
+enabled-only-flg is supplied and not nil, then disabled rules will not
+be displayed at all.  Finally, among the free variables of any rule
+(those occurring in the rule that do not occur in the left-hand side of
+its conclusion), those that would remain free if the rule were applied
+will be displayed.  See also the documentation for rewrite.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SKIP,  Next: ACL2-PC||SL,  Prev: ACL2-PC||SHOW-REWRITES,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SKIP    (macro)
+``succeed'' without doing anything
+
+     Example and General Form:
+     skip
+
+Make no change in the state-stack, but "succeed".  Same as (sequence
+nil).
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SL,  Next: ACL2-PC||SPLIT,  Prev: ACL2-PC||SKIP,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SL    (atomic macro)
+simplify with lemmas
+
+     Examples:
+     sl
+     (sl 3)
+     
+     General Form:
+     (sl &optional backchain-limit)
+
+Simplify, but with all function definitions disabled (see *note
+FUNCTION-THEORY:: in the top-level ACL2 loop), except for a few basic
+functions (the ones in (theory 'minimal-theory)).  The backchain-limit
+has a default of 0, but if is supplied and not nil, then it should be a
+nonnegative integer; see the documentation for s.
+
+WARNING: This command completely ignores in-theory commands that are
+executed inside the proof-checker.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SPLIT,  Next: ACL2-PC||SR,  Prev: ACL2-PC||SL,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SPLIT    (atomic macro)
+split the current goal into cases
+
+     Example:
+     split
+
+For example, if the current goal has one hypothesis (or x y) and a
+conclusion of (and a b), then split will create four new goals:
+
+     one with hypothesis X and conclusion A
+     one with hypothesis X and conclusion B
+     one with hypothesis Y and conclusion A
+     one with hypothesis Y and conclusion B.
+     
+     General Form:
+     SPLIT
+
+Replace the current goal by subgoals whose conjunction is equivalent
+(primarily by propositional reasoning) to the original goal, where each
+such goal cannot be similarly split.
+
+*Note:*  The new goals will all have their hypotheses promoted; in
+particular, no conclusion will have a top function symbol of implies.
+Also note that split will fail if there is exactly one new goal created
+and it is the same as the existing current goal.
+
+The way split really works is to call the ACL2 theorem prover with only
+simplification (and preprocessing) turned on, and with only a few
+built-in functions (especially, propositional ones) enabled, namely,
+the ones in the list (theory 'minimal-theory).  However, because the
+prover is called, type-set reasoning can be used to eliminate some
+cases.  For example, if (true-listp x) is in the hypotheses, then
+probably (true-listp (cdr x)) will be reduced to t.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-PC||SR,  Next: ACL2-PC||SUCCEED,  Prev: ACL2-PC||SPLIT,  Up: PROOF-CHECKER-COMMANDS
+
+ACL2-PC||SR    (macro)
+same as SHOW-REWRITES
+
+     Example:
+     sr
+     
+     General Form:
+     (sr &optional rule-id)
+
+See the documentation for show-rewrites, as sr and show-rewrites are
+identical.
+

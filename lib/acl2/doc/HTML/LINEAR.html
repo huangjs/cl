@@ -1,0 +1,158 @@
+<html>
+<head><title>LINEAR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LINEAR</h2>make some arithmetic inequality rules
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and how they are
+used to build rules from formulas.  An example <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula
+from which a <code>:linear</code> rule might be built is:
+
+<pre>
+Example:
+(implies (and (eqlablep e)           if inequality reasoning begins to
+              (true-listp x))        consider how (length (member a b))
+         (&lt;= (length (member e x))   compares to any other term, add to
+             (length x)))            set of known inequalities the fact
+                                     that it is no larger than (length b),
+                                     provided (eqlablep a) and (true-listp b)
+                                     rewrite to t<p>
+
+General Form:
+(and ...
+     (implies (and ...hi...)
+              (implies (and ...hk...)
+                       (and ...
+                            (rel lhs rhs)
+                            ...)))
+     ...)
+</pre>
+<p>
+
+Note: One <code>:linear</code> rule class object might create many linear
+arithmetic rules from the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula.  To create the rules,
+we first flatten the <code><a href="AND.html">and</a></code> and <code><a href="IMPLIES.html">implies</a></code> structure of the formula,
+transforming it into a conjunction of formulas, each of the form
+
+<pre>
+(implies (and h1 ... hn) (rel lhs rhs))
+</pre>
+
+where no hypothesis is a conjunction and <code>rel</code> is one of the
+inequality relations <code><a href="_lt_.html">&lt;</a></code>, <code><a href="_lt_=.html">&lt;=</a></code>, <code><a href="=.html">=</a></code>, <code><a href="_gt_.html">&gt;</a></code>, or <code><a href="_gt_=.html">&gt;=</a></code>.  If
+necessary, the hypothesis of such a conjunct may be vacuous.
+We create a <code>:linear</code> rule for each such conjunct, if possible, and
+otherwise cause an error.
+<p>
+Each rule has one or more ``trigger
+terms'' which may be specified by the user using the <code>:trigger-terms</code>
+field of the rule class or which may be defaulted to values chosen
+by the system.  We discuss the determination of trigger terms after
+discussing how linear rules are used.<p>
+
+<code>:linear</code> rules are used by an arithmetic decision procedure
+during rewriting.  See <a href="LINEAR-ARITHMETIC.html">linear-arithmetic</a> and
+see <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>.  Here we assume that the reader is
+familiar with the material described in <code><a href="LINEAR-ARITHMETIC.html">linear-arithmetic</a></code>.<p>
+
+Recall that we eliminate the unknowns of an inequality in
+term-order, largest unknowns first.  (See <a href="TERM-ORDER.html">term-order</a>.)  In order to
+facilitate this strategy, we store the inequalities in ``linear pots''.
+For purposes of the present discussion, let us say that an inequality is
+``about'' its largest unknown.  Then, all of the inequalities about
+a particular unknown are stored in the same linear pot, and the pot
+is said to be ``labeled'' with that unknown.  This storage layout
+groups all of the inequalities which are potential candidates for
+cancellation with each other into one place.  It is also key to the
+efficient operation of <code>:linear</code> rules.<p>
+
+If the arithmetic decision procedure has stabilized and not yielded a
+contradiction, we scan through the list of linear pots examining
+each label as we go.  If the trigger term of some <code>:linear</code> rule
+can be instantiated to match the label, we so instantiate that rule
+and attempt to relieve the hypotheses with general-purpose rewriting.
+If we are successful, we add the rule's instantiated conclusion to
+our set of inequalities.  This may let cancellation continue.<p>
+
+Note: Problems may arise if you explicitly store a linear lemma
+under a trigger term that, when instantiated, is not the largest
+unknown in the instantiated concluding inequality.  Suppose for
+example you store the linear rule <code>(&lt;= (fn i j) (/ i (* j j)))</code> under
+the trigger term <code>(fn i j)</code>.  Then when the system ``needs'' an
+inequality about <code>(fn a b)</code>, (i.e., because <code>(fn a b)</code> is the 
+label of some linear pot, and hence the largest unknown in some
+inequality), it
+will appeal to the rule and deduce <code>(&lt;= (fn a b) (/ a (* b b)))</code>.
+However, the largest unknown in this inequality is <code>(/ a (* b b))</code> and
+hence it will be stored in a linear pot labeled with <code>(/ a (* b b))</code>.
+The original, triggering inequality which is in a pot about <code>(fn a b)</code>
+will therefore not be cancelled against the new one.  It is generally
+best to specify as a trigger term one of the ``maximal'' terms of the
+polynomial, as described below.<p>
+
+We now describe how the trigger terms are determined.  Most of the
+time, the trigger terms are not specified by the user and are
+instead selected by the system.  However, the user may specify the
+terms by including an explicit <code>:trigger-terms</code> field in the rule
+class, e.g.,
+
+<pre>
+General Form of a Linear Rule Class:
+(:LINEAR :COROLLARY formula
+         :TRIGGER-TERMS (term1 ... termk))
+</pre>
+
+Each <code>termi</code> must be a term and must not be a variable, quoted
+constant, lambda application, <code>let-expression</code> or <code>if-expression</code>.  In
+addition, each <code>termi</code> must be such that if all the variables in the
+term are instantiated and then the hypotheses of the corollary
+formula are relieved (possibly instantiating additional free
+variables), then all the variables in the concluding inequality are
+instantiated.  We generate a linear rule for each conjuctive branch
+through the corollary and store each rule under each of the
+specified triggers.  Thus, if the corollary formula contains several
+conjuncts, the variable restrictions on the <code>termi</code> must hold for each
+conjunct.<p>
+
+If <code>:trigger-terms</code> is omitted the system computes a set of trigger
+terms.  Each conjunct of the corollary formula may be given a unique
+set of triggers depending on the variables that occur in the
+conjunct and the addends that occur in the concluding inequality.
+In particular, the trigger terms for a conjunct is the list of all
+``maximal addends'' in the concluding inequality.<p>
+
+The ``addends'' of <code>(+ x y)</code> and <code>(- x y)</code> are the union of the
+addends of <code>x</code> and <code>y</code>.  The addends of <code>(- x)</code> and <code>(* n x)</code>,
+where <code>n</code> is a rational constant, is just <code>{x}</code>.  The
+addends of an inequality are the union of the addends of the left-
+and right-hand sides.  The addends of any other term, <code>x</code>, is
+<code>{x}</code>.<p>
+
+A term is maximal for a conjunct <code>(implies hyps concl)</code> of the
+corollary if (a) the term is a non-variable, non-quote, non-lambda
+application, non-<code><a href="LET.html">let</a></code> and non-<code><a href="IF.html">if</a></code> expression, (b) the term
+contains enough variables so that when they are instantiated and the
+hypotheses are relieved (which may bind some free variables;
+see <a href="FREE-VARIABLES.html">free-variables</a>) then all the variables in <code>concl</code> are
+instantiated, and (c) no other addend is always ``bigger'' than the
+term, in the technical sense described below.<p>
+
+The technical notion below depends on the notion of <em>fn-count</em>,
+the number of function symbols in a term, and <em>pseudo-fn-count</em>,
+which is the number of function symbols implicit in a constant (see
+the comment on pseduo-fn-count in the definition of var-fn-count in
+the sources for details).  We say <code>term1</code> is always bigger than
+<code>term2</code> if all instances of <code>term1</code> have a larger fn-count
+(actually lexicographic order of fn-count and pseudo-fn-count) than
+the corresponding instances of <code>term2</code>.  This is equivalent to
+saying that the fn-count of <code>term1</code> is larger than that of
+<code>term2</code> (by ``fn-count'' here we mean the lexicographic order of
+fn-count and pseudo-fn-count) and the variable bag for <code>term2</code> is
+a subbag of that for <code>term1</code>.  For example, <code>(/ a (* b b))</code> is
+always bigger than <code>(fn a b)</code> because the first has two function
+applications and <code>{a b}</code> is a subbag of <code>a b b</code>, but
+<code>(/ a (* b b))</code> is not always bigger than <code>(fn a x)</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

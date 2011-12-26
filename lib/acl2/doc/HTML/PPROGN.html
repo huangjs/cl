@@ -1,0 +1,51 @@
+<html>
+<head><title>PPROGN.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PPROGN</h2>evaluate a sequence of forms that return <a href="STATE.html">state</a>
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(pprogn
+ (cond ((or (equal (car l) #\) (equal (car l) slash-char))
+        (princ$ #\ channel state))
+       (t state))
+ (princ$ (car l) channel state)
+ (mv (cdr l) state))
+</pre>
+
+The convention for <code>pprogn</code> usage is to give it a non-empty
+sequence of forms, each of which (except possibly for the last)
+returns state (see <a href="STATE.html">state</a>) as its only value.  The <a href="STATE.html">state</a> returned by
+each but the last is passed on to the next.  The value or values of
+the last form are returned as the value of the <code>pprogn</code>.<p>
+
+If you are using single-threaded objects you may wish to define an
+analogue of this function for your own <a href="STOBJ.html">stobj</a>.
+<p>
+General Form:
+
+<pre>
+(PPROGN form1
+        form2
+        ...
+        formk
+        result-form)
+</pre>
+
+This general form is equivalent, via macro expansion, to:
+
+<pre>
+(LET ((STATE form1))
+     (LET ((STATE form2))
+          ...
+          (LET ((STATE formk))
+               result-form)))
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+   <TITLE>Generators</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Generators</DIV>
+
+<H2>The Scanning Problem</H2>
+
+<P>Here's a very common programming problem:</P>
+
+<BLOCKQUOTE><P>Repeatedly collect items from an input stream into
+chunks, until the stream is empty.</P></BLOCKQUOTE>
+
+<P>For example, compilers for C and Pascal, and the Lisp reader,
+collect characters from the input stream to form tokens, where each
+token is either a name or number or punctuation element.</P>
+
+<P>Another example is <TT>compress</TT> on page 37 of Graham's
+<I>ANSI Common Lisp</I>. This function collects items from a list
+into pairs of the form <TT>(</TT><I><TT>number
+element</TT></I><TT>)</TT>, indicating how often each item is
+repeated.</P>
+
+<P>Ideally, we'd like our code to break down into two pieces:</P>
+
+<UL>
+   <LI>a function that collects some input elements and returns a
+   chunk
+
+   <LI>a function that applies the chunking function to the input
+   until the input is emptied
+</UL>
+
+<P>The key problem in defining these scanning functions is that the
+second function needs two values from the first function:</P>
+
+<UL>
+   <LI>a token or chunk of some kind
+
+   <LI>the remainder of the input
+</UL>
+
+<P>Doing this cleanly, following the
+<A HREF="../../readings/cardinal-rule.html">Cardinal Rule of Functions</A>, takes
+some thought.</P>
+
+<H2>Approach 1: Extra Parameters</H2>
+
+<P>Graham's definition of <CODE>compress</CODE> defined a new
+function, <CODE>compr</CODE>, that took three arguments:</P>
+
+<UL>
+   <LI>the element being scanned for
+
+   <LI>the current number of elements seen so far
+
+   <LI>the input list remaining
+</UL>
+
+<P>The second and third arguments hold the two values needed, and
+recursion was used to repeat the process until the list was emptied.
+</P>
+
+<P>Unfortunately, the function <CODE>compr</CODE> is not very clear.
+It has a terrible name, but it's hard to give it a good name because
+it violates the <A HREF="../../readings/cardinal-rule.html">Cardinal Rule of
+Functions</A> and mixes several tasks together.</P>
+
+<H2>Approach 2: Chunk then Trim</H2>
+
+<P>In this particular example, it turns out to not be too hard to use
+a scanning function that takes an object and a list and returns the
+length of the run of that element. We'll give a recursive definition
+of the scanning function here:</P>
+
+<PRE>(defun get-run (x l)
+  (cond ((null l) 0)
+        ((not (eql x (first l))) 0)
+        (t (1+ (get-run x (rest l))))))
+&nbsp;</PRE>
+
+<P>An iterative definition would be better here, because it would
+handle runs of any length without overflowing the function call
+stack.</P>
+
+<P>Even better would be to take advantage of Common Lisp's large
+library of sequence functions, e.g.,</P>
+
+<PRE>(defun get-run (x l)
+  (or (position x l :test-not #'eql))
+      (length l)))</PRE>
+
+<P>Or, if you want to avoid the "deprecated" <CODE>:test-not</CODE>
+feature:</P>
+
+<PRE>(defun get-run (x l)
+  (or (position x l :test (complement #'eql))
+      (length l)))</PRE>
+
+<P><CODE>compress</CODE> can then be defined as a repeated call to
+<CODE>get-run</CODE>:</P>
+
+<PRE>(defun compress (l)
+  (cond ((null l) nil)
+        (t (let ((run (1+ (get-run (first l) (rest l)))))
+             (cons (list run (first l))
+                   (compress (nthcdr run l)))))))</PRE>
+
+<P>Unfortunately, this version of <CODE>compress</CODE> is still a
+little messy.</P>
+
+<P>More importantly, it doesn't generalize well. After
+<CODE>get-run</CODE> scans the list, it returns how many items it
+found. This number is then used to trim the list. It works because
+it's easy and relatively cheap to use the run-length to trim off the
+items used so far, but this isn't always the case, plus it leads to
+the messy nesting.</P>
+
+<H2>Approach 3: Generators</H2>
+
+<P>Because chunking streams is a common problem, we could go for a
+general solution and define some functions that capture the
+procedural flow underlying the general solution to this kind of
+problem.</P>
+
+<BLOCKQUOTE><P>Note.
+<TT><A HREF="../../programs/generators.lisp">generators.lisp</A></TT>
+contains everything given below, except for the compression-specific
+functions, plus a few extras.</P></BLOCKQUOTE>
+
+<P>First, we define a new concept, a <I>generator</I>. A generator is
+a function that you call to get elements from some source. That
+source can be an input stream, a list of elements, an incrementing
+counter, whatever.</P>
+
+<P>A generator takes one argument:</P>
+
+<UL>
+   <LI>If the argument is <CODE>:get</CODE>, the current generator
+   element is returned, if any.
+
+   <LI>If that argument is <CODE>:test</CODE>, then <CODE>nil</CODE>
+   is returned if there is no current element.
+
+   <LI>If that argument is <CODE>:next</CODE>, the current element is
+   advanced to the next one, if any, and the previous current element
+   is returned.
+</UL>
+
+<P>(Odd as the last rule may seem, it tends to be the most useful of
+the obvious options, just as <CODE>i++</CODE> is more commonly used
+than <CODE>++i</CODE> in C and C++.)</P>
+
+<P>We can define generators using closures. We can do this on as
+needed basis, but a couple of generator-creating functions are
+particularly useful and easy  to define.</P>
+
+<P>For example, <CODE>make-number-gen</CODE> makes generators that
+generate numbers from <I>M</I> to <I>N</I>. If no <I>N</I> is given,
+the generator never runs out, i.e, never returns <CODE>nil</CODE> to
+<CODE>:test</CODE>.</P>
+
+<PRE>(defun make-number-gen (m &amp;optional n)
+  #'(lambda (cmd)
+      (ecase cmd
+        (:test (and (numberp n) (&gt; m n)))
+        (:get m)
+        (:next (prog1 m
+                    (unless (and (numberp n) (&gt; m n))
+                      (incf m)))))))</PRE>
+
+<P>Note the use of <CODE>prog1</CODE> to save and return the old
+value of <CODE>m</CODE>.</P>
+
+<P>The function <CODE>make-list-gen</CODE> makes generators that
+generate elements from a list, from left to right.</P>
+
+<PRE>(defun make-list-gen (l)
+  #'(lambda (cmd)
+      (ecase cmd
+        (:test (null l))
+        (:get (car l))
+        (:next (pop l)))))</PRE>
+
+<P>We could define more generator-making functions, but now let's
+define three simple functions that will make code using generators
+more readable, and less dependent on how they're implemented.</P>
+
+<PRE>(defun empty-gen-p (gen)
+  (funcall gen :test))
+&nbsp;
+(defun gen-elt (gen)
+  (funcall gen :get))
+&nbsp;
+(defun advance-gen (gen)
+  (funcall gen :next))</PRE>
+
+<P>A good example of a generator-using function, and a handy one for
+testing generators, is <CODE>extrude</CODE>. <CODE>(extrude
+</CODE><I><CODE>n gen</CODE></I><CODE>)</CODE> returns a list of the
+first N elements generated by the generator <I>gen</I>.</P>
+
+<PRE>(defun extrude (n gen)
+  (do ((l nil (cons (advance-gen gen) l))
+       (i 0 (1+ i)))
+      ((or (empty-gen-p gen) (&gt;= i n))
+       (nreverse l))))</PRE>
+
+<P>Here are some examples:</P>
+
+<PRE>? (extrude 5 (make-number-gen 3))
+(3 4 5 6 7)
+&nbsp;
+? (extrude 5 (make-number-gen 3 6))
+(3 4 5)
+&nbsp;
+? (extrude 5 (make-list-gen '(a b c d e f)))
+(A B C D E)
+&nbsp;
+? (extrude 5 (make-list-gen '(a b c)))
+(A B C)</PRE>
+
+<P>Now, with all this background out of the way, here is how we would
+use generators for our compression problem.</P>
+
+<P>First, we define <CODE>get-run</CODE>. It keeps calling the
+generator until an element different than the given element is
+returned. It returns the pair <CODE>(</CODE><I><CODE>number
+elt</CODE></I><CODE>)</CODE> indicating how many occurrences of the
+element it saw, counting the given one.</P>
+
+<PRE>(defun get-run (elt gen)
+  (do ((n 1 (1+ n)))
+      ((or (empty-gen-p gen)
+           (not (eql elt (gen-elt gen))))
+       (list n elt))
+    (advance-gen gen)))</PRE>
+
+<P>Finally, <CODE>compress</CODE> just calls <CODE>get-run</CODE>
+until the generator is exhausted.</P>
+
+<PRE>(defun compress (l)
+  (let ((gen (make-list-gen l)))
+    (do ((run-pairs nil
+                    (cons (get-run (advance-gen gen) gen)
+                          run-pairs)))
+        ((empty-gen-p gen)
+         (nreverse run-pairs)))))</PRE>
+
+<H2>Background</H2>
+
+<P>Generators have a long history in Lisp and other functional
+programming languages. The Common Lisp standard defines a
+particularly sophisticated set of series, generators and gatherers.
+See <CITE>Common Lisp The Language, 2nd edition</CITE>, by Guy L.
+Steele Jr., Appendices A and B (Digital Press, 1990).</P>
+
+<P>In Scheme, they're called streams. See <CITE>Structure and
+Interpretation of Computer Programs</CITE>, Harold Abelson and Gerald
+Jay Sussman with Julie Sussman, Section 3.4 (MIT Press, 1985)</P>
+
+<P>C++ has the same thing, only they call them iterators. Mitchell
+Model explains quite nicely why C++ iterators are really not
+iterators, and why real iterators would be hard to do in C++. See
+<CITE>Data Structures, Data Abstraction: A Contemporary Introduction
+Using C++</CITE>, Mitchell L. Model, p. 57 and Appendix C
+(Prentice-Hall, 1994).</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

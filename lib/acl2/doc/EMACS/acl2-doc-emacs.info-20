@@ -1,0 +1,1361 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: FORCE,  Next: FORCING-ROUND,  Prev: FIND-RULES-OF-RUNE,  Up: MISCELLANEOUS
+
+FORCE    identity function used to force a hypothesis
+
+When a hypothesis of a conditional rule has the form (force hyp) it is
+logically equivalent to hyp but has a pragmatic effect.  In particular,
+when the rule is considered, the needed instance of the hypothesis,
+hyp', is assumed and a special case is generated, requiring the system
+to prove that hyp' is true in the current context.  The proofs of all
+such "forced assumptions" are delayed until the successful completion
+of the main goal.  See *Note FORCING-ROUND::.
+
+Forcing should only be used on hypotheses that are always expected to
+be true, such as the guards of functions.  All the power of the theorem
+prover is brought to bear on a forced hypothesis and no backtracking is
+possible.  If the :executable-counterpart of the function force is
+disabled, then no hypothesis is forced.  See *Note ENABLE-FORCING:: and
+see *note DISABLE-FORCING::.  Forced goals can be attacked immediately
+(see *note IMMEDIATE-FORCE-MODEP::) or in a subsequent forcing round
+(see *note FORCING-ROUND::).  Also see *note CASE-SPLIT::.
+
+It sometimes happens that a conditional rule is not applied because
+some hypothesis, hyp, could not be relieved, even though the required
+instance of hyp, hyp', can be shown true in the context.  This happens
+when insufficient resources are brought to bear on hyp' at the time we
+try to relieve it.  A sometimes desirable alternative behavior is for
+the system to assume hyp', apply the rule, and to generate explicitly a
+special case to show that hyp' is true in the context.  This is called
+"forcing" hyp.  It can be arranged by restating the rule so that the
+offending hypothesis, hyp, is embedded in a call of force, as in (force
+hyp).  By using the :corollary field of the rule-classes entry, a
+hypothesis can be forced without changing the statement of the theorem
+from which the rule is derived.
+
+Technically, force is just a function of one argument that returns that
+argument.  It is generally enabled and hence evaporates during
+simplification.  But its presence among the hypotheses of a conditional
+rule causes case splitting to occur if the hypothesis cannot be
+conventionally relieved.
+
+Since a forced hypothesis must be provable whenever the rule is
+otherwise applicable, forcing should be used only on hypotheses that
+are expected always to be true.
+
+A particularly common situation in which some hypotheses should be
+forced is in "most general" type-prescription lemmas.  If a single
+lemma describes the "expected" type of a function, for all "expected"
+arguments, then it is probably a good idea to force the hypotheses of
+the lemma.  Thus, every time a term involving the function arises, the
+term will be given the expected type and its arguments will be required
+to be of the expected type.  In applying this advice it might be wise
+to avoid forcing those hypotheses that are in fact just type predicates
+on the arguments, since the routine that applies type-prescription
+lemmas has fairly thorough knowledge of the types of all terms.
+
+Force can have the additional benefit of causing the ACL2 typing
+mechanism to interact with the ACL2 rewriter to establish the
+hypotheses of type-prescription rules.  To understand this remark,
+think of the ACL2 type reasoning system as a rather primitive
+rule-based theorem prover for questions about Common Lisp types, e.g.,
+"does this expression produce a consp?"  "does this expression produce
+some kind of ACL2 number, e.g., an integerp, a rationalp, or a
+complex-rationalp?" etc.  It is driven by type-prescription rules.  To
+relieve the hypotheses of such rules, the type system recursively
+invokes itself.  This can be done for any hypothesis, whether it is
+"type-like" or not, since any proposition, p, can be phrased as the
+type-like question "does p produce an object of type nil?"  However, as
+you might expect, the type system is not very good at establishing
+hypotheses that are not type-like, unless they happen to be assumed
+explicitly in the context in which the question is posed, e.g., "If p
+produces a consp then does p produce nil?"  If type reasoning alone is
+insufficient to prove some instance of a hypothesis, then the instance
+will not be proved by the type system and a type-prescription rule with
+that hypothesis will be inapplicable in that case.  But by embedding
+such hypotheses in force expressions you can effectively cause the type
+system to "punt" them to the rest of the theorem prover.  Of course, as
+already noted, this should only be done on hypotheses that are "always
+true."  In particular, if rewriting is required to establish some
+hypothesis of a type-prescription rule, then the rule will be found
+inapplicable because the hypothesis will not be established by type
+reasoning alone.
+
+The ACL2 rewriter uses the type reasoning system as a subsystem.  It is
+therefore possible that the type system will force a hypothesis that
+the rewriter could establish.  Before a forced hypothesis is reported
+out of the rewriter, we try to establish it by rewriting.
+
+This makes the following surprising behavior possible: A
+type-prescription rule fails to apply because some true hypothesis is
+not being relieved.  The user changes the rule so as to *force* the
+hypothesis.  The system then applies the rule but reports no forcing.
+How can this happen?  The type system "punted" the forced hypothesis to
+the rewriter, which established it.
+
+Finally, we should mention that the rewriter is never willing to force
+when there is an if term present in the goal being simplified.  Since
+and terms and or terms are merely abbreviations for if terms, they also
+prevent forcing.  Note that if terms are ultimately eliminated using
+the ordinary flow of the proof (but see *note
+SET-CASE-SPLIT-LIMITATIONS::), allowing force ultimately to function as
+intended.  Moreover, forcing can be disabled, as described above; also
+see *note DISABLE-FORCING::.
+
+
+File: acl2-doc-emacs.info,  Node: FORCING-ROUND,  Next: GC$,  Prev: FORCE,  Up: MISCELLANEOUS
+
+FORCING-ROUND    a section of a proof dealing with forced assumptions
+
+If ACL2 "forces" some hypothesis of some rule to be true, it is obliged
+later to prove the hypothesis.  See *Note FORCE::.  ACL2 delays the
+consideration of forced hypotheses until the main goal has been proved.
+It then undertakes a new round of proofs in which the main goal is
+essentially the conjunction of all hypotheses forced in the preceding
+proof.  Call this round of proofs the "Forcing Round."  Additional
+hypotheses may be forced by the proofs in the Forcing Round.  The
+attempt to prove these hypotheses is delayed until the Forcing Round
+has been successfully completed.  Then a new Forcing Round is
+undertaken to prove the recently forced hypotheses and this continues
+until no hypotheses are forced.  Thus, there is a succession of Forcing
+Rounds.
+
+The Forcing Rounds are enumerated starting from 1.  The Goals and
+Subgoals of a Forcing Round are printed with the round's number
+displayed in square brackets.  Thus, "[1]Subgoal 1.3" means that the
+goal in question is Subgoal 1.3 of the 1st forcing round.  To supply a
+hint for use in the proof of that subgoal, you should use the goal
+specifier "[1]Subgoal 1.3".  See *Note GOAL-SPEC::.
+
+When a round is successfully completed -- and for these purposes you
+may think of the proof of the main goal as being the 0th forcing round
+-- the system collects all of the assumptions forced by the
+just-completed round.  Here, an assumption should be thought of as an
+implication, (implies context hyp), where context describes the context
+in which hyp was assumed true.  Before undertaking the proofs of these
+assumptions, we try to "clean them up" in an effort to reduce the
+amount of work required.  This is often possible because the forced
+assumptions are generated by the same rule being applied repeatedly in
+a given context.
+
+For example, suppose the main goal is about some term (pred (xtrans i)
+i) and that some rule rewriting pred contains a forced hypothesis that
+the first argument is a good-inputp.  Suppose that during the proof of
+Subgoal 14 of the main goal, (good-inputp (xtrans i)) is forced in a
+context in which i is an integerp and x is a consp.  (Note that x is
+irrelevant.)  Suppose finally that during the proof of Subgoal 28,
+(good-inputp (xtrans i)) is forced "again," but this time in a context
+in which i is a rationalp and x is a symbolp.  Since the forced
+hypothesis does not mention x, we deem the contextual information about
+x to be irrelevant and discard it from both contexts.  We are then left
+with two forced assumptions: (implies (integerp i) (good-inputp (xtrans
+i))) from Subgoal 14, and (implies (rationalp i) (good-inputp (xtrans
+i))) from Subgoal 28.  Note that if we can prove the assumption
+required by Subgoal 28 we can easily get that for Subgoal 14, since the
+context of Subgoal 28 is the more general.  Thus, in the next forcing
+round we will attempt to prove just
+
+     (implies (rationalp i) (good-inputp (xtrans i)))
+
+and "blame" both Subgoal 14 and Subgoal 28 of the previous round for
+causing us to prove this.
+
+By delaying and collecting the forced assumptions until the completion
+of the "main goal" we gain two advantages.  First, the user gets
+confirmation that the "gist" of the proof is complete and that all that
+remains are "technical details."  Second, by delaying the proofs of the
+forced assumptions ACL2 can undertake the proof of each assumption only
+once, no matter how many times it was forced in the main goal.
+
+In order to indicate which proof steps of the previous round were
+responsible for which forced assumptions, we print a sentence
+explaining the origins of each newly forced goal.  For example,
+
+     [1]Subgoal 1, below, will focus on
+     (GOOD-INPUTP (XTRANS I)),
+     which was forced in
+      Subgoal 14, above,
+       by applying (:REWRITE PRED-CRUNCHER) to
+       (PRED (XTRANS I) I),
+      and
+      Subgoal 28, above,
+       by applying (:REWRITE PRED-CRUNCHER) to
+       (PRED (XTRANS I) I).
+
+In this entry, "[1]Subgoal 1" is the name of a goal which will be
+proved in the next forcing round.  On the next line we display the
+forced hypothesis, call it x, which is (good-inputp (xtrans i)) in this
+example.  This term will be the conclusion of the new subgoal.  Since
+the new subgoal will be printed in its entirety when its proof is
+undertaken, we do not here exhibit the context in which x was forced.
+The sentence then lists (possibly a succession of) a goal name from the
+just-completed round and some step in the proof of that goal that
+forced x.  In the example above we see that Subgoals 14 and 28 of the
+just-completed proof forced (good-inputp (xtrans i)) by applying
+(:rewrite pred-cruncher) to the term (pred (xtrans i) i).
+
+If one were to inspect the theorem prover's description of the proof
+steps applied to Subgoals 14 and 28 one would find the word "forced"
+(or sometimes "forcibly") occurring in the commentary.  Whenever you
+see that word in the output, you know you will get a subsequent forcing
+round to deal with the hypotheses forced.  Similarly, if at the
+beginning of a forcing round a rune is blamed for causing a force in
+some subgoal, inspection of the commentary for that subgoal will reveal
+the word "forced" after the rule name blamed.
+
+Most forced hypotheses come from within the prover's simplifier.  When
+the simplifier encounters a hypothesis of the form (force hyp) it first
+attempts to establish it by rewriting hyp to, say, hyp'.  If the truth
+or falsity of hyp' is known, forcing is not required.  Otherwise, the
+simplifier actually forces hyp'.  That is, the x mentioned above is
+hyp', not hyp, when the forced subgoal was generated by the simplifier.
+
+Once the system has printed out the origins of the newly forced goals,
+it proceeds to the next forcing round, where those goals are
+individually displayed and attacked.
+
+At the beginning of a forcing round, the enabled structure defaults to
+the global enabled structure.  For example, suppose some rune, rune, is
+globally enabled.  Suppose in some event you disable the rune at "Goal"
+and successfully prove the goal but force "[1]Goal".  Then during the
+proof of "[1]Goal", rune is enabled "again."  The right way to think
+about this is that the rune is "still" enabled.  That is, it is enabled
+globally and each forcing round resumes with the global enabled
+structure.
+
+
+File: acl2-doc-emacs.info,  Node: GC$,  Next: GCL,  Prev: FORCING-ROUND,  Up: MISCELLANEOUS
+
+GC$    invoke the garbage collector
+
+This function is provided so that the user can call the garbage
+collector of the underlying Lisp from inside the ACL2 loop.
+Specifically, a call of gc$ is translated into a call of a function
+below on the same arguments.
+
+     Allegro CL:            excl:gc
+     GCL                    si::gbc
+     CLISP                  ext:gc
+     CMU Common Lisp        system::gc
+     SBCL                   sb-ext:gc
+     Macintosh Common Lisp  ccl::gc
+
+The arguments, if any, are as documented in the underlying Common Lisp.
+It is up to the user to pass in the right arguments, although we may
+do some rudimentary checks.
+
+This function always returns nil.
+
+
+File: acl2-doc-emacs.info,  Node: GCL,  Next: GENERALIZED-BOOLEANS,  Prev: GC$,  Up: MISCELLANEOUS
+
+GCL    tips on building and using ACL2 based on Gnu Common Lisp
+
+See the installation instructions for basic information about building
+ACL2 on top of GCL, including information about where to fetch GCL.
+Here, we provide some tips that may be useful.
+
+1. You can place forms to evaluate at start-up into file init.lsp in the
+directory where you are starting ACL2 (GCL), or into file acl2-init.lsp
+in your home directory.  For example, in order to evaluate both of the
+lisp forms mentioned in 2 below, you could put them both into init.lsp
+in the current directory or in ~/acl2-init.lsp (either way, without
+(lp) or :q):
+
+     (setq si::*optimize-maximum-pages* nil)
+     (si::allocate 'cons 75000 t)
+
+2. Suppose you run out of space, for example with an error like this:
+
+        Error: The storage for CONS is exhausted.
+          Currently, 59470 pages are allocated.
+          Use ALLOCATE to expand the space.
+
+The following suggestion from Camm Maguire will minimize the heap size,
+at the cost of more garbage collection time.
+
+     :q   ; exit the ACL2 loop
+     (setq si::*optimize-maximum-pages* nil)
+     (lp) ; re-enter the ACL2 loop
+
+A second thing to try, suggested by several people, is to preallocate
+more pages before the run, e.g.:
+
+     :q   ; exit the ACL2 loop
+     (si::allocate 'cons 75000 t)
+     (lp) ; re-enter the ACL2 loop
+
+Also see *note RESET-KILL-RING:: for a suggestion on how to free up
+space.
+
+3. Windows users have seen this error:
+
+     cc1.exe: unrecognized option `-fno-zero-initialized-in-bss'
+
+Camm Maguire suggests that a solution may be to evaluate the following
+in GCL before building ACL2.
+
+     (in-package 'compiler)
+     (let* ((x `-fno-zero-initialized-in-bss')
+            (i (search x *cc*)))
+             (setq *cc* (concatenate 'string
+                                     (subseq *cc* 0 i)
+                                     (subseq *cc* (+ i (length x))))))
+
+4. It is possible to profile using ACL2 built on GCL.  See file
+save-gprof.lsp in the ACL2 source directory.
+
+5. Some versions of GCL may have garbage-collector bugs that, on rare
+occasions, cause ACL2 (when built on GCL) to break.  If you run into
+this, a solution may be to execute the following:
+
+     :q
+     (si::sgc-on nil)
+     (lp)
+
+Alternatively, put (si::sgc-on nil) in your ~/acl2-init.lsp file.
+
+A full regression test and found that this decreased performance by
+about 10%.  But even with that, GCL may be the fastest Common Lisp for
+ACL2 on Linux (performance figures may often be found by following the
+"Recent changes" link on the ACL2 home page).
+
+
+File: acl2-doc-emacs.info,  Node: GENERALIZED-BOOLEANS,  Next: GOAL-SPEC,  Prev: GCL,  Up: MISCELLANEOUS
+
+GENERALIZED-BOOLEANS    potential soundness issues related to ACL2 predicates
+
+The discussion below outlines a potential source of unsoundness in
+ACL2.  Although to our knowledge there is no existing Lisp
+implementation in which this problem can arise, nevertheless we feel
+compelled to explain this situation.
+
+Consider for example the question:  What is the value of (equal 3 3)?
+According to the ACL2 axioms, it's t.  And as far as we know, based on
+considerable testing, the value is t in every Common Lisp
+implementation.  However, according the Common Lisp draft proposed ANSI
+standard, any non-nil value could result.  Thus for example, (equal 3
+3) is allowed by the standard to be 17.
+
+The Common Lisp standard specifies (or soon will) that a number of
+Common Lisp functions that one might expect to return Boolean values
+may, in fact, return arbitrary values.  Examples of such functions are
+equal, rationalp, and <; a much more complete list is given below.
+Indeed, we dare to say that every Common Lisp function that one may
+believe returns only Booleans is, nevertheless, not specified by the
+standard to have that property, with the exceptions of the functions
+not and null.  The standard refers to such arbitrary values as
+"generalized Booleans," but in fact this terminology makes no
+restriction on those values.  Rather, it merely specifies that they are
+to be viewed, in an informal sense, as being either nil or not nil.
+
+This situation is problematic for ACL2, which axiomatizes these
+functions to return Booleans.  The problem is that because (for
+efficiency and simplicity) ACL2 makes very direct use of compiled
+Common Lisp functions to support the execution of its functions, there
+is in principle a potential for unsoundness due to these "generalized
+Booleans."  For example, ACL2's equal function is defined to be Common
+Lisp's equal.  Hence if in Common Lisp the form (equal 3 3) were to
+evaluate to 17, then in ACL2 we could prove (using the
+:executable-counterpart of equal) (equal (equal 3 3) 17).  However,
+ACL2 can also prove (equal (equal x x) t), and these two terms together
+are contradictory, since they imply (instantiating x in the second term
+by 3) that (equal 3 3) is both equal to 17 and to t.
+
+To make matters worse, the standard allows (equal 3 3) to evaluate to
+_different_ non-nil values every time.  That is:  equal need not even
+be a function!
+
+Fortunately, no existing Lisp implementation takes advantage of the
+flexibility to have (most of) its predicates return generalized
+Booleans, as far as we know.  We may implement appropriate safeguards
+in future releases of ACL2, in analogy to (indeed, probably extending)
+the existing safeguards by way of guards (see *note GUARD::).  For now,
+we'll sleep a bit better knowing that we have been up-front about this
+potential problem.
+
+The following list of functions contains all those that are defined in
+Common Lisp to return generalized Booleans but are assumed by ACL2 to
+return Booleans.  In addition, the functions acl2-numberp and
+complex-rationalp are directly defined in terms of respective Common
+Lisp functions numberp and complexp.
+
+     /=
+     <
+     =
+     alpha-char-p
+     atom
+     char-equal
+     char<
+     char<=
+     char>
+     char>=
+     characterp
+     consp
+     digit-char-p
+     endp
+     eq
+     eql
+     equal
+     evenp
+     integerp
+     keywordp
+     listp
+     logbitp
+     logtest
+     lower-case-p
+     minusp
+     oddp
+     plusp
+     rationalp
+     standard-char-p
+     string-equal
+     string<
+     string<=
+     string>
+     string>=
+     stringp
+     subsetp
+     symbolp
+     upper-case-p
+     zerop
+
+
+File: acl2-doc-emacs.info,  Node: GOAL-SPEC,  Next: GUARD,  Prev: GENERALIZED-BOOLEANS,  Up: MISCELLANEOUS
+
+GOAL-SPEC    to indicate where a hint is to be used
+
+     Examples:
+     "Goal"
+     "goal"
+     "Subgoal *1/3''"
+     "subgoal *1/3''"
+     "[2]Subgoal *1/3''"
+
+When hints are given to the theorem prover, a goal-spec is provided to
+specify the goal to which the hints are to be applied.  The hints
+provided are carried along innocuously until the named goal arises.
+When it arises, the hints are "activated" for that goal and its
+descendents.
+
+A legal goal specification may be extracted from the theorem prover's
+output.  Certain lines clearly label formulas, as in
+
+     Subgoal *1/3.2'
+     (IMPLIES ... ...)
+
+and these lines all give rise to goal specifications.  In general,
+these lines all start either with "Goal" or "Subgoal" or else with
+those words preceded by a number in square brackets, as in
+
+     [1]Subgoal *1/3.2'
+     (IMPLIES ... ...).
+
+A goal specification may be obtained by deleting any surrounding
+whitespace from such a line and embedding the text in string quotation
+marks.  Thus
+
+     "[1]Subgoal *1/3.2'"
+
+is the goal specifier for the goal above.
+
+As noted, a hint is applied to a goal when the hint's goal
+specification matches the name ACL2 assigns to the goal.  The matching
+algorithm is case-insensitive.  Thus, alternative goal specifications
+for the goal above are "[1]subgoal *1/3.2'" and "[1]SUBGOAL *1/3.2'".
+The matching algorithm does not tolerate non-case discrepancies.  Thus,
+"[1]Subgoal*1/3.2'" and " [1]Subgoal *1/3.2'" are unacceptable.
+
+Sometimes a formula is given two names, e.g.,
+
+     Subgoal *1/14.2'
+     (IMPLIES ...
+              ...)
+     Name the formula above *1.1.
+
+It is the first name (the one that starts with "Goal" or "Subgoal") and
+not the second which constitutes a legal goal-spec.  Roughly speaking,
+when the system prints the line containing the goal specification, it
+activates any hints that are attached to that goal-spec.  Consider the
+example above.  Suppose Subgoal *1/14.2' could be proved by using a
+certain lemma instance.  Then the appropriate entry in the hints would
+be:
+
+     ("Subgoal *1/14.2'" :use ...)
+
+This might surprise you because the system appears to do nothing to
+*1/14.2' besides push it for a subsequent induction.  But actually
+between the time the system printed the goal-spec line and the time it
+decides to push the goal, you can think of the system as trying
+everything it has.  So a use hint activated when Subgoal *1/14.2'
+arises is just what you want.
+
+But what if you want to give an :induct hint?  By the time induction is
+tried, the formula has been given the name *1.1.  Well, this is one you
+just have to remember:
+
+     ("Subgoal *1/14.2'" :induct ...).
+
+When the above hint is activated the :induct directive short-circuits
+the rest of the processing and sends immediately the formula into the
+pool of goals to prove by induction.  The induct hint is attached to
+the formula in the pool and when the time comes to turn our attention
+to that goal, the induct advice is followed.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD,  Next: GUARD-HINTS,  Prev: GOAL-SPEC,  Up: MISCELLANEOUS
+
+GUARD    restricting the domain of a function
+
+The ACL2 system provides a mechanism for restricting a function
+definition to a particular domain.  Although such restrictions, which
+are called "guards," are actually ignored by the ACL2 _logic_, they can
+be useful as a specification device or as a means of causing the
+execution of definitions directly in Common Lisp.  To make such a
+restriction, use the :guard xarg to defun.  See *Note XARGS:: for a
+discussion of how to use :guard.  The general issue of guards and guard
+verification is discussed in the topics listed below.
+
+* Menu:
+
+* GUARD-EVALUATION-EXAMPLES-LOG:: log showing combinations of defun-modes and guard-checking
+
+* GUARD-EVALUATION-EXAMPLES-SCRIPT:: a script to show combinations of defun-modes and guard-checking
+
+* GUARD-EVALUATION-TABLE:: a table that shows combinations of defun-modes and guard-checking
+
+* GUARD-INTRODUCTION:: introduction to guards in ACL2
+
+* GUARD-MISCELLANY:: miscellaneous remarks about guards
+
+* GUARD-QUICK-REFERENCE:: brief summary of guard checking and guard verification
+
+* GUARDS-AND-EVALUATION:: the relationship between guards and evaluation
+
+* GUARDS-FOR-SPECIFICATION:: guards as a specification device
+
+
+Related topics other than immediate subtopics:
+* GUARD-EXAMPLE:: a brief transcript illustrating guards in ACL2
+
+* SET-GUARD-CHECKING:: control checking guards during execution of top-level forms
+
+* SET-VERIFY-GUARDS-EAGERNESS:: the eagerness with which guard verification is tried.
+
+* VERIFY-GUARDS:: verify the guards of a function
+
+To begin further discussion of guards, see *note GUARD-INTRODUCTION::.
+That section directs the reader to further sections for more details.
+To see just a summary of some commands related to guards, see *note
+GUARD-QUICK-REFERENCE::.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-EVALUATION-EXAMPLES-LOG,  Next: GUARD-EVALUATION-EXAMPLES-SCRIPT,  Prev: GUARD,  Up: GUARD
+
+GUARD-EVALUATION-EXAMPLES-LOG    log showing combinations of defun-modes and guard-checking
+
+See *Note GUARD-EVALUATION-EXAMPLES-SCRIPT:: for a script that shows
+the interaction of defun-modes with the value set by
+set-guard-checking.  Here, we present a log resulting from running this
+script (using ACL2 Version  3.0, built on Allegro Common Lisp).
+
+See *Note SET-GUARD-CHECKING:: for discussion of the interaction between
+defun-modes and guard-checking that is illustrated by this script.
+Also see *note GUARD-EVALUATION-TABLE:: for a succinct table, with
+associated discussion, that covers in detail the interactions
+illustrated here.
+
+     ACL2 !>(defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :mode :program))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 !>(trace$ fact)
+     NIL
+     ACL2 !>:set-guard-checking t
+     
+     Guard-checking-on already has value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the :program function symbol
+     FACT, which is (INTEGERP X), is violated by the arguments in the call
+     (FACT T).  See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the :program function symbol
+     FACT, which is (INTEGERP X), is violated by the arguments in the call
+     (FACT T).  See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:u
+     
+               0:x(EXIT-BOOT-STRAP-MODE)
+     ACL2 >(defun fact (x)
+              (declare (xargs :guard t
+                              :mode :program))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:u
+     
+               0:x(EXIT-BOOT-STRAP-MODE)
+     ACL2 >(defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :verify-guards nil
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     For the admission of FACT we will use the relation O< (which is known
+     to be well-founded on the domain recognized by O-P) and the measure
+     (ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+     
+     Goal
+     (IMPLIES (POSP X)
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     By the simple :definition POSP we reduce the conjecture to
+     
+     Goal'
+     (IMPLIES (AND (INTEGERP X) (< 0 X))
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     But we reduce the conjecture to T, by case analysis.
+     
+     Q.E.D.
+     
+     That completes the proof of the measure theorem for FACT.  Thus, we
+     admit this function under the principle of definition. We observe that
+     the type of FACT is described by the theorem
+     (AND (INTEGERP (FACT X)) (< 0 (FACT X))).  We used the :compound-recognizer
+     rule POSP-COMPOUND-RECOGNIZER and primitive type reasoning.
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
+             (:DEFINITION NOT)
+             (:DEFINITION POSP)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL))
+     Warnings:  None
+     Time:  0.01 seconds (prove: 0.01, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     
+     ACL2 Warning [Guards] in TOP-LEVEL:  Guard-checking will be inhibited
+     on recursive calls of the executable counterpart (i.e., in the ACL2
+     logic) of FACT.  To check guards on all recursive calls:
+       (set-guard-checking :all)
+     To leave behavior unchanged except for inhibiting this message:
+       (set-guard-checking :nowarn)
+     
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >(verify-guards fact)
+     
+     Computing the guard conjecture for FACT....
+     
+     The guard conjecture for FACT is trivial to prove, given the :compound-
+     recognizer rule POSP-COMPOUND-RECOGNIZER, primitive type reasoning
+     and the :type-prescription rule FACT.  FACT is compliant with Common
+     Lisp.
+     
+     Summary
+     Form:  ( VERIFY-GUARDS FACT)
+     Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL)
+             (:TYPE-PRESCRIPTION FACT))
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:u
+      L        1:x(DEFUN FACT (X) ...)
+     ACL2 >:u
+               0:x(EXIT-BOOT-STRAP-MODE)
+     ACL2 >(defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     For the admission of FACT we will use the relation O< (which is known
+     to be well-founded on the domain recognized by O-P) and the measure
+     (ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+     
+     Goal
+     (IMPLIES (POSP X)
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     By the simple :definition POSP we reduce the conjecture to
+     
+     Goal'
+     (IMPLIES (AND (INTEGERP X) (< 0 X))
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     But we reduce the conjecture to T, by case analysis.
+     
+     Q.E.D.
+     
+     That completes the proof of the measure theorem for FACT.  Thus, we
+     admit this function under the principle of definition. We observe that
+     the type of FACT is described by the theorem
+     (AND (INTEGERP (FACT X)) (< 0 (FACT X))).  We used the :compound-recognizer
+     rule POSP-COMPOUND-RECOGNIZER and primitive type reasoning.
+     
+     Computing the guard conjecture for FACT....
+     
+     The guard conjecture for FACT is trivial to prove, given the :compound-
+     recognizer rule POSP-COMPOUND-RECOGNIZER, primitive type reasoning
+     and the :type-prescription rule FACT.  FACT is compliant with Common
+     Lisp.
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
+             (:DEFINITION NOT)
+             (:DEFINITION POSP)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL)
+             (:TYPE-PRESCRIPTION FACT))
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol FACT, which
+     is (INTEGERP X), is violated by the arguments in the call (FACT T).
+     See :DOC wet for how you might be able to get an error backtrace.
+     See :DOC set-guard-checking for information about suppressing this
+     check with (set-guard-checking :none), as recommended for new users.
+     
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:u
+               0:x(EXIT-BOOT-STRAP-MODE)
+     ACL2 >(defun fact (x)
+              (declare (xargs :guard t
+                              :verify-guards nil
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     For the admission of FACT we will use the relation O< (which is known
+     to be well-founded on the domain recognized by O-P) and the measure
+     (ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+     
+     Goal
+     (IMPLIES (POSP X)
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     By the simple :definition POSP we reduce the conjecture to
+     
+     Goal'
+     (IMPLIES (AND (INTEGERP X) (< 0 X))
+              (O< (ACL2-COUNT (+ -1 X))
+                  (ACL2-COUNT X))).
+     
+     But we reduce the conjecture to T, by case analysis.
+     
+     Q.E.D.
+     
+     That completes the proof of the measure theorem for FACT.  Thus, we
+     admit this function under the principle of definition. We observe that
+     the type of FACT is described by the theorem
+     (AND (INTEGERP (FACT X)) (< 0 (FACT X))).  We used the :compound-recognizer
+     rule POSP-COMPOUND-RECOGNIZER and primitive type reasoning.
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
+             (:DEFINITION NOT)
+             (:DEFINITION POSP)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL))
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (ACL2_*1*_ACL2::FACT 1)
+         3> (ACL2_*1*_ACL2::FACT 0)
+         <3 (ACL2_*1*_ACL2::FACT 1)
+       <2 (ACL2_*1*_ACL2::FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >(verify-guards fact)
+     
+     Computing the guard conjecture for FACT....
+     
+     The guard conjecture for FACT is trivial to prove, given the :compound-
+     recognizer rule POSP-COMPOUND-RECOGNIZER and the :type-prescription
+     rule FACT.  FACT is compliant with Common Lisp.
+     
+     Summary
+     Form:  ( VERIFY-GUARDS FACT)
+     Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
+             (:TYPE-PRESCRIPTION FACT))
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 >(trace$ fact)
+     NIL
+     ACL2 >:set-guard-checking t
+     
+     Turning guard checking on, value T.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :all
+     
+     Leaving guard checking on, but changing value to :ALL.
+     
+     ACL2 !>(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 !>(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 !>:set-guard-checking :none
+     
+     Turning off guard checking entirely.  To allow execution in raw Lisp
+     for functions with guards other than T, while continuing to mask guard
+     violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >:set-guard-checking nil
+     
+     Masking guard violations but still checking guards.  To avoid guard
+     checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC set-guard-
+     checking.
+     
+     ACL2 >(fact 2)
+     1> (ACL2_*1*_ACL2::FACT 2)
+       2> (FACT 2)
+         3> (FACT 1)
+           4> (FACT 0)
+           <4 (FACT 1)
+         <3 (FACT 1)
+       <2 (FACT 2)
+     <1 (ACL2_*1*_ACL2::FACT 2)
+     2
+     ACL2 >(fact t)
+     1> (ACL2_*1*_ACL2::FACT T)
+       2> (FACT T)
+       <2 (FACT 1)
+     <1 (ACL2_*1*_ACL2::FACT 1)
+     1
+     ACL2 >
+

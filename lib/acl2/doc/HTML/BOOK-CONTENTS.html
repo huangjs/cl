@@ -1,0 +1,88 @@
+<html>
+<head><title>BOOK-CONTENTS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BOOK-CONTENTS</h2>restrictions on the forms inside <a href="BOOKS.html">books</a>
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+
+<pre>
+Example Book:<p>
+
+; This book defines my app function and the theorem that it is
+; associative.  One irrelevant help lemma is proved first but
+; it is local and so not seen by include-book.  I depend on the
+; inferior book "weird-list-primitives" from which I get
+; definitions of hd and tl.<p>
+
+(in-package "MY-PKG")<p>
+
+(include-book "weird-list-primitives")<p>
+
+(defun app (x y) (if (consp x) (cons (hd x) (app (tl x) y)) y))<p>
+
+(local
+ (defthm help-lemma
+   (implies (true-listp x) (equal (app x nil) x))))<p>
+
+(defthm app-is-associative
+  (equal (app (app a b) c) (app a (app b c))))
+<p>
+</pre>
+
+The first form in a book must be <code>(in-package "pkg")</code> where
+<code>"pkg"</code> is some package name known to ACL2 whenever the book is
+certified.  The rest of the forms in a book are embedded event
+forms, i.e., <code><a href="DEFUN.html">defun</a></code>s, <code><a href="DEFTHM.html">defthm</a></code>s, etc., some of which may be
+marked <code><a href="LOCAL.html">local</a></code>.  See <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>.  The usual Common
+Lisp commenting conventions are provided.  Note that since a book
+consists of embedded event forms, we can talk about the
+``<code><a href="LOCAL.html">local</a></code>'' and ``non-local'' <a href="EVENTS.html">events</a> of a book.<p>
+
+Because <code><a href="IN-PACKAGE.html">in-package</a></code> is not an embedded event form, the only
+<code><a href="IN-PACKAGE.html">in-package</a></code> in a book is the initial one.  Because <code><a href="DEFPKG.html">defpkg</a></code> is
+not an embedded event form, a book can never contain a <code><a href="DEFPKG.html">defpkg</a></code>
+form.  Because <code><a href="INCLUDE-BOOK.html">include-book</a></code> is an embedded event form, <a href="BOOKS.html">books</a> may
+contain references to other <a href="BOOKS.html">books</a>.  This makes <a href="BOOKS.html">books</a> structured
+objects.<p>
+
+When the forms in a book are read from the file, they are read with
+<code><a href="CURRENT-PACKAGE.html">current-package</a></code> set to the package named in the <code><a href="IN-PACKAGE.html">in-package</a></code>
+form at the top of the file.  The effect of this is that all symbols
+are <a href="INTERN.html">intern</a>ed in that package, except those whose packages are given
+explicitly with the ``::'' notation.  For example, if a book begins
+with <code>(in-package "ACL2-X")</code> and then contains the form
+
+<pre>
+  (defun fn (x)
+    (acl2::list 'car x))
+</pre>
+
+then <code><a href="DEFUN.html">defun</a></code>, <code>fn</code>, <code>x</code>, and <code><a href="CAR.html">car</a></code> are all <a href="INTERN.html">intern</a>ed in the
+<code>"ACL2-X"</code> package.  I.e., it is as though the following form
+were read instead:
+
+<pre>
+  (acl2-x::defun acl2-x::fn (acl2-x::x)
+      (acl2::list 'acl2-x::car acl2-x::x)).
+</pre>
+
+Of course, <code>acl2-x::defun</code> would be the same symbol as
+<code>acl2::defun</code> if the <code>"ACL2-X"</code> package imported <code>acl2::defun</code>.<p>
+
+If each book has its own unique package name and all the names
+defined within the book are in that package, then name clashes
+between <a href="BOOKS.html">books</a> are completely avoided.  This permits the construction
+of useful logical <a href="WORLD.html">world</a>s by the successive inclusion of many <a href="BOOKS.html">books</a>.
+Although it is often too much trouble to manage several packages,
+their judicious use is a way to minimize name clashes.  Often, a
+better way is to use <code>local</code>; see <a href="LOCAL.html">local</a>.<p>
+
+How does <code><a href="INCLUDE-BOOK.html">include-book</a></code> know the definitions of the packages used in a
+book, since <code><a href="DEFPKG.html">defpkg</a></code>s cannot be among the forms?  More generally,
+how do we know that the forms in a book will be admissible in the
+host logical <a href="WORLD.html">world</a> of an <code><a href="INCLUDE-BOOK.html">include-book</a></code>?  See <a href="CERTIFICATE.html">certificate</a> for
+answers to these questions.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

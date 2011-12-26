@@ -1,0 +1,201 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(defun ltext (&rest args)
+  (apply #'text 
+	 (font-scaler .5) 
+	 (y #'(lambda (mark note score &optional justifying)
+		(- (staff-y0 note) .9)))
+	 (x #'(lambda (mark note score &optional justifying)
+		(+ (x0 note) (if (sign note) .2 0))))
+	 args))
+
+;;; bass line has half note/eighth-note combined into one (empty) note head
+;;; "self-acting" is the message class -- we use it because we want to affect the owning object (head-quarters slot)
+(setf with-stem-down-too 
+    (make-self-acting
+	:action #'(lambda (note &rest rest)
+		    (declare (ignore rest))
+		    (setf (head-quarters note) 2)
+		    (add-to-marks 
+		     note 
+		     (list (make-instance 'sundry
+			       :name :with-stem-down-too
+			       :mark #'(lambda (mark note score &optional justifying)
+					 (declare (ignore justifying))
+					 (moveto score (x0 note) (y0 note))
+					 (setf (line-width score) *stem-width*)
+					 (rlineto score 0 -.75)
+					 (draw score)
+					 (setf (line-width score) 0))))))
+	:argument nil))
+
+(defun with-stem-down-too () with-stem-down-too)
+
+;;; and there's an arpeggio that isn't tied to a chord
+(setf funny-arpeggio 
+    (make-instance 'sundry
+	:name :funny-arpeggio
+	:mark #'(lambda (mark note score &optional justifying)
+		  (declare (ignore justifying))
+		  (let* ((maxl 5)
+			 (minl -3)
+			 (dist (- maxl minl))
+			 (bottom (+ (staff-y0 note) (dy mark) 
+				    (* minl *staff-line-separation*)))
+			 (x-loc (+ (x0 note) -.3 (dx mark) (x0 mark) 
+				   (if (or (< minl -1) (> maxl 9)) -.05))))
+		    (matrix-front score (translate-matrix score mark x-loc bottom))
+		    (draw-arpeggios score (round dist 4))
+		    (matrix-back score)))))
+
+(defun funny-arpeggio () funny-arpeggio)
+
+
+
+(cmn (size 20) 
+     (staff-separation 2.0) 
+     (system-separation 0.5) 
+     (line-separation 3.0) 
+     (regularize 1)
+     (prolog #'(lambda (score) (make-ISO-encoded-version score "Times-Roman" "ISO-Times-Roman")))
+ (staff (staff-size .85) bar treble (key g-major) (meter 4 4)
+	(d4 q (text "leise" (font-name "Times-Italic") (font-scaler .5) (dy 1.25))
+	    (ltext "mir"))
+	bar
+	(d4 q (ltext "ist,")) (d4 q (ltext "als")) 
+	(ds4 q (ltext "ob")
+	     (text "cresc." (font-name "Times-Italic") (font-scaler .5) (dy 1.25)))
+	(d4 q (ltext "ein"))
+	bar
+	(e4 te begin-slur (ltext "Rau -")) (f4 te) (g4 te end-slur)
+	(g4 e no-beam (ltext "schen" (justification nil))) (gs4 e no-beam (ltext "im"))
+	(a4 q (ltext "Wald")) (a4 e begin-slur (ltext "von -")
+				  (text "dim." (font-name "Times-Italic") (font-scaler .5) (dy 1.25)))
+	(gn4 e end-slur)
+	bar
+	(g4 q (ltext "al -")) (f4 q (ltext "ten")) (e4 q (ltext "Zei -")) (f4 q (ltext "ten"))
+	bar
+	(g4 h (ltext "spricht.")) quarter-rest (d4 q (p (dy 2.0)) (ltext "Mir"))
+	bar
+	(d4 q (ltext "klingt")) (d4 q (ltext "das")) 
+	(ds4 q (ltext "Rau -") 
+	     (text "cresc." (font-name "Times-Italic") (font-scaler .5) (dy 1.25)))
+	(d4 q (ltext "schen"))
+	bar
+	(e4 te begin-slur (text "s\\374\\337" (font-name "ISO-Times-Roman") (font-scaler .5) (dy -.9)))
+	f4 te (g4 te end-slur)
+	(g4 e begin-slur (text "rit." (font-name "Times-Italic") (font-scaler .5) (dy 1.125)) (ltext "und -"))
+	(gs4 e end-slur)
+	(a4 e begin-beam begin-slur (ltext "traut, -")) (e4 e) (a4 e. end-beam end-slur)
+	(gn4 s no-beam (ltext "ich"))
+	bar
+	(g4 q (ltext "lausch") (text "a tempo" (font-name "Times-Italic") (font-scaler .5) (dy 1.125)))
+	(f4 q (ltext "ihm")) (e4 q (ltext "im -")) (f4 q (ltext "mer"))
+	bar
+	(g4 h (ltext "noch,")) quarter-rest dotted-eighth-rest (g4 s no-beam (ltext "da"))
+	bar)
+ (system
+  (staff bar treble (key g-major) (meter 4 4) 
+	 (d6 te (pp (dy -.5)) begin-slur (text "una corda" (font-name "Times-Italic") (font-scaler .5) (dy -2.4)))
+	 (c6 te) (b5 te end-slur)
+	 bar
+	 (b5 q) (b5 te begin-slur) (a5 te) (g5 te end-slur) g5 q (chord (notes g4 g5) q)
+	 bar
+	 (g4 q stem-down (onset 5)) (g5 te (onset 5) stem-up (setf bt (beam-))) 
+	 (f5 (onset 5.333) te stem-up (-beam- bt))
+	 (e5 (onset 5.667) te (-beam bt)) 
+	 (e4 (onset 6) e stem-down (setf btt (beam-)))
+	 (e5 (onset 6) e stem-up (setf bt (beam-)))
+	 (d5 (onset 6.5) e (-beam bt))
+	 (fn4 (onset 6.5) e stem-down (-beam btt))
+	 (c5 q stem-up (onset 7)) (e4 q stem-down (onset 7))
+	 (c5 e stem-up (onset 8) (setf bt (beam-))) 
+	 (e4 q stem-down (onset 8))
+	 (b4 e stem-up (onset 8.5) (-beam bt))
+	 bar
+	 (b4 q stem-up (onset 9)) 
+	 (c4 (onset 9) e stem-down (setf bt (beam-))) 
+	 (d4 (onset 9.5) e stem-down (-beam- bt))
+	 (a4 q stem-up (onset 10))
+	 (c4 e stem-down (onset 10) (-beam- bt)) (d4 e stem-down (onset 10.5) (-beam bt))
+	 (g4 q stem-up (onset 11))
+	 (c4 e stem-down (onset 11) (setf bt (beam-))) (d4 e stem-down (onset 11.5) (-beam- bt))
+	 (a4 q stem-up (onset 12))
+	 (c4 e stem-down (onset 12) (-beam- bt)) (d4 e stem-down (onset 12.5) (-beam bt))
+	 bar
+	 (b4 h. stem-up (onset 13))
+	 (b3 e (onset 13) stem-down (setf bt (beam-))) 
+	 (d4 e (onset 13.5) stem-down (-beam- bt))
+	 (b3 e (onset 14) stem-down (-beam- bt)) 
+	 (d4 e (onset 14.5) stem-down (-beam bt))
+	 (b3 q (onset 15) stem-down)
+	 (quarter-rest (dy -1.0) (onset 16)) 
+	 (b4 te stem-up (onset 16) begin-beam)
+	 (a4 te stem-up (onset 16.333)) 
+	 (g4 te stem-up (onset 16.667) end-beam)
+	 bar
+	 (g4 q stem-up (onset 17)) (b3 h (onset 17) stem-down)
+	 (b4 te begin-beam (onset 18)) (a4 te (onset 18.333)) (g4 te end-beam (onset 18.667))
+	 (g4 q stem-up (onset 19)) (b3 h stem-down (onset 19))
+	 (g4 q stem-up (onset 20))
+	 bar
+	 (c4 q stem-down (onset 21))
+	 (g4 te (onset 21) begin-beam) (f4 te (onset 21.333)) (e4 te end-beam (onset 21.667))
+	 (chord (notes c4 e4) e (text "rit" (font-name "Times-Italic") (font-scaler .5) (dy 1.5)))
+	 (chord (notes d4 b3) e)
+	 (c4 h begin-tie)
+	 bar
+	 (c4 e end-tie begin-beam (text "a tempo" (font-name "Times-Italic") (font-scaler .5) (dy 1.5)))
+	 (d4 e) (c4 e) (d4 e end-beam) (c4 e begin-beam) d4 e c4 e (d4 e end-beam)
+	 bar
+	 (b3 e begin-beam) d4 e b3 e (d4 e end-beam)
+	 (b3 q) quarter-rest
+	 bar)
+  (staff brace bar bass (key g-major) (meter 4 4) quarter-rest bar
+	 (g2 e begin-beam with-stem-down-too (pedal (dy -.75)) (begin-slur (slur-direction :up))) (d3 e) (g3 e) (d3 e end-beam end-slur)
+	 (b2 e begin-beam with-stem-down-too (begin-slur (dy .125))) (ds3 e) (g3 e) (d3 e end-beam end-slur)
+	 bar
+	 (c3 q stem-down (onset 5))
+	 (e3 te stem-up (onset 5) begin-beam) (f3 te stem-up (onset 5.3333)) (g3 te stem-up (onset 5.6666) end-beam)
+	 (c3 q stem-down (onset 6))
+	 (g3 e (onset 6) stem-up begin-beam) (gs3 e stem-up (onset 6.5) end-beam)
+	 (c3 q stem-down (onset 7))
+	 (a3 e stem-up (setf bt (beam-)) (onset 7)) (e3 e (onset 7.5) stem-up (-beam- bt)) 
+	 (c3 q stem-down (onset 8))
+	 (a3 e stem-up (-beam- bt) (onset 8)) (gn3 e stem-up (onset 8.5) (-beam bt))
+	 bar
+	 (line-mark)
+	 (d3 h (onset 9) stem-down) (g3 q stem-up (onset 9))
+	 (f3 q stem-up (onset 10))
+	 (d2 h (onset 11) stem-down funny-arpeggio) (e3 q stem-up (onset 11)) 
+	 (f3 q stem-up (onset 12))
+	 bar
+	 (g2 h. stem-down (onset 13))
+	 (g3 e (onset 13) begin-beam stem-up) 
+	 (d3 e stem-up (onset 13.5)) (g3 e stem-up (onset 14)) (d3 e (onset 14.5) stem-up end-beam)
+	 (g3 q (onset 15) stem-up) quarter-rest
+	 bar
+         (g2 e begin-beam with-stem-down-too (begin-slur (slur-direction :up))) (d3 e) (g3 e) (d3 e end-beam end-slur)
+	 (g2 e begin-beam with-stem-down-too (begin-slur (slur-direction :up))) (ds3 e) (g3 e) (d3 e end-beam end-slur)
+	 bar
+	 (line-mark)
+	 (c3 q stem-down (onset 21))
+	 (e3 te stem-up (onset 21) begin-beam) (f3 te stem-up (onset 21.333)) (g3 te stem-up (onset 21.667) end-beam)
+	 (c3 q stem-down (onset 22)) 
+	 (g3 e (onset 22) stem-up begin-beam)
+	 (chord (notes fn3 gs3) e (onset 22.5) stem-up end-beam)
+	 (a3 q.. (onset 23) stem-up)
+	 (chord (notes e3 c3) h stem-down (onset 23))
+	 (gn3 s stem-up (onset 24.75))
+	 bar
+	 (chord (notes d3 a3) stem-down h (dx .3) (onset 25))
+	 (g3 q stem-up (onset 25)) (f3 q stem-up (onset 26)) 
+	 (chord (notes d3 a3) stem-down h (dx .3) (onset 27))
+	 (chord (notes e3 g3) q stem-up (onset 27))
+	 (chord (notes f3 a3) q stem-up (onset 28))
+	 bar
+	 (g2 h. stem-down (pedal (dy -.25)) (onset 29))
+	 (g3 e (onset 29) begin-beam stem-up) 
+	 (d3 e stem-up (onset 29.5)) (g3 e stem-up (onset 30)) (d3 e (onset 30.5) stem-up end-beam)
+	 (g3 q (onset 31) stem-up) quarter-rest
+	 bar)))

@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+<TITLE>Packages</TITLE>
+<link rel="stylesheet" type="text/css" href="../styles/cs325.css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Packages</DIV>
+
+<H1>Introduction</H1>
+
+<P>On the one hand, packages solve an important problem: reducing name conflicts
+  between independent code modules. On the other hand, using them incorrectly
+  can cause maddening file loading problems and, paradoxically, increased name
+  conflicts. Most modern languages have something similar, e.g., namespaces in
+  C++ and packages in Java, and all of them confuse novices.</P>
+
+<H2>The Name Conflict Problem</H2>
+
+<P>The name conflict problem comes up in large system development, no
+matter what programming language is being used. Large systems are
+broken into modules, that are developed by independent teams of
+programmers, and then loaded together to form the final system. This
+last step is usually called <I>system integration</I>.</P>
+
+<P>Unfortunately, sometimes modules that worked perfectly when tested
+individually fail to work when integrated. The cause is usually one
+or more name conflicts, that is, the same name is used for a function
+or global variable in two different modules in two different ways.
+The hardest bugs to find are when the functions were intended to be
+the same but differ slightly, for example, the function in one module
+is an older version of the one in the other module.</P>
+
+<P>Avoiding this problem involves two steps:</P>
+
+<UL>
+   <LI>When the system is broken down into separate modules, the
+   functions and global variables each one "exports" to the whole
+   system are carefully defined, and any potential name conflicts are
+   resolved up front.
+
+   <LI>When a module is implemented, any functions and variables
+   defined that are not exported are hidden in some manner.
+</UL>
+
+<P>In Common Lisp, hiding is done with packages.</P>
+
+<H2>What are Packages?</H2>
+
+<P>Lisp, like other programming languages, distinguishes symbols, like <code>car</code>,
+  from strings, like <code>&quot;car&quot;</code>. Symbols are used to name variables
+  and functions. When your code is read, the Lisp reader converts characters into
+  symbols, numbers, strings, and so on, according to the punctuation rules of
+  Lisp. In order for your code to work, the reader has to return the same symbol,
+  e.g., <code>car</code>, every time it reads the same sequence of characters,
+  e.g., <TT>c</TT>, <tt>a</tt> and <tt>r</tt></TT>. To do this, the reader keeps
+  a table of all the symbols it has seen. If a character sequence has not been
+  seen before, a new symbol for it is created, stored in the table, and returned.
+  If it has been seen before, the previously created symbol is returned. This
+  table is called a package. </P>
+<P>The current package is determined by the value of the special variable <code>*package*</code>.
+  You can change the current package by either setting this variable, or by executing
+  <code>(in-package <em>package-name</em>)</code>.</P>
+<P>When you create a library of code, you make sure that the names you use don't
+  conflict with any other code library by defining the library in a new package.
+  You do this with <code>defpackage</code> and <code>in-package</code>, as described
+  below. Then, anyone can use your library by simply loading the code files and
+  typing <code>(use-package <em>package-name</em>)</code>. <code>use-package</code>
+  makes a link between the current package and the package named. It does not
+  copy anything. </P>
+<P>The reader looks for symbols in the current package, as determined by <code>*package*</code>,
+  then in the packages linked to that package by <code>use-package</code>. If
+  it finds a matching symbol anywhere, it uses that one. Otherwise, it creates
+  a new symbol in the current package.</P>
+<P>Symbols in packages are marked as external or internal. When you call <code>use-package</code>,
+  you only get external symbols.</P>
+<P>Lisp comes with two packages pre-defined:</P>
+<ul>
+  <li><code>common-lisp</code> contains the symbols for all the variables and
+    functions defined. Any code that uses just the symbols in this package should
+    run in any Common Lisp implementation. Neither you nor any vendor should add
+    any external symbols to this package.</li>
+  <li><code>common-lisp-user</code> is the most common default package. It uses
+    the <code>common-lisp</code> package plus other packages vendors provide with
+    editing and debugging tools. It's also called <code>cl-user</code> for short.</li>
+</ul>
+<H2>Using Packages</H2>
+
+<P>There are two steps to "packaging" a module:</P>
+
+<UL>
+
+  <LI>Creating the new package, using <TT>defpackage</TT>.
+  <LI>Starting a file with module code with an <TT>in-package</TT> form.
+</UL>
+
+<H3>defpackage</H3>
+
+<P>You can create a package with the following template:</P>
+
+<PRE>(defpackage #:<em>package-name</em>
+  (:use #:common-lisp ...)
+  (:export #:<em>symbol1</em> #:<em>symbol2</em> ...))&nbsp;
+&nbsp;</PRE>
+
+<P>Here's what the above does:</P>
+
+<UL>
+  <LI>It defines a package called <TT>package-name</TT>.
+  <LI> It lists the packages that this package needs, i.e., packages that define
+    functions used by code in this package. Almost always, you need the common-lisp
+    package.
+  <LI>It lists the symbols that are external in this package.
+  <LI>It uses the special reader syntax <code>#:<em>symbol</em></code> to refer
+    to all symbols.
+</UL>
+<p>The last point is easy to do but somewhat obscure to understand. Here's the
+  problem: how do you refer to symbols in a package that don't exist yet? Suppose
+  you wrote</p>
+<blockquote>
+  <pre>(defpackage foo (:use common-lisp) (:export fun1 fun2))</pre>
+</blockquote>
+<p>The Lisp reader will read this form, and create the symbols <code>foo</code>,
+  <code>fun1</code> and <code>fun2</code> in the current package. Then the Lisp
+  evaluator would execute this form, create the package <code>foo</code> with
+  the external symbols <code>fun1</code> and <code>fun2</code>. But look what
+  happened: <code>fun1</code> and <code>fun2</code> have been created in the current
+  package. If you try to use the <code>foo</code> package, you'll get a name conflict
+  because <code>fun1</code> and <code>fun2</code> exist in both the current package
+  and in <code>foo</code>. But of course you didn't want to put <code>fun1</code>
+  and <code>fun2</code> into the current package.</p>
+<p>One way to avoid this problem is this:</p>
+<blockquote>
+  <pre>(defpackage &quot;FOO&quot; (:use &quot;COMMON-LISP&quot;) (:export &quot;FUN1&quot; &quot;FUN2&quot;))</pre>
+</blockquote>
+<p>This creates no symbols at read-time. It only uses name strings for symbols,
+  not symbols. You have to use uppercase because standard Lisp stores all symbols
+  with uppercase names. The standard Lisp reader is <em>case insensitive</em>.
+  It converts all symbol characters to uppercase internally. </p>
+<p>Unfortunately, the above won't work in what Franz calls the &quot;modern&quot;
+  version of Allegro. This version uses a case sensitive reader to support linking
+  with Java, which uses case-sensitive names. The version stores standard Lisp
+  names in lowercase. To make the above code work, you'd have to write <code>&quot;fun1&quot;</code>
+  and <code>&quot;fun2&quot;</code> above, but then you'd have code that wouldn't
+  work in standard Common Lisp.</p>
+<p>A common alternative is to write this:</p>
+<blockquote>
+  <pre>(defpackage :foo (:use :common-lisp) (:export :fun1 :fun2))</pre>
+</blockquote>
+<p>This uses keyword symbols. defpackage uses the internal symbol name strings
+  so in standard Common Lisp, it will get <code>&quot;FUN1&quot;</code> and <code>&quot;FUN2&quot;</code>
+  and in &quot;modern&quot; Allegro it will get <code>&quot;fun1&quot;</code>
+  and <code>&quot;fun2&quot;</code>. This works but adds every symbol in two places:
+  the package being defined and the keyword package. </p>
+<p>The <code>#:</code> approach solves this problem. <code>#:</code> tells the
+  Lisp reader to create a symbol but not put it in any package. As soon as the
+  symbol's not used anywhere, it will be garbage-collected. </p>
+<h3><a name="user"></a>User versus code packages</h3>
+<p><code>common-lisp</code> is an example of a code package, i.e., a package intended
+  to hold a library of useful functions. <code>common-lisp-user</code> is an example
+  of a user package. Allegro for Windows defines many code packages, and a user
+  package called <code>cg-user</code>. For this course, there are many code packages,
+  such as <code>frames</code> and <code>mops</code>, and a user package <code>cs325-user</code>.</p>
+<p>A user package is intended for interactive use in a Lisp listener window. You
+  create a user package, link it to code packages, and make it the current package.
+  A user package lets you control which code packages are present, hides the internal
+  symbols in the code packages, and protects the code packages from accidental
+  changes.</p>
+<H3>Where to create packages</H3>
+
+<P>There are two places you can put your <TT>defpackage</TT>:</P>
+
+<UL>
+   <LI>At the front of each file that defines code in that package
+
+   <LI>In a separate "system definition" file
+</UL>
+
+<P>Use the first method for utility files that will be loaded into many systems.
+  A programmer can simply load that file and not have to worry about package definition.
+  Note that if the package definition uses packages other than <code>common-lisp</code>,
+  you need to make sure those packages have already been loaded.</P>
+
+<P>Use a system definition file for large applications. This can simply be all
+  the package and file loading code you need. Or it can use a <code>defsystem</code>
+  utility to define more complex system information, similar to a makefile in
+  C and C++.</P>
+
+<H3>in-package</H3>
+
+<P>The very first form in a file (or second, if there is a <TT>defpackage</TT>)
+  should be:</P>
+
+<PRE>(in-package #:<em>package-name</em>)</PRE>
+
+<P>This tells Lisp, the Lisp editor, if any, and all Lisp programmers, what package
+  the code in this file is in. Some Lisp implementations will warn you if a file
+  doesn't start with <TT>in-package</TT>. Others will assume you meant to say
+  <TT>(in-package #:common-lisp-user)</TT>.</P>
+
+<P>There are two simple good programming rules to follow:</P>
+
+<UL>
+
+  <LI>Always define a package because calling <TT>in-package</TT>.
+  <LI>Use only one <TT>in-package</TT> per file.
+</UL>
+
+<H2>Classic Mistakes with Packages</H2>
+
+<H3>Bad Timing</H3>
+
+<P>Has something like this ever happened to you?</P>
+
+<blockquote>
+  <PRE>&gt; (load "tables")
+&gt; (deftable find-rule)
+Error: Undefined function: find-rule...
+&gt; (use-package #:tables)
+Error: Name conflict: deftable already exists in common-lisp-user</PRE>
+</blockquote>
+<P>Here's what happened:</P>
+
+<UL>
+   <LI>Lisp loaded <TT>tables</TT>, created the <TT>tables</TT>
+   package, but didn't automatically connect that package to the
+   current package. (Nor should it, since this might not be what you
+   want.)
+
+
+  <LI>Lisp read <TT>(deftable find-rule)</TT>. Since there was no <TT>deftable</TT>
+    in the current package, the reader made one and added it to the current package.
+    But of course this new symbol had no function attached, so an error occurred.
+  <LI>Calling <TT>use-package</TT> caused Lisp to try and connect the current
+    package to <TT>tables</TT>. It properly noticed that you already have a <TT>deftable</TT>,
+    namely the one it just created in the previous expression.
+</UL>
+
+<P>First, you need to get into the habit of calling <TT>use-package
+</TT>immediately after <TT>load</TT> or <TT>require</TT>.</P>
+
+<P>Second, you can recover by using <TT>unintern</TT> to remove the offending
+  symbols and calling <TT>use-package</TT> again. Many Lisp environments offer
+  an automatic <TT>unintern</TT> as an error response option.</P>
+
+<H3>Using in-package instead of use-package</H3>
+
+<P>Do you do this?</P>
+
+<PRE>&gt; (load "mops")
+&gt; (in-package #:mops)
+&gt; (load "my-code")
+&gt; ...test stuff...</PRE>
+
+<P>If you have, then you've missed the whole point of packages.</P>
+
+<P>Packages are supposed to avoid name conflicts by hiding internal
+function and variable names. But if you do an <TT>in-package</TT>,
+you put your code into the package in question, thereby guaranteeing
+that if you use any of the same names, you will clobber the package's
+code.</P>
+
+<P><TT>in-package</TT> should only appear at the front of files that
+define or extend an existing package.</P>
+
+<P>Use <TT>use-package</TT> to make the exported symbols of packages you need
+  available to your code. Use in-package at the Listener window only to switch
+  into <a href="#user">a user package</a>.</P>
+<H3>Linking to User Packages</H3>
+
+<P>Have you done something like this?</P>
+
+<PRE>(defpackage #:rules
+   (:use #:common-lisp-user ...))&nbsp;
+&nbsp;</PRE>
+
+<P>If you have, then the odds are good that your code will not be
+portable. In particular, when you load this code into another Common
+Lisp system, you will get a name conflict, or unexpected "undefined
+function" errors.</P>
+
+<P><TT>common-lisp-user</TT> is a <I>working</I> environment. It
+gathers together a number of packages, provides a home for temporary
+test variables, and so on. What's in <TT>common-lisp-user</TT> varies
+from implementation to implementation, and even from one release to
+the next. The only guarantee is that <TT>common-lisp-user</TT> will
+include the <TT>common-lisp</TT> package.</P>
+
+<P>If your package uses <TT>common-lisp-user</TT>, two problems can
+arise:</P>
+
+<UL>
+   <LI>Your packages defines a function, say <TT>show-window</TT>
+   with no conflict in your Lisp system. In another system, it turns
+   out that <TT>common-lisp-user</TT> uses a graphics package that
+   also defines <TT>show-window</TT>. Your code will accidentally
+   redefine the built-in function.
+
+   <LI>Your code uses a function, say <TT>show-window</TT>, which you
+   mistakenly believe is standard Common Lisp. In fact, it's there
+   because your <TT>common-lisp-user</TT> uses a graphics package.
+   When your code is loaded into another system, it breaks with
+   undefined function <TT>show-window</TT>.
+</UL>
+
+<P>Any package you create should use <TT>common-lisp</TT>
+(<TT>lisp</TT> in Common Lisp 1), plus any other non-user packages it
+needs. That way, you know exactly which functions you're getting and
+which ones your code depends on.
+
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

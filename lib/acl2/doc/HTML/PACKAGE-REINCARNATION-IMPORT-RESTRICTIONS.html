@@ -1,0 +1,36 @@
+<html>
+<head><title>PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS</h2>re-defining undone <code><a href="DEFPKG.html">defpkg</a></code>s
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Suppose <code>(defpkg "pkg" imports)</code> is the most recently executed
+successful definition of <code>"pkg"</code> in this ACL2 session and that it
+has since been undone, as by <code>:</code><code><a href="UBT.html">ubt</a></code>.  Any future attempt in this
+session to define <code>"pkg"</code> as a package must specify an identical
+imports list.
+<p>
+The restriction stems from the need to implement the reinstallation
+of saved logical <a href="WORLD.html">world</a>s as in error recovery and the <code>:</code><code><a href="OOPS.html">oops</a></code> <a href="COMMAND.html">command</a>.
+Suppose that the new <code><a href="DEFPKG.html">defpkg</a></code> attempts to import some symbol, <code>a::sym</code>,
+not imported by the previous definition of <code>"pkg"</code>.  Because it was
+not imported in the original package, the symbol <code>pkg::sym</code>, different
+from <code>a::sym</code>, may well have been created and may well be used in some
+saved <a href="WORLD.html">world</a>s.  Those saved <a href="WORLD.html">world</a>s are Common Lisp objects being held
+for you ``behind the scenes.''  In order to import <code>a::sym</code> into
+<code>"pkg"</code> now we would have to unintern <code>pkg::sym</code>, rendering those
+saved <a href="WORLD.html">world</a>s ill-formed.  It is because of saved <a href="WORLD.html">world</a>s that we do
+not actually clear out a package when it is undone.<p>
+
+At one point we thought it was sound to allow the new <code><a href="DEFPKG.html">defpkg</a></code> to
+import a subset of the old.  But that is incorrect.  Suppose the old
+definition of <code>"pkg"</code> imported <code>a::sym</code> but the new one does not.
+Suppose we allowed that and implemented it simply by setting the
+imports of <code>"pkg"</code> to the new subset.  Then consider the conjecture
+<code>(eq a::sym pkg::sym)</code>.  This ought not be a theorem because we did
+not import <code>a::sym</code> into <code>"pkg"</code>.  But in fact in AKCL it is a theorem
+because <code>pkg::sym</code> is read as <code>a::sym</code> because of the old imports.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

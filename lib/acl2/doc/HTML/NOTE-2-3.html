@@ -1,0 +1,74 @@
+<html>
+<head><title>NOTE-2-3.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-3</h2>ACL2 Version  2.3 (October, 1998) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Important changes:  <p>
+
+Versions of ACL2 preceding this one contain a subtle soundness bug!
+We found a flaw in our detection of <a href="SUBVERSIVE-RECURSIONS.html">subversive-recursions</a>.  The
+bug allowed some subversive recursions to slip through undetected.<p>
+
+We believe it would have been difficult to have exploited this flaw
+inadvertently.  In particular, the following five conditions are
+necessary.
+<br>
+<br>
+
+(1) Introduce a constrained function, say <code>f</code>, via an <code>encapsulate</code>.
+<br>
+<br>
+
+(2) In the same encapsulation, define a clique of mutually
+recursive functions.  This clique must be non-<code>local</code> and in
+<code>:logic</code> mode.
+<br>
+<br>
+
+(3) In that mutually recursive clique, use the constrained function
+<code>f</code> (perhaps indirectly) so that the termination argument for the
+clique depends on properties of the <i>witness</i> for <code>f</code>.  Thus,
+<code>f</code> or some other function dependent upon <code>f</code>, must be used in
+an argument in a recursive call or in a term governing a recursive
+call.  Furthermore, the use of <code>f</code> must be such that the
+termination proof cannot be done without exploiting properties of
+the witness for <code>f</code>.  Other uses of the constrained functions in
+the clique are ok.
+<br>
+<br>
+
+(4) Fail to include the exploited properties of <code>f</code> among the
+constraints of the encapsulation.
+<br>
+<br>
+
+(5) Later, outside the encapsulation, explicitly use a functional
+instantiation in which <code>f</code> is replaced by a function not enjoying
+the crucial properties.
+<br>
+<br>
+
+See <a href="SUBVERSIVE-RECURSIONS.html">subversive-recursions</a> for details.
+
+
+<p>
+Less important notes:<p>
+
+We have begun to write some introductory tutorial material for those
+who wish to learn to program in ACL2.  Most of this material is
+HTML-based.  See the Hyper-Card on the ACL2 home page.
+
+The documentation of <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> was improved to explain why
+one might wish to verify the ``guards'' of a <code>defthm</code> event.  The
+missing documentation was noticed by John Cowles.<p>
+
+A bug was fixed in cross fertilization.  The bug caused the system to report
+that it had substituted one term for another when in fact no substitution
+occurred.  The bug was noticed by Bill McCune.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,262 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;
+;;;  Banded Waveguide Instrument based on
+;;;  ====== =========
+;;;
+;;;    Essl, G. and Cook, P. "Banded
+;;;    Waveguides: Towards Physical Modelling of Bar
+;;;    Percussion Instruments", Proceedings of the
+;;;    1999 International Computer Music Conference.
+;;;
+;;;  This CLM version by Juan Reyes 2004-2005
+;;;
+;;;  Tuned bar, Glass Harmonica and Uniform Bar
+;;;
+;;;
+;;;
+
+;(in-package :clm)
+(defparameter twopi (* 2 pi))
+
+;;; bowtable
+(def-clm-struct bowt (offset 0.3) (slope 1.25))  ;; (slope 0.1)
+
+(defmacro bowtable (b sample) 
+`(max 0.0 (- 1.0  (expt (abs (+ (* (bowt-slope ,b) (+ ,sample (bowt-offset ,b))) 0.75)) -4))))
+
+;;;
+;;;                       |
+;;; --- this bowtable by prc    V
+
+;;;(defmacro bowtable (b input)
+;;;  `(let ((sample 0.00))
+;;;    (setf sample (expt (abs (+ (* (+ ,input (bowt-offset ,b))
+;;;				  (bowt-slope ,b)) 0.75)) -4))
+;;;     (if (< sample 1)
+;;;	 (max 0.0 sample)
+;;;	 (setf input 1.00))))
+
+
+
+(def-clm-struct bpq (gain 1.0)
+  (pc0 0.0) (pc1 0.0)
+  (zc0 0.0) (zc1 0.0)
+  (out0 0.0) (out1 0.0)
+  (in0 0.0) (in1 0.0))
+
+;;; bandpass macro
+(defmacro bandpass (b sample0)
+  `(let ((sample ,sample0))
+     (let ((temp (+ (* (bpq-zc0 ,b) (bpq-in0 ,b))
+		    (* (bpq-zc1 ,b) (bpq-in1 ,b)))))
+       (setf (bpq-in1 ,b) (bpq-in0 ,b))
+       (setf (bpq-in0 ,b) (* (bpq-gain ,b) sample))
+       (incf temp (+ (bpq-in0 ,b)
+		     (* (bpq-pc0 ,b) (bpq-out0 ,b))
+		     (* (bpq-pc1 ,b) (bpq-out1 ,b))))
+       (setf (bpq-out1 ,b) (bpq-out0 ,b))
+       (setf (bpq-out0 ,b) temp))))
+
+;;
+;;
+(defmacro set-resonance (name frequency n)
+   `(let ((b ,name)
+	  (freq ,frequency)
+	  (r 0.00)
+	  (normalize ,n)
+	   )
+     ;;(setf r  (- 1 (/ (* pi 32) *srate*)))
+     (setf r  0.987) 
+     ;;(setf (bpq-pc0 b) (* -2.0 r (cos (* twopi (/ freq *srate*)))))
+     (setf (bpq-pc0 b) (* -2.0 r (cos (* twopi (/ freq 22050)))))
+     (setf (bpq-pc1 b) (*   r r))
+  (if normalize
+      (progn
+	(setf (bpq-gain b) (- 0.5 (* 0.5 (bpq-pc1 b))))
+	(setf (bpq-zc0 b)  0.00)
+	(setf (bpq-zc1 b)  (* -1 (bpq-gain b))))
+    ))
+   )
+
+;;; only set Gain
+
+(defmacro set-bpgain (name gain)
+  `(setf (bpq-gain ,name) (* ,gain -0.9952)))
+
+
+;;; prc delaylinel -- 
+(def-clm-struct dll inpoint outpoint length (output 0.0) input alpha omalpha)
+
+(defun make-delayl (len) 
+  (let ((nd (make-dll :length len :input (make-double-float-array len :initial-element 0.0) :inpoint 0 :outpoint 0)))
+    (set-delayl nd (* 0.5 len))
+    nd))
+
+(defun set-delayl (d lag)
+  (let ((outpointer (+ (dll-inpoint d) (- 1 lag))))
+    (loop while (minusp outpointer) do (incf outpointer (dll-length d)))
+    (setf (dll-outpoint d) (floor outpointer))
+    (setf (dll-alpha d) (- outpointer (dll-outpoint d)))
+    (setf (dll-omalpha d) (- 1.0 (dll-alpha d)))))
+
+(defmacro set-del-par (d lag)
+  `(let ((outpointer (+ (dll-inpoint ,d) (- 1 ,lag))))
+    (loop while (minusp outpointer) do (incf outpointer (dll-length ,d)))
+    (setf (dll-outpoint ,d) (floor outpointer))
+    (setf (dll-alpha ,d) (- outpointer (dll-outpoint ,d)))
+    (setf (dll-omalpha ,d) (- 1.0 (dll-alpha ,d)))))
+
+(defmacro delayl (d sample0)
+  `(let ((sample ,sample0))
+     (setf (aref (dll-input ,d) (dll-inpoint ,d)) sample)
+     (incf (dll-inpoint ,d))
+     (if (= (dll-inpoint ,d) (dll-length ,d)) (setf (dll-inpoint ,d) 0))
+     (setf (dll-output ,d) (* (aref (dll-input ,d) (dll-outpoint ,d)) (dll-omalpha ,d)))
+     (incf (dll-outpoint ,d))
+     (if (= (dll-outpoint ,d) (dll-length ,d)) (setf (dll-outpoint ,d) 0))
+     (incf (dll-output ,d) (* (aref (dll-input ,d) (dll-outpoint ,d)) (dll-alpha ,d)))))
+
+
+(definstrument bwg (beg dur freq amplitude &key
+			(bp 1.25) ;; bow pressure-impedance (slope) [1.1 ~ 4.15]
+			(bv 6.0) ;; bow velocity: between 0.0 and 0.8
+			(mode 4) ;; vibration modes
+			;;
+			;; 1=tuned Bar; 2=Glass Harmonica; 
+			;;
+			(v-envelope '(0 0.25 .85 1 1 0.15))
+			(p-envelope '(0 0.05 1 1))
+			(a-envelope '(0 0.0  .95 1.0 .99 0.00))
+			(rev-amount .08)
+			(bowing t)
+			(nrmodes 4))
+  (cond ((= mode 1)
+	 (setf nrmodes 4))
+	((= mode 2)
+	 (setf nrmodes 6))
+	(t
+	 (setf nrmodes 4))
+	)
+  (let* ((st (floor (* *srate* beg)))
+	 (nd (+ st (floor (* *srate* dur))))
+	 (base (/ *srate* freq))
+	 (modes  (make-double-array nrmodes   :initial-element 0.0d0))
+	 (gains  (make-double-array nrmodes   :initial-element 0.0d0))
+	 (delays (make-double-array nrmodes   :initial-element 0.0d0))
+	 (excitations (make-double-array nrmodes   :initial-element 0.0d0))
+	 (basegains  (make-double-array nrmodes   :initial-element 0.0d0))
+	 (filt (make-bpq))
+	 (length (1+ (floor (/ *srate* freq))))
+	 (delayline (make-delayl (round length)))
+	 (odlen (round (+ (times->samples 0 (* dur 1.5))))) ;;seconds)
+	 (outdelay (make-delay odlen :max-size (round (* 2.25 (/ *srate* 10)))))
+         (bowp-env (make-env p-envelope :scaler bp :duration dur))
+	 (bowtab (make-bowt :slope (env bowp-env) ))
+	 (amp-env (make-env a-envelope :scaler amplitude :duration dur))
+	 
+	 (maxvelocity (+ 0.03 (* 0.1 amplitude)))
+	 (maxa maxvelocity)
+	 (vel-env (make-env v-envelope :scaler bv 
+			    :duration dur))
+	 )
+    ;;
+    ;;
+    (cond ((= mode 1) ;; Tuned Bar
+	   (progn
+	     (setf (aref modes 0) (double 1.000))
+	     (setf (aref modes 1) (double  4.0198391420))
+	     (setf (aref modes 2) (double 10.7184986595))
+	     (setf (aref modes 3) (double 18.0697050938))
+	     (dotimes (i nrmodes)
+	       (setf (aref basegains i ) (double (expt 0.999 (+ i 1))))
+	       (setf (aref excitations i) (double 1.0)))
+	     ))
+	  ((= mode 2) ;; Glass Harmonica
+	   (progn 
+	     (setf (aref modes 0) (double 1.000))
+	     (setf (aref modes 1) (double 2.32))
+	     (setf (aref modes 2) (double 4.25))
+	     (setf (aref modes 3) (double 6.63))
+	     (setf (aref modes 4) (double 9.38))
+	     (setf (aref modes 5) (double 12.22))
+	     (dotimes (i nrmodes)
+	       (setf (aref basegains i ) (double (expt 0.999 (+ i 1))))
+	       (setf (aref excitations i) (double 1.0)))
+	     ))
+	  (t ;; Uniform Bar
+	   (progn
+	     (setf (aref modes 0) (double 1.000))
+	     (setf (aref modes 1) (double 2.756))
+	     (setf (aref modes 2) (double 5.404))
+	     (setf (aref modes 3) (double 8.933))
+	     (dotimes (i nrmodes)
+	       (setf (aref basegains i ) (double (expt 0.9 (+ i 1))))
+	       (setf (aref excitations i) (double 1.0)))
+	       ))
+	  )
+    ;;
+    
+    (dotimes (i nrmodes)
+      (progn
+	(setf (aref gains i) (double (aref basegains i)))
+	(setf length (floor  (/ base (aref modes i))))
+	(setf (aref delays i ) (double length))))
+    ;;
+
+    (set-bpgain filt maxa)
+
+    ;;
+;;;;;;;;;;;;
+    ;;
+    (run
+     (loop for i from st to nd do
+	   ;;
+	   (let ((input 0.00)
+		 (wguide 0.00)
+		 (velinput  0.00)
+		 (bowvelocity 0.00)
+		 (signal 0.00)
+		 (sample 0.00)
+		 )
+	     (dotimes (k nrmodes)
+	       (incf velinput (* (aref basegains k)  (aref delays k)  )))
+	     ;;
+	     ;;
+	     (setf bowvelocity (* (env vel-env) maxvelocity))
+	     (setf input  (- bowvelocity velinput))
+	     (setf input (* input (bowtable bowtab input)))
+	     (setf input (/ input nrmodes ))
+	     ;;
+	     (dotimes (j nrmodes)
+	       (set-resonance filt (*  freq (aref modes j)) nil)
+	       (set-del-par delayline (aref delays j))
+	       (let* ((filsig
+		       (bandpass filt (+ (* input 0.9125)
+					 (* (aref gains j)  
+					     (dll-output delayline))
+					 )))
+		      (delsig (delayl delayline  (bpq-out0 filt)  ) )
+		      )
+		 (incf wguide   (bpq-out0 filt))
+		 ))
+	     ;;
+	     (setf signal (*    (env amp-env) 4.0   wguide))
+	     (setf sample (+  signal (delay  outdelay  (* 0.75 (+ (tap  outdelay) signal )))))
+	     (outa i sample)
+	     (if *reverb*
+		 (progn
+		   (outa i (*  sample rev-amount)  *reverb*)))
+	     ;;
+		     )))
+    ))
+	
+;;;(with-sound () (bwg 0 3 880 0.4 :mode 2 ))  ;;; mode2 frequencies [866 ~ 967] 
+;;;(with-sound () (bwg 0 3 1140 0.9 :mode 1 )) ;;; mode1 frequencies [922 ~ 1260] 
+
+;;; (with-sound () (bwg 0 1 900.05 .15 ))       ;;; default [840 ~ 1082] 
+;;; (with-sound () (bwg 0 1 860 .05 ))
+;;; (with-sound () (bwg 0 2 850 .25 ))
+;;; (load "nrev.ins")
+;;; (with-sound (:reverb nrev) (bwg 0 3 950 0.5 ))
+;;; (with-sound (:reverb nrev) (bwg 0 3 880 0.6 :mode 2 ))
+

@@ -1,0 +1,67 @@
+<html>
+<head><title>ACL2-PC_colon__colon_X.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::X</h3>(atomic macro)
+<code>   </code>expand and (maybe) simplify function call at the current subterm
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+x --  expand and simplify.
+</pre>
+
+For example, if the current subterm is (append a b), then after <code>x</code>
+the current subterm will probably be (cons (car a) (append (cdr a)
+b)) if (consp a) and (true-listp a) are among the top-level
+hypotheses and governors.  If there are no top-level hypotheses and
+governors, then after <code>x</code> the current subterm will probably be:
+
+<pre>
+(if (true-listp x)
+    (if x
+        (cons (car x) (append (cdr x) y))
+      y)
+  (apply 'binary-append (list x y))).
+<p>
+General Form:
+(X &amp;key
+   rewrite normalize backchain-limit in-theory hands-off expand)
+</pre>
+
+Expand the function call at the current subterm, and simplify
+using the same conventions as with the <code>s</code> command (see documentation
+for <code>s</code>).<p>
+
+Unlike <code>s</code>, it is permitted to set both <code>:rewrite</code> and <code>:normalize</code> to
+<code>nil</code>, which will result in no simplification; see <code>x-dumb</code>.<p>
+
+<strong>Note</strong> (obscure):  On rare occasions the current address may be
+affected by the use of <code>x</code>.  For example, suppose we have the
+definition
+
+<pre>
+(defun g (x) (if (consp x) x 3))
+</pre>
+
+and then we enter the proof-checker with
+
+<pre>
+(verify (if (integerp x) (equal (g x) 3) t)) .
+</pre>
+
+Then after invoking the instruction <code>(dive 2 1)</code>, so that the
+current subterm is <code>(g x)</code>, followed by the instruction <code>x</code>, we would
+expect the conclusion to be <code>(if (integerp x) (equal 3 3) t)</code>.
+However, the system actually replaces <code>(equal 3 3)</code> with <code>t</code> (because we
+use the ACL2 term-forming primitives), and hence the conclusion is
+actually <code>(if (integerp x) (equal 3 3) t)</code>.  Therefore, the current
+address is put at <code>(2)</code> rather than <code>(2 1)</code>.  In such cases, a warning
+``<code>NOTE</code>'' will be printed to the terminal.<p>
+
+The other primitive commands to which the above ``truncation'' note
+applies are <code>equiv</code>, <code>rewrite</code>, and <code>s</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

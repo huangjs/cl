@@ -1,0 +1,96 @@
+<html>
+<head><title>USER-DEFINED-FUNCTIONS-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USER-DEFINED-FUNCTIONS-TABLE</h2>an advanced <a href="TABLE.html">table</a> used to replace certain system functions
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(table user-defined-functions-table 'untranslate-preprocess 'my-preprocess)
+(table user-defined-functions-table 'untranslate 'my-untranslate)
+</pre>
+<p>
+
+This feature should perhaps only be used by advanced users who have a
+thorough understanding of the system functions being replaced.  There are
+currently two ways a user can affect the way ACL2 prints terms.<p>
+
+The first example associates the user-defined function symbol
+<code>my-preprocess</code> with <code>untranslate-preprocess</code>.  As a result, when ACL2
+prints a term, say during a proof, using its so-called ``untranslate''
+process the first thing it does is to call <code>my-preprocess</code> on two
+arguments: that term and the current ACL2 logical <a href="WORLD.html">world</a>.  If the call
+produces a non-<code>nil</code> result, then that result is passed to the untranslate
+process.<p>
+
+The second example associates the user-defined function symbol
+<code>my-untranslate</code> with the built-in function symbol <code>untranslate</code>.  As a
+result, the code for <code>my-untranslate</code> will be run whenever the untranslate
+process is run.  The formals of the two functions must agree and must not
+contain any <a href="STOBJ.html">stobj</a> names.  Note that these overrides fail to occur upon
+guard violations and some other evaluation errors.
+<p>
+The <code>untranslate-preprocess</code> approach may suffice for most cases in which a
+user wants to modify the way output is produced by the theorem prover.  We
+present an example immediately below, but see
+<code>books/misc/untranslate-patterns.lisp</code> for a more elaborate example.  If
+the <code>untranslate-preprocess</code> approach does not seem sufficient for your
+purposes, you are invited to look at file <code>books/misc/rtl-untranslate.lisp</code>
+for an example of user-defined <code>untranslate</code> (i.e., following the second
+example displayed above).<p>
+
+Suppose you have a large constant that you would prefer not to see in
+proofs.  For example, you may have submitted the following definition (but
+imagine a much larger constant, say, a list of length 1,000,000).
+
+<pre>
+(defconst *a* '(a b c d))
+</pre>
+
+If you submit the following (silly) theorem
+
+<pre>
+(thm (equal (cons x *a*) (car (cons yyy zzz))))
+</pre>
+
+then you will see the following output:
+
+<pre>
+(EQUAL (CONS X '(A B C D)) YYY).
+</pre>
+
+If <code>*a*</code> had represented a much larger structure, we would wish we could
+see the following instead.
+
+<pre>
+(EQUAL (CONS X *A*) YYY)
+</pre>
+
+That can be accomplished as follows.  First we make the following definition.
+
+<pre>
+(defun my-preprocess (term wrld)
+  (declare (ignore wrld))
+  (if (equal term (list 'quote *a*))
+      '*a*
+    term))
+</pre>
+
+Now we submit the following <code><a href="TABLE.html">table</a></code> event.
+
+<pre>
+(table user-defined-functions-table
+       'untranslate-preprocess
+       'my-preprocess)
+</pre>
+
+This will install <code>my-preprocess</code> as a preprocessor before the normal
+untranslation routine is applied to printing a term.  When the untranslation
+routine encounters the constant <code>(QUOTE (A B C D))</code>, it will replace it
+with <code>*a*</code>, and the usual untranlation routine will print this as
+<code>*A*</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

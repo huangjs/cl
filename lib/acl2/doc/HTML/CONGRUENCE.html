@@ -1,0 +1,85 @@
+<html>
+<head><title>CONGRUENCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CONGRUENCE</h2>the relations to maintain while simplifying arguments
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:congruence</code> rule might be built is:
+
+<pre>
+Example:
+(implies (set-equal x y)
+         (iff (memb e x) (memb e y))).
+</pre>
+
+Also see <a href="DEFCONG.html">defcong</a> and see <a href="EQUIVALENCE.html">equivalence</a>.
+<p>
+
+<pre>
+General Form:
+(implies (equiv1 xk xk-equiv)
+         (equiv2 (fn x1... xk       ...xn)
+                 (fn x1... xk-equiv ...xn)))
+</pre>
+
+where <code>equiv1</code> and <code>equiv2</code> are known equivalence relations, <code>fn</code> is an
+<code>n-ary</code> function symbol and the <code>xi</code> and <code>xk-equiv</code> are all distinct
+variables.  The effect of such a rule is to record that the
+<code>equiv2</code>-equivalence of <code>fn</code>-expressions can be maintained if, while
+rewriting the <code>kth</code> argument position, <code>equiv1</code>-equivalence is
+maintained.  See <a href="EQUIVALENCE.html">equivalence</a> for a general discussion of the
+issues.  We say that <code>equiv2</code>, above, is the ``outside equivalence''
+in the rule and <code>equiv1</code> is the ``inside equivalence for the <code>k</code>th
+argument''<p>
+
+The macro form <code>(defcong equiv1 equiv2 (fn x1 ... x1) k)</code> is an
+abbreviation for a <code><a href="DEFTHM.html">defthm</a></code> of rule-class <code>:congruence</code> that attempts to
+establish that <code>equiv2</code> is maintained by maintaining <code>equiv1</code> in <code>fn</code>'s
+<code>k</code>th argument.  The <code><a href="DEFCONG.html">defcong</a></code> macro automatically generates the general
+formula shown above.  See <a href="DEFCONG.html">defcong</a>.<p>
+
+The <code>memb</code> example above tells us that <code>(memb e x)</code> is propositionally
+equivalent to <code>(memb e y)</code>, provided <code>x</code> and <code>y</code> are <code>set-equal</code>.  The
+outside equivalence is <code><a href="IFF.html">iff</a></code> and the inside equivalence for the second
+argument is <code>set-equal</code>.  If we see a <code>memb</code> expression in a
+propositional context, e.g., as a literal of a clause or test of an
+<code><a href="IF.html">if</a></code> (but not, for example, as an argument to <code><a href="CONS.html">cons</a></code>), we can rewrite
+its second argument maintaining <code>set-equality</code>.  For example, a rule
+stating the commutativity of <code><a href="APPEND.html">append</a></code> (modulo set-equality) could be
+applied in this context.  Since equality is a refinement of all
+equivalence relations, all equality rules are always available.
+See <a href="REFINEMENT.html">refinement</a>.<p>
+
+All known <code>:congruence</code> rules about a given outside equivalence and <code>fn</code>
+can be used independently.  That is, consider two <code>:congruence</code> rules
+with the same outside equivalence, <code>equiv</code>, and about the same
+function <code>fn</code>.  Suppose one says that <code>equiv1</code> is the inside equivalence
+for the first argument and the other says <code>equiv2</code> is the inside
+equivalence for the second argument.  Then <code>(fn a b)</code> is <code>equiv</code>
+<code>(fn a' b')</code> provided <code>a</code> is <code>equiv1</code> to <code>a'</code> and <code>b</code> is <code>equiv2</code>
+to <code>b'</code>.  This is an easy consequence of the transitivity of
+<code>equiv</code>.  It permits you to think independently about the inside
+equivalences.<p>
+
+Furthermore, it is possible that more than one inside equivalence
+for a given argument slot will maintain a given outside equivalence.
+For example, <code>(length a)</code> is equal to <code>(length a')</code> if <code>a</code> and <code>a'</code> are
+related either by <code>list-equal</code> or by <code><a href="STRING-EQUAL.html">string-equal</a></code>.  You may prove two
+(or more) <code>:congruence</code> rules for the same slot of a function.  The
+result is that the system uses a new, ``generated'' equivalence
+relation for that slot with the result that rules of both (or all)
+kinds are available while rewriting.<p>
+
+<code>:Congruence</code> rules can be disabled.  For example, if you have two
+different inside equivalences for a given argument position and you
+find that the <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules for one are unexpectedly preventing the
+application of the desired rule, you can disable the rule that
+introduced the unwanted inside equivalence.<p>
+
+More will be written about this as we develop the techniques.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

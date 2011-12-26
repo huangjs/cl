@@ -1,0 +1,143 @@
+<html>
+<head><title>LET.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LET</h2>binding of lexically scoped (local) variables
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example LET Form:
+(let ((x (* x x))
+      (y (* 2 x)))
+ (list x y))
+</pre>
+
+If the form above is executed in an environment in which <code>x</code> has the
+value <code>-2</code>, then the result is <code>'(4 -4)</code>.
+<p>
+<code>Let</code> expressions bind variables so that their ``local'' values, the
+values they have when the ``body'' of the <code>let</code> is evaluated, are
+possibly different than their ``global'' values, the values they
+have in the context in which the <code>let</code> expression appears.  In the <code>let</code>
+expression above, the local variables bound by the <code>let</code> are <code>x</code> and <code>y</code>.
+They are locally bound to the values delivered by the two forms
+<code>(* x x)</code> and <code>(* 2 x)</code>, respectively, that appear in the
+``bindings'' of the <code>let</code>.  The body of the <code>let</code> is <code>(list x y)</code>.<p>
+
+Suppose that the <code>let</code> expression above occurs in a context in which <code>x</code>
+has the value <code>-2</code>.  (The global value of <code>y</code> is irrelevant to this
+example.)  For example, one might imagine that the <code>let</code> form above
+occurs as the body of some function, <code>fn</code>, with the formal parameter <code>x</code>
+and we are evaluating <code>(fn -2)</code>.<p>
+
+To evaluate the <code>let</code> above in a context in which <code>x</code> is <code>-2</code>, we first
+evaluate the two forms specifying the local values of the variables.
+Thus, <code>(* x x)</code> is evaluated and produces <code>4</code> (because <code>x</code> is <code>-2</code>) and
+<code>(* 2 x)</code> is evaluated and produces <code>-4</code> (because <code>x</code> is <code>-2</code>).
+Then <code>x</code> and <code>y</code> are bound to these values and the body of the <code>let</code>
+is evaluated.  Thus, when the body, <code>(list x y)</code> is evaluated, <code>x</code>
+is <code>4</code> and <code>y</code> is <code>-4</code>.  Thus, the body produces <code>'(4 -4)</code>.<p>
+
+Note that the binding of <code>y</code>, which is written after the binding of <code>x</code>
+and which mentions <code>x</code>, nevertheless uses the global value of <code>x</code>, not
+the new local value.  That is, the local variables of the <code>let</code> are
+bound ``in parallel'' rather than ``sequentially.'' In contrast, if
+the
+
+<pre>
+Example LET* Form:
+(let* ((x (* x x))
+       (y (* 2 x)))
+ (list x y))
+</pre>
+
+is evaluated when the global value of <code>x</code> is <code>-2</code>, then the result is
+<code>'(4 8)</code>, because the local value of <code>y</code> is computed after <code>x</code> has been
+bound to <code>4</code>.  <code><a href="LET_star_.html">Let*</a></code> binds its local variables ``sequentially.''
+
+<pre>
+General LET Forms:
+(let ((var1 term1) ... (varn termn)) body) 
+and
+(let ((var1 term1) ... (varn termn))
+ (declare ...) ... (declare ...)
+ body)
+</pre>
+
+where the <code>vari</code> are distinct variables, the <code>termi</code> are terms
+involving only variables bound in the environment containing the
+<code>let</code>, and <code>body</code> is a term involving only the <code>vari</code> plus the variables
+bound in the environment containing the <code>let</code>.  Each <code>vari</code> must be used
+in <code>body</code> or else <a href="DECLARE.html">declare</a>d ignored.<p>
+
+A <code>let</code> form is evaluated by first evaluating each of the <code>termi</code>,
+obtaining for each a <code>vali</code>.  Then, each <code>vari</code> is bound to the
+corresponding <code>vali</code> and <code>body</code> is evaluated.<p>
+
+Actually, <code>let</code> forms are just abbreviations for certain uses of
+<code>lambda</code> notation.  In particular
+
+<pre>
+(let ((var1 term1) ... (varn termn)) (declare ...) body)
+</pre>
+
+is equivalent to
+
+<pre>
+((lambda (var1 ... varn)
+   (declare ...)
+   body)
+ term1 ... termn).
+</pre>
+
+<code><a href="LET_star_.html">Let*</a></code> forms are used when it is desired to bind the <code>vari</code>
+sequentially, i.e., when the local values of preceding <code>varj</code> are to
+be used in the computation of the local value for <code>vari</code>.
+
+<pre>
+General LET* Forms:
+(let* ((var1 term1) ... (varn termn)) body) 
+and
+(let* ((var1 term1) ... (varn termn))
+ (declare (ignore x1 ... xm))
+ body) 
+</pre>
+
+where the <code>vari</code> are variables (not necessarily distinct), the
+<code>termi</code> are terms involving only variables bound in the environment
+containing the <code><a href="LET_star_.html">let*</a></code> and those <code>varj</code> such that <code>j&lt;i</code>, and <code>body</code> is a
+term involving only the <code>vari</code> plus the variables bound in the
+environment containing the <code><a href="LET_star_.html">let*</a></code>.  Each <code>vari</code> must be used either in
+some subsequent <code>termj</code> or in <code>body</code>, except that in the second form
+above we make an exception when <code>vari</code> is among the <code>xk</code>, in which case
+<code>vari</code> must not be thus used.  Note that <code><a href="LET_star_.html">let*</a></code> does not permit the
+inclusion of any <code><a href="DECLARE.html">declare</a></code> forms other than one as shown above.  In the
+second general form above, every <code>xk</code> must be among the <code>vari</code>, and
+furthermore, <code>xk</code> may not equal <code>vari</code> and <code>varj</code> for distinct <code>i</code>, <code>j</code>.<p>
+
+The first <code><a href="LET_star_.html">let*</a></code> above is equivalent to
+
+<pre>
+(let ((var1 term1))
+ ...
+ (let ((varn termn)) body)...)
+</pre>
+
+Thus, the <code>termi</code> are evaluated successively and after each
+evaluation the corresponding <code>vali</code> is bound to the value of <code>termi</code>.
+The second <code><a href="LET_star_.html">let*</a></code> is similarly expanded, except that each for each
+<code>vari</code> that is among the <code>(x1 ... xm)</code>, the form <code>(declare (ignore vari))</code>
+is inserted immediately after <code>(vari termi)</code>.<p>
+
+Each <code>(vari termi)</code> pair in a <code>let</code> or <code><a href="LET_star_.html">let*</a></code> form is called a ``binding''
+of <code>vari</code> and the <code>vari</code> are called the ``local variables'' of the <code>let</code>
+or <code><a href="LET_star_.html">let*</a></code>.  The common use of <code>let</code> and <code><a href="LET_star_.html">let*</a></code> is to save the values of
+certain expressions (the <code>termi</code>) so that they may be referenced
+several times in the body without suggesting their recomputation.<p>
+
+<code>Let</code> is part of Common Lisp.  See any Common Lisp documentation
+for more information.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

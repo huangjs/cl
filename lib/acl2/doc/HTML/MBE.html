@@ -1,0 +1,155 @@
+<html>
+<head><title>MBE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MBE</h2>attach code for execution
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+The macro <code>mbe</code> (``must be equal'') can be used in function definitions in
+order to cause evaluation to use alternate code to that provided for the
+logic.  An example is given below.  However, the use of <code>mbe</code> can lead to
+non-terminating computations.  See <a href="DEFEXEC.html">defexec</a>, perhaps after reading the present
+documentation, for a way to guarantee termination (at least theoretically).<p>
+
+In the ACL2 logic, <code>(mbe :exec exec-code :logic logic-code)</code> equals
+<code>logic-code</code>; the value of <code>exec-code</code> is ignored.  However, in raw Lisp
+it is the other way around:  this form macroexpands simply to <code>exec-code</code>.
+ACL2's <a href="GUARD.html">guard</a> verification mechanism ensures that the raw Lisp code is
+only evaluated when appropriate, since the guard proof obligations generated
+for this call of <code>mbe</code> are <code>(equal exec-code logic-code)</code> together with
+the proof obligations from <code>exec-code</code>.  See <a href="VERIFY-GUARDS.html">verify-guards</a> and, for general
+discussion of guards, see <a href="GUARD.html">guard</a>.<p>
+
+The form <code>(mbe :exec exec-code :logic logic-code)</code> expands in the logic to
+the function call <code>(</code><code><a href="MUST-BE-EQUAL.html">must-be-equal</a></code><code> logic-code exec-code)</code>.  The guard for
+<code>(must-be-equal logic exec)</code> is <code>(equal logic exec)</code>.  We recommend that
+you use <code>mbe</code> instead of <code><a href="MUST-BE-EQUAL.html">must-be-equal</a></code> because the use of keywords
+eliminates errors caused by unintentially reversing the order of arguments.
+The <code>:exec</code> and the <code>:logic</code> code in an <code>mbe</code> call must have the same
+return type; for example, one cannot return <code>(</code><code><a href="MV.html">mv</a></code><code> * *)</code> while the
+other returns just a single value.  Also, the <code>:exec</code> code may not itself
+contain any calls of <code>mbe</code> (or <code>must-be-equal</code>).<p>
+
+Also see <a href="MBT.html">mbt</a>, which stands for ``must be true.''  You may find it more
+natural to use <code><a href="MBT.html">mbt</a></code> for certain applications, as described in its
+<a href="DOCUMENTATION.html">documentation</a>.
+<p>
+<ul>
+<li><h3><a href="DEFEXEC.html">DEFEXEC</a> -- attach a terminating executable function to a definition
+</h3>
+</li>
+
+</ul>
+
+Here is an example of the use of <code>mbe</code>.  Suppose that you want to define
+factorial in the usual recursive manner, as follows.
+
+<pre>
+(defun fact (n)
+  (if (zp n)
+      1
+    (* n (fact (1- n)))))
+</pre>
+
+But perhaps you want to be able to execute calls of <code>fact</code> on large
+arguments that cause stack overflows, perhaps during proofs.  (This isn't a
+particularly realistic example, but it should serve.)  So, instead you can
+define this tail-recursive version of factorial:
+
+<pre>
+(defun fact1 (n acc)
+  (declare (xargs :guard (and (integerp n) (&gt;= n 0) (integerp acc))))
+  (if (zp n)
+      acc
+    (fact1 (1- n) (* n acc))))
+</pre>
+
+We are now ready to define <code>fact</code> using <code>mbe</code>.  Our intention is that
+logically, <code>fact</code> is as shown in the first definition above, but that
+<code>fact</code> should be executed by calling <code>fact1</code>.  Notice that we defer
+<a href="GUARD.html">guard</a> verification, since we are not ready to prove the correspondence
+between <code>fact1</code> and <code>fact</code>.
+
+<pre>
+(defun fact (n)
+  (declare (xargs :guard (and (integerp n) (&gt;= n 0))
+                  :verify-guards nil))
+  (mbe :exec  (fact1 n 1)
+       :logic (if (zp n)
+                  1
+                (* n (fact (1- n))))))
+</pre>
+
+Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
+a standard book to help with the arithmetic reasoning.
+
+<pre>
+(include-book "books/arithmetic/top-with-meta")<p>
+
+(defthm fact1-fact
+  (implies (integerp acc)
+           (equal (fact1 n acc)
+                  (* acc (fact n)))))
+</pre>
+
+We may now do guard verification for <code>fact</code>, which will allow the execution
+of the raw Lisp <code>fact</code> function, where the above <code>mbe</code> call expands
+simply to <code>(fact1 n 1)</code>.
+
+<pre>
+(verify-guards fact)
+</pre>
+
+Now that guards have been verified, a trace of function calls illustrates
+that the evaluation of calls of <code>fact</code> is passed to evaluation of calls of
+<code>fact1</code>.  The outermost call below is of the logical function stored for
+the definition of <code>fact</code>; all the others are of actual raw Common Lisp
+functions.
+
+<pre>
+ACL2 !&gt;(trace$ fact fact1)
+NIL
+ACL2 !&gt;(fact 3)
+1&gt; (ACL2_*1*_ACL2::FACT 3)
+  2&gt; (FACT 3)
+    3&gt; (FACT1 3 1)
+      4&gt; (FACT1 2 3)
+        5&gt; (FACT1 1 6)
+          6&gt; (FACT1 0 6)
+          &lt;6 (FACT1 6)
+        &lt;5 (FACT1 6)
+      &lt;4 (FACT1 6)
+    &lt;3 (FACT1 6)
+  &lt;2 (FACT 6)
+&lt;1 (ACL2_*1*_ACL2::FACT 6)
+6
+ACL2 !&gt;
+</pre>
+<p>
+
+You may occasionally get warnings when you compile functions defined using
+<code>mbe</code>.  (For commands that invoke the compiler, see <a href="COMP.html">comp</a> and
+see <a href="CERTIFY-BOOK.html">certify-book</a>.)  These can be inhibited by using an <code>ignorable</code>
+<code><a href="DECLARE.html">declare</a></code> form.  Here is a simple but illustrative example.  Note that
+the declarations can optionally be separated into two <code><a href="DECLARE.html">declare</a></code> forms.
+
+<pre>
+(defun foo (x y)
+  (declare (ignorable x)
+           (xargs :guard (equal x y)))
+  (mbe :logic x :exec y))
+</pre>
+<p>
+
+Finally, we observe that when the body of a function contains a term of the
+form <code>(mbe :exec exec-code :logic logic-code)</code>, the user is very unlikely
+to see any logical difference than if this were replaced by <code>logic-code</code>.
+ACL2 takes various steps to ensure this.  For example, the proof obligations
+generated for admitting a function treat the above <code>mbe</code> term simply as
+<code>logic-code</code>.  Function expansion, <code>:use</code> <a href="HINTS.html">hints</a>,
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> rules, and generation of <a href="CONSTRAINT.html">constraint</a>s for
+functional instantiation also treat the above <code>mbe</code> call as if were
+replaced by <code>logic-code</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

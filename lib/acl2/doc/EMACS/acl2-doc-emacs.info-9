@@ -1,0 +1,1141 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: CONSERVATIVITY-OF-DEFCHOOSE,  Prev: DEFCHOOSE,  Up: DEFCHOOSE
+
+CONSERVATIVITY-OF-DEFCHOOSE    proof of conservativity of defchoose
+
+This documentation topic provides underlying theory.  It is of
+theoretical interest only; it has no relationship to the effective use
+of ACL2.
+
+The argument below for the conservativity of defchoose replaces the
+terse and somewhat misleading reference to a forcing argument in
+Appendix B of the paper by ACL2 authors Kaufmann and Moore, "Structured
+Theory Development for a Mechanized Logic" (Journal of Automated
+Reasoning 26, no. 2 (2001), pp. 161-203).
+
+Our basic idea is to to take a (countable) first-order structure for
+ACL2, M, together with a function symbol, f, introduced by defchoose,
+and find a way to expand M with an interpretation of f (without
+changing the universe of M) so that e0-induction continues to hold in
+the expansion.  A remark at the end of this documentation topic shows
+why care is necessary.  A concept called "forcing", originally
+introduced by Paul Cohen for set theory, has long since been adapted by
+logicians (in a simplified form) to model theory.  This simplified
+model-theoretic forcing provides the means for making our careful
+expansion.
+
+The forcing argument presented below is intended to be completely
+self-contained for those familiar with basic first-order logic and
+ACL2.  No background in forcing (model-theoretic or otherwise) is
+expected, though we do expect a rudimentary background in first-order
+logic and familiarity with the following.
+
+Preliminaries.  We write s[p<-p0] to denote the result of extending or
+modifying the assignment s by binding p to p0.  Now let A be a subset
+of the universe U of a first-order structure M.  A is said to be
+"first-order definable with parameters" in M if for some formula phi,
+variable x, and assignment s binding the free variables of phi except
+perhaps for x, A = {a \in U: M |= phi[s[x<-a]].  Note that we are
+writing "\in" to denote set membership.  Finally, we indicate the end
+of a proof (or of a theorem statement, when the proof is omitted) with
+the symbol "-|".
+
+We gratefully acknowledge very helpful feedback from John Cowles, who
+found several errors in a draft of this note and suggested the
+exercises.  We also thank Ruben Gamboa for helpful feedback, and we
+thank Jim Schmerl for an observation that led us directly to this proof
+in the first place.
+
+We are given a consistent first-order theory T, extending the ACL2
+ground-zero theory, that satisfies the e0-induction scheme.  We wish to
+show that the extension of T by the following arbitrary defchoose event
+is conservative, where g is a new function symbol.
+
+          (defchoose g <bound-vars> <free-vars> <body>)
+
+Note that by "the extension of T" here we mean the extension of T by not
+only the new defchoose axiom displayed just below, but also the
+addition of e0-induction axioms for formulas in the language with the
+new defchoose function symbol, g.
+
+          <body> -> (LET <free-vars> = g(<bound-vars>) in <body>)
+
+By definition of conservativity, since proofs are finite, it clearly
+suffices to consider an arbitrary finite subset of T.  Then by the
+completeness, soundness, and downward Lowenheim-Skolem theorems of
+first-order logic, it suffices to show that an arbitrary countable
+model of T can be expanded (i.e., by interpreting the new symbol g
+without changing the universe of the model) to a model of the
+corresponding defchoose axiom above, in which all e0-induction axioms
+hold in the language of that model.
+
+Below, we will carry out a so-called _forcing_ construction, which
+allows us to expand any countable model M of T to a model M[G] that
+satisfies e0-induction and also satisfies the above axiom generated
+from the above defchoose event.  The ideas in this argument are
+standard in model theory; no novelty is claimed here.
+
+Fix a countable model M of a theory T that satisfies e0-induction and
+extends the ACL2 ground-zero theory.  Also fix the above defchoose
+axiom, where g is not in the language of T.
+
+We start by defining a partial order P as follows.  Let Nb and Nf be the
+lengths of <bound-vars> and <free-vars>, respectively.  P consists of
+all fn in M such that the following formula is true in M.  Roughly
+speaking, it says that fn is a finite function witnessing the above
+requirement for g.
+
+            alistp(fn) &
+            no-duplicatesp-equal(strip-cars(fn)) &
+            (forall <bound-vars>, <free-vars> .
+               (member-equal(cons(<bound-vars>,<free-vars>), fn) ->
+                (length(<bound-vars>) = Nb &
+                 length(<free-vars>)  = Nf &
+                 ((exists <free-vars> . <body>) -> <body>))))
+
+P is ordered by subset, i.e., we say that p2 _extends_ p1 if p1 is a
+subset (not necessarily proper) of p2 (more precisely, M |=
+subsetp-equal(p1,p2)).
+
+Remark.  The original argument in Appendix B of the aforementioned
+paper can essentially be salvaged, as we now show.  The key observation
+is that the particular choice of P is nearly irrelevant for the
+argument that follows below.  In particular, we can instead define P to
+consist of finite one-one functions with domain contained in the set of
+natural numbers.  More precisely, consider the following definitions.
+
+          (defun function-p (fn)
+            (declare (xargs :guard t))
+            (and (alistp fn)
+                 (no-duplicatesp-equal (strip-cars fn))))
+     
+          (defun nat-listp (x)
+            (declare (xargs :guard t))
+            (cond ((atom x)
+                   (equal x nil))
+                  (t (and (natp (car x))
+                          (nat-listp (cdr x))))))
+     
+          (defun nat-function-p (x)
+            (and (function-p x)
+                 (nat-listp (strip-cars x))))
+
+and define inverse as follows.
+
+          (defun inverse (fn)
+            (declare (xargs :guard (alistp fn)))
+            (if (endp fn)
+                nil
+              (cons (cons (cdar fn) (caar fn))
+                    (inverse (cdr fn)))))
+
+Then P may instead be defined to consist of those fn for which
+nat-function-p(fn) & function-p(inverse(fn)).  With this alternate
+definition of P, the argument below then goes through virtually
+unchanged, and we get an expansion M[G] of M in which there is a
+definable enumeration of the universe.  The conservativity of defchoose
+then follows easily because the function being introduced can be
+defined explicitly using that enumeration (namely, always pick the
+least witness in the sense of the enumeration).
+
+End of Remark.
+
+Next we present the relevant forcing concepts from model theory.
+
+A _dense_ subset of P is a subset D of P such that for every p \in P,
+there is d \in D such that d extends p.  A subset G of P is _generic_
+with respect to a collection Ds of dense subsets of P, also written "G
+is Ds-generic," if G is closed under subset (if p2 \in G and p2 extends
+p1 then p1 \in G), G is pairwise compatible (the union-equal of any two
+elements of G is in G), and every set in Ds has non-empty intersection
+with G.
+
+For p \in P, we say that a subset D of P is _dense beyond_ p if for all
+p1 extending p there exists p2 extending p1 such that p2 \in D.  This
+notion makes sense even for D not a subset of P if we treat elements of
+D not in P as nil.
+
+Proposition 1.  For any partial order P and countable collection Ds of
+dense subsets of P, there is a Ds-generic subset of P.
+
+Proof.  Let Ds = {D0,D1,D2,...}.  Define a sequence <p_0,p_1,...> such
+that for all i, p_i \in Di and p_(i+1) extends p_i.  Let G = {p \in P:
+for some i, pi extends p}.  Then G is Ds-generic. -|
+
+Note that P is first-order definable (with parameters) in M.  Let Df be
+the set of dense subsets of P that are first-order definable (with
+parameters) in M.  A standard argument shows there are only countably
+many first-order definitions with parameters in a countable model M --
+for example, we can Goedel number all terms and then all formulas --
+hence, Df is countable.
+
+By Proposition 1, let G be Df-generic.  Notice that for any list x of
+length Nb in M, the set of elements f of P for which x is in the domain
+of f is dense and first-order definable.  We may thus define a function
+g0 as follows: g0(x_1,...,x_Nb) = y if there is some element of G
+containing the pair ((x_1 ... x_Nb) . y).  It is easy to see that g0 is
+a total function on M.  Let L be the language of T and let L[g] be the
+union of L with a set containing a single new function symbol, g.  Let
+M[G] be the expansion of M to L[g] obtained by interpreting g to be g0
+(see also Proposition 5 below).
+
+So now we have fixed M, P, Df, G, and g0, where G is Df-generic.
+
+Proposition 2.  Let Df be the set of dense subsets of P that are
+first-order definable (with parameters) in M.  Suppose that p \in G and
+D \in Df.  Then for some q \in G extending p, q \in D.
+
+Proof.  Let D0 be the set of p' \in D that either extend p or have no
+extension in D that extends p.  We leave it as a straightforward
+exercise to show that D0 is dense, and D0 is clearly first-order
+definable (with parameters) in M.  So by genericity of G, we may pick q
+\in D0 such that q \in G.  Thus q \in D.  By definition of generic,
+some extension q1 of both p and q belongs to G.  Pick q2 \in D
+extending q1; thus q has an extension in D that extends p (namely, q2),
+so by definition of D0, q extends p. -|
+
+Definition of forcing.  Let phi(x1,...,xk) be a first-order formula in
+L[g] and let p \in P.  We define a formula of L, denoted "p ||- phi" ("p
+forces phi"), by recursion on phi (in the metatheory) as follows.
+(Here, we view "or" and "forall" as abbreviations.)
+
+       If phi is atomic, then let phi'(A) be the result of replacing,
+     inside-out,   each subterm of the form g(x_1,...,x_Nb) with the
+     term (cdr (assoc-equal   (list x_1 ... x_Nb) A)), where A is
+     neither p nor a variable occurring in   phi.  Then p ||- phi is
+     defined as follows: "The set {A \in P: A extends   p and phi'(A)}
+     is dense beyond p".  That is, p ||- phi is the following   formula:
+
+              (forall p1 \in P extending p)
+               (exists p2 \in P extending p1) phi'(p2).
+
+     p ||- ~phi is:  (forall p' \in P extending p) ~(p' ||- phi)
+
+     p ||- phi_1 & phi_2 is: (p ||- phi_1) & (p ||- phi_2)
+
+     p ||- (exists x) phi is:  (exists x) (p ||- phi)
+
+
+We will need the following definition later.
+
+Definition.  p ||-w phi (p _weakly forces_ phi) is an abbreviation for p
+||- ~~phi.
+
+The following exercises were suggested by John Cowles as a means for
+gaining familiarity with the definition of forcing.
+
+Exercise 1. Consider the formula (phi_1 OR phi_2) as an abbreviation for
+~(~phi_1 & ~phi_2), Show that p ||- (phi_1 OR phi_2) is equivalent to
+the following.
+
+          (forall p' \in P extending p) (exists p'' \in P extending p')
+           ((p'' ||- phi_1) OR (p'' ||- phi_2))
+
+Exercise 2. Consider the formula (forall x)phi as an abbreviation for
+~(exists x)~phi, Show that p ||- (forall x)phi is equivalent to the
+following.
+
+          (forall x)
+           (forall p1 \in P extending p)
+            (exists p2 \in P extending p1) (p2 ||- phi).
+
+Exercise 3. Prove that p ||-w phi is equivalent to the following.
+
+          (forall p' \in P extending p)
+           (exists p'' \in P extending p') (p'' ||- phi).
+
+Exercise 4. Let phi be a formula of L[g].  Prove:      M |= (p ||-
+phi)[s[p<-p0]] implies      M |= (p ||-w phi)[s[p<-p0]].
+
+Exercise 5. Let phi be a formula of L[g].  Prove:      M |= (p ||-
+~phi)[s[p<-p0]] iff      M |= (p ||-w ~phi)[s[p<-p0]].
+
+[End of exercises.]
+
+The definition of forcing stipulates how to view "p ||- phi(x1,...,xk)"
+as a new formula theta(p,x1,...,xk).  That is, "||-" transforms
+formulas, so for any first-order formula phi, "p ||- phi" is just
+another first-order formula.  That observation shows that a formula
+such as ((p ||- phi) OR (p ||- ~phi)) is really just another
+first-order formula.  The following proposition thus follows easily.
+
+Proposition 3. For any formula phi of L[g], {p0: M |= ((p ||- phi) OR
+(p ||- ~phi))[s[p<-p0]]]} is a dense subset of P, which (since it is
+first-order definable with parameters in M) intersects G. -|
+
+The following proposition is easily proved by a structural induction on
+phi, and is left to the reader.
+
+Proposition 4. Let phi be a formula of L[g].  Suppose p0 in P, p1 in P,
+M |= (p ||- phi)[s[p<-p0]] and p1 extends p0.  Then
+M |= (p ||- phi)[s[p<-p1]]. -|
+
+We will also need the following.
+
+Proposition 5. The following is dense for any finite set S of
+Nb-tuples: {p \in P: for some <x_1 ... x_Nb> \in S, (list x_1 ... x_Nb)
+\in strip-cars(p)}.  Thus, the function g0 is a total function. -|
+
+The next lemma tells us that the sentences true in M[G] are those that
+are forced by an element of G.
+
+Truth Lemma.  Let phi be a formula in L[g], let s be an assignment to
+the free variables of phi, and let p be a variable not in the domain of
+s.  Then M[G] |= phi[s] iff for some p0 \in G, M |= (p ||-
+phi)[s[p<-p0]].
+
+Proof.  The proof is by induction on the structure of phi.  First
+suppose phi is atomic.  Let D* be the set of elements p0 \in P such
+that every assoc-equal evaluation from the definition of forcing phi
+returns a pair when A is bound to p0.  (Intuitively, this means that p0
+is a sufficiently large approximation from any G containing p0 to make
+sense of phi in M[G].)  We make the following claim.
+
+     (*)   For all p0 \in G such that p0 \in D*,
+           M[G] |= phi[s] iff M |= (p ||- phi)[s[p<-p0]].
+
+To prove the claim, fix p0 in both G and D*, and recall the function g0
+constructed from G in the definition of M[G].  Suppose that t_1, ...,
+t_Nb are terms and g(t_1, ..., t_Nb) is a subterm of phi.  Then s
+assigns a value in M to each of the t_i.  Let a_i be the value assigned
+by s to t_i.  Then g0(a_1, ..., a_Nb) = (cdr (assoc-equal (list a_1 ...
+a_Nb) p0)), as the assoc-equal is a pair (since p0 \in D*) and has the
+indicated value (because p0 \in G).  It follows by the definition of
+formula phi' in the definition of forcing:
+
+          M[G] |= phi[s]  iff  M |= phi'(p)[s[p<-p0]]
+
+Moreover, because p0 \in D* it is clear that this holds if p0 is
+replaced by an arbitrary extension of p0.  Then (*) easily follows.
+
+By Proposition 5, D* is dense, so there is some p0 in the intersection
+of D* and G.  The forward direction of the conclusion then follows by
+(*).  The reverse direction is clear from (*) by application of
+Proposition 2 to D* and Proposition 4.
+
+Next, suppose M[G] |= ~phi[x].  Then it is not the case that M[G] |=
+phi, so by the inductive hypothesis, there is no p0 \in G for which M
+|= (p ||- phi)[s[p<-p0]].  By Proposition 3, there is p0 \in G for
+which M |= (p ||- ~phi)[s[p<-p0]].  For the other direction, suppose it
+is not the case that M[G] |= ~phi[s].  So M[G] |= phi[s], and by the
+inductive hypothesis, there is p0 \in G for which M |= (p ||-
+phi)[s[p<-p0]].  It follows that there is no p1 \in G for which M |= (p
+||- ~phi)[s[p<-p1]], since from such p1 we can find a common extension
+p2 of p0 and p1 (since G is generic), and since p2 extends p0 then by
+Proposition 4, M |= (p ||- phi)[s[p<-p2]], contradicting (by definition
+of forcing) M |= (p ||- ~phi)[s[p<-p1]] since p2 extends p1.
+
+The case (phi_1 & phi_2) follows easily from the inductive hypothesis.
+For the forward direction, apply Proposition 4 and the observation that
+by genericity, if p0 \in G and p1 \in G then p0 and p1 they have a
+common extension in G.
+
+Finally, the case (exists x) phi follows trivially from the inductive
+hypothesis. -|
+
+Truth Lemma Corollary.  The Truth Lemma holds with ||-w replacing ||-.
+
+Proof.  This is clear by applying the Truth Lemma to ~~phi. -|
+
+Here is our main theorem.  Recall that all first-order theories in our
+ACL2 context satisfy the e0-induction scheme.
+
+Theorem.  M[G] satisfies e0-induction.
+
+Proof.  We consider an arbitrary instance of e0-induction in L[g],
+stated using a strict well-founded relation <| and a formula phi.  We
+write phi(y) to indicate that y may be among the free variables of phi,
+and phi(y<-x) to denote the result of substituting x for y in phi.
+
+       theta(y):   (forall y) [((forall x <| y) phi(y<-x)) -> phi(y)]
+                -> (forall y) phi(y)
+
+Our goal is to prove that theta holds in M[G].
+
+Below, we abuse notation by leaving assignments implicit and by writing
+"p ||- phi(y0)" to signify that the formula (p ||- phi(y)) is true in M
+under the extension of the explicit assignment that binds y to y0.  We
+believe that the intended meaning will be clear.
+
+Consider the following set D.
+
+       D = {p \in P: either p ||-w phi(y0) for all y0,
+                     or else
+                     for some y0, p ||- ~phi(y0) and
+                                  for all y1 <| y0 p ||-w phi(y1)}.
+
+The set D is clearly first-order definable (with parameters) in M.  We
+claim that D is a dense subset of P.  For suppose p0 \in P; we find p1
+\in D extending p0, as follows.  If p0 ||-w phi(y0) for all y0, then we
+may take p1 to be p0.  Otherwise, by definition of ||-w and ||-, there
+is some y0 such that for some extension p0' of p0, p0' ||- ~phi(y0).
+Pick a <|-minimal such y0, and correspondingly pick p1 so that p1
+extends p0 and p1 ||- ~phi(y0).  In order to show that p1 \in D, it
+remains to show that for all y1 <| y0, p1 ||-w phi(y1), i.e., there is
+no q extending p1 such that q ||- ~phi(y1).  This is indeed the case
+since otherwise q and y1 would contradict the <|-minimality of y0.
+
+Applying the genericity of G and just-proved density of D, pick p0 \in G
+such that p0 \in D.  If p0 ||-w phi(y0) for all y0, then by the Truth
+Lemma Corollary, M[G] |= phi(y0) for all y0, and thus M[G] |= theta.
+Otherwise, since p0 \in D we may choose y0 such that p0 ||- ~phi(y0)
+and for all y1 <| y0, p0 ||-w phi(y1).  By the Truth Lemma and its
+corollary, since p0 \in G we have:
+
+     (1)   M[G] |= ~phi(y0).
+     (2)   For all y1 <| y0, M[G] |= phi(y1).
+
+It follows that the antecedent of theta is false in M[G], as witnessed
+by y = y0; thus M[G] |= theta. -|
+
+Remark.  We close by returning, as promised above, to the question of
+why so much care is necessary in constructing an expansion of M.  We
+assume familiarity here with the notion of a "non-standard" natural
+number of M, i.e., one that is greater than the interpretation of any
+term that has the form (+ 1 1 1 ... 1).  Here is a very simple example
+that illustrates the need for some care.  Consider the following event,
+which introduces a function foo with the following property: for all x,
+if natp(x) then natp(foo(x)).
+
+          (defchoose foo (y) (x)
+            (implies (natp x) (natp y)))
+
+Certainly we can build a model of the above property from a model M of
+the ground-zero theory, by interpreting foo so that for all x for which
+M satisfies natp(x), foo(x) is also a natp in M.  But suppose we start
+with a non-standard model M of the ground-zero theory, and we happen to
+define foo(x) to be 1 for all non-standard natural numbers x and 0 for
+all other x.  The resulting expansion of M will not satisfy the
+e0-induction scheme or even the ordinary natural number induction
+scheme: foo(0)=0 holds in that expansion as does the implication
+foo(n)=0 => foo(n+1)=0 for every natural number n of M, standard or
+not; and yet foo(k)=0 fails for every non-standard natural number k of
+M.
+
+
+File: acl2-doc-emacs.info,  Node: DEFCONG,  Next: DEFCONST,  Prev: DEFCHOOSE,  Up: EVENTS
+
+DEFCONG    prove that one equivalence relation preserves another in a given
+ argument position of a given function
+
+     Example:
+     (defcong set-equal iff (memb x y) 2)
+     
+     is an abbreviation for
+     (defthm set-equal-implies-iff-memb-2
+       (implies (set-equal y y-equiv)
+                (iff (memb x y) (memb x y-equiv)))
+       :rule-classes (:congruence))
+
+See *Note CONGRUENCE:: and also see *note EQUIVALENCE::.
+
+     General Form:
+     (defcong equiv1 equiv2 term k
+       :rule-classes rule-classes
+       :instructions instructions
+       :hints hints
+       :otf-flg otf-flg
+       :event-name event-name
+       :doc doc)
+
+where equiv1 and equiv2 are known equivalence relations, term is a call
+of a function fn on the correct number of distinct variable arguments
+(fn x1 ... xn), k is a positive integer less than or equal to the arity
+of fn, and other arguments are as specified in the documentation for
+defthm.  The defcong macro expands into a call of defthm.  The name of
+the defthm event is equiv1-implies-equiv2-fn-k unless an :event-name
+keyword argument is supplied for the name.  The term of the theorem is
+
+     (implies (equiv1 xk yk)
+              (equiv2 (fn x1... xk ...xn)
+                      (fn x1... yk ...xn))).
+
+The rule-class :congruence is added to the rule-classes specified, if
+it is not already there.  All other arguments to the generated defthm
+form are as specified by the keyword arguments above.
+
+
+File: acl2-doc-emacs.info,  Node: DEFCONST,  Next: DEFDOC,  Prev: DEFCONG,  Up: EVENTS
+
+DEFCONST    define a constant
+
+     Examples:
+     (defconst *digits* '(0 1 2 3 4 5 6 7 8 9))
+     (defconst *n-digits* (the unsigned-byte (length *digits*)))
+     
+     General Form:
+     (defconst name term doc-string)
+
+where name is a symbol beginning and ending with the character *, term
+is a variable-free term that is evaluated to determine the value of the
+constant, and doc-string is an optional documentation string (see *note
+DOC-STRING::).
+
+When a constant symbol is used as a term, ACL2 replaces it by its
+value; see *note TERM::.
+
+It may be of interest to note that defconst is implemented at the lisp
+level using defparameter, as opposed to defconstant.  (Implementation
+note:  this is important for proper support of undoing and
+redefinition.)
+
+
+File: acl2-doc-emacs.info,  Node: DEFDOC,  Next: DEFEQUIV,  Prev: DEFCONST,  Up: EVENTS
+
+DEFDOC    add a documentation topic
+
+     Examples:
+     (defdoc interp-section
+        ":Doc-Section ...")
+     
+     General Form:
+     (defdoc name doc-string)
+
+where name is a symbol or string to be documented and doc-string is a
+documentation string (see *note DOC-STRING::).  This event adds the
+documentation string for symbol name to the :doc data base.  It may
+also be used to change the documentation for name if name already has
+documentation.  The difference between this event and deflabel is that,
+unlike deflabel (but like table), it does not mark the current history
+with the name.  But like deflabel, defdoc events are never considered
+redundant (see *note REDUNDANT-EVENTS::).
+
+See *Note DEFLABEL:: for a means of attaching a documentation string to
+a name that marks the current history with that name.  We now elaborate
+further on how defdoc may be useful in place of deflabel.
+
+It is usually sufficient to use deflabel when you might be tempted to
+use defdoc.  However, unlike deflabel, defdoc does not mark the current
+history with name.  Thus, defdoc is useful for introducing the
+documentation for a defun or deftheory event, for example, several
+events before the function or theory is actually defined.
+
+For example, suppose you want to define a theory (using deftheory).
+You need to prove the lemmas in that theory before executing the
+deftheory event.  However, it is quite natural to define a :doc-section
+(see *note DOC-STRING::) whose name is the name of the theory to be
+defined, and put the documentation for that theory's lemmas into that
+:doc-section.  Defdoc is ideal for this purpose, since it can be used
+to introduce the :doc-section, followed by the lemmas referring to that
+:doc-section, and finally concluded with a deftheory event of the same
+name.  If deflabel were used instead of defdoc, for example, then the
+deftheory event would be disallowed because the name is already in use
+by the deflabel event.
+
+We also imagine that some users will want to use defdoc to insert the
+documentation for a function under development.  This defdoc event
+would be followed by definitions of all the subroutines of that
+function, followed in turn by the function definition itself.
+
+Any time defdoc is used to attach documentation to an
+already-documented name, the name must not be attached to a new
+:doc-section.  We make this requirement as a way of avoiding loops in
+the documentation tree.  When documentation is redefined, a warning
+will be printed to the terminal.
+
+
+File: acl2-doc-emacs.info,  Node: DEFEQUIV,  Next: DEFEVALUATOR,  Prev: DEFDOC,  Up: EVENTS
+
+DEFEQUIV    prove that a function is an equivalence relation
+
+     Example:
+     (defequiv set-equal)
+     
+     is an abbreviation for
+     (defthm set-equal-is-an-equivalence
+       (and (booleanp (set-equal x y))
+            (set-equal x x)
+            (implies (set-equal x y) (set-equal y x))
+            (implies (and (set-equal x y)
+                          (set-equal y z))
+                     (set-equal x z)))
+       :rule-classes (:equivalence))
+
+See *Note EQUIVALENCE::.
+
+     General Form:
+     (defequiv fn
+       :rule-classes rule-classes
+       :instructions instructions
+       :hints hints
+       :otf-flg otf-flg
+       :event-name event-name
+       :doc doc)
+
+where fn is a function symbol of arity 2, event-name, if supplied, is a
+symbol, and all other arguments are as specified in the documentation
+for defthm.  The defequiv macro expands into a call of defthm.  The
+name of the defthm is fn-is-an-equivalence, unless event-name is
+supplied, in which case event-name is the name used.  The term
+generated for the defthm event states that fn is Boolean, reflexive,
+symmetric, and transitive.  The rule-class :equivalence is added to the
+rule-classes specified, if it is not already there.  All other
+arguments to the generated defthm form are as specified by the other
+keyword arguments above.
+
+
+File: acl2-doc-emacs.info,  Node: DEFEVALUATOR,  Next: DEFEXEC,  Prev: DEFEQUIV,  Up: EVENTS
+
+DEFEVALUATOR    introduce an evaluator function
+
+     Example:
+     (defevaluator evl evl-list
+       ((length x) (member x y)))
+
+See *Note META::.
+
+     General Form:
+     (defevaluator ev ev-list
+        ((g1 x1 ... xn_1)
+         ...
+         (gk x1 ... xn_k))
+
+where ev and ev-list are new function symbols and g1, ..., gk are old
+function symbols with the indicated number of formals, i.e., each gi
+has n_i formals.
+
+This function provides a convenient way to constrain ev and ev-list to
+be mutually-recursive evaluator functions for the symbols g1, ..., gk.
+Roughly speaking, an evaluator function for a fixed, finite set of
+function symbols is a restriction of the universal evaluator to terms
+composed of variables, constants, lambda expressions, and applications
+of the given functions.  However, evaluator functions are constrained
+rather than defined, so that the proof that a given metafunction is
+correct vis-a-vis a particular evaluator function can be lifted (by
+functional instantiation) to a proof that it is correct for any larger
+evaluator function.  See *Note META:: for a discussion of metafunctions.
+
+Defevaluator executes an encapsulate after generating the appropriate
+defun and defthm events.  Perhaps the easiest way to understand what
+defevaluator does is to execute the keyword command
+
+     :trans1 (defevaluator evl evl-list ((length x) (member x y)))
+
+and inspect the output.  This trick is also useful in the rare case
+that the event fails because a hint is needed.  In that case, the
+output of :trans1 can be edited by adding hints, then submitted
+directly.
+
+Formally, ev is said to be an "evaluator function for g1, ..., gk, with
+mutually-recursive counterpart ev-list" iff ev and ev-list are
+constrained functions satisfying just the constraints discussed below.
+
+Ev and ev-list must satisfy constraints (1)-(4) and (k):
+
+     (1) How to ev a variable symbol:
+         (implies (symbolp x)
+                  (equal (ev x a) (cdr (assoc-eq x a))))
+     
+     (2) How to ev a constant:
+         (implies (and (consp x)
+                       (equal (car x) 'quote))
+                  (equal (ev x a) (cadr x)))
+     
+     (3) How to ev a lambda application:
+         (implies (and (consp x)
+                       (consp (car x)))
+                  (equal (ev x a)
+                         (ev (caddar x)
+                             (pairlis$ (cadar x)
+                                       (ev-list (cdr x) a)))))
+     
+     (4) How to ev an argument list:
+         (implies (consp x-lst)
+                  (equal (ev-list x-lst a)
+                         (cons (ev (car x-lst) a)
+                               (ev-list (cdr x-lst) a))))
+         (implies (not (consp x-lst))
+                  (equal (ev-list x-lst a)
+                         nil))
+     
+     (k) For each i from 1 to k, how to ev an application of gi,
+         where gi is a function symbol of n arguments:
+         (implies (and (consp x)
+                       (equal (car x) 'gi))
+                  (equal (ev x a)
+                         (gi (ev x1 a)
+                             ...
+                             (ev xn a)))),
+         where xi is the (cad...dr x) expression equivalent to (nth i x).
+
+Defevaluator defines suitable witnesses for ev and ev-list, proves the
+theorems about them, and constrains ev and ev-list appropriately.  We
+expect defevaluator to work without assistance from you, though the
+proofs do take some time and generate a lot of output.  The proofs are
+done in the context of a fixed theory, namely the value of the constant
+*defevaluator-form-base-theory*.
+
+(Aside: (3) above may seem surprising, since the bindings of a are not
+included in the environment that is used to evaluate the lambda body,
+(caddar x).  However, ACL2 lambda expressions are all _closed_: in
+(lambda (v1 ... vn) body), the only free variables in body are among
+the vi.  See *Note TERM::.)
+
+
+File: acl2-doc-emacs.info,  Node: DEFEXEC,  Next: DEFLABEL,  Prev: DEFEVALUATOR,  Up: EVENTS
+
+DEFEXEC    attach a terminating executable function to a definition
+
+Suppose you define a function (fn x) with a guard of (good-input-p x),
+and you know that when the guard holds, the measure decreases on each
+recursive call.  Unfortunately, the definitional principle (see *note
+DEFUN::) ignores the guard.  For example, if the definition has the form
+
+     (defun fn (x)
+       (declare (xargs :guard (good-input-p x)))
+       (if (not-done-yet x)
+           (... (fn (destr x)) ...)
+         ...))
+
+then in order to admit this definition, ACL2 must prove the appropriate
+formula asserting that (destr x) is "smaller than" x under the
+assumption (not-done-yet x) but without the assumption (good-input-p
+x), even if (not-done-yet x) is true.  In essence, it may be necessary
+to submit instead the following definition.
+
+     (defun fn (x)
+       (declare (xargs :guard (good-input-p x)))
+       (if (good-input-p x)
+           (if (not-done-yet x)
+               (... (fn (destr x)) ...)
+             ...)
+         nil)
+
+But it is unfortunate that when calls of fn are evaluated, for example
+when fn is applied to an explicit constant during a proof, then a call
+of good-input-p must now be evaluated on each recursive call.
+
+Fortunately, defexec provides a way to keep the execution efficient.
+For the example above we could use the following form.
+
+     (defexec fn (x)
+       (declare (xargs :guard (good-input-p x)))
+       (mbe :logic (if (good-input-p x)
+                       (if (not-done-yet x)
+                           (... (fn (destr x)) ...)
+                         ...)
+                     nil)
+            :exec  (if (not-done-yet x)
+                       (... (fn (destr x)) ...)
+                     ...)))
+
+Here "mbe" stands for "must-be-equal" and, roughly speaking, its call
+above is logically equal to the :logic form but is evaluated using the
+:exec form when the guard holds.  See *Note MBE::.  The effect is thus
+to define fn as shown in the defun form above, but to cause execution
+of fn using the :exec body.  The use of defexec instead of defun in the
+example above causes a termination proof to be performed, in order to
+guarantee that evaluation always theoretically terminates, even when
+using the :exec form for evaluation.
+
+     Example:
+     
+     ; Some of the keyword arguments in the declarations below are irrelevant or
+     ; unnecessary, but they serve to illustrate their use.
+     
+     (defexec f (x)
+       (declare (xargs :measure (+ 15 (acl2-count x))
+                       :hints (("Goal" :in-theory (disable nth)))
+                       :guard-hints (("Goal" :in-theory (disable last)))
+                       :guard (and (integerp x) (<= 0 x) (< x 25)))
+                (exec-xargs
+                       :test (and (integerp x) (<= 0 x))
+                       :default-value 'undef ; defaults to nil
+                       :measure (nfix x)
+                       :well-founded-relation o<))
+       (mbe :logic (if (zp x)
+                       1
+                     (* x (f (- x 1))))
+            :exec  (if (= x 0)
+                       1
+                     (* x (f (- x 1))))))
+
+The above example macroexpands to the following.
+
+     (ENCAPSULATE ()
+      (LOCAL
+       (ENCAPSULATE ()
+        (SET-IGNORE-OK T)
+        (SET-IRRELEVANT-FORMALS-OK T)
+        (LOCAL (DEFUN F (X)
+                 (DECLARE
+                  (XARGS :VERIFY-GUARDS NIL
+                         :HINTS (("Goal" :IN-THEORY (DISABLE NTH)))
+                         :MEASURE (NFIX X)
+                         :WELL-FOUNDED-RELATION O<))
+                 (IF (AND (INTEGERP X) (<= 0 X))
+                     (IF (= X 0) 1 (* X (F (- X 1))))
+                     'UNDEF)))
+        (LOCAL (DEFTHM F-GUARD-IMPLIES-TEST
+                 (IMPLIES (AND (INTEGERP X) (<= 0 X) (< X 25))
+                          (AND (INTEGERP X) (<= 0 X)))
+                 :RULE-CLASSES NIL))))
+      (DEFUN F (X)
+        (DECLARE (XARGS :MEASURE (+ 15 (ACL2-COUNT X))
+                        :HINTS (("Goal" :IN-THEORY (DISABLE NTH)))
+                        :GUARD-HINTS (("Goal" :IN-THEORY (DISABLE LAST)))
+                        :GUARD (AND (INTEGERP X) (<= 0 X) (< X 25))))
+        (MBE :LOGIC
+             (IF (ZP X) 1 (* X (F (- X 1))))
+             :EXEC
+             (IF (= X 0) 1 (* X (F (- X 1)))))))
+
+Notice that in the example above, the :hints in the local definition of
+F are inherited from the :hints in the xargs of the defexec form.  We
+discuss such inheritance below.
+
+     General Form:
+     (defexec fn (var1 ... varn) doc-string dcl ... dcl
+       (mbe :LOGIC logic-body
+            :EXEC  exec-body))
+
+where the syntax is identical to the syntax of defun where the body is
+a call of mbe, with the exceptions described below.  Thus, fn is the
+symbol you wish to define and is a new symbolic name and (var1 ... varn)
+is its list of formal parameters (see *note NAME::).  The first
+exception is that at least one dcl (i.e., declare form) must specify a
+:guard, guard.  The second exception is that one of the dcls is allowed
+to contain an element of the form (exec-xargs ...).  The exec-xargs
+form, if present, must specify a non-empty keyword-value-listp each of
+whose keys is one of :test, :default-value, or one of the standard
+xargs keys of :measure, :well-founded-relation, :hints, or :stobjs.
+Any of these four standard xargs keys that is present in an xargs of
+some dcl but is not specified in the (possibly nonexistent) exec-xargs
+form is considered to be specified in the exec-xargs form, as
+illustrated in the example above for :hints.  (So for example, if you
+want :hints in the final, non-local definition but not in the local
+definition, then specify the :hints in the xargs but specify :hints nil
+in the exec-xargs.)  If :test is specified and not nil, let test be its
+value; otherwise let test default to guard.  If :default-value is
+specified, let default-value be its value; else default-value is nil.
+Default-value should have the same signature as exec-body; otherwise
+the defexec form will fail to be admitted.
+
+The above General Form's macroexpansion is of the form (PROGN encap
+final-def), where encap and final-def are as follows.  Final-def is
+simply the result of removing the exec-xargs declaration (if any) from
+its declare form, and is the result of evaluating the given defexec
+form, since encap is of the following form.
+
+     ; encap
+     (ENCAPSULATE ()
+       (set-ignore-ok t)             ; harmless for proving termination
+       (set-irrelevant-formals-ok t) ; harmless for proving termination
+       (local local-def)
+       (local local-thm))
+
+The purpose of encap is to ensure the the executable version of name
+terminates on all arguments.  Thus, local-def and local-thm are as
+follows, where the xargs of the declare form are the result of adding
+:VERIFY-GUARDS NIL to the result of removing the :test and (optional)
+:default-value from the exec-xargs.
+
+     ; local-def
+     (DEFUN fn formals
+       (DECLARE (XARGS :VERIFY-GUARDS NIL ...))
+       (IF test
+           exec-body
+         default-value))
+     
+     ; local-thm
+     (DEFTHM fn-EXEC-GUARD-HOLDS
+       (IMPLIES guard test)
+       :RULE-CLASSES NIL)
+
+We claim that if the above local-def and local-thm are admitted, then
+all evaluations of calls of fn terminate.  The concern is that the use
+of mbe in final-def allows for the use of exec-body for a call of fn,
+as well as for subsequent recursive calls, when guard holds and
+assuming that the guards have been verified for final-def.  However, by
+local-thm we can conclude in this case that test holds, in which case
+the call of fn may be viewed as a call of the version of fn defined in
+local-def.  Moreover, since guards have been verified for final-def,
+then guards hold for subsequent evaluation of exec-body, and in
+particular for recursive calls of fn, which can thus continue to be
+viewed as calls using local=def.
+
+
+File: acl2-doc-emacs.info,  Node: DEFLABEL,  Next: DEFMACRO,  Prev: DEFEXEC,  Up: EVENTS
+
+DEFLABEL    build a landmark and/or add a documentation topic
+
+     Examples:
+     (deflabel interp-section
+        :doc
+        ":Doc-Section ...")
+     
+     General Form:
+     (deflabel name :doc doc-string)
+
+where name is a new symbolic name (see *note NAME::) and doc-string is
+an optional documentation string (see *note DOC-STRING::).  This event
+adds the documentation string for symbol name to the :doc data base.
+By virtue of the fact that deflabel is an event, it also marks the
+current history with the name.  Thus, even undocumented labels are
+convenient as landmarks in a proof development.  For example, you may
+wish to undo back through some label or compute a theory expression
+(see *note THEORIES::) in terms of some labels.  Deflabel events are
+never considered redundant.  See *Note REDUNDANT-EVENTS::.
+
+See *Note DEFDOC:: for a means of attaching a documentation string to a
+name without marking the current history with that name.
+
+
+File: acl2-doc-emacs.info,  Node: DEFMACRO,  Next: DEFPKG,  Prev: DEFLABEL,  Up: EVENTS
+
+DEFMACRO    define a macro
+
+     Example Defmacros:
+     (defmacro xor (x y)
+       (list 'if x (list 'not y) y))
+     
+     (defmacro git (sym key)
+       (list 'getprop sym key nil
+             '(quote current-acl2-world)
+             '(w state)))
+     
+     (defmacro one-of (x &rest rst)
+       (declare (xargs :guard (symbol-listp rst)))
+       (cond ((null rst) nil)
+             (t (list 'or
+                      (list 'eq x (list 'quote (car rst)))
+                      (list* 'one-of x (cdr rst))))))
+     
+     Example Expansions:
+     term                    macroexpansion
+     
+     (xor a b)              (if a (not b) b)
+     (xor a (foo b))        (if a (not (foo b)) (foo b))
+     
+     (git 'car 'lemmas)     (getprop 'car 'lemmas nil
+                                     'current-acl2-world
+                                     (w state))
+     
+     (one-of x a b c)       (or (eq x 'a)
+                                (or (eq x 'b)
+                                    (or (eq x 'c) nil)))
+     
+     (one-of x 1 2 3)       ill-formed (guard violation)
+     
+     General Form:
+     (defmacro name macro-args doc-string dcl ... dcl body)
+
+where name is a new symbolic name (see *note NAME::), macro-args
+specifies the formals of the macro (see *note MACRO-ARGS:: for a
+description), and body is a term.  Doc-string is an optional
+documentation string; see *note DOC-STRING::.  Each dcl is an optional
+declaration (see *note DECLARE::) except that the only xargs keyword
+permitted by defmacro is :guard.
+
+Macroexpansion occurs when a form is read in, i.e., before the
+evaluation or proof of that form is undertaken.  To experiment with
+macroexpansion, see *note TRANS::.  When a form whose car is name
+arises as the form is read in, the arguments are bound as described in
+CLTL pp. 60 and 145, the guard is checked, and then the body is
+evaluated.  The result is used in place of the original form.
+
+In ACL2, macros do not have access to state.  That is, state is not
+allowed among the formal parameters.  This is in part a reflection of
+CLTL, pp. 143, "More generally, an implementation of Common Lisp has
+great latitude in deciding exactly when to expand macro calls with a
+program. ...  Macros should be written in such a way as to depend as
+little as possible on the execution environment to produce a correct
+expansion." In ACL2, the product of macroexpansion is independent of
+the current environment and is determined entirely by the macro body
+and the functions and constants it references.  It is possible,
+however, to define macros that produce expansions that refer to state
+or other single-threaded objects (see *note STOBJ::) or variables not
+among the macro's arguments.  See the git example above.
+
+
+File: acl2-doc-emacs.info,  Node: DEFPKG,  Next: DEFREFINEMENT,  Prev: DEFMACRO,  Up: EVENTS
+
+DEFPKG    define a new symbol package
+
+     Example:
+     (defpkg "MY-PKG"
+             (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*))
+
+     * Menu:
+     
+     * HIDDEN-DEATH-PACKAGE:: handling defpkg events that are local
+     
+     * HIDDEN-DEFPKG:: handling defpkg events that are local
+     
+     General Form:
+     (defpkg "name" term doc-string)
+
+where "name" is a non-empty string consisting of standard characters
+(see *note STANDARD-CHAR-P::), none of which is lower case, that names
+the package to be created; term is a variable-free expression that
+evaluates to a list of symbols, where no two distinct symbols in the
+list may have the same symbol-name, to be imported into the newly
+created package; and doc-string is an optional documentation string;
+see *note DOC-STRING::.  The name of the new package must be "new": the
+host lisp must not contain any package of that name.  There are two
+exceptions to this newness rule, discussed at the end of this
+documentation.
+
+(There is actually an additional argument, book-path, that is used for
+error reporting but has no logical content.  Users should generally
+ignore this argument, as well as the rest of this sentence: a book-path
+will be specified for defpkg events added by ACL2 to the portcullis of
+a book's certificate; see *note HIDDEN-DEATH-PACKAGE::.)
+
+Defpkg forms can be entered at the top-level of the ACL2 command loop.
+They should not occur in books (see *note CERTIFY-BOOK::).
+
+After a successful defpkg it is possible to "intern" a string into the
+package using intern-in-package-of-symbol.  The result is a symbol that
+is in the indicated package, provided the imports allow it.  For
+example, suppose 'my-pkg::abc is a symbol whose symbol-package-name is
+"MY-PKG".  Suppose further that the imports specified in the defpkg for
+"MY-PKG" do not include a symbol whose symbol-name is "XYZ".  Then
+
+     (intern-in-package-of-symbol "XYZ" 'my-pkg::abc)
+
+returns a symbol whose symbol-name is "XYZ" and whose
+symbol-package-name is "MY-PKG".  On the other hand, if the imports to
+the defpkg does include a symbol with the name "XYZ", say in the
+package "LISP", then
+
+     (intern-in-package-of-symbol "XYZ" 'my-pkg::abc)
+
+returns that symbol (which is uniquely determined by the restriction on
+the imports list above).  See *Note INTERN-IN-PACKAGE-OF-SYMBOL::.
+
+Defpkg is the only means by which an ACL2 user can create a new package
+or specify what it imports.  That is, ACL2 does not support the Common
+Lisp functions make-package or import.  Currently, ACL2 does not
+support exporting at all.
+
+The Common Lisp function intern is weakly supported by ACL2.  See *Note
+INTERN::.
+
+We now explain the two exceptions to the newness rule for package
+names.  The careful experimenter will note that if a package is created
+with a defpkg that is subsequently undone, the host lisp system will
+contain the created package even after the undo.  Because ACL2 hangs
+onto worlds after they have been undone, e.g., to implement :oops but,
+more importantly, to implement error recovery, we cannot actually
+destroy a package upon undoing it.  Thus, the first exception to the
+newness rule is that name is allowed to be the name of an existing
+package if that package was created by an undone defpkg and the newly
+proposed set of imports is identical to the old one.  See *Note
+PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS::.  This exception does not
+violate the spirit of the newness rule, since one is disinclined to
+believe in the existence of undone packages.  The second exception is
+that name is allowed to be the name of an existing package if the
+package was created by a defpkg with identical set of imports.  That
+is, it is permissible to execute "redundant" defpkg commands.  The
+redundancy test is based on the values of the two import forms
+(comparing them after sorting and removing duplicates), not on the
+forms themselves.
+
+Finally, we explain why we require the package name to contain standard
+characters, none of which is lower case.  We have seen at least one
+implementation that handled lower-case package names incorrectly.
+Since we see no need for lower-case characters in package names, which
+can lead to confusion anyhow (note for example that foo::bar is a
+symbol whose symbol-package-name is "FOO", not "foo"), we simply
+disallow them.  Since the notion of "lower case" is only well-specified
+in Common Lisp for standard characters, we restrict to these.
+
+
+File: acl2-doc-emacs.info,  Node: HIDDEN-DEATH-PACKAGE,  Next: HIDDEN-DEFPKG,  Prev: DEFPKG,  Up: DEFPKG
+
+HIDDEN-DEATH-PACKAGE    handling defpkg events that are local
+
+This documentation topic explains a little bit about certain errors
+users may see when attempting to evaluate a defpkg event.  In brief, if
+you see an error that refers you to this topic, you are probably trying
+to admit a defpkg event, and you should change the name of the package
+to be introduced by that event.
+
+Recall that defpkg events introduce axioms, for example as follows.
+
+     ACL2 !>(defpkg "PKG0" '(a b))
+     
+     Summary
+     Form:  ( DEFPKG "PKG0" ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+      "PKG0"
+     ACL2 !>:pr! "PKG0"
+     
+     Rune:       (:REWRITE PKG0-PACKAGE)
+     Status:     Enabled
+     Lhs:        (SYMBOL-PACKAGE-NAME (INTERN-IN-PACKAGE-OF-SYMBOL X Y))
+     Rhs:        "PKG0"
+     Hyps:       (AND (STRINGP X)
+                      (NOT (MEMBER-SYMBOL-NAME X '(A B)))
+                      (SYMBOLP Y)
+                      (EQUAL (SYMBOL-PACKAGE-NAME Y) "PKG0"))
+     Equiv:      EQUAL
+     Backchain-limit-lst:    NIL
+     Subclass:   BACKCHAIN
+     Loop-stopper: NIL
+     ACL2 !>
+
+Now, a defpkg event may be executed underneath an encapsulate or
+include-book form that is marked local.  In that case, traces of the
+added axiom will disappear after the surrounding encapsulate or
+include-book form is admitted.  This can cause inconsistencies.  (You
+can take our word for it, or you can look at the example shown in the
+"Essay on Hidden Packages" in source file axioms.lisp.)
+
+In order to prevent unsoundness, then, ACL2 maintains the following
+invariant.  Let us say that a defpkg event is "hidden" if it is in
+support of the current logical world but is not present in that world as
+an event, because it is local as indicated above.  We maintain the
+invariant that all defpkg events, even if "hidden", are tracked
+under-the-hood in the current logical world.  Sometimes this property
+causes defpkg events to be written to the portcullis of a book's
+certificate (see *note BOOKS::).  At any rate, if you then try to
+define the package in a manner inconsistent with the earlier such
+definition, that is, with a different imports list, you will see an
+error because of the above-mentioned tracking.
+
+(By the way, this topic's name comes from Holly Bell, who heard "hidden
+death package" instead of "hidden defpkg".  The description seemed to
+fit.  Thanks, Holly!)
+
+
+File: acl2-doc-emacs.info,  Node: HIDDEN-DEFPKG,  Prev: HIDDEN-DEATH-PACKAGE,  Up: DEFPKG
+
+HIDDEN-DEFPKG    handling defpkg events that are local
+
+See *Note HIDDEN-DEATH-PACKAGE::
+

@@ -1,0 +1,137 @@
+<html>
+<head><title>PC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PC</h2>print the <a href="COMMAND.html">command</a> described by a <a href="COMMAND.html">command</a> descriptor
+<pre>Major Section:  <a href="HISTORY.html">HISTORY</a>
+</pre><p>
+
+
+<pre>
+Examples:
+:pc 3    ; print the third command executed
+:pc :max ; print the most recent command
+:pc :x   ; print the most recent command
+:pc fn   ; print the command that introduced fn
+</pre>
+
+See <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>.
+<p>
+<code>Pc</code> takes one argument, a <a href="COMMAND.html">command</a> descriptor, and prints the <a href="COMMAND.html">command</a>
+identified by that descriptor.  See <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>.  For
+example
+
+<pre>
+ACL2 !&gt;:pc foo
+ LVd     52 (DEFUN FOO (X) X)
+</pre>
+
+<code>Pc</code> always prints a space first, followed by three (possibly blank)
+<a href="CHARACTERS.html">characters</a> (``LVd'' above) explained below.  Then <code>pc</code> prints the
+<a href="COMMAND.html">command</a> number, a number uniquely identifying the <a href="COMMAND.html">command</a>'s position
+in the sequence of <a href="COMMAND.html">command</a>s since the beginning of the user's
+session.  Finally, the <a href="COMMAND.html">command</a> itself is printed.<p>
+
+While <code>pc</code> always prints a space first, some <a href="HISTORY.html">history</a> <a href="COMMAND.html">command</a>s, for
+example <code>:</code><code><a href="PCS.html">pcs</a></code> and <code>:</code><code><a href="PE.html">pe</a></code>, use the first column of output to delimit a
+region of <a href="COMMAND.html">command</a>s or to point to a particular event within a
+<a href="COMMAND.html">command</a>.<p>
+
+For example, <code>:pcs 52 54</code> will print something like
+
+<pre>
+/LVd     52 (DEFUN FOO (X) X)
+ LV      53 (DEFUN BAR (X) (CONS X X))
+\        54 (DEFTHM FOO-BAR (EQUAL (CAR (BAR X)) (FOO X)))
+          : ...
+        127 (DEFUN LATEST (X) X)
+</pre>
+
+Here, the two slash <a href="CHARACTERS.html">characters</a> in the first column are intended to
+suggest a bracket delimiting <a href="COMMAND.html">command</a>s 52 through 54.  The last
+<a href="COMMAND.html">command</a> printed by <code><a href="PCS.html">pcs</a></code> is always the most recent <a href="COMMAND.html">command</a>, i.e., the
+<a href="COMMAND.html">command</a> at <code>:here</code>, and is separated from the rest of the display by
+an elipsis if some <a href="COMMAND.html">command</a>s are omitted.<p>
+
+Similarly, the <code>:</code><code><a href="PE.html">pe</a></code> <a href="COMMAND.html">command</a> will print a particular event within a
+<a href="COMMAND.html">command</a> block and will indicate that event by printing a ``<code><a href="_gt_.html">&gt;</a></code>'' in
+the first column.  The symbol is intended to be an arrow pointing at
+the event in question.<p>
+
+For example, <code>:</code><code><a href="PE.html">pe</a></code> <code>true-listp-app</code> might print:
+
+<pre>
+         1 (INCLUDE-BOOK "list-book")
+            \
+&gt;           (DEFTHM TRUE-LISTP-APP
+                    (EQUAL (TRUE-LISTP (APP A B)) (TRUE-LISTP B)))
+</pre>
+
+using the arrow to indicate the event itself.  The slash printed
+to connect the <a href="COMMAND.html">command</a>, <code><a href="INCLUDE-BOOK.html">include-book</a></code>, with the event, <code><a href="DEFTHM.html">defthm</a></code>, is
+intended to suggest a tree branch indicating that the event is
+inferior to (and part of) the <a href="COMMAND.html">command</a>.<p>
+
+The mysterious three <a href="CHARACTERS.html">characters</a> sometimes preceding a <a href="COMMAND.html">command</a> have
+the following interpretations.  The first two have to do with the
+function symbols introduced by the <a href="COMMAND.html">command</a> and are blank if no
+symbols were introduced.<p>
+
+At any time we can classify our function symbols into three disjoint
+sets, which we will here name with <a href="CHARACTERS.html">characters</a>.  The ``<code>P</code>''
+functions are those in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode.  The ``<code>L</code>'' functions are
+those in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode whose <a href="GUARD.html">guard</a>s have not been verified.  The
+``<code>V</code>'' functions are those in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode whose <a href="GUARD.html">guard</a>s have
+been verified.  Note that <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> and <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>
+cause function symbols to be reclassified.  If a <a href="COMMAND.html">command</a> introduces
+function symbols then the first mysterious character indicates the
+class of the symbols at the time of introduction and the second
+character indicates the current class of the symbols (if the current
+class is different from the introductory class).<p>
+
+Thus, the display
+
+<pre>
+ PLd     52 (DEFUN FOO (X) X)
+</pre>
+
+tells us that <a href="COMMAND.html">command</a> 52 introduced a <code>:</code><code><a href="PROGRAM.html">program</a></code> function but that
+some <a href="COMMAND.html">command</a> after 52 changed its mode to <code>:</code><code><a href="LOGIC.html">logic</a></code> and that the
+<a href="GUARD.html">guard</a>s of <code>foo</code> have not been verified.  That is, <code>foo</code>'s
+termination has been verified even though it was not verified as
+part of the <a href="COMMAND.html">command</a> that introduced <code>foo</code>.  Had a subsequent
+<a href="COMMAND.html">command</a> verified the <a href="GUARD.html">guard</a>s of <code>foo</code>, the display would contain a
+<code>V</code> where the <code>L</code> is.<p>
+
+The display
+
+<pre>
+ P d     52 (DEFUN FOO (X) X)
+</pre>
+
+indicates that <code>foo</code> was introduced in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode and still
+is in that mode.<p>
+
+The third character indicates the enabled/disabled status of the
+<a href="RUNE.html">rune</a>s introduced by the <a href="COMMAND.html">command</a>.  If the status character is blank
+then all the <a href="RUNE.html">rune</a>s (if any) introduced are <a href="ENABLE.html">enable</a>d.  If the status
+character is ``<code>D</code>'' then some <a href="RUNE.html">rune</a>s were introduced and they are
+all <a href="DISABLE.html">disable</a>d.  If the status character is ``<code>d</code>'' then at least
+one, but not all, of the <a href="RUNE.html">rune</a>s introduced is <a href="DISABLE.html">disable</a>d.  Thus, in the
+display
+
+<pre>
+ L d     52 (DEFUN FOO (X) X)
+</pre>
+
+we see that some <a href="RUNE.html">rune</a> introduced by <a href="COMMAND.html">command</a> 52 is <a href="DISABLE.html">disable</a>d.  As
+noted in the documentation for <a href="RUNE.html">rune</a>, a <code><a href="DEFUN.html">defun</a></code> <a href="COMMAND.html">command</a>
+introduces many <a href="RUNE.html">rune</a>s, e.g., the axiomatic definition rule,
+<code>(:definition fn)</code>, the executable counterpart rule,
+<code>(:executable-counterpart fn)</code>, and <a href="TYPE-PRESCRIPTION.html">type-prescription</a>s,
+<code>(:type-prescription fn)</code>.  The display above does not say which of
+the <a href="RUNE.html">rune</a>s based on <code>foo</code> is <a href="DISABLE.html">disable</a>d, but it does tell us one of
+them is; see <a href="DISABLEDP.html">disabledp</a> for how to obtain the disabled runes for
+a given function symbol.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

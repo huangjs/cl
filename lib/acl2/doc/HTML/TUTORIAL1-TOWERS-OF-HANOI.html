@@ -1,0 +1,281 @@
+<html>
+<head><title>TUTORIAL1-TOWERS-OF-HANOI.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>TUTORIAL1-TOWERS-OF-HANOI</h3>The Towers of Hanoi Example
+<pre>Major Section:  <a href="TUTORIAL-EXAMPLES.html">TUTORIAL-EXAMPLES</a>
+</pre><p>
+
+This example was written almost entirely by Bill Young of
+Computational Logic, Inc.
+<p>
+We will tackle the famous ``Towers of Hanoi'' problem.  This problem
+is illustrated by the following picture.
+
+<pre>  
+
+          |        |        |
+          |        |        |
+         ---       |        |
+        -----      |        |
+       -------     |        |
+          
+          A        B        C
+
+</pre>
+ 
+We have three pegs -- <code>a</code>, <code>b</code>, and <code>c</code> -- and <code>n</code> disks of
+different sizes.  The disks are all initially on peg <code>a</code>.  The goal
+is to move all disks to peg <code>c</code> while observing the following two
+rules.<p>
+
+1. Only one disk may be moved at a time, and it must start and finish
+the move as the topmost disk on some peg;<p>
+
+2. A disk can never be placed on top of a smaller disk. <p>
+
+Let's consider some simple instances of this problem.  If <code>n</code> = 1,
+i.e., only one disk is to be moved, simply move it from <code>a</code> to
+<code>c</code>.  If <code>n</code> = 2, i.e., two disks are to be moved, the following
+sequence of moves suffices:  move from <code>a</code> to <code>b</code>, move from <code>a</code>
+to <code>c</code>, move from <code>b</code> to <code>c</code>.<p>
+
+In general, this problem has a straightforward recursive solution.
+Suppose that we desire to move <code>n</code> disks from <code>a</code> to <code>c</code>, using
+<code>b</code> as the intermediate peg.  For the basis, we saw above that we
+can always move a single disk from <code>a</code> to <code>c</code>.  Now if we have
+<code>n</code> disks and assume that we can solve the problem for <code>n-1</code>
+disks, we can move <code>n</code> disks as follows.  First, move <code>n-1</code> disks
+from <code>a</code> to <code>b</code> using <code>c</code> as the intermediate peg; move the
+single disk from <code>a</code> to <code>c</code>; then move <code>n-1</code> disks from <code>b</code> to
+<code>c</code> using <code>a</code> as the intermediate peg.<p>
+
+In ACL2, we can write a function that will return the sequence of
+moves.  One such function is as follows.  Notice that we have two
+base cases.  If <code>(zp n)</code> then <code>n</code> is not a positive integer; we
+treat that case as if <code>n</code> were 0 and return an empty list of moves.
+If <code>n</code> is 1, then we return a list containing the single
+appropriate move.  Otherwise, we return the list containing exactly
+the moves dictated by our recursive analysis above.
+
+<pre><p>
+
+  (defun move (a b)
+    (list 'move a 'to b))<p>
+
+  (defun hanoi (a b c n)
+    (if (zp n)
+        nil
+      (if (equal n 1)
+          (list (move a c))
+        (append (hanoi a c b (1- n))
+                (cons (move a c)
+                      (hanoi b a c (1- n)))))))<p>
+
+</pre>
+
+Notice that we give <code>hanoi</code> four arguments:  the three pegs, and
+the number of disks to move.  It is necessary to supply the pegs
+because, in recursive calls, the roles of the pegs differ.  In any
+execution of the algorithm, a given peg will sometimes be the source
+of a move, sometimes the destination, and sometimes the intermediate
+peg.<p>
+
+After submitting these functions to ACL2, we can execute the <code>hanoi</code>
+function on various specific arguments.  For example:
+
+<pre><p>
+
+  ACL2 !&gt;(hanoi 'a 'b 'c 1)
+  ((MOVE A TO C))<p>
+
+  ACL2 !&gt;(hanoi 'a 'b 'c 2)
+  ((MOVE A TO B)
+   (MOVE A TO C)
+   (MOVE B TO C))<p>
+
+  ACL2 !&gt;(hanoi 'a 'b 'c 3)
+  ((MOVE A TO C)
+   (MOVE A TO B)
+   (MOVE C TO B)
+   (MOVE A TO C)
+   (MOVE B TO A)
+   (MOVE B TO C)
+   (MOVE A TO C))<p>
+
+</pre>
+
+From the algorithm it is clear that if it takes <code>m</code> moves to
+transfer <code>n</code> disks, it will take <code>(m + 1 + m) = 2m + 1</code> moves for
+<code>n+1</code> disks.  From some simple calculations, we see that we need
+the following number of moves in specific cases:
+
+<pre><p>
+
+   Disks   0   1   2   3   4   5   6   7  ...
+   Moves   0   1   3   7  15  31  63  127 ...<p>
+
+</pre>
+
+The pattern is fairly clear.  To move <code>n</code> disks requires <code>(2^n - 1)</code>
+moves.  Let's attempt to use ACL2 to prove that fact.<p>
+
+First of all, how do we state our conjecture?  Recall that <code>hanoi</code>
+returns a list of moves.  The length of the list (given by the
+function <code>len</code>) is the number of moves required.  Thus, we can state
+the following conjecture.
+
+<pre><p>
+
+  (defthm hanoi-moves-required-first-try
+    (equal (len (hanoi a b c n))
+           (1- (expt 2 n))))<p>
+
+</pre>
+
+When we submit this to ACL2, the proof attempt fails.  Along the way
+we notice subgoals such as:
+
+<pre><p>
+
+  Subgoal *1/1'
+  (IMPLIES (NOT (&lt; 0 N))
+           (EQUAL 0 (+ -1 (EXPT 2 N)))).<p>
+
+</pre>
+<p>
+
+This tells us that the prover is considering cases that are
+uninteresting to us, namely, cases in which <code>n</code> might be negative.
+The only cases that are really of interest are those in which <code>n</code>
+is a non-negative natural number.  Therefore, we revise our theorem
+as follows:
+
+<pre><p>
+
+  (defthm hanoi-moves-required
+    (implies (and (integerp n) 
+                  (&lt;= 0 n))    ;; n is at least 0
+             (equal (len (hanoi a b c n))
+                    (1- (expt 2 n)))))<p>
+
+</pre>
+
+and submit it to ACL2 again.  <p>
+
+Again the proof fails.  Examining the proof script we encounter the
+following text.  (How did we decide to focus on this goal?  Some
+information is provided in ACLH, and the ACL2 documentation on
+<a href="TIPS.html">tips</a> may be helpful.  But the simplest answer is:  this was the
+first goal suggested by the ``<a href="PROOF-TREE.html">proof-tree</a>'' tool below the start
+of the proof by induction.  See <a href="PROOF-TREE.html">proof-tree</a>.)
+
+<pre><p>
+
+  Subgoal *1/5''
+  (IMPLIES (AND (INTEGERP N)
+                (&lt; 0 N)
+                (NOT (EQUAL N 1))
+                (EQUAL (LEN (HANOI A C B (+ -1 N)))
+                       (+ -1 (EXPT 2 (+ -1 N))))
+                (EQUAL (LEN (HANOI B A C (+ -1 N)))
+                       (+ -1 (EXPT 2 (+ -1 N)))))
+           (EQUAL (LEN (APPEND (HANOI A C B (+ -1 N))
+                               (CONS (LIST 'MOVE A 'TO C)
+                                     (HANOI B A C (+ -1 N)))))
+                  (+ -1 (* 2 (EXPT 2 (+ -1 N))))))<p>
+
+</pre>
+
+It is difficult to make much sense of such a complicated goal.
+However, we do notice something interesting.  In the conclusion is
+a <a href="TERM.html">term</a> of the following shape.
+
+<pre><p>
+
+   (LEN (APPEND ... ...))<p>
+
+</pre>
+
+We conjecture that the length of the <code><a href="APPEND.html">append</a></code> of two lists should
+be the sum of the lengths of the lists.  If the prover knew that, it
+could possibly have simplified this <a href="TERM.html">term</a> earlier and made more
+progress in the proof.  Therefore, we need a <a href="REWRITE.html">rewrite</a> rule that
+will suggest such a simplification to the prover.  The appropriate
+rule is:
+
+<pre><p>
+
+  (defthm len-append
+    (equal (len (append x y))
+           (+ (len x) (len y))))<p>
+
+</pre>
+
+We submit this to the prover, which proves it by a straightforward
+induction.  The prover stores this lemma as a <a href="REWRITE.html">rewrite</a> rule and
+will subsequently (unless we <a href="DISABLE.html">disable</a> the rule) replace
+<a href="TERM.html">term</a>s matching the left hand side of the rule with the
+appropriate instance of the <a href="TERM.html">term</a> on the right hand side.<p>
+
+We now resubmit our lemma <code>hanoi-moves-required</code> to ACL2.  On this
+attempt, the proof succeeds and we are done.   <p>
+
+One bit of cleaning up is useful.  We needed the hypotheses that:
+
+<pre><p>
+
+  (and (integerp n) (&lt;= 0 n)).<p>
+
+</pre>
+
+This is an awkward way of saying that <code>n</code> is a natural number;
+natural is not a primitive data type in ACL2.  We could define a
+function <code>naturalp</code>, but it is somewhat more convenient to define a
+macro as follows:
+
+<pre><p>
+
+  (defmacro naturalp (x)
+    (list 'and (list 'integerp x)
+                  (list '&lt;= 0 x)))<p>
+
+</pre>
+
+Subsequently, we can use <code>(naturalp n)</code> wherever we need to note
+that a quantity is a natural number.  See <a href="DEFMACRO.html">defmacro</a> for more
+information about ACL2 macros.  With this macro, we can reformulate
+our theorem as follows:
+
+<pre><p>
+
+  (defthm hanoi-moves-required
+    (implies (naturalp n)
+             (equal (len (hanoi a b c n))
+                    (1- (expt 2 n))))).<p>
+
+</pre>
+
+Another interesting (but much harder) theorem asserts that the list
+of moves generated by our <code>hanoi</code> function actually accomplishes
+the desired goal while following the rules.  When you can state and
+prove that theorem, you'll be a very competent ACL2 user.<p>
+
+By the way, the name ``Towers of Hanoi'' derives from a legend that
+a group of Vietnamese monks works day and night to move a stack of
+64 gold disks from one diamond peg to another, following the rules
+set out above.  We're told that the world will end when they
+complete this task.  From the theorem above, we know that this
+requires 18,446,744,073,709,551,615 moves:
+
+<pre><p>
+
+  ACL2 !&gt;(1- (expt 2 64))
+  18446744073709551615
+  ACL2 !&gt;<p>
+
+</pre>
+
+We're guessing they won't finish any time soon.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

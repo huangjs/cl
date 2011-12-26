@@ -1,0 +1,1100 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: SPECIOUS-SIMPLIFICATION,  Next: STATE,  Prev: SIMPLE,  Up: MISCELLANEOUS
+
+SPECIOUS-SIMPLIFICATION    nonproductive proof steps
+
+Occasionally the ACL2 theorem prover reports that the current goal
+simplifies to itself or to a set including itself.  Such
+simplifications are said to be "specious" and are ignored in the sense
+that the theorem prover acts as though no simplification were possible
+and tries the next available proof technique.  Specious simplifications
+are almost always caused by forcing.
+
+The simplification of a formula proceeds primarily by the local
+application of :rewrite, :type-prescription, and other rules to its
+various subterms.  If no rewrite rules apply, the formula cannot be
+simplified and is passed to the next ACL2 proof technique, which is
+generally the elimination of destructors.  The experienced ACL2 user
+pays special attention to such "maximally simplified" formulas; the
+presence of unexpected terms in them indicates the need for additional
+rules or the presence of some conflict that prevents existing rules
+from working harmoniously together.
+
+However, consider the following interesting possibility: local rewrite
+rules apply but, when applied, reproduce the goal as one of its own
+subgoals.  How can rewrite rules apply and reproduce the goal?  Of
+course, one way is for one rule application to undo the effect of
+another, as when commutativity is applied twice in succession to the
+same term.  Another kind of example is when two rules conflict and
+undermine each other.  For example, under suitable hypotheses, (length
+x) might be rewritten to (+ 1 (length (cdr x))) by the :definition of
+length and then a :rewrite rule might be used to "fold" that back to
+(length x).  Generally speaking the presence of such "looping" rewrite
+rules causes ACL2's simplifier either to stop gracefully because of
+heuristics such as that described in the documentation for loop-stopper
+or to cause a stack overflow because of indefinite recursion.
+
+A more insidious kind of loop can be imagined: two rewrites in
+different parts of the formula undo each other's effects "at a
+distance," that is, without ever being applied to one another's output.
+For example, perhaps the first hypothesis of the formula is simplified
+to the second, but then the second is simplified to the first, so that
+the end result is a formula propositionally equivalent to the original
+one but with the two hypotheses commuted.  This is thought to be
+impossible unless forcing or case-splitting occurs, but if those
+features are exploited (see *note FORCE:: and see *note CASE-SPLIT::)
+it can be made to happen relatively easily.
+
+Here is a simple example.  Declare foo to be a function of one argument
+returning one result:
+
+     (defstub p1 (x) t)
+
+Prove the following silly rule:
+
+     (defthm bad
+       (implies (case-split (p1 x))
+                (p1 x)))
+
+Now suppose we try the following.
+
+     (thm (p1 x))
+
+The rewrite rule bad will rewrite (p1 x) to t, but it will be unable to
+prove the hypothesis (case-split (p1 x)).  As a result, the prover will
+spawn a new goal, to prove (p1 x).  However, since this new goal is the
+same as the original goal, ACL2 will recognize the simplification as
+_specious_ and consider the attempted simplification to have failed.
+
+In other words, despite the rewriting, no progress was made!  In more
+common cases, the original goal may simplify to a set of subgoals, one
+of which includes the original goal.
+
+If ACL2 were to adopt the new set of subgoals, it would loop
+indefinitely.  Therefore, it checks whether the input goal is a member
+of the output subgoals.  If so, it announces that the simplification is
+"specious" and pretends that no simplification occurred.
+
+"Maximally simplified" formulas that produce specious simplifications
+are maximally simplified in a very technical sense: were ACL2 to apply
+every applicable rule to them, no progress would be made.  Since ACL2
+can only apply every applicable rule, it cannot make further progress
+with the formula.  But the informed user can perhaps identify some rule
+that should not be applied and make it inapplicable by disabling it,
+allowing the simplifier to apply all the others and thus make progress.
+
+When specious simplifications are a problem it might be helpful to
+disable all forcing (including case-splits) and resubmit the formula to
+observe whether forcing is involved in the loop or not.  See *Note
+FORCE::.  The commands
+
+     ACL2 !>:disable-forcing
+     and
+     ACL2 !>:enable-forcing
+
+disable and enable the pragmatic effects of both force and case-split.
+If the loop is broken when forcing is disabled, then it is very likely
+some forced hypothesis of some rule is "undoing" a prior
+simplification.  The most common cause of this is when we force a
+hypothesis that is actually false but whose falsity is somehow
+temporarily hidden (more below).  To find the offending rule, compare
+the specious simplification with its non-specious counterpart and look
+for rules that were speciously applied that are not applied in the
+non-specious case.  Most likely you will find at least one such rule
+and it will have a forced hypothesis.  By disabling that rule, at least
+for the subgoal in question, you may allow the simplifier to make
+progress on the subgoal.
+
+
+File: acl2-doc-emacs.info,  Node: STATE,  Next: STOBJS,  Prev: SPECIOUS-SIMPLIFICATION,  Up: MISCELLANEOUS
+
+STATE    the von Neumannesque ACL2 state object
+
+The ACL2 state object is used extensively in programming the ACL2
+system, and has been used in other ACL2 programs as well.  However,
+most users, especially those interested in specification and
+verification (as opposed to programming per se), need not be aware of
+the role of the state object in ACL2, and will not write functions that
+use it explicitly.  We say more about this point at the end of this
+documentation topic.
+
+The ACL2 state object is an example of a single-threaded object or
+stobj.  ACL2 allows the user to define new single-threaded objects.
+Generally, ACL2 may need to access the ACL2 state but should not
+(cannot) change it except via a certain set of approved functions such
+as defun and defthm.  If you need a state-like object to which you have
+complete rights, you may want a stobj.
+
+Key to the idea of our state is the notion of single-threadedness.  For
+an explanation, see *note STOBJ::.  The upshot of it is that state is a
+variable symbol with severe restrictions on its use, so that it can be
+passed into only certain functions in certain slots, and must be
+returned by those functions that "modify" it.  Henceforth, we do not
+discuss single-threaded objects in general (which the user can introduce
+with defstobj) but one in particular, namely ACL2's state object.
+
+The global table is perhaps the most visible portion of the state
+object.  Using the interface functions @ and assign, a user may bind
+global variables to the results of function evaluations (much as an
+Nqthm user exploits the Nqthm utility r-loop).  See *Note @: atsign,
+and see *note ASSIGN::.
+
+ACL2 supports several facilities of a truly von Neumannesque state
+machine character, including file io and global variables.  Logically
+speaking, the state is a true list of the 14 components described
+below.  There is a "current" state object at the top-level of the ACL2
+command loop.  This object is understood to be the value of what would
+otherwise be the free variable state appearing in top-level input.
+When any command returns a state object as one of its values, that
+object becomes the new current state.  But ACL2 provides von Neumann
+style speed for state operations by maintaining only one physical (as
+opposed to logical) state object.  Operations on the state are in fact
+destructive.  This implementation does not violate the applicative
+semantics because we enforce certain draconian syntactic rules
+regarding the use of state objects.  For example, one cannot "hold on"
+to an old state, access the components of a state arbitrarily, or
+"modify" a state object without passing it on to subsequent
+state-sensitive functions.
+
+Every routine that uses the state facilities (e.g. does io, or calls a
+routine that does io), must be passed a "state object." And a routine
+must return a state object if the routine modifies the state in any
+way.  Rigid syntactic rules governing the use of state objects are
+enforced by the function translate, through which all ACL2 user input
+first passes.  State objects can only be "held" in the formal parameter
+state, never in any other formal parameter and never in any structure
+(excepting a multiple-value return list field which is always a state
+object).  State objects can only be accessed with the primitives we
+specifically permit.  Thus, for example, one cannot ask, in code to be
+executed, for the length of state or the car of state.  In the
+statement and proof of theorems, there are no syntactic rules
+prohibiting arbitrary treatment of state objects.
+
+Logically speaking, a state object is a true list whose members are as
+follows:
+
+     Open-input-channels, an alist with keys that are symbols in
+     package "ACL2-INPUT-CHANNEL".  The value (cdr) of each pair has
+     the form ((:header type file-name open-time) . elements), where
+     type is one of :character, :byte, or :object and elements is a
+     list of things of the corresponding type, i.e. characters,
+     integers of type (mod 255), or lisp objects in our theory.
+     File-name is a string.  Open-time is an integer.  See *Note IO::.
+
+     Open-output-channels, an alist with keys that are symbols in
+     package "ACL2-OUTPUT-CHANNEL".  The value of a pair has the form
+     ((:header type file-name open-time) .  current-contents).  See
+     *Note IO::.
+
+     Global-table, an alist associating symbols (to be used as "global
+     variables") with values.  See *Note @: atsign, and see *note
+     ASSIGN::.
+
+     T-stack, a list of arbitrary objects accessed and changed by the
+     functions aref-t-stack and aset-t-stack.
+
+     32-bit-integer-stack, a list of arbitrary 32-bit-integers accessed
+     and changed by the functions aref-32-bit-integer-stack and
+     aset-32-bit-integer-stack.
+
+     Big-clock-entry, an integer, that is used logically to bound the
+     amount of effort spent to evaluate a quoted form.
+
+     Idates, a list of dates and times, used to implement the function
+     print-current-idate, which prints the date and time.
+
+     Acl2-oracle, a list of objects, used for example to implement the
+     functions that let ACL2 report how much time was used, but
+     inaccessible to the user.  Also see *note WITH-PROVER-TIME-LIMIT::.
+
+     File-clock, an integer that is increased on every file opening and
+     closing, and on each call of sys-call, and is used to maintain the
+     consistency of the io primitives.
+
+     Readable-files, an alist whose keys have the form (string type
+     time), where string is a file name and time is an integer.  The
+     value associated with such a key is a list of characters, bytes,
+     or objects, according to type.  The time field is used in the
+     following way:  when it comes time to open a file for input, we
+     will only look for a file of the specified name and type whose
+     time field is that of file-clock.  This permits us to have a
+     "probe-file" aspect to open-file: one can ask for a file, find it
+     does not exist, but come back later and find that it does now
+     exist.
+
+     Written-files, an alist whose keys have the form (string type
+     time1 time2), where string is a file name, type is one of
+     :character, :byte or :object, and time1 and time2 are integers.
+     Time1 and time2 correspond to the file-clock time at which the
+     channel for the file was opened and closed.  This field is
+     write-only; the only operation that affects this field is
+     close-output-channel, which conses a new entry on the front.
+
+     Read-files, a list of the form (string type time1 time2), where
+     string is a file name and time1 and time2 were the times at which
+     the file was opened for reading and closed.  This field is write
+     only.
+
+     Writeable-files, an alist whose keys have the form (string type
+     time).  To open a file for output, we require that the name, type,
+     and time be on this list.
+
+     List-all-package-names-lst, a list of true-listps.  Roughly
+     speaking, the car of this list is the list of all package names
+     known to this Common Lisp right now and the cdr of this list is
+     the value of this state variable after you look at its car.  The
+     function, list-all-package-names, which takes the state as an
+     argument, returns the car and cdrs the list (returning a new state
+     too).  This essentially gives ACL2 access to what is provided by
+     CLTL's list-all-packages.  Defpkg uses this feature to ensure that
+     the about-to-be-created package is new in this lisp.  Thus, for
+     example, in akcl it is impossible to create the package "COMPILER"
+     with defpkg because it is on the list, while in Lucid that package
+     name is not initially on the list.
+
+     User-stobj-alist, an alist which associates user-defined
+     single-threaded objects (see *note STOBJ::) with their values.
+
+
+We recommend avoiding the use of the state object when writing ACL2
+code intended to be used as a formal model of some system, for several
+reasons.  First, the state object is complicated and contains many
+components that are oriented toward implementation and are likely to be
+irrelevant to the model in question.  Second, there is currently not
+much support for reasoning about ACL2 functions that manipulate the
+state object, beyond their logical definitions.  Third, the
+documentation about state is not as complete as one might wish.
+
+User-defined single-threaded objects offer the speed of state while
+giving the user complete access to all the fields.  See *Note STOBJ::.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJS,  Next: SUBVERSIVE-INDUCTIONS,  Prev: STATE,  Up: MISCELLANEOUS
+
+STOBJS    xargs keyword :STOBJS
+
+See *Note XARGS::.
+
+
+File: acl2-doc-emacs.info,  Node: SUBVERSIVE-INDUCTIONS,  Next: SUBVERSIVE-RECURSIONS,  Prev: STOBJS,  Up: MISCELLANEOUS
+
+SUBVERSIVE-INDUCTIONS    why we restrict encapsulated recursive functions
+
+See *Note SUBVERSIVE-RECURSIONS::.
+
+
+File: acl2-doc-emacs.info,  Node: SUBVERSIVE-RECURSIONS,  Next: SYNTAX,  Prev: SUBVERSIVE-INDUCTIONS,  Up: MISCELLANEOUS
+
+SUBVERSIVE-RECURSIONS    why we restrict encapsulated recursive functions
+
+Subtleties arise when one of the "constrained" functions, f, introduced
+in the signature of an encapsulate event, is involved in the
+termination argument for a non-local recursively defined function, g,
+in that encapsulate.  During the processing of the encapsulated events,
+f is locally defined to be some witness function, f'.  Properties of f'
+are explicitly proved and exported from the encapsulate as the
+constraints on the undefined function f.  But if f is used in a
+recursive g defined within the encapsulate, then the termination proof
+for g may use properties of f' - the witness - that are not explicitly
+set forth in the constraints stated for f.
+
+Such recursive g are said be "subversive" because if naively treated
+they give rise to unsound induction schemes or (via functional
+instantiation) recurrence equations that are impossible to satisfy.  We
+illustrate what could go wrong below.
+
+Subversive recursions are not banned outright.  Instead, they are
+treated as part of the constraint.  That is, in the case above, the
+definitional equation for g becomes one of the constraints on f.  This
+is generally a severe restriction on future functional instantiations
+of f.  In addition, ACL2 removes from its knowledge of g any
+suggestions about legal inductions to "unwind" its recursion.
+
+What should you do?  Often, the simplest response is to move the
+offending recursive definition, e.g., g, out of the encapsulate.  That
+is, introduce f by constraint and then define g as an "independent"
+event.  You may need to constrain "additional" properties of f in order
+to admit g, e.g., constrain it to reduce some ordinal measure.
+However, by separating the introduction of f from the admission of g
+you will clearly identify the necessary constraints on f, functional
+instantiations of f will be simpler, and g will be a useful function
+which suggests inductions to the theorem prover.
+
+Note that the functions introduced in the signature should not even
+occur ancestrally in the termination proofs for non-local recursive
+functions in the encapsulate.  That is, the constrained functions of an
+encapsulate should not be reachable in the dependency graph of the
+functions used in the termination arguments of recursive functions in
+encapsulate.  If they are reachable, their definitions become part of
+the constraints.
+
+The following event illustrates the problem posed by subversive
+recursions.
+
+     (encapsulate (((f *) => *))
+       (local (defun f (x) (cdr x)))
+       (defun g (x)
+         (if (consp x) (not (g (f x))) t)))
+
+Suppose, contrary to how ACL2 works, that the encapsulate above were to
+introduce no constraints on f on the bogus grounds that the only use of
+f in the encapsulate is in an admissible function.  We discuss the
+plausibility of this bogus argument in a moment.
+
+Then it would be possible to prove the theorem:
+
+     (defthm f-not-identity
+       (not (equal (f '(a . b)) '(a . b)))
+       :rule-classes nil
+       :hints (("Goal" :use (:instance g (x '(a . b))))))
+
+simply by observing that if (f '(a . b)) were '(a . b), then (g '(a .
+b)) would be (not (g '(a . b))), which is impossible.
+
+But then we could functionally instantiate f-not-identity, replacing f
+by the identity function, to prove nil!  This is bad.
+
+     (defthm bad
+       nil
+       :rule-classes nil
+       :hints
+       (("Goal" :use (:functional-instance f-not-identity (f identity)))))
+
+This sequence of events was legal in versions of ACL2 prior to Version
+1.5.  When we realized the problem we took steps to make it illegal.
+However, our steps were insufficient and it was possible to sneak in a
+subversive function (via mutual recursion) as late as Version  2.3.
+
+We now turn to the plausibility of the bogus argument above.  Why might
+one even be tempted to think that the definition of g above poses no
+constraint on f?  Here is a very similar encapsulate.
+
+     (encapsulate (((f *) => *))
+       (local (defun f (x) (cdr x)))
+       (defun map (x)
+         (if (consp x)
+             (cons (f x) (map (cdr x)))
+           nil)))
+
+Here map plays the role of g above.  Like g, map calls the constrained
+function f.  But map truly does not constrain f.  In particular, the
+definition of map could be moved "out" of the encapsulate so that map
+is introduced afterwards.  The difference between map and g is that the
+constrained function plays no role in the termination argument for the
+one but does for the other.
+
+As a "user-friendly" gesture, ACL2 implicitly moves map-like functions
+out of encapsulations; logically speaking, they are introduced after
+the encapsulation.  This simplifies the constraint.  This is done only
+for "top-level" encapsulations.  When an encapsulate containing a
+non-empty signature list is embedded in another encapsulate with a
+non-empty signature list, no attempt is made to move map-like functions
+out.  The user is advised, via the "infected" warning, to phrase the
+encapsulation in the simplest way possible.
+
+The lingering bug between Versions 1.5 and 2.3 mentioned above was due
+to our failure to detect the g-like nature of some functions when they
+were defined in mutually recursively cliques with other functions.  The
+singly recursive case was recognized.  The bug arose because our
+detection "algorithm" was based on the "suggested inductions" left
+behind by successful definitions.  We failed to recall that
+mutually-recursive definitions do not, as of this writing, make any
+suggestions about inductions and so did not leave any traces of their
+subversive natures.
+
+
+File: acl2-doc-emacs.info,  Node: SYNTAX,  Next: SYNTAXP,  Prev: SUBVERSIVE-RECURSIONS,  Up: MISCELLANEOUS
+
+SYNTAX    the syntax of ACL2 is that of Common Lisp
+
+For the details of ACL2 syntax, see CLTL.  For examples of ACL2 syntax,
+use :pe to print some of the ACL2 system code.  For example:
+
+     :pe assoc-equal
+     :pe dumb-occur
+     :pe var-fn-count
+     :pe add-linear-variable-to-alist
+
+There is no comprehensive description of the ACL2 syntax yet, except
+that found in CLTL.  Also see *note TERM::.
+
+
+File: acl2-doc-emacs.info,  Node: SYNTAXP,  Next: TERM,  Prev: SYNTAX,  Up: MISCELLANEOUS
+
+SYNTAXP    attach a heuristic filter on a :rewrite, :meta, or :linear rule
+
+     Example:
+     Consider the :REWRITE rule created from
+     
+     (IMPLIES (SYNTAXP (NOT (AND (CONSP X)
+                                 (EQ (CAR X) 'NORM))))
+              (EQUAL (LXD X)
+                     (LXD (NORM X)))).
+
+The syntaxp hypothesis in this rule will allow the rule to be applied
+to (lxd (trn a b)) but will not allow it to be applied to (lxd (norm
+a)).
+
+* Menu:
+
+* SYNTAXP-EXAMPLES:: examples pertaining to syntaxp hypotheses
+
+     General Form:
+     (SYNTAXP test)
+
+Syntaxp always returns t and so may be added as a vacuous hypothesis.
+However, when relieving the hypothesis, the test "inside" the syntaxp
+form is actually treated as a meta-level proposition about the proposed
+instantiation of the rule's variables and that proposition must
+evaluate to true (non-nil) to "establish" the syntaxp hypothesis.
+
+Note that the test of a syntaxp hypothesis does not, in general, deal
+with the meaning or semantics or values of the terms, but rather with
+their syntactic forms.  In the example above, the syntaxp hypothesis
+allows the rule to be applied to every target of the form (lxd u),
+provided u is not of the form (norm v).  Observe that without this
+syntactic restriction the rule above could loop producing a sequence of
+increasingly complex targets (lxd a), (lxd (norm a)), (lxd (norm (norm
+a))), etc.  An intuitive reading of the rule might be "norm the
+argument of lxd unless it has already been normed."
+
+Note also that a syntaxp hypothesis deals with the syntactic form used
+internally by ACL2, rather than that seen by the user.  In some cases
+these are the same, but there can be subtle differences with which the
+writer of a syntaxp hypothesis must be aware.  You can use :trans to
+display this internal representation.
+
+There are two types of syntaxp hypotheses.  The simpler type of syntaxp
+hypothesis may be used as the nth hypothesis in a :rewrite or :linear
+rule whose :corollary is (implies (and hyp1 ... hypn ... hypk) (equiv
+lhs rhs)) provided test is a term, test contains at least one variable,
+and every variable occuring freely in test occurs freely in lhs or in
+some hypi, i<n.  In addition, test must not use any stobjs.  The case
+of :meta rules is similar to the above, except that it applies to the
+result of applying the hypothesis metafunction.  (Later below we will
+describe the second type, an _extended_ syntaxp hypothesis, which may
+use state.)
+
+We illustrate the use of simple syntaxp hypotheses by slightly
+elaborating the example given above.  Consider a :rewrite rule whose
+:corollary is:
+
+     (IMPLIES (AND (RATIONALP X)
+                   (SYNTAXP (NOT (AND (CONSP X)
+                                      (EQ (CAR X) 'NORM)))))
+              (EQUAL (LXD X)
+                     (LXD (NORM X))))
+
+How is this rule applied to (lxd (trn a b))?  First, we form a
+substitution that instantiates the left-hand side of the conclusion of
+the rule so that it is identical to the target term.  In the present
+case, the substitution replaces x with (trn a b).
+
+     (LXD X) ==> (LXD (trn a b)).
+
+Then we backchain to establish the hypotheses, in order.  Ordinarily
+this means that we instantiate each hypothesis with our substitution and
+then attempt to rewrite the resulting instance to true.  Thus, in order
+to relieve the first hypothesis above, we rewrite
+
+     (RATIONALP (trn a b)).
+
+If this rewrites to true, we continue.
+
+Of course, most users are aware of some exceptions to this general
+description of the way we relieve hypotheses.  For example, if a
+hypothesis contains a "free-variable" -- one not bound by the current
+substitution -- we attempt to extend the substitution by searching for
+an instance of the hypothesis among known truths.  See *Note
+FREE-VARIABLES::.  Forced hypotheses are another exception to the
+general rule of how hypotheses are relieved.
+
+Hypotheses marked with syntaxp, as in (syntaxp test), are also
+exceptions.  We instantiate such a hypothesis; but instead of rewriting
+the instantiated instance, we evaluate the instantiated test.  More
+precisely, we evaluate test in an environment in which its variable
+symbols are bound to the quotations of the terms to which those
+variables are bound in the instantiating substitution.  So in the case
+in point, we (in essence) evaluate
+
+     (NOT (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))).
+
+This clearly evaluates to t.  When a syntaxp test evaluates to true, we
+consider the syntaxp hypothesis to have been established; this is sound
+because logically (syntaxp test) is t regardless of test.  If the test
+evaluates to nil (or fails to evaluate because of guard violations) we
+act as though we cannot establish the hypothesis and abandon the
+attempt to apply the rule; it is always sound to give up.
+
+The acute reader will have noticed something odd about the form
+
+     (NOT (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))).
+
+When relieving the first hypothesis, (RATIONALP X), we substituted (trn
+a b) for X; but when relieving the second hypothesis, (SYNTAXP (NOT
+(AND (CONSP X) (EQ (CAR X) 'NORM)))), we substituted the quotation of
+(trn a b) for X.  Why the difference?  Remember that in the first
+hypothesis we are talking about the value of (trn a b) -- is it
+rational -- while in the second one we are talking about its syntactic
+form.  Remember also that Lisp, and hence ACL2, evaluates the arguments
+to a function before applying the function to the resulting values.
+Thus, we are asking "Is the list (trn a b) a consp and if so, is its
+car the symbol NORM?"  The quotes on both (trn a b) and NORM are
+therefore necessary.  One can verify this by defining trn to be, say
+cons, and then evaluating forms such as
+
+     (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))
+     (AND (CONSP (trn a b)) (EQ (CAR (trn a b)) NORM))
+     (AND (CONSP (trn 'a 'b)) (EQ (CAR (trn 'a 'b)) NORM))
+     (AND (CONSP '(trn a b)) (EQ '(CAR (trn a b)) ''NORM))
+
+at the top-level ACL2 prompt.
+
+See *Note SYNTAXP-EXAMPLES:: for more examples of the use of syntaxp.
+
+An extended syntaxp hypothesis is similar to the simple type described
+above, but it uses two additional variables, mfc and state, which must
+not be bound by the left hand side or an earlier hypothesis of the
+rule.  They must be the last two variables mentioned by form; first
+mfc, then state.  These two variables give access to the functions
+mfc-xxx; see *note EXTENDED-METAFUNCTIONS::.  As described there, mfc
+is bound to the so-called metafunction-context and state to ACL2's
+state.  See *Note SYNTAXP-EXAMPLES:: for an example of the use of these
+extended syntaxp hypotheses.
+
+
+File: acl2-doc-emacs.info,  Node: SYNTAXP-EXAMPLES,  Prev: SYNTAXP,  Up: SYNTAXP
+
+SYNTAXP-EXAMPLES    examples pertaining to syntaxp hypotheses
+
+See *Note SYNTAXP:: for a basic discussion of the use of syntaxp to
+control rewriting.
+
+A common syntactic restriction is
+
+     (SYNTAXP (AND (CONSP X) (EQ (CAR X) 'QUOTE)))
+
+or, equivalently,
+
+     (SYNTAXP (QUOTEP X)).
+
+A rule with such a hypothesis can be applied only if x is bound to a
+specific constant.  Thus, if x is 23 (which is actually represented
+internally as (quote 23)), the test evaluates to t; but if x prints as
+(+ 11 12) then the test evaluates to nil (because (car x) is the symbol
+binary-+).  We see the use of this restriction in the rule
+
+     (implies (and (syntaxp (quotep c))
+                   (syntaxp (quotep d)))
+              (equal (+ c d x)
+                     (+ (+ c d) x))).
+
+If c and d are constants, then the executable-counterpart of binary-+
+will evaluate the sum of c and d.  For instance, under the influence of
+this rule
+
+     (+ 11 12 foo)
+
+rewrites to
+
+     (+ (+ 11 12) foo)
+
+which in turn rewrites to (+ 23 foo).  Without the syntactic
+restriction, this rule would loop with the built-in rules
+ASSOCIATIVITY-OF-+ or COMMUTATIVITY-OF-+.
+
+We here recommend that the reader try the affects of entering
+expressions such as the following at the top level ACL2 prompt.
+
+     (+ 11 23)
+     (+ '11 23)
+     (+ '11 '23)
+     (+ ''11 ''23)
+     :trans (+ 11 23)
+     :trans (+ '11 23)
+     :trans (+ ''11 23)
+     :trans (+ c d x)
+     :trans (+ (+ c d) x)
+
+We also recommend that the reader verify our claim above about looping
+by trying the affect of each of the following rules individually.
+
+     (defthm good
+        (implies (and (syntaxp (quotep c))
+                      (syntaxp (quotep d)))
+                 (equal (+ c d x)
+                        (+ (+ c d) x))))
+     
+     (defthm bad
+        (implies (and (acl2-numberp c)
+                      (acl2-numberp d))
+                 (equal (+ c d x)
+                        (+ (+ c d) x))))
+
+on (the false) theorems:
+
+     (thm
+       (equal (+ 11 12 x) y))
+     
+     (thm
+       (implies (and (acl2-numberp c)
+                     (acl2-numberp d)
+                     (acl2-numberp x))
+                (equal (+ c d x) y))).
+
+One can use :brr, perhaps in conjunction with cw-gstack, to investigate
+any looping.
+
+Here is a simple example showing the value of rule good above.  Without
+good, the thm form below fails.
+
+     (defstub foo (x) t)
+     
+     (thm (equal (foo (+ 3 4 x)) (foo (+ 7 x))))
+
+The next three examples further explore the use of quote in syntaxp
+hypotheses.
+
+We continue the examples of syntaxp hypotheses with a rule from
+books/finite-set-theory/set-theory.lisp.  We will not discuss here the
+meaning of this rule, but it is necessary to point out that
+(ur-elementp nil) is true in this book.
+
+     (defthm scons-nil
+       (implies (and (syntaxp (not (equal a ''nil)))
+                     (ur-elementp a))
+                (= (scons e a)
+                   (scons e nil)))).
+
+Here also, syntaxp is used to prevent looping.  Without the
+restriction, (scons e nil) would be rewritten to itself since
+(ur-elementp nil) is true.
+Question: Why the use of two quotes in "nil?
+Hints: Nil is a constant just as 23 is.  Try :trans (cons a nil),
+:trans (cons 'a 'nil), and :trans (cons "a "nil).  Also, don't forget
+that the arguments to a function are evaluated before the function is
+applied.
+
+The next two rules move negative constants to the other side of an
+inequality.
+
+     (defthm |(< (+ (- c) x) y)|
+       (implies (and (syntaxp (quotep c))
+                     (syntaxp (< (cadr c) 0))
+                     (acl2-numberp y))
+                (equal (< (+ c x) y)
+                       (< (fix x) (+ (- c) y)))))
+     
+     (defthm |(< y (+ (- c) x))|
+       (implies (and (syntaxp (quotep c))
+                     (syntaxp (< (cadr c) 0))
+                     (acl2-numberp y))
+                (equal (< y (+ c x))
+                       (< (+ (- c) y) (fix x)))))
+
+Questions: What would happen if (< (cadr c) '0) were used?  What about
+(< (cadr c) "0)?
+
+One can also use syntaxp to restrict the application of a rule to a
+particular set of variable bindings as in the following taken from
+books/ihs/quotient-remainder-lemmas.lisp.
+
+     (encapsulate ()
+     
+       (local
+        (defthm floor-+-crock
+          (implies
+           (and (real/rationalp x)
+                (real/rationalp y)
+                (real/rationalp z)
+                (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
+           (equal (floor (+ x y) z)
+                  (floor (+ (+ (mod x z) (mod y z))
+                            (* (+ (floor x z) (floor y z)) z)) z)))))
+     
+       (defthm floor-+
+         (implies
+          (and (force (real/rationalp x))
+               (force (real/rationalp y))
+               (force (real/rationalp z))
+               (force (not (equal z 0))))
+          (equal (floor (+ x y) z)
+                 (+ (floor (+ (mod x z) (mod y z)) z)
+                    (+ (floor x z) (floor y z))))))
+     
+       )
+
+We recommend the use of :brr to investigate the use of floor-+-crock.
+
+Another useful restriction is defined by
+
+     (defun rewriting-goal-literal (x mfc state)
+     
+       ;; Are we rewriting a top-level goal literal, rather than rewriting
+       ;; to establish a hypothesis from a rewrite (or other) rule?
+     
+       (declare (ignore x state))
+       (null (access metafunction-context mfc :ancestors))).
+
+We use this restriction in the rule
+
+     (defthm |(< (* x y) 0)|
+         (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                       (rationalp x)
+                       (rationalp y))
+                  (equal (< (* x y) 0)
+                         (cond ((equal x 0)
+                                nil)
+                               ((equal y 0)
+                                nil)
+                               ((< x 0)
+                                (< 0 y))
+                               ((< 0 x)
+                                (< y 0))))))
+
+which has been found to be useful, but which also leads to excessive
+thrashing in the linear arithmetic package if used indiscriminately.
+
+See *Note EXTENDED-METAFUNCTIONS:: for information on the use of mfc
+and metafunction-context.
+
+
+File: acl2-doc-emacs.info,  Node: TERM,  Next: TERM-ORDER,  Prev: SYNTAXP,  Up: MISCELLANEOUS
+
+TERM    the three senses of well-formed ACL2 expressions or formulas
+
+     Examples of Terms:
+     (cond ((caar x) (cons t x)) (t 0))   ; an untranslated term
+     
+     (if (car (car x)) (cons 't x) '0)    ; a translated term
+     
+     (car (cons x y) 'nil v)              ; a pseudo-term
+
+In traditional first-order predicate calculus a "term" is a syntactic
+entity denoting some object in the universe of individuals.  Often, for
+example, the syntactic characterization of a term is that it is either
+a variable symbol or the application of a function symbol to the
+appropriate number of argument terms.  Traditionally, "atomic formulas"
+are built from terms with predicate symbols such as "equal" and
+"member;" "formulas" are then built from atomic formulas with
+propositional "operators" like "not," "and," and "implies." Theorems
+are formulas.  Theorems are "valid" in the sense that the value of a
+theorem is true, in any model of the axioms and under all possible
+assignments of individuals to variables.
+
+However, in ACL2, terms are used in place of both atomic formulas and
+formulas.  ACL2 does not have predicate symbols or propositional
+operators as distinguished syntactic entities.  The ACL2 universe of
+individuals includes a "true" object (denoted by t) and a "false"
+object (denoted by nil), predicates and propositional operators are
+functions that return these objects.  Theorems in ACL2 are terms and
+the "validity" of a term means that, under no assignment to the
+variables does the term evaluate to nil.
+
+We use the word "term" in ACL2 in three distinct senses.  We will speak
+of "translated" terms, "untranslated" terms, and "pseudo-" terms.
+
+_Translated Terms:  The Strict Sense and Internal Form_
+
+In its most strict sense, a "term" is either a legal variable symbol, a
+quoted constant, or the application of an n-ary function symbol or
+closed lambda expression to a true list of n terms.
+
+The legal variable symbols are symbols other than t or nil which are
+not in the keyword package, do not start with ampersand, do not start
+and end with asterisks, and if in the main Lisp package, do not violate
+an appropriate restriction (see *note NAME::).
+
+Quoted constants are expressions of the form (quote x), where x is any
+ACL2 object.  Such expressions may also be written 'x.
+
+Closed lambda expressions are expressions of the form (lambda (v1 ...
+vn) body) where the vi are distinct legal variable symbols, body is a
+term, and the only free variables in body are among the vi.
+
+The function termp, which takes two arguments, an alleged term x and a
+logical world w (see *note WORLD::), recognizes terms of a given
+extension of the logic.  Termp is defined in :program mode.  Its
+definition may be inspected with :pe termp for a complete specification
+of what we mean by "term" in the most strict sense.  Most ACL2
+term-processing functions deal with terms in this strict sense and use
+termp as a guard.  That is, the "internal form" of a term satisfies
+termp, the strict sense of the word "term."
+
+_Untranslated Terms:  What the User Types_
+
+While terms in the strict sense are easy to explore (because their
+structure is so regular and simple) they can be cumbersome to type.
+Thus, ACL2 supports a more sugary syntax that includes uses of macros
+and constant symbols.  Very roughly speaking, macros are functions that
+produce terms as their results.  Constants are symbols that are
+associated with quoted objects.  Terms in this sugary syntax are
+"translated" to terms in the strict sense; the sugary syntax is more
+often called "untranslated."  Roughly speaking, translation just
+implements macroexpansion, the replacement of constant symbols by their
+quoted values, and the checking of all the rules governing the strict
+sense of "term."
+
+More precisely, macro symbols are as described in the documentation for
+defmacro.  A macro, mac, can be thought of as a function, mac-fn, from
+ACL2 objects to an ACL2 object to be treated as an untranslated term.
+For example, caar is defined as a macro symbol; the associated macro
+function maps the object x into the object (car (car x)).  A macro form
+is a "call" of a macro symbol, i.e., a list whose car is the macro
+symbol and whose cdr is an arbitrary true list of objects, used as a
+term.  Macroexpansion is the process of replacing in an untranslated
+term every occurrence of a macro form by the result of applying the
+macro function to the appropriate arguments.  The "appropriate"
+arguments are determined by the exact form of the definition of the
+macro; macros support positional, keyword, optional and other kinds of
+arguments.  See *Note DEFMACRO::.
+
+In addition to macroexpansion and constant symbol dereferencing,
+translation implements the mapping of let and let* forms into
+applications of lambda expressions and closes lambda expressions
+containing free variables.  Thus, the translation of
+
+     (let ((x (1+ i))) (cons x k))
+
+can be seen as a two-step process that first produces
+
+     ((lambda (x) (cons x k)) (1+ i))
+
+and then
+
+     ((lambda (x k) (cons x k)) (1+ i) k) .
+
+Observe that the body of the let and of the first lambda expression
+contains a free k which is finally bound and passed into the second
+lambda expression.
+
+When we say, of an event-level function such as defun or defthm, that
+some argument "must be a term" we mean an untranslated term.  The event
+functions translate their term-like arguments.
+
+To better understand the mapping between untranslated terms and
+translated terms it is convenient to use the keyword command :trans to
+see examples of translations.  See *Note TRANS:: and also see *note
+TRANS1::.
+
+Finally, we note that the theorem prover prints terms in untranslated
+form.  But there can be more than one correct untranslated term
+corresponding to a given translated term.  For example, the translated
+term (if x y 'nil) can be untranslated as (if x y nil) and can also be
+untranslated as (and x y).  The theorem prover attempts to print an
+untranslated term that is as helpful to the user as possible.  In
+particular, consider a term of the form (nth k st) where st is a
+single-threaded object (see *note STOBJ::) and the kth accessor of st
+is, say, kn.  The theorem prover typically would expand (kn st) to (nth
+k st).  If k is large then it could be difficult for the user to make
+sense out of a proof transcript that mentions the expanded term.
+Fortunately, the untranslation of (nth k st) would be (nth *kn* st);
+here *kn* would be a constant (see *note DEFCONST::) added by the
+defstobj event introducing st, defined to have value k.  The user can
+extend this user-friendly style of printing applications of nth to
+stobjs; see *note ADD-NTH-ALIAS::.  These remarks about printing
+applications of function nth extend naturally to function update-nth.
+Moreover, the prover will attempt to treat terms as stobjs for the
+above purpose when appropriate.  For example, if function foo has
+signature ((foo * st) => (mv * * * st)), where st is introduced with
+(defstobj st f0 f1), then the term (nth '1 (mv-nth '3 (foo x st0)))
+will be printed as (nth *f1* (mv-nth 3 (foo x st0))).
+
+_Pseudo-Terms:  A Common Guard for Metafunctions_
+
+Because termp is defined in :program mode, it cannot be used
+effectively in conjectures to be proved.  Furthermore, from the
+perspective of merely guarding a term processing function, termp often
+checks more than is required.  Finally, because termp requires the
+logical world as one of its arguments it is impossible to use termp as
+a guard in places where the logical world is not itself one of the
+arguments.
+
+For these reasons we support the idea of "pseudo-terms."  A pseudo-term
+is either a symbol (but not necessarily one having the syntax of a
+legal variable symbol), a true list beginning with quote (but not
+necessarily well-formed), or the "application of" a symbol or pseudo
+lambda expression to a true list of pseudo-terms.  A pseudo lambda
+expression is an expression of the form (lambda (v1 ... vn) body) where
+the vi are all symbols and body is a pseudo-term.
+
+Pseudo-terms are recognized by the unary function pseudo-termp.  If
+(termp x w) is true, then (pseudo-termp x) is true.  However, if x
+fails to be a (strict) term it may nevertheless still be a pseudo-term.
+For example, (car a b) is not a term, because car is applied to the
+wrong number of arguments, but it is a pseudo-term.
+
+The structures recognized by pseudo-termp can be recursively explored
+with the same simplicity that terms can be.  In particular, if x is not
+a variablep or an fquotep, then (ffn-symb x) is the function (symbol or
+lambda expression) and (fargs x) is the list of argument pseudo-terms.
+A metafunction may use pseudo-termp as the guard.
+
+
+File: acl2-doc-emacs.info,  Node: TERM-ORDER,  Next: THE-METHOD,  Prev: TERM,  Up: MISCELLANEOUS
+
+TERM-ORDER    the ordering relation on terms used by ACL2
+
+ACL2 must occasionally choose which of two terms is syntactically
+smaller.  The need for such a choice arises, for example, when using
+equality hypotheses in conjectures (the smaller term is substituted for
+the larger elsewhere in the formula), in stopping loops in permutative
+rewrite rules (see *note LOOP-STOPPER::), and in choosing the order in
+which to try to cancel the addends in linear arithmetic inequalities.
+When this notion of syntactic size is needed, ACL2 uses "term order."
+Popularly speaking, term order is just a lexicographic ordering on
+terms.  But the situation is actually more complicated.
+
+We define term order only with respect to terms in translated form.
+See *Note TRANS::.  Constants are viewed as built up by
+_pseudo-function_ applications, as described at the end of this
+documentation.
+
+Term1 comes before term2 in the term order iff
+
+     (a) the number of variable occurrences in term1 is less than that
+     in term2, or
+
+     (b) the numbers of variable occurrences in the two terms are equal
+     but the number of function applications in term1 is less than that
+     in term2, or
+
+     (c) the numbers of variable occurrences in the two terms are equal,
+     the numbers of functions applications in the two terms are equal,
+     but the number of pseudo-function applications in term1 is less
+     than that in term2, or
+
+     (d) the numbers of variable occurrences in the two terms are equal,
+     the numbers of functions applications in the two terms are equal,
+     the numbers of pseudo-function applications in the two terms are
+     equal, and term1 comes before term2 in a lexicographic ordering,
+     lexorder, based their structure as Lisp objects:  see *note
+     LEXORDER::.
+
+The function term-order, when applied to the translations of two ACL2
+terms, returns t iff the first is "less than or equal" to the second in
+the term order.
+
+By "number of variable occurrences" we do not mean "number of distinct
+variables" but "number of times a variable symbol is mentioned."  (cons
+x x) has two variable occurrences, not one.  Thus, perhaps
+counterintuitively, a large term that contains only one variable
+occurrence, e.g., (standard-char-p (car (reverse x))) comes before
+(cons x x) in the term order.
+
+Since constants contain no variable occurrences and non-constant
+expressions must contain at least one variable occurrence, constants
+come before non-constants in the term order, no matter how large the
+constants.  For example, the list constant
+
+     '(monday tuesday wednesday thursday friday)
+
+comes before x in the term order.  Because term order is involved in
+the control of permutative rewrite rules and used to shift smaller
+terms to the left, a set of permutative rules designed to allow the
+permutation of any two tips in a tree representing the nested
+application of some function will always move the constants into the
+left-most tips.  Thus,
+
+     (+ x 3 (car (reverse klst)) (dx i j)) ,
+
+which in translated form is
+
+     (binary-+ x
+               (binary-+ '3
+                         (binary-+ (dx i j)
+                                   (car (reverse klst))))),
+
+will be permuted under the built-in commutativity rules to
+
+     (binary-+ '3
+               (binary-+ x
+                         (binary-+ (car (reverse klst))
+                                   (dx i j))))
+
+or
+
+     (+ 3 x (car (reverse klst)) (dx i j)).
+
+Two terms with the same numbers of variable occurrences, function
+applications, and pseudo-function applications are ordered by
+lexicographic means, based on their structures.  See *Note LEXORDER::.
+Thus, if two terms (member ...) and (reverse ...) contain the same
+numbers of variable occurrences and function applications, then the
+member term is first in the term order because member comes before
+reverse in the term order (which is here reduced to alphabetic
+ordering).
+
+It remains to discuss the notion of _pseudo-function_ applications.
+
+Clearly, two constants are ordered using cases (c) and (d) of term
+order, since they each contain 0 variable occurrences and no function
+calls.  This raises the question "How many function applications are in
+a constant?"  Because we regard the number of function applications as
+a more fundamental measure of the size of a constant than lexicographic
+considerations, we decided that for the purposes of term order,
+constants would be seen as being built by primitive constructor
+functions.  These constructor functions are not actually defined in
+ACL2 but merely imagined for the purposes of term order.  We here use
+suggestive names for these imagined functions, ignoring entirely the
+prior use of these names within ACL2.  The imagined applications of
+these functions are what we refer to as _pseudo-function_ applications.
+
+The constant function z constructs 0.  Positive integers are
+constructed from (z) by the successor function, s.  Thus 2 is (s (s
+(z))) and contains three function applications.  100 contains one
+hundred and one applications.  Negative integers are constructed from
+their positive counterparts by -.  Thus, -2 is (- (s (s (z)))) and has
+four applications.  Ratios are constructed by the dyadic function /.
+Thus, -1/2 is
+
+     (/ (- (s (z))) (s (s (z))))
+
+and contains seven applications.  Complex rationals are similarly
+constructed from rationals.  All character objects are considered
+primitive and are constructed by constant functions of the same name.
+Thus #\a and #\b both contain one application.  Strings are built from
+the empty string, (o) by the "string-cons" function written cs.  Thus
+"AB" is (cs (#\a) (cs (#\b) (o))) and contains five applications.
+Symbols are obtained from strings by "packing" the symbol-name with the
+unary function p.  Thus 'ab is
+
+     (p (cs (#\a) (cs (#\b) (o))))
+
+and has six applications.  Note that packages are here ignored and thus
+'acl2::ab and 'my-package::ab each contain just six applications.
+Finally, conses are built with cons, as usual.  So '(1 . 2) is (cons '1
+'2) and contains six applications, since '1 contains two and '2
+contains three.  This, for better or worse, answers the question "How
+many function applications are in a constant?"
+

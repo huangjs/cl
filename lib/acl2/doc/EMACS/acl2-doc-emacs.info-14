@@ -1,0 +1,1174 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: THEORY-INVARIANT,  Next: USER-DEFINED-FUNCTIONS-TABLE,  Prev: TERM-TABLE,  Up: EVENTS
+
+THEORY-INVARIANT    user-specified invariants on theories
+
+     Examples:
+     (theory-invariant (not (and (active-runep '(:rewrite left-to-right))
+                                 (active-runep '(:rewrite right-to-left))))
+                       :key my-invariant
+                       :error nil)
+     
+     ; Equivalent to the above:
+     (theory-invariant (incompatible '(:rewrite left-to-right)
+                                     '(:rewrite right-to-left))
+                       :key my-invariant
+                       :error nil)
+     
+     General Form:
+     (theory-invariant term &key key error)
+
+where:
+
+     o term is a term that uses no variables other than ens and state;
+
+     o key is an arbitrary "name" for this invariant (if omitted, an
+     integer is generated and used); and
+
+     o :error specifies the action to be taken when an invariant is
+     violated -- either nil if a warning is to be printed, else t (the
+     default) if an error is to be caused.
+
+Theory-invariant is an event that adds to or modifies the table of
+user-supplied theory invariants that are checked each time a theory
+expression is evaluated.
+
+The theory invariant mechanism is provided via a table (see *note
+TABLE::) named theory-invariant-table.  In fact, the theory-invariant
+"event" is just a macro that expands into a use of the table event.
+More general access to the theory-invariant table is provided by table
+itself.  For example, the table can be inspected or cleared with table;
+you can clear an individual theory invariant by setting the invariant
+to t, or eliminate all theory invariants with the command (table
+theory-invariant-table nil nil :clear).
+
+Theory-invariant-table maps arbitrary keys to records containing terms
+that mention, at most, the variables ens and state.  Every time an
+alleged theory expression is evaluated, e.g., in the in-theory event or
+:in-theory hint, each of the terms in theory-invariant-table is
+evaluated with ens bound to a so-called "enabled structure" obtained
+from the theory expression and state bound to the current ACL2 state
+(see *note STATE::).  Users generally need not know about the enabled
+structure, other than that it can be accessed using the macros
+active-runep and incompatible; see *note ACTIVE-RUNEP:: and see *note
+INCOMPATIBLE::.  If the result is nil, a message is printed and an
+error occurs (except, only a warning occurs if :error nil is
+specified).  Thus, the table can be thought of as a list of conjuncts.
+Each term in the table has a "name," which is just the key under which
+the term is stored.  When a theory violates the restrictions specified
+by some term, both the name and the term are printed.  By calling
+theory-invariant with a new term but the same name, you can overwrite
+that conjunct of the theory invariant; but see the Local Redefinition
+Caveat at the end of this note.  You may want to avoid using explicit
+names, since otherwise the subsequent inclusion of another book that
+defines a theory invariant with the same name will override your theory
+invariant.
+
+Theory invariants are particularly useful in the context of large rule
+sets intended for re-use.  Such sets often contain conflicting rules,
+e.g., rules that are to be enabled when certain function symbols are
+disabled, rules that rewrite in opposite directions and thus loop if
+simultaneously enabled, groups of rules which should be enabled in
+concert, etc.  The developer of such rule sets understands these
+restrictions and probably documents them.  The theory invariant
+mechanism allows the developer to codify his restrictions so that the
+user is alerted when they are violated.
+
+Since theory invariants are arbitrary terms, macros may be used to
+express commonly used restrictions.  For example, executing the event
+
+     (theory-invariant (incompatible (:rewrite left-to-right)
+                                     (:rewrite right-to-left)))
+
+would subsequently cause an error any time the current theory contained
+both of the two runes shown.  Of course, incompatible is just defined as
+a macro.  Its definition may be inspected with :pe incompatible.
+
+In order for a theory-invariant event to be accepted, the proposed
+theory invariant must be satisfied by the current theory (see *note
+CURRENT-THEORY::).  The value returned upon successful execution of the
+event is the key (whether user-supplied or generated).
+
+Local Redefinition Caveat.  Care needs to be taken when redefining a
+theory invariant in a local context.  Consider the following example.
+
+     (theory-invariant
+      (active-runep '(:definition binary-append))
+      :key app-inv)
+     
+     (encapsulate
+      ()
+      (local (theory-invariant t :key app-inv))
+      (in-theory (disable binary-append))
+      (defthm ...))
+
+The second pass of the encapsulate will fail, because the in-theory
+event violates the original theory-invariant and the local
+theory-invariant is skipped in the second pass of the encapsulate.  Of
+course, local theory-invariants in books can cause the analogous
+problem in the second (include-book) pass of a certify-book.  In both
+cases, though, the theory invariants are only checked at the conclusion
+of the (include-book or encapsulate) event.  Indeed, theory invariants
+are checked at the end of every event related to theories, including
+defun, defthm, in-theory, encapsulate, and include-book, except for
+events executed on behalf of an include-book or the second pass of an
+encapsulate.
+
+
+File: acl2-doc-emacs.info,  Node: USER-DEFINED-FUNCTIONS-TABLE,  Next: VERIFY-GUARDS,  Prev: THEORY-INVARIANT,  Up: EVENTS
+
+USER-DEFINED-FUNCTIONS-TABLE    an advanced table used to replace certain system functions
+
+     Examples:
+     (table user-defined-functions-table 'untranslate-preprocess 'my-preprocess)
+     (table user-defined-functions-table 'untranslate 'my-untranslate)
+
+This feature should perhaps only be used by advanced users who have a
+thorough understanding of the system functions being replaced.  There
+are currently two ways a user can affect the way ACL2 prints terms.
+
+The first example associates the user-defined function symbol
+my-preprocess with untranslate-preprocess.  As a result, when ACL2
+prints a term, say during a proof, using its so-called "untranslate"
+process the first thing it does is to call my-preprocess on two
+arguments: that term and the current ACL2 logical world.  If the call
+produces a non-nil result, then that result is passed to the untranslate
+process.
+
+The second example associates the user-defined function symbol
+my-untranslate with the built-in function symbol untranslate.  As a
+result, the code for my-untranslate will be run whenever the untranslate
+process is run.  The formals of the two functions must agree and must
+not contain any stobj names.  Note that these overrides fail to occur
+upon guard violations and some other evaluation errors.
+
+The untranslate-preprocess approach may suffice for most cases in which
+a user wants to modify the way output is produced by the theorem
+prover.  We present an example immediately below, but see
+books/misc/untranslate-patterns.lisp for a more elaborate example.  If
+the untranslate-preprocess approach does not seem sufficient for your
+purposes, you are invited to look at file
+books/misc/rtl-untranslate.lisp for an example of user-defined
+untranslate (i.e., following the second example displayed above).
+
+Suppose you have a large constant that you would prefer not to see in
+proofs.  For example, you may have submitted the following definition
+(but imagine a much larger constant, say, a list of length 1,000,000).
+
+     (defconst *a* '(a b c d))
+
+If you submit the following (silly) theorem
+
+     (thm (equal (cons x *a*) (car (cons yyy zzz))))
+
+then you will see the following output:
+
+     (EQUAL (CONS X '(A B C D)) YYY).
+
+If *a* had represented a much larger structure, we would wish we could
+see the following instead.
+
+     (EQUAL (CONS X *A*) YYY)
+
+That can be accomplished as follows.  First we make the following
+definition.
+
+     (defun my-preprocess (term wrld)
+       (declare (ignore wrld))
+       (if (equal term (list 'quote *a*))
+           '*a*
+         term))
+
+Now we submit the following table event.
+
+     (table user-defined-functions-table
+            'untranslate-preprocess
+            'my-preprocess)
+
+This will install my-preprocess as a preprocessor before the normal
+untranslation routine is applied to printing a term.  When the
+untranslation routine encounters the constant (QUOTE (A B C D)), it
+will replace it with *a*, and the usual untranlation routine will print
+this as *A*.
+
+
+File: acl2-doc-emacs.info,  Node: VERIFY-GUARDS,  Next: VERIFY-TERMINATION,  Prev: USER-DEFINED-FUNCTIONS-TABLE,  Up: EVENTS
+
+VERIFY-GUARDS    verify the guards of a function
+
+     Examples:
+     (verify-guards flatten)
+     (verify-guards flatten
+                    :hints (("Goal" :use (:instance assoc-of-app)))
+                    :otf-flg t
+                    :doc "string")
+     
+     General Form:
+     (verify-guards name
+             :hints        hints
+             :otf-flg      otf-flg
+             :doc          doc-string)
+
+See *Note GUARD:: for a general discussion of guards.  In the General
+Form above, name is the name of a :logic function (see *note
+DEFUN-MODE::) or of a theorem or axiom.  In the most common case name
+is the name of a function that has not yet had its guards verified, each
+subroutine of which has had its guards verified. hints and otf-flg are
+as described in the corresponding :doc entries; and doc-string, if
+supplied, is a string *not* beginning with ":Doc-Section".  The three
+keyword arguments above are all optional.  Verify-guards will attempt
+to prove that the guard on the named function implies the guards of all
+of the subroutines called in the body of the function, and that the
+guards are satisfied for all function calls in the guard itself (under
+an implicit guard of t).  If successful, name is considered to have had
+its guards verified.
+
+If name is one of several functions in a mutually recursive clique,
+verify-guards will attempt to verify the guards of all of the functions.
+
+If name is a theorem or axiom name, verify-guards verifies the guards
+of the associated formula.  When a theorem has had its guards verified
+then you know that the theorem will evaluate to non-nil in all Common
+Lisps, without causing a runtime error (other than possibly a resource
+error).  In particular, you know that the theorem's validity does not
+depend upon ACL2's arbitrary completion of the domains of partial
+Common Lisp functions.
+
+For example, if app is defined as
+
+     (defun app (x y)
+       (declare (xargs :guard (true-listp x)))
+       (if (endp x)
+           y
+           (cons (car x) (app (cdr x) y))))
+
+then we can verify the guards of app and we can prove the theorem:
+
+     (defthm assoc-of-app
+       (equal (app (app a b) c) (app a (app b c))))
+
+However, if you go into almost any Common Lisp in which app is defined
+as shown and evaluate
+
+     (equal (app (app 1 2) 3) (app 1 (app 2 3)))
+
+we get an error or, perhaps, something worse like nil!  How can this
+happen since the formula is an instance of a theorem?  It is supposed
+to be true!
+
+It happens because the theorem exploits the fact that ACL2 has completed
+the domains of the partially defined Common Lisp functions like car and
+cdr, defining them to be nil on all non-conses.  The formula above
+violates the guards on app.  It is therefore "unreasonable" to expect
+it to be valid in Common Lisp.
+
+But the following formula is valid in Common Lisp:
+
+     (if (and (true-listp a)
+              (true-listp b))
+         (equal (app (app a b) c) (app a (app b c)))
+         t)
+
+That is, no matter what the values of a, b and c the formula above
+evaluates to t in all Common Lisps (unless the Lisp engine runs out of
+memory or stack computing it).  Furthermore the above formula is a
+theorem:
+
+     (defthm guarded-assoc-of-app
+       (if (and (true-listp a)
+                (true-listp b))
+           (equal (app (app a b) c) (app a (app b c)))
+           t))
+
+This formula, guarded-assoc-of-app, is very easy to prove from
+assoc-of-app.  So why prove it?  The interesting thing about
+guarded-assoc-of-app is that we can verify the guards of the formula.
+That is, (verify-guards guarded-assoc-of-app) succeeds.  Note that it
+has to prove that if a and b are true lists then so is (app a b) to
+establish that the guard on the outermost app on the left is satisfied.
+By verifying the guards of the theorem we know it will evaluate to
+true in all Common Lisps.  Put another way, we know that the validity
+of the formula does not depend on ACL2's completion of the partial
+functions or that the formula is "well-typed."
+
+One last complication:  The careful reader might have thought we could
+state guarded-assoc-of-app as
+
+     (implies (and (true-listp a)
+                   (true-listp b))
+              (equal (app (app a b) c)
+                     (app a (app b c))))
+
+rather than using the if form of the theorem.  We cannot!  The reason
+is technical:  implies is defined as a function in ACL2.  When it is
+called, both arguments are evaluated and then the obvious truth table
+is checked.  That is, implies is not "lazy."  Hence, when we write the
+guarded theorem in the implies form we have to prove the guards on the
+conclusion without knowing that the hypothesis is true.  It would have
+been better had we defined implies as a macro that expanded to the if
+form, making it lazy.  But we did not and after we introduced guards we
+did not want to make such a basic change.
+
+Recall however that verify-guards is almost always used to verify the
+guards on a function definition rather than a theorem.  We now return
+to that discussion.
+
+Because name is not uniquely associated with the verify-guards event
+(it necessarily names a previously defined function) the documentation
+string, doc-string, is not stored in the documentation data base.
+Thus, we actually prohibit doc-string from having the form of an ACL2
+documentation string; see *note DOC-STRING::.
+
+If the guard on a function is not t, then guard verification requires
+not only consideration of the body under the assumption that the guard
+is true, but also consideration of the guard itself.  Thus, for
+example, guard verification fails in the following example, even though
+there are no proof obligations arising from the body, because the guard
+itself can cause a guard violation when evaluated for an arbitrary
+value of x:
+
+     (defun foo (x)
+       (declare (xargs :guard (car x)))
+       x)
+
+Verify-guards must often be used when the value of a recursive call of
+a defined function is given as an argument to a subroutine that is
+guarded.  An example of such a situation is given below.  Suppose app
+(read "append") has a guard requiring its first argument to be a
+true-listp.  Consider
+
+     (defun rev (x)
+       (declare (xargs :guard (true-listp x)))
+       (cond ((endp x) nil)
+             (t (app (rev (cdr x)) (list (car x))))))
+
+Observe that the value of a recursive call of rev is being passed into
+a guarded subroutine, app.  In order to verify the guards of this
+definition we must show that (rev (cdr x)) produces a true-listp, since
+that is what the guard of app requires.  How do we know that (rev (cdr
+x)) is a true-listp?  The most elegant argument is a two-step one,
+appealing to the following two lemmas: (1) When x is a true-listp, (cdr
+x) is a true-listp.  (2) When z is a true-listp, (rev z) is a
+true-listp.  But the second lemma is a generalized property of rev, the
+function we are defining.  This property could not be stated before rev
+is defined and so is not known to the theorem prover when rev is
+defined.
+
+Therefore, we might break the admission of rev into three steps: define
+rev without addressing its guard verification, prove some general
+properties about rev, and then verify the guards.  This can be done as
+follows:
+
+     (defun rev (x)
+       (declare (xargs :guard (true-listp x)
+                       :verify-guards nil))    ; Note this additional xarg.
+       (cond ((endp x) nil)
+             (t (app (rev (cdr x)) (list (car x))))))
+     
+     (defthm true-listp-rev
+       (implies (true-listp x2)
+                (true-listp (rev x2))))
+     
+     (verify-guards rev)
+
+The ACL2 system can actually admit the original definition of rev,
+verifying the guards as part of the defun event.  The reason is that,
+in this particular case, the system's heuristics just happen to hit
+upon the lemma true-listp-rev.  But in many more complicated functions
+it is necessary for the user to formulate the inductively provable
+properties before guard verification is attempted.
+
+*Note on computation of guard conjectures and evaluation*.  When ACL2
+computes the guard conjecture for the body of a function, it evaluates
+any ground subexpressions (those with no free variables), for calls of
+functions whose :executable-counterpart runes are enabled.  Note that
+here, "enabled" refers to the current global theory, not to any :hints
+given to the guard verification process; after all, the guard
+conjecture is computed even before its initial goal is produced.  Also
+note that this evaluation is done in an environment as though
+:set-guard-checking :all had been executed, so that we can trust that
+this evaluation takes place without guard violations; see *note
+SET-GUARD-CHECKING::.
+
+
+File: acl2-doc-emacs.info,  Node: VERIFY-TERMINATION,  Next: WITH-OUTPUT,  Prev: VERIFY-GUARDS,  Up: EVENTS
+
+VERIFY-TERMINATION    convert a function from :program mode to :logic mode
+
+     Example:
+     (verify-termination fact)
+     
+     General Forms:
+     (verify-termination fn dcl ... dcl)
+     (verify-termination (fn1 dcl ... dcl)
+                         (fn2 dcl ... dcl)
+                         ...)
+
+where fn and the fni are function symbols having :program mode (see
+*note DEFUN-MODE::) and all of the dcls are either declare forms or
+documentation strings.  The first form above is an abbreviation for
+
+     (verify-termination (fn dcl ... dcl))
+
+so we limit our discussion to the second form.  Each of the fni must be
+in the same clique of mutually recursively defined functions, but not
+every function in the clique need be among the fni.
+
+Verify-termination attempts to establish the admissibility of the fni.
+Verify-termination retrieves their definitions, creates modified
+definitions using the dcls supplied above, and resubmits these
+definitions.  You could avoid using verify-termination by typing the new
+definitions yourself.  So in that sense, verify-termination adds no new
+functionality.  But if you have prototyped your system in :program mode
+and tested it, you can use verify-termination to resubmit your
+definitions and change their defun-modes to :logic, addings hints
+without having to retype or recopy the code.
+
+The defun command executed by verify-termination is obtained by
+retrieving the defun (or mutual-recursion) command that introduced the
+clique in question and then possibly modifying each definition as
+follows.  Consider a function, fn, in the clique.  If fn is not among
+the fni above, its definition is left unmodified other than to add
+(declare (xargs :mode :logic)).  Otherwise, fn is some fni and we
+modify its definition by inserting into it the corresponding dcls listed
+with fni in the arguments to verify-termination, as well as (declare
+(xargs :mode :logic)).  In addition, we throw out from the old
+declarations in fn the :mode specification and anything that is
+specified in the new dcls.
+
+For example, suppose that fact was introduced with:
+
+     (defun fact (n)
+       (declare (type integer n)
+                (xargs :mode :program))
+       (if (zp n) 1 (* n (fact (1- n))))).
+
+Suppose later we do (verify-termination fact).  Then the following
+definition is submitted.
+
+     (defun fact (n)
+       (declare (type integer n))
+       (if (zp n) 1 (* n (fact (1- n))))).
+
+Observe that this is the same definition as the original one, except
+the old specification of the :mode has been deleted so that the
+defun-mode now defaults to :logic.  Although the termination proof
+succeeds, ACL2 also tries to verify the guard, because we have
+(implicitly) provided a guard, namely (integerp n), for this function.
+(See *Note GUARD:: for a general discussion of guards, and see *note
+TYPE-SPEC:: for a discussion of how type declarations are used in
+guards.)  Unfortunately, the guard verification fails, because the
+subterm (zp n) requires that n be nonnegative, as can be seen by
+invoking :args zp.  (For a discussion of termination issues relating to
+recursion on the naturals, see *note ZERO-TEST-IDIOMS::.)  So we might
+be tempted to submit the following:
+
+     (verify-termination
+      fact
+      (declare (xargs :guard (and (integerp n) (<= 0 n))))).
+
+However, this is considered a changing of the guard (from (integerp n)),
+which is illegal.  If we instead change the guard in the earlier defun
+after undoing that earlier definition with :ubt fact, then
+(verify-termination fact) will succeed.
+
+
+File: acl2-doc-emacs.info,  Node: WITH-OUTPUT,  Prev: VERIFY-TERMINATION,  Up: EVENTS
+
+WITH-OUTPUT    suppressing or turning on specified output for an event
+
+     Example:
+     (with-output
+        :off summary ; turn off the event summary when evaluating the following:
+        (in-theory (disable name)))
+     
+     General Form:
+     (with-output :key1 val1 ... :keyk valk form)
+
+where each :keyi is either :off or :on and either vali is either :all
+or else a symbol or non-empty list of symbols representing output types
+that can be inhibited (see *note SET-INHIBIT-OUTPUT-LST::).  The result
+of evaluating the General Form above is to evaluate form, but in an
+environment where the current set of inhibited output types is
+modified: if :on :all is specified, then all output is turned on except
+as specified by :off; else if :off :all is specified, then all output
+is inhibited except as specified by :on; and otherwise, the
+currently-inhibited output types are reduced as specified by :on and
+then extended as specified by :off.
+
+Warning: With-output has no effect in raw Lisp, and hence is disallowed
+in function bodies.  However, you can probably get the effect you want
+as illustrated below, where <form> must return an error triple (mv erp
+val state); see *note LD::.
+
+     Examples avoiding with-output, for use in function definitions:
+     
+     ; Inhibit all output:
+     (state-global-let*
+      ((inhibit-output-lst *valid-output-names*))
+      <form>)
+     
+     ; Inhibit all warning output:
+     (state-global-let*
+      ((inhibit-output-lst
+        (union-eq (f-get-global 'inhibit-output-lst state)
+                  '(warning warning!))))
+      <form>)
+
+
+File: acl2-doc-emacs.info,  Node: HISTORY,  Next: MISCELLANEOUS,  Prev: EVENTS,  Up: Top
+
+HISTORY    functions that display or change history
+
+* Menu:
+
+* OOPS:: undo a :u or :ubt
+
+* PBT:: print the commands back through a command descriptor
+
+* PC:: print the command described by a command descriptor
+
+* PCB:: print the command block described by a command descriptor
+
+* PCB!:: print in full the command block described by a command descriptor
+
+* PCS:: print the sequence of commands between two command descriptors
+
+* PE:: print the events named by a logical name
+
+* PE!:: deprecated (see *note PE::)
+
+* PF:: print the formula corresponding to the given name
+
+* PL:: print the rules for the given name or term
+
+* PR:: print the rules stored by the event with the given name
+
+* PR!:: print rules stored by the command with a given command descriptor
+
+* PUFF:: replace a compound command by its immediate subevents
+
+* PUFF*:: replace a compound command by its subevents
+
+* RESET-KILL-RING:: save memory by resetting and perhaps resizing the kill ring used by oops
+
+* U:: undo last command, without a query
+
+* UBT:: undo the commands back through a command descriptor
+
+* UBT!:: undo commands, without a query or an error
+
+* UBT-PREHISTORY:: undo the commands back through the last reset-prehistory event
+
+* UBU:: undo the commands back up to (not including) a command descriptor
+
+* UBU!:: undo commands, without a query or an error
+
+ACL2 keeps track of the commands that you have executed that have
+extended the logic or the rule data base, as by the definition of
+macros, functions, etc.  Using the facilities in this section you can
+review the sequence of commands executed so far.  For example, you can
+ask to see the most recently executed command, or the command 10 before
+that, or the command that introduced a given function symbol.  You can
+also undo back through some previous command, restoring the logical
+world to what it was before the given command.
+
+The annotations printed in the margin in response to some of these
+commands (such as `P', `L', and `V') are explained in the documentation
+for :pc.
+
+Several technical terms are used in the documentation of the history
+commands.  You must understand these terms to use the commands.  These
+terms are documented via :doc entries of their own.  See *Note
+COMMAND::, see *note EVENTS::, see *note COMMAND-DESCRIPTOR::, and see
+*note LOGICAL-NAME::.
+
+
+File: acl2-doc-emacs.info,  Node: OOPS,  Next: PBT,  Prev: HISTORY,  Up: HISTORY
+
+OOPS    undo a :u or :ubt
+
+The keyword command :oops will undo the most recent :ubt (or :u, which
+we here consider just another :ubt).  A second :oops will undo the next
+most recent :ubt, a third will undo the :ubt before that one, and a
+fourth :oops will return the logical world to its configuration before
+the first :oops.
+
+Consider the logical world (see *note WORLD::) that represents the
+current extension of the logic and ACL2's rules for dealing with it.
+The :ubt and :u commands "roll back" to some previous world (see *note
+UBT::).  Sometimes these commands are used to inadvertently undo useful
+work and user's wish they could "undo the last undo."  That is the
+function provided by :oops.
+
+:Oops is best described in terms of an implementation.  Imagine a ring
+of four worlds and a marker (*) indicating the current ACL2 world:
+
+                  *
+                w0
+              /    \
+            w3      w1
+              \    /
+                w2
+
+This is called the "kill ring" and it is maintained as follows.  When
+you execute an event the current world is extended and the kill ring is
+not otherwise affected.  When you execute :ubt or :u, the current world
+marker is moved one step counterclockwise and that world in the ring is
+replaced by the result, say w0', of the :ubt or :u.
+
+                w0
+              /    \
+           *w0'     w1
+              \    /
+                w2
+
+If you were to execute events at this point, w0' would be extended and
+no other changes would occur in the kill ring.
+
+When you execute :oops, the marker is moved one step clockwise.  Thus
+the kill ring becomes
+
+                  *
+                w0
+              /    \
+            w0'     w1
+              \    /
+                w2
+
+and the current ACL2 world is w0 once again.  That is, :oops "undoes"
+the :ubt that produced w0' from w0.  Similarly, a second :oops will
+move the marker to w1, undoing the undo that produced w0 from w1.  A
+third :oops makes w2 the current world.  Note however that a fourth
+:oops restores us to the configuration previously displayed above in
+which w0' has the marker.
+
+In general, the kill ring contains the current world and the three most
+recent worlds in which a :ubt or :u were done.
+
+While :ubt may appear to discard the information in the events undone,
+we can see that the world in which the :ubt occurred is still
+available.  No information has been lost about that world.  But :ubt
+does discard information!  :Ubt discards the information necessary to
+recover from the third most recent ubt!  An :oops, on the other hand,
+discards no information, it just selects the next available world on
+the kill ring and doing enough :oopses will return you to your starting
+point.
+
+We can put this another way.  You can freely type :oops and inspect the
+world that you thus obtain with :pe, :pc, and other history commands.
+You can repeat this as often as you wish without risking the permanent
+loss of any information.  But you must be more careful typing :ubt or
+:u.  While :oops makes :ubt seem "safe" because the most recent :ubt
+can always be undone, information is lost when you execute :ubt.
+
+We note that :ubt and :u may remove compiled definitions (except in
+Lisps such as OpenMCL, in which functions are always compiled).  When
+the original world is restored using :oops, restored functions will not
+generally be compiled, though the user can remedy this situation; see
+*note COMP::.
+
+Finally, we note that our implementation of oops can use a significant
+amount of memory, because of the saving of old logical worlds.  Most
+users are unlikely to experience a memory problem, but if you do, then
+you may want to disable oops by evaluting (reset-kill-ring 0 state);
+see *note RESET-KILL-RING::.
+
+
+File: acl2-doc-emacs.info,  Node: PBT,  Next: PC,  Prev: OOPS,  Up: HISTORY
+
+PBT    print the commands back through a command descriptor
+
+     Examples:
+     :pbt :max      ; print back through the most recent command
+     :pbt :x        ; print back through the most recent command
+     :pbt fn        ; print back through the introduction of fn
+     :pbt 5         ; print back through the fifth command executed
+     :pbt (:x -4)   ; print back through the most recent five commands
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Pbt takes one argument, a command descriptor, and prints the commands
+from :max (aka :x) through the one described.  See *Note
+COMMAND-DESCRIPTOR:: for a description of what a command descriptor is.
+See *Note PC:: for a description of the format used to display
+commands.  Pbt will print the commands that ubt will undo.
+
+
+File: acl2-doc-emacs.info,  Node: PC,  Next: PCB,  Prev: PBT,  Up: HISTORY
+
+PC    print the command described by a command descriptor
+
+     Examples:
+     :pc 3    ; print the third command executed
+     :pc :max ; print the most recent command
+     :pc :x   ; print the most recent command
+     :pc fn   ; print the command that introduced fn
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Pc takes one argument, a command descriptor, and prints the command
+identified by that descriptor.  See *Note COMMAND-DESCRIPTOR::.  For
+example
+
+     ACL2 !>:pc foo
+      LVd     52 (DEFUN FOO (X) X)
+
+Pc always prints a space first, followed by three (possibly blank)
+characters ("LVd" above) explained below.  Then pc prints the command
+number, a number uniquely identifying the command's position in the
+sequence of commands since the beginning of the user's session.
+Finally, the command itself is printed.
+
+While pc always prints a space first, some history commands, for
+example :pcs and :pe, use the first column of output to delimit a
+region of commands or to point to a particular event within a command.
+
+For example, :pcs 52 54 will print something like
+
+     /LVd     52 (DEFUN FOO (X) X)
+      LV      53 (DEFUN BAR (X) (CONS X X))
+     \        54 (DEFTHM FOO-BAR (EQUAL (CAR (BAR X)) (FOO X)))
+               : ...
+             127 (DEFUN LATEST (X) X)
+
+Here, the two slash characters in the first column are intended to
+suggest a bracket delimiting commands 52 through 54.  The last command
+printed by pcs is always the most recent command, i.e., the command at
+:here, and is separated from the rest of the display by an elipsis if
+some commands are omitted.
+
+Similarly, the :pe command will print a particular event within a
+command block and will indicate that event by printing a ">" in the
+first column.  The symbol is intended to be an arrow pointing at the
+event in question.
+
+For example, :pe true-listp-app might print:
+
+              1 (INCLUDE-BOOK "list-book")
+                 \
+     >           (DEFTHM TRUE-LISTP-APP
+                         (EQUAL (TRUE-LISTP (APP A B)) (TRUE-LISTP B)))
+
+using the arrow to indicate the event itself.  The slash printed to
+connect the command, include-book, with the event, defthm, is intended
+to suggest a tree branch indicating that the event is inferior to (and
+part of) the command.
+
+The mysterious three characters sometimes preceding a command have the
+following interpretations.  The first two have to do with the function
+symbols introduced by the command and are blank if no symbols were
+introduced.
+
+At any time we can classify our function symbols into three disjoint
+sets, which we will here name with characters.  The "P" functions are
+those in :program mode.  The "L" functions are those in :logic mode
+whose guards have not been verified.  The "V" functions are those in
+:logic mode whose guards have been verified.  Note that
+verify-termination and verify-guards cause function symbols to be
+reclassified.  If a command introduces function symbols then the first
+mysterious character indicates the class of the symbols at the time of
+introduction and the second character indicates the current class of
+the symbols (if the current class is different from the introductory
+class).
+
+Thus, the display
+
+      PLd     52 (DEFUN FOO (X) X)
+
+tells us that command 52 introduced a :program function but that some
+command after 52 changed its mode to :logic and that the guards of foo
+have not been verified.  That is, foo's termination has been verified
+even though it was not verified as part of the command that introduced
+foo.  Had a subsequent command verified the guards of foo, the display
+would contain a V where the L is.
+
+The display
+
+      P d     52 (DEFUN FOO (X) X)
+
+indicates that foo was introduced in :program mode and still is in that
+mode.
+
+The third character indicates the enabled/disabled status of the runes
+introduced by the command.  If the status character is blank then all
+the runes (if any) introduced are enabled.  If the status character is
+"D" then some runes were introduced and they are all disabled.  If the
+status character is "d" then at least one, but not all, of the runes
+introduced is disabled.  Thus, in the display
+
+      L d     52 (DEFUN FOO (X) X)
+
+we see that some rune introduced by command 52 is disabled.  As noted
+in the documentation for rune, a defun command introduces many runes,
+e.g., the axiomatic definition rule, (:definition fn), the executable
+counterpart rule, (:executable-counterpart fn), and type-prescriptions,
+(:type-prescription fn).  The display above does not say which of the
+runes based on foo is disabled, but it does tell us one of them is; see
+*note DISABLEDP:: for how to obtain the disabled runes for a given
+function symbol.
+
+
+File: acl2-doc-emacs.info,  Node: PCB,  Next: PCB!,  Prev: PC,  Up: HISTORY
+
+PCB    print the command block described by a command descriptor
+
+     Examples:
+     :pcb :max ; print the most recent command block
+     :pcb :x   ; print the most recent command block
+     :pcb fn   ; print the command block that introduced fn
+     :pcb 5    ; print the fifth command block
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Pcb takes one argument, a command descriptor, and prints the command
+block of the command described.  See *Note COMMAND-DESCRIPTOR:: for
+details of command descriptors.  See *Note PC:: for description of the
+format in which commands are displayed.  The command block of a command
+consists of the command itself and all of the events it created.  If
+the command created a single event and that event is in fact the
+command (i.e., if the command typed was just an event such as a defun
+or defthm rather than a macro that expanded to some event forms), then
+pcb just prints the command.  Pcb sketches command and all of the
+events it created, rather than printing them fully.  If you wish to see
+just the command, in its entirety, use pc.  If you wish to see one of
+the events within the block, in its entirety, use pe.  If you wish to
+see the command sketched and all of the events it created, in their
+entirety, use pcb!.
+
+
+File: acl2-doc-emacs.info,  Node: PCB!,  Next: PCS,  Prev: PCB,  Up: HISTORY
+
+PCB!    print in full the command block described by a command descriptor
+
+     Examples:
+     :pcb! :max ; print the most recent command block
+     :pcb! :x   ; print the most recent command block
+     :pcb! fn   ; print the command block that introduced fn
+     :pcb! 5    ; print the fifth command block
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Pcb! takes one argument, a command descriptor, and prints the command
+block of the command described.  Unlike pcb, pcb! prints the event
+forms in full; see *note PCB:: for details.
+
+
+File: acl2-doc-emacs.info,  Node: PCS,  Next: PE,  Prev: PCB!,  Up: HISTORY
+
+PCS    print the sequence of commands between two command descriptors
+
+     Examples:
+     :pcs 1 5              ; print commands 1 through 5
+     :pcs 5 1              ; same as above
+     :pcs :x (:x -3)       ; print the 3 most recently executed commands
+     :pcs fn assoc-of-fn   ; print the commands between the one that introduced
+                           ; fn and the one that introduced assoc-of-fn
+
+Pcs takes two arguments, both of which are command descriptors, and
+prints the commands between them with pc.  The order of the two
+descriptors is irrelevant.  See *Note COMMAND-DESCRIPTOR:: for a
+description of command descriptors.  See *Note PC:: for a description
+of the format in which commands are displayed.
+
+
+File: acl2-doc-emacs.info,  Node: PE,  Next: PE!,  Prev: PCS,  Up: HISTORY
+
+PE    print the events named by a logical name
+
+     Example:
+     :pe fn   ; sketches the command that introduced fn and
+              ; prints in full the event within it that created fn.
+
+See *Note LOGICAL-NAME::.
+
+Pe takes one argument, a logical name, and prints in full the event
+corresponding to the name.  Pe also sketches the command responsible
+for that event if the command is different from the event itself.  See
+*Note PC:: for a description of the format used to display a command.
+To remind you that the event is inferior to the command, i.e., you can
+only undo the entire command, not just the event, the event is indented
+slightly from the command and a slash (meant to suggest a tree branch)
+connects them.
+
+If the given logical name corresponds to more than one event, then :pe
+will print the above information for every such event.  Here is an
+example. of such behavior.
+
+     ACL2 !>:pe nth
+           -4270  (ENCAPSULATE NIL ...)
+                  \
+     >V            (VERIFY-TERMINATION NTH)
+     
+     Additional events for the logical name NTH:
+      PV   -4949  (DEFUN NTH (N L)
+                         "Documentation available via :doc"
+                         (DECLARE (XARGS :GUARD (AND (INTEGERP N)
+                                                     (>= N 0)
+                                                     (TRUE-LISTP L))))
+                         (IF (ENDP L)
+                             NIL
+                             (IF (ZP N)
+                                 (CAR L)
+                                 (NTH (- N 1) (CDR L)))))
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: PE!,  Next: PF,  Prev: PE,  Up: HISTORY
+
+PE!    deprecated (see *note PE::)
+
+Please see *note PE::.  :Pe now has the functionality formerly provided
+by :pe!.
+
+
+File: acl2-doc-emacs.info,  Node: PF,  Next: PL,  Prev: PE!,  Up: HISTORY
+
+PF    print the formula corresponding to the given name
+
+     Examples:
+     :pf (:definition fn) ; prints the definition of fn as an equality
+     :pf fn               ; same as above
+     
+     :pf (:rewrite foo)   ; prints the statement of the rewrite rule foo
+     :pf foo              ; same as above
+
+pf takes one argument, an event name or a rune, and prints the formula
+associated with name.  If the argument is the name of a macro
+associated with a function name by macro-aliases-table, then the
+function name is used as the argument.
+
+
+File: acl2-doc-emacs.info,  Node: PL,  Next: PR,  Prev: PF,  Up: HISTORY
+
+PL    print the rules for the given name or term
+
+     Examples:
+     :pl foo     ; prints rules that rewrite some call of foo
+     :pl (+ x y) ; prints rules that rewrite (+ x y)
+
+Pl takes one argument, which should be a symbol or a term.  If the
+argument is a function symbol (or a macro corresponding to a function;
+see *note MACRO-ALIASES-TABLE::), :pl displays the :rewrite,
+:definition, and :meta rules that rewrite some term whose top function
+symbol is the one specified.  Otherwise, :pl displays the :rewrite and
+:definition rules that rewrite the specified term, followed by the
+applicable :meta rules.  For :rewrite and :definition rules, :pl also
+shows the substitution that, when applied to the left-hand side of the
+rule, yields the specified term.  For :meta rules, only those are
+displayed that meet two conditions: the application of the metafunction
+returns a term different from the input term, and if there is a
+hypothesis metafunction then it also returns a term.  (A subtlety: In
+the case of extended metafunctions (see *note
+EXTENDED-METAFUNCTIONS::), a trivial metafunction context is used for
+the application of the metafunction.)
+
+The kinds of rules printed by :pl are :rewrite rules, :definition
+rules, and meta rules (not, for example, :forward-chaining rules).
+
+
+File: acl2-doc-emacs.info,  Node: PR,  Next: PR!,  Prev: PL,  Up: HISTORY
+
+PR    print the rules stored by the event with the given name
+
+     Examples:
+     
+     :pr fn ; prints the rules from the definition of fn (including any
+            ; :type-prescription rule and :definition rule)
+     
+     :pr assoc-append ; if assoc-append is a rewrite rule, prints that rule
+
+Also see *note PR!::, which is similar but works at the command level
+instead of at the event level, and see *note PL::, which displays all
+rewrite rules for calls of fn, not just those introduced at definition
+time.
+
+Pr takes one argument, a logical name, and prints the rules associated
+with it.  In each case it prints the rune, the current enabled/disabled
+status, and other appropriate fields from the rule.  It may be helpful
+to read the documentation for various kinds of rules in order to
+understand the information printed by this command.  For example, the
+information printed for a linear rule might be:
+
+       Rune:     (:LINEAR ABC)
+       Status:   Enabled
+       Hyps:     ((CONSP X))
+       Concl:    (< (ACL2-COUNT (CAR X)) (ACL2-COUNT X))
+       Max-term: (ACL2-COUNT (CAR X))
+       Backchain-limit-lst:    (3)
+
+The hyps and concl fields for this rule are fairly self-explanatory,
+but it is useful to see *note LINEAR:: to learn about maximal terms
+(which, as one might guess, are stored under "Max-term").
+
+Currently, this function does not print congruence rules or equivalence
+rules.
+
+The expert user might also wish to use find-rules-of-rune.  See *Note
+FIND-RULES-OF-RUNE::.
+
+
+File: acl2-doc-emacs.info,  Node: PR!,  Next: PUFF,  Prev: PR,  Up: HISTORY
+
+PR!    print rules stored by the command with a given command descriptor
+
+     Examples:
+     
+     :pr! fn ; prints the rules from the definition of fn (including any
+             ; :type-prescription rule and :definition rule), as well as all other
+             ; rules created by the command that created by fn (which could be
+             ; many rules if, for example, fn was defined by an include-book
+             ; command).
+     
+     :pr! :max ; prints all the rules stored by the most recent command
+
+Also see *note PR::, which is similar but works at the event level
+instead of at the command level.
+
+Pr takes one argument, a command descriptor, and prints the rules
+created by the corresponding event.  In each case it prints the rune,
+the current enabled/disabled status, and other appropriate fields from
+the rule.  See *Note PR:: for further details.
+
+
+File: acl2-doc-emacs.info,  Node: PUFF,  Next: PUFF*,  Prev: PR!,  Up: HISTORY
+
+PUFF    replace a compound command by its immediate subevents
+
+     Example Forms:
+     ACL2 !>:puff :max
+     ACL2 !>:puff :x
+     ACL2 !>:puff 15
+     ACL2 !>:puff "book"
+     
+     General Form:
+     :puff cd
+
+where cd is a command descriptor (see *note COMMAND-DESCRIPTOR::) for a
+"puffable" command (see below).  Puff replaces the command at cd by the
+immediate subevents of the command, executed as commands.  Puff then
+prints, using pcs, the puffed region.
+
+A command is "puffable" if it is an encapsulate command, an
+include-book command, or any command other than those consisting of a
+single primitive event.  For example, since defun is a primitive event,
+a defun command is not puffable.  But a macro form that expands into
+several defun events is puffable.  The only primitive event commands
+that are puffable are encapsulate and include-book commands.  A
+puffable command contains (interesting) subevents, namely, the events
+in the body of the encapsulate, in the file of the book included, or in
+the command block.
+
+The puff command "lifts" the immediate subevents of the indicated
+command so that they become commands themselves.  The command puff*
+recursively puffs the newly introduced commands.  See *Note PUFF*::,
+which also gives an example illustrating both puff and puff*.  Puff
+undoes the command at cd and replaces it by its immediate subevents.
+Thus, in general the length of the history grows when a puff command is
+executed.  If puff causes an error (see below), the logical world
+remains unchanged from its initial configuration.
+
+The intended use of puff is to allow the user access to the events
+"hidden" inside compound commands.  For example, while trying to prove
+some theorem, p, about a constrained function, fn, one might find that
+the encapsulate, cd, that introduced fn failed to include an important
+constraint, q.  Without puff, the only way to proceed is to undo back
+through cd, create a suitable encapsulate that proves and exports q as
+well as the old constraints, re-execute the new encapsulate, re-execute
+the events since cd, and then try p again.  Unfortunately, it may be
+hard to prove q and additional events may have to be inserted into the
+encapsulate to prove it.  It may also be hard to formulate the "right"
+q, i.e., one that is provable in the encapsulate and provides the
+appropriate facts for use in the proof of p.
+
+Using puff, the user can erase the encapsulate at cd, replacing it by
+the events in its body.  Now the formerly constrained function, fn, is
+defined as its witness.  The user can experiment with formulations and
+proofs of q suitable for p.  Of course, to get into the ultimately
+desired state -- where fn is constrained rather than defined and q is
+exported by an encapsulate at cd -- the user must ultimately undo back
+to cd and carry out the more tedious program described above.  But by
+using puff it is easier to experiment.
+
+Similar applications of puff allow the user of a book to expose the
+innards of the book as though they had all be typed as commands.  The
+user might then "partially undo" the book, keeping only some of the
+events in it.
+
+Puff operates as follows.  First, it determines the list of immediate
+subevents of the command indicated by cd.  It causes an error if there
+is only one subevent and that subevent is identical to the command --
+i.e., if the command at cd is a primitive.  Next, puff undoes back
+through the indicated command.  This not only erases the command at cd
+but all the commands executed after it.  Finally, puff re-executes the
+subevents of (the now erased) cd followed by all the commands that were
+executed afterwards.
+
+Observe that the commands executed after cd will generally have higher
+command numbers than they did before the puff.  For example, suppose
+100 commands have been executed and that :puff 80 is then executed.
+Suppose command 80 contains 5 immediate subevents (i.e., is an
+encapsulation of five events).  Then, after puffing, command 80 is the
+first event of the puffed command, command 81 is the second, and so on;
+104 commands appear to have been executed.
+
+When puffing an encapsulate or include-book, the local commands are
+executed.  Note that this will replace constrained functions by their
+witnesses.
+
+Finally, it is impossible to puff in the presence of include-book
+commands involving certified files that have been altered since they
+were included.  To be specific, suppose "arith" is a certified book
+that has been included in a session.  Suppose that after "arith" was
+included, the source file is modified.  (This might happen if the user
+of "arith" is not its author and the author happens to be working on a
+new version of "arith" during the same time period.)  Now suppose the
+user tries to puff the command that included "arith".  The attempt to
+obtain the subevents in "arith" will discover that the check sum of
+"arith" has changed and an error will be caused.  No change is made in
+the logical world.  A similar error is caused if, in this same
+situation, the user tries to puff *any command that occurred before the
+inclusion* of "arith"!  That is, puff may cause an error and leave the
+world unchanged even if the command puffed is not one involving the
+modified book.  This happens because in order to reconstruct the world
+after the puffed command, puff must obtain the events in the book and
+if the book's source file has changed there is no assurance that the
+reconstructed world is the one the user intends.
+
+Warning: We do not detect changes to uncertified books that have been
+included and are then puffed or re-included!  The act of including an
+uncertified book leaves no trace of the check sum of the book.
+Furthermore, the act prints a warning message disclaiming soundness.
+In light of this, :puff quietly "re-"executes the current contents of
+the book.
+

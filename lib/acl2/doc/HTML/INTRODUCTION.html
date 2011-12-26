@@ -1,0 +1,665 @@
+<html>
+<head><title>INTRODUCTION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INTRODUCTION</h2>introduction to ACL2
+<pre>Major Section:  <a href="ACL2-TUTORIAL.html">ACL2-TUTORIAL</a>
+</pre><p>
+
+This section contains introductory material on ACL2 including what
+ACL2 is, how to get started using the system, how to read the
+output, and other introductory topics.  It was written almost
+entirely by Bill Young of Computational Logic, Inc.<p>
+
+You might also find CLI Technical Report 101 helpful, especially if
+you are familiar with Nqthm.  If you would like more familiarity
+with Nqthm, we suggest CLI Technical Report 100.
+<p>
+<em>OVERVIEW</em><p>
+
+ACL2 is an automated reasoning system developed (for the first 9 years)
+at Computational Logic, Inc. and (from January, 1997) at the University
+of Texas at Austin.  It is the successor to the Nqthm (or Boyer-Moore)
+logic and proof system and its Pc-Nqthm interactive enhancement.  The
+acronym ACL2 actually stands for ``A Computational Logic for Applicative
+Common Lisp''.  This title suggests several distinct but related aspects
+of ACL2.<p>
+
+We assume that readers of the ACL2 <a href="DOCUMENTATION.html">documentation</a> have at least a
+very slight familiarity with some Lisp-like language.  We will
+address the issue of prerequisites further, in ``ABOUT THIS
+TUTORIAL'' below.<p>
+
+As a <strong>logic</strong>, ACL2 is a formal system with rigorously defined
+syntax and semantics.  In mathematical parlance, the ACL2 logic is a
+first-order logic of total recursive functions providing
+mathematical induction on the ordinals up to epsilon-0 and two
+extension principles: one for recursive definition and one for
+constrained introduction of new function symbols, here called
+encapsulation.  The syntax of ACL2 is that of Common Lisp; ACL2
+specifications are ``also'' Common Lisp programs in a way that we
+will make clear later.  In less formal language, the ACL2 logic is
+an integrated collection of rules for defining (or axiomatizing)
+recursive functions, stating properties of those functions, and
+rigorously establishing those properties.  Each of these activities
+is mechanically supported.<p>
+
+As a <strong>specification language</strong>, ACL2 supports modeling of systems
+of various kinds.  An ACL2 function can equally be used to express
+purely formal relationships among mathematical entities, to describe
+algorithms, or to capture the intended behavior of digital systems.
+For digital systems, an ACL2 specification is a mathematical
+<strong>model</strong> that is intended to formalize relevant aspects of system
+behavior.  Just as physics allows us to model the behavior of
+continuous physical systems, ACL2 allows us to model digital
+systems, including many with physical realizations such as computer
+hardware.  As early as the 1930's Church, Kleene, Turing and others
+established that recursive functions provide an expressive formalism
+for modeling digital computation.  Digital computation should be
+understood in a broad sense, covering a wide variety of activities
+including almost any systematic or algorithmic activity, or activity
+that can be reasonably approximated in that way.  This ranges from
+the behavior of a digital circuit to the behavior of a programming
+language compiler to the behavior of a controller for a physical
+system (as long as the system can be adequately modeled discretely).
+All of these have been modeled using ACL2 or its predecessor Nqthm.<p>
+
+ACL2 is a <strong>computational</strong> logic in at least three distinct
+senses.  First, the theory of recursive functions is often
+considered the mathematics of computation.  Church conjectured that
+any ``effective computation'' can be modeled as a recursive
+function.  Thus, ACL2 provides an expressive language for modeling
+digital systems.  Second, many ACL2 specifications are executable.
+In fact, recursive functions written in ACL2 <strong>are</strong> Common Lisp
+functions that can be submitted to any compliant Common Lisp
+compiler and executed (in an environment where suitable
+ACL2-specific macros and functions are defined).  Third, ACL2 is
+computational in the sense that calculation is heavily integrated
+into the reasoning process.  Thus, an expression with explicit
+constant values but no free variables can be simplified by
+calculation rather than by complex logical manipulations.<p>
+
+ACL2 is a powerful, automated <strong>theorem prover</strong> or proof checker.
+This means that a competent user can utilize the ACL2 system to
+discover proofs of theorems stated in the ACL2 logic or to check
+previously discovered proofs.  The basic deductive steps in an
+ACL2-checked proof are often quite large, due to the sophisticated
+combination of decision procedures, conditional rewriting,
+mathematical and structural induction, propositional simplification,
+and complex heuristics to orchestrate the interactions of these
+capabilities.  Unlike some automated proof systems, ACL2 does not
+produce a formal proof.  However, we believe that if ACL2 certifies
+the ``theoremhood'' of a given conjecture, then such a formal proof
+exists and, therefore, the theorem is valid.  The ultimate result of
+an ACL2 proof session is a collection of ``<a href="EVENTS.html">events</a>,'' possibly
+grouped into ``<a href="BOOKS.html">books</a>,'' that can be replayed in ACL2.  Therefore, a
+proof can be independently validated by any ACL2 user.<p>
+
+ACL2 may be used in purely automated mode in the shallow sense that
+conjectures are submitted to the prover and the user does not
+interact with the proof attempt (except possibly to stop it) until
+the proof succeeds or fails.  However, any non-trivial proof attempt
+is actually interactive, since successful proof ``<a href="EVENTS.html">events</a>''
+influence the subsequent behavior of the prover.  For example,
+proving a lemma may introduce a rule that subsequently is used
+automatically by the prover.  Thus, any realistic proof attempt,
+even in ``automatic'' mode, is really an interactive dialogue with
+the prover to craft a sequence of <a href="EVENTS.html">events</a> building an
+appropriate theory and proof rules leading up to the proof of the
+desired result.  Also, ACL2 supports annotating a theorem with
+``<a href="HINTS.html">hints</a>'' designed to guide the proof attempt.  By supplying
+appropriate <a href="HINTS.html">hints</a>, the user can suggest proof strategies that
+the prover would not discover automatically.  There is a
+``<a href="PROOF-TREE.html">proof-tree</a>'' facility (see <a href="PROOF-TREE.html">proof-tree</a>) that allows the
+user to <a href="MONITOR.html">monitor</a> the progress and structure of a proof attempt
+in real-time.  Exploring failed proof attempts is actually where
+heavy-duty ACL2 users spend most of their time.<p>
+
+ACL2 can also be used in a more explicitly interactive mode.  The
+``<a href="PROOF-CHECKER.html">proof-checker</a>'' subsystem of ACL2 allows exploration of a proof on
+a fairly low level including expanding calls of selected function
+symbols, invoking specific <a href="REWRITE.html">rewrite</a> rules, and selectively navigating
+around the proof.  This facility can be used to gain sufficient
+insight into the proof to construct an automatic version, or to
+generate a detailed interactive-style proof that can be replayed in
+batch mode.<p>
+
+Because ACL2 is all of these things -- computational logic,
+specification language, <a href="PROGRAMMING.html">programming</a> system, and theorem prover -- it
+is more than the sum of its parts.  The careful integration of these
+diverse aspects has produced a versatile automated reasoning system
+suitable for building highly reliable digital systems.  In the
+remainder of this tutorial, we will illustrate some simple uses of
+this automated reasoning system.<p>
+
+<em>ABOUT THIS TUTORIAL</em><p>
+
+ACL2 is a complex system with a vast array of features, bells and
+whistles.  However, it is possible to perform productive work with
+the system using only a small portion of the available
+functionality.  The goals of this tutorial are to:
+
+<blockquote><p>
+
+familiarize the new user with the most basic features of and modes
+of interaction with ACL2;<p>
+
+familiarize her with the form of output of the system; and<p>
+
+work through a graduated series of examples.
+</blockquote>
+<p>
+
+The more knowledge the user brings to this system, the easier it
+will be to become proficient.  On one extreme:  the <strong>ideal</strong> user
+of ACL2 is an expert Common Lisp programmer, has deep understanding
+of automated reasoning, and is intimately familiar with the earlier
+Nqthm system.  Such ideal users are unlikely to need this tutorial.
+However, without some background knowledge, the beginning user is
+likely to become extremely confused and frustrated by this system.
+We suggest that a new user of ACL2 should:
+
+<blockquote><p>
+
+(a) have a little familiarity with Lisp, including basic Lisp
+programming and prefix notation (a Lisp reference manual such as Guy
+Steele's ``Common Lisp:  The Language'' is also helpful);<p>
+
+(b) be convinced of the utility of formal modeling; and<p>
+
+(c) be willing to gain familiarity with basic automated theorem
+proving topics such as rewriting and algebraic simplification.
+</blockquote>
+<p>
+
+We will not assume any deep familiarity with Nqthm (the so-called
+``Boyer-Moore Theorem Prover''), though the book ``A Computational
+Logic Handbook'' by Boyer and Moore (Academic Press, 1988) is an
+extremely useful reference for many of the topics required to become
+a competent ACL2 user.  We'll refer to it as ACLH below.<p>
+
+As we said in the introduction, ACL2 has various facets.  For
+example, it can be used as a Common Lisp <a href="PROGRAMMING.html">programming</a> system to
+construct application programs.  In fact, the ACL2 system itself is
+a large Common Lisp program constructed almost entirely within ACL2.
+Another use of ACL2 is as a specification and modeling tool.  That
+is the aspect we will concentrate on in the remainder of this
+tutorial.<p>
+
+<em>GETTING STARTED</em><p>
+
+This section is an abridged version of what's available elsewhere;
+feel free to see <a href="STARTUP.html">startup</a> for more details.<p>
+
+How you start ACL2 will be system dependent, but you'll probably
+type something like ``acl2'' at your operating system prompt.
+Consult your system administrator for details.<p>
+
+When you start up ACL2, you'll probably find yourself inside the
+ACL2 <a href="COMMAND.html">command</a> loop, as indicated by the following <a href="PROMPT.html">prompt</a>.
+
+<pre><p>
+
+  ACL2 !&gt;<p>
+
+</pre>
+
+If not, you should type <code>(LP)</code>.  See <a href="LP.html">lp</a>, which has a lot more
+information about the ACL2 <a href="COMMAND.html">command</a> loop.<p>
+
+There are two ``modes'' for using ACL2, <code>:</code><code><a href="LOGIC.html">logic</a></code> and
+<code>:</code><code><a href="PROGRAM.html">program</a></code>.  When you begin ACL2, you will ordinarily be in the
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode.  This means that any new function defined is not
+only executable but also is axiomatically defined in the ACL2 logic.
+(See <a href="DEFUN-MODE.html">defun-mode</a> and see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>.)  Roughly
+speaking, <code>:</code><code><a href="PROGRAM.html">program</a></code> mode is available for using ACL2 as a
+<a href="PROGRAMMING.html">programming</a> language without some of the logical burdens
+necessary for formal reasoning.  In this tutorial we will assume
+that we always remain in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode and that our purpose is
+to write formal models of digital systems and to reason about them.<p>
+
+Now, within the ACL2 <a href="COMMAND.html">command</a> loop you can carry out various
+kinds of activities, including the folllowing.  (We'll see examples
+later of many of these.)
+
+<blockquote><p>
+
+define new functions (see <a href="DEFUN.html">defun</a>);<p>
+
+execute functions on concrete data; <p>
+
+pose and attempt to prove conjectures about previously defined
+functions (see <a href="DEFTHM.html">defthm</a>);<p>
+
+query the ACL2 ``<a href="WORLD.html">world</a>'' or database (e.g., see <a href="PE.html">pe</a>); and<p>
+
+numerous other things. 
+</blockquote>
+<p>
+
+In addition, there is extensive on-line <a href="DOCUMENTATION.html">documentation</a>, of which this
+tutorial introduction is a part.<p>
+
+<em>INTERACTING WITH ACL2</em><p>
+
+The standard means of interacting with ACL2 is to submit a sequence
+of forms for processing by the ACL2 system.  These forms are checked
+for syntactic and semantic acceptability and appropriately processed
+by the system.  These forms can be typed directly at the ACL2
+<a href="PROMPT.html">prompt</a>.  However, most successful ACL2 users prefer to do their work
+using the Emacs text editor, maintaining an Emacs ``working'' buffer
+in which forms are edited.  Those forms are then copied to the ACL2
+interaction buffer, which is often the <code>"*shell*"</code> buffer.<p>
+
+In some cases, processing succeeds and makes some change to the ACL2
+``logical <a href="WORLD.html">world</a>,'' which affects the processing of subsequent forms.
+How can this processing fail?  For example, a proposed theorem will
+be rejected unless all function symbols mentioned have been
+previously defined.  Also the ability of ACL2 to discover the proof
+of a theorem may depend on the user previously having proved other
+theorems.  Thus, the order in which forms are submitted to ACL2 is
+quite important.  Maintaining forms in an appropriate order in your
+working buffer will be helpful for re-playing the proof later.<p>
+
+One of the most common <a href="EVENTS.html">events</a> in constructing a model is
+introducing new functions.  New functions are usually introduced
+using the <code><a href="DEFUN.html">defun</a></code> form; we'll encounter some exceptions later.
+Proposed function definitions are checked to make sure that they are
+syntactically and semantically acceptable (e.g., that all mentioned
+functions have been previously defined) and, for recursive
+functions, that their recursive calls <strong>terminate</strong>.  A recursive
+function definition is guaranteed to terminate if there is some some
+``measure'' of the arguments and a ``well-founded'' ordering such
+that the arguments to the function get smaller in each recursive
+call.  See <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>.<p>
+
+For example, suppose that we need a function that will append two
+lists together.  (We already have one in the ACL2 <code><a href="APPEND.html">append</a></code>
+function; but suppose perversely that we decide to define our own.)
+Suppose we submit the following definition (you should do so as well
+and study the system output):
+
+<pre><p>
+
+  (defun my-app (x y)
+    (if (atom x)
+        y
+      (cons (car x) (my-app x y))))<p>
+
+</pre>
+
+The system responds with the following message:
+
+<pre><p>
+
+  ACL2 Error in ( DEFUN MY-APP ...):  No :MEASURE was supplied with
+  the definition of MY-APP.  Our heuristics for guessing one have not
+  made any suggestions.  No argument of the function is tested along
+  every branch and occurs as a proper subterm at the same argument
+  position in every recursive call.  You must specify a :MEASURE.  See
+  :DOC defun.<p>
+
+</pre>
+
+This means that the system could not find an expression involving
+the formal parameters <code>x</code> and <code>y</code> that decreases under some
+well-founded order in every recursive call (there is only one such
+call).  It should be clear that there is no such measure in this
+case because the only recursive call doesn't change the arguments at
+all.  The definition is obviously flawed; if it were accepted and
+executed it would loop forever.  Notice that a definition that is
+rejected is not stored in the system database; there is no need to
+take any action to have it ``thrown away.''  Let's try again with
+the correct definition.  The interaction now looks like (we're also
+putting in the ACL2 <a href="PROMPT.html">prompt</a>; you don't type that):
+
+<pre><p>
+
+  ACL2 !&gt;(defun my-app (x y)
+           (if (atom x)
+               y
+             (cons (car x) (my-app (cdr x) y))))<p>
+
+  The admission of MY-APP is trivial, using the relation O&lt;
+  (which is known to be well-founded on the domain recognized by
+  O-P) and the measure (ACL2-COUNT X).  We observe that the
+  type of MY-APP is described by the theorem
+  (OR (CONSP (MY-APP X Y)) (EQUAL (MY-APP X Y) Y)).
+  We used primitive type reasoning.<p>
+
+  Summary
+  Form:  ( DEFUN MY-APP ...)
+  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+  Warnings:  None
+  Time:  0.07 seconds (prove: 0.00, print: 0.00, other: 0.07)
+  MY-APP<p>
+
+</pre>
+
+Notice that this time the function definition was accepted.  We
+didn't have to supply a measure explicitly; the system inferred one
+from the form of the definition.  On complex functions it may be
+necessary to supply a measure explicitly.  (See <a href="XARGS.html">xargs</a>.)<p>
+
+The system output provides several pieces of information.
+
+<blockquote><p>
+
+The revised definition is acceptable.  The system realized that
+there is a particular measure (namely, <code>(acl2-count x)</code>) and a
+well-founded relation (<code>o&lt;</code>) under which the arguments of
+<code>my-app</code> get smaller in recursion.  Actually, the theorem prover
+proved several theorems to admit <code>my-app</code>.  The main one was that
+when <code>(atom x)</code> is false the <code>acl2-count</code> of <code>(cdr x)</code> is less
+than (in the <code>o&lt;</code> sense) the <code>acl2-count</code> of <code>x</code>.
+<code><a href="ACL2-COUNT.html">Acl2-count</a></code> is the most commonly used measure of the ``size`` of
+an ACL2 object.  <code><a href="O_lt_.html">o&lt;</a></code> is the ordering relation on ordinals
+less than epsilon-0.  On the natural numbers it is just ordinary
+``&lt;''.<p>
+
+The observation printed about ``the type of MY-APP'' means that
+calls of the function <code>my-app</code> will always return a value that is
+either a <a href="CONS.html">cons</a> pair or is equal to the second parameter.<p>
+
+The summary provides information about which previously introduced
+definitions and lemmas were used in this proof, about some notable
+things to watch out for (the Warnings), and about how long this
+event took to process.
+</blockquote>
+<p>
+
+Usually, it's not important to read this information.  However, it
+is a good habit to scan it briefly to see if the type information is
+surprising to you or if there are Warnings.  We'll see an example of
+them later.<p>
+
+After a function is accepted, it is stored in the database and
+available for use in other function definitions or lemmas.  To see
+the definition of any function use the <code>:</code><code><a href="PE.html">pe</a></code> command
+(see <a href="PE.html">pe</a>).  For example,
+
+<pre><p>
+
+  ACL2 !&gt;:pe my-app
+   L       73:x(DEFUN MY-APP (X Y)
+                      (IF (ATOM X)
+                          Y (CONS (CAR X) (MY-APP (CDR X) Y))))<p>
+
+</pre>
+
+This displays the definition along with some other relevant
+information.  In this case, we know that this definition was
+processed in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode (the ``<code>L</code>'') and was the 73rd <a href="COMMAND.html">command</a>
+processed in the current session.<p>
+
+We can also try out our newly defined function on some sample data.
+To do that, just submit a form to be evaluated to ACL2.  For
+example,
+
+<pre><p>
+
+  ACL2 !&gt;(my-app '(0 1 2) '(3 4 5))
+  (0 1 2 3 4 5)
+  ACL2 !&gt;(my-app nil nil)
+  NIL
+  ACL2 !&gt;<p>
+
+</pre>
+<p>
+
+Now suppose we want to prove something about the function just
+introduced.  We conjecture, for example, that the length of the
+<a href="APPEND.html">append</a> of two lists is the sum of their lengths.  We can formulate
+this conjecture in the form of the following ACL2 <code><a href="DEFTHM.html">defthm</a></code> form.
+
+<pre><p>
+
+  (defthm my-app-length
+    (equal (len (my-app x y))
+           (+ (len x) (len y))))<p>
+
+</pre>
+
+First of all, how did we know about the functions <code>len</code> and <code><a href="+.html">+</a></code>, etc.?
+The answer to that is somewhat unsatisfying -- we know them from our
+past experience in using Common Lisp and ACL2.  It's hard to know
+that a function such as <code>len</code> exists without first knowing some Common
+Lisp.  If we'd guessed that the appropriate function was called
+<code><a href="LENGTH.html">length</a></code> (say, from our knowledge of Lisp) and tried <code>:pe length</code>, we
+would have seen that <code><a href="LENGTH.html">length</a></code> is defined in terms of <code>len</code>, and we
+could have explored from there.  Luckily, you can write a lot of
+ACL2 functions without knowing too many of the primitive functions.<p>
+
+Secondly, why don't we need some ``type'' hypotheses?  Does it make
+sense to append things that are not lists?  Well, yes.  ACL2 and
+Lisp are both quite weakly typed.  For example, inspection of the
+definition of <code>my-app</code> shows that if <code>x</code> is not a <a href="CONS.html">cons</a> pair, then
+<code>(my-app x y)</code> always returns <code>y</code>, no matter what <code>y</code> is.<p>
+
+Thirdly, would it matter if we rewrote the lemma with the equality
+reversed, as follows?
+
+<pre><p>
+
+  (defthm my-app-length2
+    (equal (+ (len x) (len y))
+           (len (my-app x y)))).<p>
+
+</pre>
+
+The two are <strong>logically</strong> equivalent, but...yes, it would make a
+big difference.  Recall our remark that a lemma is not only a
+``fact'' to be proved; it also is used by the system to prove other
+later lemmas.  The current lemma would be stored as a <a href="REWRITE.html">rewrite</a> rule.
+(See <a href="RULE-CLASSES.html">rule-classes</a>.)  For a <a href="REWRITE.html">rewrite</a> rule, a conclusion of the
+form <code>(EQUAL LHS RHS)</code> means to replace instances of the <code>LHS</code> by the
+appropriate instance of the <code>RHS</code>.  Presumably, it's better to <a href="REWRITE.html">rewrite</a>
+<code>(len (my-app x y))</code> to <code>(+ (len x) (len y))</code> than the other way around.
+The reason is that the system ``knows'' more about <code><a href="+.html">+</a></code> than it does
+about the new function symbol <code>my-app</code>.<p>
+
+So let's see if we can prove this lemma.  Submitting our preferred
+<code><a href="DEFTHM.html">defthm</a></code> to ACL2 (do it!), we get the following interaction:
+
+<pre>
+          --------------------------------------------------
+ACL2 !&gt;(defthm my-app-length
+  (equal (len (my-app x y))
+         (+ (len x) (len y))))<p>
+
+Name the formula above *1.<p>
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived
+induction schemes.  However, one of these is flawed and so we are
+left with one viable candidate.<p>
+
+We will induct according to a scheme suggested by (LEN X), but
+modified to accommodate (MY-APP X Y).  If we let (:P X Y) denote *1
+above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X Y))
+     (IMPLIES (AND (CONSP X) (:P (CDR X) Y))
+              (:P X Y))).
+This induction is justified by the same argument used to admit LEN,
+namely, the measure (ACL2-COUNT X) is decreasing according to the
+relation O&lt; (which is known to be well-founded on the domain
+recognized by O-P).  When applied to the goal at hand the
+above induction scheme produces the following two nontautological
+subgoals.<p>
+
+Subgoal *1/2
+(IMPLIES (NOT (CONSP X))
+         (EQUAL (LEN (MY-APP X Y))
+                (+ (LEN X) (LEN Y)))).<p>
+
+But simplification reduces this to T, using the :definitions of FIX,
+LEN and MY-APP, the :type-prescription rule LEN, the :rewrite rule
+UNICITY-OF-0 and primitive type reasoning.<p>
+
+Subgoal *1/1
+(IMPLIES (AND (CONSP X)
+              (EQUAL (LEN (MY-APP (CDR X) Y))
+                     (+ (LEN (CDR X)) (LEN Y))))
+         (EQUAL (LEN (MY-APP X Y))
+                (+ (LEN X) (LEN Y)))).<p>
+
+This simplifies, using the :definitions of LEN and MY-APP, primitive
+type reasoning and the :rewrite rules COMMUTATIVITY-OF-+ and
+CDR-CONS, to<p>
+
+Subgoal *1/1'
+(IMPLIES (AND (CONSP X)
+              (EQUAL (LEN (MY-APP (CDR X) Y))
+                     (+ (LEN Y) (LEN (CDR X)))))
+         (EQUAL (+ 1 (LEN (MY-APP (CDR X) Y)))
+                (+ (LEN Y) 1 (LEN (CDR X))))).<p>
+
+But simplification reduces this to T, using linear arithmetic,
+primitive type reasoning and the :type-prescription rule LEN.<p>
+
+That completes the proof of *1.<p>
+
+Q.E.D.<p>
+
+Summary
+Form:  ( DEFTHM MY-APP-LENGTH ...)
+Rules: ((:REWRITE UNICITY-OF-0)
+        (:DEFINITION FIX)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:DEFINITION LEN)
+        (:REWRITE CDR-CONS)
+        (:DEFINITION MY-APP)
+        (:TYPE-PRESCRIPTION LEN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FAKE-RUNE-FOR-LINEAR NIL))
+Warnings:  None
+Time:  0.30 seconds (prove: 0.13, print: 0.05, other: 0.12)
+ MY-APP-LENGTH
+          --------------------------------------------------
+</pre>
+<p>
+
+Wow, it worked!  In brief, the system first tried to <a href="REWRITE.html">rewrite</a> and
+simplify as much as possible.  Nothing changed; we know that because
+it said ``Name the formula above *1.''  Whenever the system decides
+to name a formula in this way, we know that it has run out of
+techniques to use other than proof by induction.<p>
+
+The induction performed by ACL2 is structural or ``Noetherian''
+induction.  You don't need to know much about that except that it is
+induction based on the structure of some object.  The heuristics
+infer the structure of the object from the way the object is
+recursively decomposed by the functions used in the conjecture.  The
+heuristics of ACL2 are reasonably good at selecting an induction
+scheme in simple cases.  It is possible to override the heuristic
+choice by providing an <code>:induction</code> hint (see <a href="HINTS.html">hints</a>).  In the
+case of the theorem above, the system inducts on the structure of
+<code>x</code> as suggested by the decomposition of <code>x</code> in both <code>(my-app x y)</code>
+and <code>(len x)</code>.  In the base case, we assume that <code>x</code> is not a
+<code><a href="CONSP.html">consp</a></code>.  In the inductive case, we assume that it is a <code><a href="CONSP.html">consp</a></code>
+and assume that the conjecture holds for <code>(cdr x)</code>.<p>
+
+There is a close connection between the analysis that goes on when a
+function like <code>my-app</code> is accepted and when we try to prove
+something inductively about it.  That connection is spelled out well
+in Boyer and Moore's book ``A Computational Logic,'' if you'd like to
+look it up.  But it's pretty intuitive.  We accepted <code>my-app</code>
+because the ``size'' of the first argument <code>x</code> decreases in the
+recursive call.  That tells us that when we need to prove something
+inductively about <code>my-app</code>, it's a good idea to try an induction on
+the size of the first argument.  Of course, when you have a theorem
+involving several functions, it may be necessary to concoct a more
+complicated <a href="INDUCTION.html">induction</a> schema, taking several of them into account.
+That's what's meant by ``merging'' the induction schemas.<p>
+
+The proof involves two cases: the base case, and the inductive case.
+You'll notice that the subgoal numbers go <strong>down</strong> rather than up,
+so you always know how many subgoals are left to process.  The base
+case (<code>Subgoal *1/2</code>) is handled by opening up the function
+definitions, simplifying, doing a little rewriting, and performing
+some reasoning based on the types of the arguments.  You'll often
+encounter references to system defined lemmas (like
+<code>unicity-of-0</code>).  You can always look at those with <code>:</code><code><a href="PE.html">pe</a></code>; but,
+in general, assume that there's a lot of simplification power under
+the hood that's not too important to understand fully.<p>
+
+The inductive case (<code>Subgoal *1/1</code>) is also dispatched pretty
+easily.  Here we assume the conjecture true for the <code><a href="CDR.html">cdr</a></code> of the
+list and try to prove it for the entire list.  Notice that the
+prover does some simplification and then prints out an updated
+version of the goal (<code>Subgoal *1/1'</code>).  Examining these gives you a
+pretty good idea of what's going on in the proof.<p>
+
+Sometimes one goal is split into a number of subgoals, as happened
+with the induction above.  Sometimes after some initial processing
+the prover decides it needs to prove a subgoal by induction; this
+subgoal is given a name and pushed onto a stack of goals.  Some
+steps, like generalization (see ACLH), are not necessarily validity
+preserving; that is, the system may adopt a false subgoal while
+trying to prove a true one.  (Note that this is ok in the sense that
+it is not ``unsound.''  The system will fail in its attempt to
+establish the false subgoal and the main proof attempt will fail.)
+As you gain facility with using the prover, you'll get pretty good
+at recognizing what to look for when reading a proof script.  The
+prover's <a href="PROOF-TREE.html">proof-tree</a> utility helps with monitoring an ongoing
+proof and jumping to designated locations in the proof
+(see <a href="PROOF-TREE.html">proof-tree</a>).  See <a href="TIPS.html">tips</a> for a number of useful
+pointers on using the theorem prover effectively.<p>
+
+When the prover has successfully proved all subgoals, the proof is
+finished.  As with a <code><a href="DEFUN.html">defun</a></code>, a summary of the proof is printed.
+This was an extremely simple proof, needing no additional guidance.
+More realistic examples typically require the user to look carefully
+at the failed proof log to find ways to influence the prover to do
+better on its next attempt.  This means either:  proving some rules
+that will then be available to the prover, changing the global state
+in ways that will affect the proof, or providing some <a href="HINTS.html">hints</a>
+locally that will influence the prover's behavior.  Proving this
+lemma (<code>my-app-length</code>) is an example of the first.  Since this is
+a <a href="REWRITE.html">rewrite</a> rule, whenever in a later proof an instance of the
+form <code>(LEN (MY-APP X Y))</code> is encountered, it will be rewritten to
+the corresponding instance of <code>(+ (LEN X) (LEN Y))</code>.  Disabling the
+rule by executing the <a href="COMMAND.html">command</a>
+
+<pre><p>
+
+  (in-theory (disable my-app-length)),<p>
+
+</pre>
+ 
+is an example of a global change to the behavior of the prover
+since this <a href="REWRITE.html">rewrite</a> will not be performed subsequently (unless the rule
+is again <a href="ENABLE.html">enable</a>d).  Finally, we can add a (local) <a href="DISABLE.html">disable</a> ``hint''
+to a <code><a href="DEFTHM.html">defthm</a></code>, meaning to <a href="DISABLE.html">disable</a> the lemma only in the proof of one
+or more subgoals.  For example: 
+
+<pre>
+
+  (defthm my-app-length-commutativity
+    (equal (len (my-app x y))
+           (len (my-app y x)))
+    :hints (("Goal" :in-theory (disable my-app-length))))
+
+</pre>
+
+In this case, the hint supplied is a bad idea since the proof is much
+harder with the hint than without it.  Try it both ways.<p>
+
+By the way, to undo the previous event use <code>:u</code> (see <a href="U.html">u</a>).  To
+undo back to some earlier event use <code>:ubt</code> (see <a href="UBT.html">ubt</a>).  To view
+the current event use <code>:pe :here</code>.  To list several <a href="EVENTS.html">events</a> use
+<code>:pbt</code> (see <a href="PBT.html">pbt</a>).<p>
+
+Notice the form of the hint in the previous example
+(see <a href="HINTS.html">hints</a>).  It specifies a goal to which the hint applies.
+<code>"Goal"</code> refers to the top-level goal of the theorem.  Subgoals
+are given unique names as they are generated.  It may be useful to
+suggest that a function symbol be <a href="DISABLE.html">disable</a>d only for Subgoal
+1.3.9, say, and a different function <a href="ENABLE.html">enable</a>d only on Subgoal
+5.2.8.  Overuse of such <a href="HINTS.html">hints</a> often suggests a poor global
+proof strategy.<p>
+
+We now recommend that you visit <a href="DOCUMENTATION.html">documentation</a> on additional
+examples.  See <a href="TUTORIAL-EXAMPLES.html">tutorial-examples</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

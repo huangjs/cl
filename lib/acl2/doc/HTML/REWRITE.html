@@ -1,0 +1,99 @@
+<html>
+<head><title>REWRITE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REWRITE</h2>make some <code>:rewrite</code> rules (possibly conditional ones)
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  Example <code>:</code><code><a href="COROLLARY.html">corollary</a></code>
+formulas from which <code>:rewrite</code> rules might be built are:
+
+<pre>
+Example:
+(equal (+ x y) (+ y x))            replace (+ a b) by (+ b a) provided
+                                   certain heuristics approve the
+                                   permutation.<p>
+
+(implies (true-listp x)            replace (append a nil) by a, if
+         (equal (append x nil) x)) (true-listp a) rewrites to t<p>
+
+(implies                           replace (member a (append b c)) by
+    (and (eqlablep e)              (member a (append c b)) in contexts  
+         (true-listp x)            in which propositional equivalence
+         (true-listp y))           is sufficient, provided (eqlablep a)
+    (iff (member e (append x y))   (true-listp b) and (true-listp c)
+         (member e (append y x)))) rewrite to t and the permutative
+                                   heuristics approve
+<p>
+General Form:
+(and ...
+     (implies (and ...hi...)
+              (implies (and ...hk...)
+                       (and ...
+                            (equiv lhs rhs)
+                            ...)))
+     ...)
+</pre>
+
+Note: One <code>:rewrite</code> rule class object might create many rewrite
+rules from the <code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula.  To create the rules, we first
+translate the formula (expanding all macros; also see <a href="TRANS.html">trans</a>).
+Next, we eliminate all <code>lambda</code>s; one may think of this step as
+simply substituting away every <code><a href="LET.html">let</a></code>, <code><a href="LET_star_.html">let*</a></code>, and <code><a href="MV-LET.html">mv-let</a></code> in the
+formula.  We then flatten the <code><a href="AND.html">and</a></code> and <code><a href="IMPLIES.html">implies</a></code> structure of the
+formula, transforming it into a conjunction of formulas, each of the
+form
+
+<pre>
+(implies (and h1 ... hn) concl)
+</pre>
+
+where no hypothesis is a conjunction and <code>concl</code> is neither a conjunction
+nor an implication.  If necessary, the hypothesis of such a conjunct may be
+vacuous.  We then further coerce each <code>concl</code> into the form
+<code>(equiv lhs rhs)</code>, where <code>equiv</code> is a known <a href="EQUIVALENCE.html">equivalence</a> relation, by
+replacing any <code>concl</code> not of that form by <code>(iff concl t)</code>.  A <code>concl</code>
+of the form <code>(not term)</code> is considered to be of the form
+<code>(iff term nil)</code>.  By these steps we reduce the given <code>:</code><code><a href="COROLLARY.html">corollary</a></code>
+to a sequence of conjuncts, each of which is of the form
+
+<pre>
+(implies (and h1 ... hn)
+         (equiv lhs rhs))
+</pre>
+
+where <code>equiv</code> is a known <a href="EQUIVALENCE.html">equivalence</a> relation.  See <a href="EQUIVALENCE.html">equivalence</a> for a
+general discussion of the introduction of new <a href="EQUIVALENCE.html">equivalence</a> relations.<p>
+
+We create a <code>:rewrite</code> rule for each such conjunct, if possible, and
+otherwise cause an error.  It is possible to create a rewrite rule from such
+a conjunct provided <code>lhs</code> is not a variable, a quoted constant, a
+<code><a href="LET.html">let</a></code>-expression, a <code>lambda</code> application, or an <code><a href="IF.html">if</a></code>-expression.<p>
+
+A <code>:rewrite</code> rule is used when any instance of the <code>lhs</code> occurs in a
+context in which the <a href="EQUIVALENCE.html">equivalence</a> relation is operative.  First, we find
+a substitution that makes <code>lhs</code> equal to the target term.  Then we attempt
+to relieve the instantiated hypotheses of the rule.  Hypotheses that are
+fully instantiated are relieved by recursive rewriting.  Hypotheses that
+contain ``free variables'' (variables not assigned by the unifying
+substitution) are relieved by attempting to guess a suitable instance so as
+to make the hypothesis equal to some known assumption in the context of the
+target.  If the hypotheses are relieved, and certain restrictions that
+prevent some forms of infinite regress are met (see <a href="LOOP-STOPPER.html">loop-stopper</a>), the
+target is replaced by the instantiated <code>rhs</code>, which is then recursively
+rewritten.<p>
+
+ACL2's rewriting process has undergone some optimization.  In particular,
+when a term <code>t1</code> is rewritten to a new term <code>t2</code>, the rewriter is then
+immediately applied to <code>t2</code>.  On rare occasions you may find that you do
+not want this behavior, in which case you may wish to use a trick involving
+<code><a href="HIDE.html">hide</a></code> that is described near the end of the documentation for <a href="META.html">meta</a>;
+see <a href="META.html">meta</a>.<p>
+
+At the moment, the best description of how ACL2 <code>:rewrite</code> rules are
+used is perhaps in the discussion of ``Replacement Rules'' on page
+279 of A Computational Logic Handbook (second edition).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

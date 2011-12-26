@@ -1,0 +1,217 @@
+<html>
+<head><title>TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TABLE</h2>user-managed tables
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(table tests 1 '(...))                ; set contents of tests[1] to '(...)
+(table tests 25)                      ; get contents of tests[25]
+(table tests)                         ; return table tests as an alist
+(table tests nil nil :clear)          ; clear table tests
+(table tests nil '((foo . 7)) :clear) ; set table tests to (foo 7)
+(table tests nil nil :guard)          ; fetch the table guard
+(table tests nil nil :guard term)     ; set the table guard
+<p>
+General Form:
+(table table-name key-term value-term op term)
+</pre>
+
+where <code>table-name</code> is a symbol that is the name of a (possibly new)
+table, <code>key-term</code> and <code>value-term</code>, if present, are arbitrary terms
+involving (at most) the single variable <code><a href="WORLD.html">world</a></code>, <code>op</code>, if present, is
+one of the table operations below, and <code>term</code>, if present, is a term.
+<code>Table</code> returns an acl2 ``error triple.'' The effect of <code>table</code> on <code><a href="STATE.html">state</a></code>
+depends on <code>op</code> and how many arguments are presented.  Some
+invocations actually have no effect on the ACL2 <a href="WORLD.html">world</a> and hence an
+invocation of <code>table</code> is not always an ``event''.  We explain below,
+after giving some background information.<p>
+
+<b>Important Note:</B>  The <code>table</code> forms above are calls of a macro
+that expand to involve the special variable <code><a href="STATE.html">state</a></code>.  This will
+prevent you from accessing a table from within a hint or theory where
+where you do not have the <code><a href="STATE.html">state</a></code> variable.  However, the form
+
+<pre>
+(table-alist 'tests world)
+</pre>
+
+returns the alist representation of the table named <code>test</code> in the
+given world.  Often you have access to <code>world</code>.<p>
+
+The ACL2 system provides ``tables'' by which the user can associate
+one object with another.  Tables are in essence just conventional
+association lists -- lists of pairs -- but the ACL2 environment
+provides a means of storing these lists in the ``ACL2 world'' of the
+current <code><a href="STATE.html">state</a></code>.  The ACL2 user could accomplish the same ends by
+using ACL2 ``global variables;'' however, limitations on global
+variable names are imposed to ensure ACL2's soundness.  By
+convention, no table is important to ACL2's soundness, even though
+some features of the system use tables, and the user is invited to
+make free use of tables.  Because tables are stored in the ACL2
+<a href="WORLD.html">world</a> they are restored by <code><a href="INCLUDE-BOOK.html">include-book</a></code> and undone by <code>:</code><code><a href="UBT.html">ubt</a></code>.  Many
+users of Nqthm requested a facility by which user data could be
+saved in Nqthm ``lib files'' and tables are ACL2's answer to that
+request.<p>
+
+Abstractly, each table is an association list mapping ``keys'' to
+``values.'' In addition, each table has a ``<code>:guard</code>,'' which is a
+term that must be true of any key and value used.  By setting the
+<code>:guard</code> on a table you may enforce an invariant on the objects in the
+table, e.g., that all keys are positive integers and all values are
+symbols.  Each table has a ``name,'' which must be a symbol.  Given
+a table name, there are six operations one might perform on the
+table.<p>
+
+<code>:put</code> -- associate a value with a key (possibly changing the value
+currently associated with that key).<p>
+
+<code>:get</code> -- retrieve the value associated with a key (or nil if no
+value has been associated with that key).<p>
+
+<code>:alist</code> -- return an alist showing all keys and non-nil values in
+the table.<p>
+
+<code>:clear</code> -- clear the table (so that every value is nil), or if val
+is supplied then set table to that value (which must be an alist).<p>
+
+<code>:guard</code> -- fetch or set the :guard of the table.<p>
+
+When the operations above suggest that the table or its <code>:guard</code> are
+modified, what is actually meant is that the current <a href="STATE.html">state</a> is redefined
+so that in it, the affected table name has the appropriate properties.  in
+such cases, the <code>table</code> form is an event (see <a href="EVENTS.html">events</a>).  In the <code>:put</code>
+case, if the key is already in the table and associated with the proposed
+value, then the <code>table</code> event is redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>).<p>
+
+<code>Table</code> forms are commonly typed by the user while interacting with
+the system.  <code>:Put</code> and <code>:get</code> forms are especially common.  Therefore,
+we have adopted a positional syntax that is intended to be
+convenient for most applications.  Essentially, some operations
+admit a ``short form'' of invocation.
+
+<pre>
+(table name key-term value-term :put)   ; long form
+(table name key-term value-term)        ; short form
+</pre>
+
+evaluates the key- and value-terms, obtaining two objects that we
+call <code>key</code> and <code>value</code>, checks that the <code>key</code> and <code>value</code> satisfy the
+<code>:guard</code> on the named table and then ``modifies'' the named table
+so that the value associated with <code>key</code> is <code>value</code>.  When used like
+this, <code>table</code> is actually an event in the sense that it changes the
+ACL2 <a href="WORLD.html">world</a>.  In general, the forms evaluated to obtain the <code>key</code> and
+<code>value</code> may involve the variable <code><a href="WORLD.html">world</a></code>, which is bound to the
+then-current <a href="WORLD.html">world</a> during the evaluation of the forms.  However, in
+the special case that the table in question is named
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>, the <code>key</code> and <code>value</code> terms may not contain any
+variables.  Essentially, the keys and values used in <a href="EVENTS.html">events</a> setting
+the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> must be explicitly given constants.
+See <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.
+
+<pre>
+(table name key-term nil :get)          ; long form
+(table name key-term)                   ; short form
+</pre>
+
+evaluates the key-term (see note below), obtaining an object, <code>key</code>,
+and returns the value associated with <code>key</code> in the named table (or,
+<code>nil</code> if there is no value associated with <code>key</code>).  When used like this,
+<code>table</code> is not an event; the value is simply returned.
+
+<pre>
+(table name nil nil :alist)             ; long form
+(table name)                            ; short form
+</pre>
+
+returns an alist representing the named table; for every key in
+the table with a non-<code>nil</code> associated value, the alist pairs the key
+and its value.  The order in which the keys are presented is
+unspecified.  When used like this, <code>table</code> is not an event; the alist
+is simply returned.
+
+<pre>
+(table name nil val :clear)
+</pre>
+
+sets the named table to the alist <code>val</code>, making the checks that <code>:put</code>
+makes for each key and value of <code>val</code>.  When used like this, <code>table</code> is
+an event because it changes the ACL2 <a href="WORLD.html">world</a>.
+
+<pre>
+(table name nil nil :guard)
+</pre>
+
+returns the translated form of the guard of the named table.
+
+<pre>
+(table name nil nil :guard term)
+</pre>
+
+Provided the named table is empty and has not yet been assigned a
+<code>:guard</code> and <code>term</code> (which is not evaluated) is a term that mentions at
+most the variables <code>key</code>, <code>val</code> and <code><a href="WORLD.html">world</a></code>, this event sets the <code>:guard</code> of
+the named table to <code>term</code>.  Whenever a subsequent <code>:put</code> occurs, <code>term</code>
+will be evaluated with <code>key</code> bound to the key argument of the <code>:put</code>,
+<code>val</code> bound to the <code>val</code> argument of the <code>:put</code>, and <code><a href="WORLD.html">world</a></code> bound to the
+then current <a href="WORLD.html">world</a>.  An error will be caused by the <code>:put</code> if the
+result of the evaluation is <code>nil</code>.<p>
+
+Note that it is not allowed to change the <code>:guard</code> on a table once it
+has been explicitly set.  Before the <code>:guard</code> is explicitly set, it is
+effectively just <code>t</code>.  After it is set it can be changed only by
+undoing the event that set it.  The purpose of this restriction is
+to prevent the user from changing the <code>:guards</code> on tables provided by
+other people or the system.<p>
+
+The intuition behind the <code>:guard</code> mechanism on tables is to enforce
+invariants on the keys and values in a table, so that the values,
+say, can be used without run-time checking.  But if the <code>:guard</code> of a
+table is sensitive to the ACL2 <a href="WORLD.html">world</a>, it may be possible to cause
+some value in the table to cease satisfying the <code>:guard</code> without doing
+any operations on the table.  Consider for example the <code>:guard</code> ``no
+value in this table is the name of an event.'' As described, that is
+enforced each time a value is stored.  Thus, <code>'bang</code> can be <code>:put</code> in
+the table provided there is no event named <code>bang</code>.  But once it is in
+the table, there is nothing to prevent the user from defining <code>bang</code>
+as a function, causing the table to contain a value that could not
+be <code>:put</code> there anymore.  Observe that not all state-sensitive <code>:guard</code>s
+suffer this problem.  The <code>:guard</code> ``every value is an event name''
+remains invariant, courtesy of the fact that undoing back through an
+event name in the table would necessarily undo the <code>:put</code> of the name
+into the table.<p>
+
+<code>Table</code> was designed primarily for convenient top-level use.  Tables
+are not especially efficient.  Each table is represented by an alist
+stored on the property list of the table name.  <code>:Get</code> is just a
+<code>getprop</code> and <code><a href="ASSOC-EQUAL.html">assoc-equal</a></code>.  <code>:Put</code> does a <code>getprop</code> to the get the table
+alist, a <code>put-assoc-equal</code> to record the new association, and a
+<code>putprop</code> to store the new table alist -- plus the overhead associated
+with <code>:guard</code>s and undoable <a href="EVENTS.html">events</a>, and checking (for redundancy) if
+the key is already bound to its proposed value.  Note that there are never
+duplicate keys in the resulting <code>alist</code>; in particular, when the
+operation <code>:clear</code> is used to install new <code>alist</code>, duplicate keys are
+removed from that alist.<p>
+
+A table name may be any symbol whatsoever.  Symbols already in use
+as function or theorem names, for example, may be used as table
+names.  Symbols in use only as table names may be defined with
+<code><a href="DEFUN.html">defun</a></code>, etc.  Because there are no restrictions on the user's choice
+of table names, table names are not included among the logical
+names.  Thus, <code>:pe name</code> will never display a table event (for a
+logical name other than <code>:here</code>).  Either <code>:pe name</code> will display a
+``normal'' event such as <code>(defun name ...)</code> or <code>(defthm name ...)</code> or
+else <code>:pe name</code> will cause an error indicating that <code>name</code> is not a
+logical name.  This happens even if <code>name</code> is in use as a table name.
+Similarly, we do not permit table names to have <a href="DOCUMENTATION.html">documentation</a>
+strings, since the same name might already have a <a href="DOCUMENTATION.html">documentation</a>
+string.  If you want to associate a <a href="DOCUMENTATION.html">documentation</a> string with a
+table name that is being used no other way, define the name as a
+label and use the <code>:</code><code><a href="DOC.html">doc</a></code> feature of <code><a href="DEFLABEL.html">deflabel</a></code>
+(see <a href="DEFLABEL.html">deflabel</a>); also see <a href="DEFDOC.html">defdoc</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

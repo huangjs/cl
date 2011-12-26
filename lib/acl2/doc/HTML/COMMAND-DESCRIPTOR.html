@@ -1,0 +1,96 @@
+<html>
+<head><title>COMMAND-DESCRIPTOR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>COMMAND-DESCRIPTOR</h2>an object describing a particular <a href="COMMAND.html">command</a> typed by the user
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:<p>
+
+:max      ; the command most recently typed by the user
+:x        ; synonymous with :max
+(:x -1)   ; the command before the most recent one
+(:x -2)   ; the command before that
+:x-2      ; synonymous with (:x -2)
+5         ; the fifth command typed by the user
+1         ; the first command typed by the user
+0         ; the last command of the system initialization
+-1        ; the next-to-last initialization command
+:min      ; the first command of the initialization
+:start    ; the last command of the initial ACL2 logical world
+fn        ; the command that introduced the logical name fn
+(:search (defmacro foo-bar))
+          ; the first command encountered in a search from :max to
+          ; 0 that either contains defmacro and foo-bar in the 
+          ; command form or contains defmacro and foo-bar in some 
+          ; event within its block.
+</pre>
+
+<p>
+The recorded <a href="HISTORY.html">history</a> of your interactions with the top-level ACL2
+<a href="COMMAND.html">command</a> loop is marked by the <a href="COMMAND.html">command</a>s you typed that changed the
+logical <a href="WORLD.html">world</a>.  Each such <a href="COMMAND.html">command</a> generated one or more <a href="EVENTS.html">events</a>,
+since the only way for you to change the logical <a href="WORLD.html">world</a> is to execute
+an event function.  See <a href="COMMAND.html">command</a> and see <a href="EVENTS.html">events</a>.  We divide
+<a href="HISTORY.html">history</a> into ``<a href="COMMAND.html">command</a> blocks,'' grouping together each <a href="WORLD.html">world</a>
+changing <a href="COMMAND.html">command</a> and its <a href="EVENTS.html">events</a>.  A ``<a href="COMMAND.html">command</a> descriptor'' is an
+object that can be used to describe a particular <a href="COMMAND.html">command</a> in the
+<a href="HISTORY.html">history</a> of the ongoing session.<p>
+
+Each <a href="COMMAND.html">command</a> is assigned a unique integer called its ``<a href="COMMAND.html">command</a>
+number'' which indicates the <a href="COMMAND.html">command</a>'s position in the chronological
+ordering of all of the <a href="COMMAND.html">command</a>s ever executed in this session
+(including those executed to initialize the system).  We assign the
+number 1 to the first <a href="COMMAND.html">command</a> you type to ACL2.  We assign 2 to the
+second and so on.  The non-positive integers are assigned to
+``prehistoric'' <a href="COMMAND.html">command</a>s, i.e., the <a href="COMMAND.html">command</a>s used to initialize the
+ACL2 system: 0 is the last <a href="COMMAND.html">command</a> of the initialization, -1 is the
+one before that, etc.<p>
+
+The legal <a href="COMMAND.html">command</a> descriptors are described below.  We use <code>n</code> to
+denote any integer, <code>sym</code> to denote any logical name
+(see <a href="LOGICAL-NAME.html">logical-name</a>), and <code>cd</code> to denote, recursively, any <a href="COMMAND.html">command</a>
+descriptor.
+
+<pre>
+ command                   command
+descriptor                described<p>
+
+:max   -- the most recently executed command (i.e., the one with
+          the largest command number)
+:x     -- synonymous with :max
+:x-k   -- synonymous with (:x -k), if k is an integer and k&gt;0
+:min   -- the earliest command (i.e., the one with the smallest
+          command number and hence the first command of the system
+          initialization)
+:start -- the last command when ACL2 starts up
+n      -- command number n  (If n is not in the
+          range :min&lt;=n&lt;=:max, n is replaced by the nearest of :min
+          and :max.)
+sym    -- the command that introduced the logical name sym
+(cd n) -- the command whose number is n plus the command number of
+          the command described by cd
+(:search pat cd1 cd2)
+          In this command descriptor, pat must be either an atom or
+          a true list of atoms and cd1 and cd2 must be command
+          descriptors.  We search the interval from cd1 through cd2
+          for the first command that matches pat.  Note that if cd1
+          occurs chronologically after cd2, the search is
+          ``backwards'' through history while if cd1 occurs
+          chronologically before cd2, the search is ``forwards''.  A
+          backwards search will find the most recent match; a
+          forward search will find the chronologically earliest
+          match.  A command matches pat if either the command form
+          itself or one of the events in the block contains pat (or
+          all of the atoms in pat if pat is a list).
+(:search pat)
+          the command found by (:search pat :max 0), i.e., the most
+          recent command matching pat that was part of the user's
+          session, not part of the system initialization.
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

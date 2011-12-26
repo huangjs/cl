@@ -1,0 +1,53 @@
+<html>
+<head><title>WITH-OUTPUT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WITH-OUTPUT</h2>suppressing or turning on specified output for an event
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(with-output
+   :off summary ; turn off the event summary when evaluating the following:
+   (in-theory (disable name)))
+<p>
+General Form:
+(with-output :key1 val1 ... :keyk valk form)
+</pre>
+
+where each <code>:keyi</code> is either <code>:off</code> or <code>:on</code> and either <code>vali</code> is
+either <code>:all</code> or else a symbol or non-empty list of symbols representing
+output types that can be inhibited (see <a href="SET-INHIBIT-OUTPUT-LST.html">set-inhibit-output-lst</a>).  The result
+of evaluating the General Form above is to evaluate <code>form</code>, but in an
+environment where the current set of inhibited output types is modified: if
+<code>:on :all</code> is specified, then all output is turned on except as specified
+by <code>:off</code>; else if <code>:off :all</code> is specified, then all output is inhibited
+except as specified by <code>:on</code>; and otherwise, the currently-inhibited output
+types are reduced as specified by <code>:on</code> and then extended as specified by
+<code>:off</code>.<p>
+
+Warning: <code>With-output</code> has no effect in raw Lisp, and hence is disallowed
+in function bodies.  However, you can probably get the effect you want as
+illustrated below, where <code>&lt;form&gt;</code> must return an error triple
+<code>(mv erp val state)</code>; see <a href="LD.html">ld</a>.
+
+<pre>
+Examples avoiding with-output, for use in function definitions:<p>
+
+; Inhibit all output:
+(state-global-let*
+ ((inhibit-output-lst *valid-output-names*))
+ &lt;form&gt;)<p>
+
+; Inhibit all warning output:
+(state-global-let*
+ ((inhibit-output-lst
+   (union-eq (f-get-global 'inhibit-output-lst state)
+             '(warning warning!))))
+ &lt;form&gt;)
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Chapter 9 Notes: Ray Tracer</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 9: An Object-Oriented Ray Tracer</DIV>
+
+<H2>The Problem</H2>
+
+<P>Here's the definition of <CODE>intersect</CODE> given by Graham in
+Chapter 9, extended to show what it would like if cubes were added:
+</P>
+
+<PRE>(defun intersect (s pt xr yr zr)
+  (funcall (typecase s
+              (sphere #'sphere-intersect)
+              (cube #'cube-intersect))
+           s pt xr yr zr))</PRE>
+
+<P>As noted, this approach means that we will have to redefine
+<CODE>intersect</CODE> every time we define a new kind of object .
+Furthermore, whereever <CODE>intersect</CODE> should go, it
+definitely doesn't belong in the spheres definition file, because of
+the reference to cubes. On the other hand, we'd rather not put it in
+the base file where <CODE>tracer</CODE> and so on are defined because
+</P>
+
+<UL>
+   <LI>it would make the base file dependent on every object
+   definition file
+   
+   <LI>we'd have to edit the base file and recompile it every time we
+   added a new kind of object
+   
+   <LI>we'll get "undefined function" errors when
+   <CODE>intersect</CODE> is compiled if any of the object files are
+   missing, even if we don't need them
+</UL>
+
+<H2>The Object-Oriented Solution</H2>
+
+<P>The minimal change to make Graham's code object-oriented is to
+define intersect in the base file as a method on surfaces:</P>
+
+<PRE>(defmethod intersect ((s surface) pt xr yr zr)
+  (error "Unknown surface ~S" s))</PRE>
+
+<P>This is the default method. It signals an error because there is
+no default way to do ray intersection on an unknown kind of surface.
+</P>
+
+<P>In each object definition file, we'd define the appropriate
+intersection method for the object, e.g.,</P>
+
+<PRE>(defmethod intersect ((s sphere) pt xr yr zr)
+  (let* ((c (sphere-center s))
+         (n ...))
+    ...)</PRE>
+
+<P>That's all we need to do. When Common Lisp sees a call of the form
+<CODE>(intersect </CODE><I><CODE>object</CODE></I><CODE>)</CODE>, it
+will determine the appropriate method to use, based on the object.
+</P>
+
+<P>Our base file makes no explicit reference to any kind of object,
+and each object file is independent of any other object file.</P>
+
+<P>Note: it would be more typical object-oriented programming to
+replace the structures with classes. In the base file, we put:</P>
+
+<PRE>(defclass surface ()
+  ((color :accessor surface-color :initarg :color)))</PRE>
+
+<P>In the sphere definition file, we'd put:</P>
+
+<PRE>(defclass sphere (surface)
+  ((radius :accessor sphere-radius :initarg :radius)
+   (center :accessor sphere-center :initarg :center)))</PRE>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

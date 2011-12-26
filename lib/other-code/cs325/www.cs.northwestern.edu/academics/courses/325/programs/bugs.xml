@@ -1,0 +1,2071 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="bugs.xsl"?>
+<bug-fixes>
+
+<bug-fix>
+<title>Nil printed to web browser</title>
+<language>Allegro Common Lisp</language>
+<symptoms>Function prints fine in debug window, but when using the aserve html
+macro, only nil is printed.</symptoms>
+<example>(html
+ ((:pre )
+  (:princ (show-frame symbol))))
+</example>
+<explanation>The show-frame function prints to *standard-output*, and not
+to *html-stream*.
+</explanation>
+<repairs>
+<repair>
+<precondition>Function prints to *standard-output* or another output
+stream which you know.
+</precondition>
+<action>Wrap printing code with (with-output-to-string (*output-stream*) ...)
+where *output-stream* is the stream that the function normally prints to.
+</action>
+<result>(html
+ ((:pre )
+  (:princ (with-output-to-string (*standard-output*)
+             (show-frame symbol)))))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Class not found.</title>
+<language>Java</language>
+<symptoms>Code compiles fine, but when trying to run, get an error that says:
+"Exception in thread "main" java.lang.NoClassDefFoundError: ..."
+</symptoms>
+<example>java MyClass
+</example>
+<explanation>The java interpreter cannot find your class.  This is a problem
+with the classpath, a variable which tells java where to find your classes.
+</explanation>
+<repairs>
+<repair>
+<precondition>Must be able to set system properties.</precondition>
+<action>Set the system property "classpath" to point to where your java
+classes are.
+</action>
+<result>set classpath="."
+java MyClass></result>
+</repair>
+<repair>
+<precondition>None.
+</precondition>
+<action>Pass the classpath into the java interpreter.
+</action>
+<result>java -classpath "." MyClass
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Modules not imported</title>
+<language>Python</language>
+<symptoms>Import a module in the program, but still can't use its functions.
+</symptoms>
+<example>import math
+x = sin(1.0)
+</example>
+<explanation>Importing a module does not import the functions into the current
+symbol table.
+</explanation>
+<repairs>
+<repair>
+<precondition>None.
+</precondition>
+<action>Call the function with the module name in front of the function.
+</action>
+<result>import math
+x = math.sin(1.0)
+</result>
+</repair>
+<repair>
+<precondition>There are no other functions with the same name from a
+different module or your code.
+</precondition>
+<action>Import the functions from the module into the current symbol table.
+</action>
+<result>from math import *    # This imports all functions, not just sin()
+x = sin(1.0)
+
+or
+
+from math import sin
+x = sin(1.0)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Do loop doesn't run last body execution </title>
+<language>Common Lisp</language>
+<symptoms>The body of the do loop is executed for the last item of a list
+</symptoms>
+<example>(do ((lst lst (cdr lst)))
+    ((endp lst))
+  (setf x (car lst)))
+</example>
+<explanation>The end condition i.e. (endp lst) is checked before the body is executed
+</explanation>
+<repairs>
+<repair>
+<precondition>The update varibale must be a list
+</precondition>
+<action>Change the do to a dolist
+</action>
+<result>(dolist (obj lst)
+  (setf  x obj))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Using fgetc() to return a char from a file</title>
+<language>C</language>
+<symptoms>Sometimes causes an error when fgetc() is called again but the file has already ended.
+</symptoms>
+<example>int count_line_size( FILE * fp )
+{
+  char ch;
+  int  cnt = 0;
+
+  while( (ch = fgetc(fp)) != EOF &amp;&amp; ch != '\n')
+    cnt++;
+  return cnt;
+}
+</example>
+<explanation>The return of fgetc() is cast to a char ch. Now since EOF isn't a character but an integer code
+when ch is cast back to an int for the EOF test the cast may change the value and the loop
+wont terminate in time.
+</explanation>
+<repairs>
+<repair>
+<precondition>The programmer wants the result of fgetc() from a file to be stored as a char.
+</precondition>
+<action>Keep ch as int instead of a char as char is subtype of int
+</action>
+<result>int count_line_size( FILE * fp )
+{
+  int ch;
+  int  cnt = 0;
+
+ // NOTE: while( (ch = fgetc(fp)) != EOF &amp;&amp; ((int) ch) != '\n')
+ // is a hidden cast
+  while( (ch = fgetc(fp)) != EOF &amp;&amp; ch != '\n')
+    cnt++;
+  return cnt;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Comparing Strings</title>
+<language>C</language>
+<symptoms>== returns false when comparing 2 equal strings
+</symptoms>
+<example>char st1[] = "abc";
+char st2[] = "abc";
+if ( st1 == st2 )
+  printf("Yes");
+else
+  printf("No");
+This prints No
+</example>
+<explanation>== compares the value of st1 and st2 as pointers instead of strings
+</explanation>
+<repairs>
+<repair>
+<precondition>Two strings are being compared
+</precondition>
+<action>Use strcmp(st1,st2) instead of ==, it returns 0 if they equal and 1 if they are not
+</action>
+<result>if ( strcmp(st1,st2) == 0 )
+  printf("Yes");
+else
+  printf("No");
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Variable unintentionaly changed</title>
+<language>Common Lisp, C++</language>
+<symptoms>You notice that some variable that you did not mean to change
+has changed value on its own
+</symptoms>
+<example>(setf x "hello world") (setf y x) (setf (aref x 0) #\H)
+</example>
+<explanation>When using a destructive modifier (setf (aref )) x and y
+are assigned to the smae object so when x is changed, y is changed as
+well
+</explanation>
+<repairs>
+<repair>
+<precondition>two variables are assigned to a single object and one of
+them is destructively modified
+</precondition>
+<action>use a copy instead of an assingment to prevent one variable from
+changing another
+</action>
+<result>(setf x "hello world") (setf y "hello world")</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Using unallocated memory</title>
+<language>C++</language>
+<symptoms>Your program crashes unexpectedly when the value of a variable
+is read or you notice that a variable has an unexpected value
+</symptoms>
+<example>x= x+1
+</example>
+<explanation>You are referring to a pointer and you have not allocated
+enough space to hold the value for the pointer's contents
+</explanation>
+<repairs>
+<repair>
+<precondition>you have a pointer which you are referring to and not
+enough memory has been allocated
+</precondition>
+<action>allocate enough space before using the pointer
+</action>
+<result>x= (char*)malloc(sizeof(char*255))
+
+Bug 3
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Memory Leak in a loop</title>
+<language>C++</language>
+<symptoms>Your program crashes while in a large loop
+</symptoms>
+<example>for (i=0;i&lt;1000;i++) {x=new int;}
+</example>
+<explanation>you are allocating memory and not freeing it which cause a
+memory leak and a crash once memory runs out
+</explanation>
+<repairs>
+<repair>
+<precondition>you allocate memory without freeing it inside of a loop
+</precondition>
+<action>free the memory after you no longer need it
+</action>
+<result>{x=new int; free x;}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Returned function called incorrectly</title>
+<language>Common Lisp</language>
+<symptoms>Returned a function from another function, but upon
+attempting to call it, error occurs
+</symptoms>
+<example>(defun foo (n) (lambda (o) (+ o n)))
+;; produces an error
+((foo 12) 8)
+;; works as intended
+(funcall (foo 12) 8)
+</example>
+<explanation>When you return a lambda expression, funcall must be
+used to call the function.
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>Use funcall on the returned function.</action>
+<result></result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Variable reference does not copy contents</title>
+<language>Lisp-based languages</language>
+<symptoms>Attempted to copy a list and then alter an element
+in the copy, but both the copy and original are
+changed.</symptoms>
+<example></example>
+<explanation>A statement like (setf foo bar) does not set the
+"contents" of foo to those of bar, but merely sets
+foo to point to the same memory that bar points to.
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>There are a number of copy functions built-in to
+remedy this situation.  Consider the following,
+depending on the data structure in use:
+copy-list
+copy-seq
+copy-structure
+copy-tree
+</action>
+<result>(setf lst1 '(a b c d e))
+(setf lst2 lst1) ;should be (setf lst2 (copy-list lst1))
+(setf (car lst2) 'm) ;(car lst1) and (car lst2) are now 'm
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Initialize all pointers to NULL</title>
+<language>C/C++</language>
+<symptoms>Appears as if pointer already points to something when
+you check it, and then you use a bad pointer.</symptoms>
+<example></example>
+<explanation>Many times, you can't actually set a pointer to something
+until some time after you've declared or initialized it.
+One usually checks to make sure the variable doesn't point
+to anything before assigning it but checking if it's NULL.
+However, if a pointer is not explicitly initialized to NULL
+it will contain a random address which is non-null, thus
+confusing -- and indeed "breaking" -- the code which assigns
+the pointer to a valid location in memory.
+</explanation>
+<repairs>
+<repair>
+<action>Always initialize pointers to NULL.</action>
+<result>MyClass::MyClass() {
+    memberPointerVar = NULL; //the repair!
+}
+
+void MyClass::CalledAtSomeLaterTime() {
+    if (memberPointerVar == NULL)
+        memberPointerVar = CreateNew...;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>DO variables not updated with conditionals </title>
+<language>Common Lisp</language>
+<symptoms>A DO variable that is regularly updated with a conditional returns as
+nil or 0 when the loop is complete
+</symptoms>
+<example>(do ((output nil (unless (null input) (cons output (car input)))))
+((null input) output))
+</example>
+<explanation>The update in place for DO variables must return a value, so if a
+conditional such
+as (unless...) or (if...) with no "else" clause is used, and the the current
+conditions do not satisfy the conditional, the variable will be updated using
+nil or 0, depending on the type of the variable.
+</explanation>
+<repairs>
+<repair>
+<precondition>If (unless...) is used to update the DO variable.
+</precondition>
+<action>Change the (unless...) to an (if...) with an "else" clause that sets
+the value of the variable to itself.
+</action>
+<result>(do ((output nil (if (not (null input)) (cons output (car input))
+output))) ((null input) output))
+</result>
+</repair>
+<repair>
+<precondition>If (if...then...) is used to update the DO variable, but no
+"else" is provided.
+</precondition>
+<action>Add an else clause the the (if...) to set the value of the variable
+to itself.
+</action>
+<result>(do ((output nil (if (not (null input)) (cons output (car input))
+output))) ((null input) output))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Expected type doesn't match input </title>
+<language>Common Lisp </language>
+<symptoms>A program returns an "Expected Type" error
+</symptoms>
+<example>(defun add (x y) (+ x y)) (add 1 '(2)) [not a terribly complicated
+example]
+</example>
+<explanation>It is not always good to assume the type of an input.  Because
+Common Lisp does not check for matching types until their values are called,
+"expected type" errors are particularly harmful in Common Lisp, as the program
+will not blow up until sometime in the middle of the program.
+</explanation>
+<repairs>
+<repair>
+<precondition>A function has an input that is later used in a type-specific
+function.
+</precondition>
+<action>Check the type of the input before using it in the function.
+</action>
+<result>(defun add (x y) (if (not (or (numberp x) (numberp y))) (error
+"Number Expected"))  (+ x y))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Fence-post bug </title>
+<language>C++ (but not limmited to C++) </language>
+<symptoms>Unexpected output or an error is received after a loop has been
+called.
+</symptoms>
+<example>int sample_array[10];
+for(int counter = 0; counter &lt;= 10; counter++) {};
+cout &lt;&lt; sample_array[counter];
+</example>
+<explanation>It is easy to be "one off" in the number or iterations performed
+in c++ loops.  "Is counter a link or is it the post?"
+</explanation>
+<repairs>
+<repair>
+<precondition>A 'for' loop is set to iterate based on a counter indexed at
+0.
+</precondition>
+<action>change the loop-continuation condition so that the iteration
+continues only while the counter is less than the desired number, not less than
+or equal to.
+</action>
+<result>int sample_array[10];
+for(int counter = 0; counter &lt; 10; counter++) {};
+cout &lt;&lt; sample_array[counter];
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Add char doesn't update string</title>
+<language>C</language>
+<symptoms>Dynamically appending a string using realloc results in no
+update to the string
+</symptoms>
+<example>str = (const char*)realloc(str,len+1));
+str[len+1] = c;</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>if char is being set to string[length+1] and realloc
+resizes the string anything greater than strlen
+</precondition>
+<action>realloc to strlen+2, replace the last character (old null ptr)
+with the character, add a null at the end. Replace the const char* with
+a char*
+</action>
+<result>str = (char*)realloc(str,len+2));
+str[len++] = c;
+str[len] = 0;
+</result>
+</repair>
+<repair>
+<precondition>if strcat is preferred</precondition>
+<action>realloc with 2, but simply concatenate the pointer to the
+character to the string (since strcat takes a char*)
+</action>
+<result>&lt;include "string.h">
+str = (char*)realloc(str,len+2));
+str = strcat(str, &amp;c);
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>For loop returns an incorrect number of elements</title>
+<language>Common Lisp</language>
+<symptoms>A for loop operates on one or more lists and it either returns
+an unexpected nil or a list that is not the same size as one of the input
+lists.</symptoms>
+<example>(loop for e1 in l1 do (list e1 'value))
+(loop for e1 in '(1 2 3)
+        and e2 in '(a b c d)
+    collect (list e1 e2))</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>there is more than one variable in the loop and just
+one collect
+</precondition>
+<action>assure the input lists are the same size before using them in
+the loop.</action>
+<result>(loop for e1 in '(1 2 3 -1)
+        and e2 in '(a b c d)
+    collect (list e1 e2))
+</result>
+</repair>
+<repair>
+<precondition>there is a DO and an expected return value afterwards
+</precondition>
+<action>replace the do with collect or finally</action>
+<result>(loop for e1 in l1
+    collect (list e1 'value))
+</result>
+</repair>
+<repair>
+<precondition>there are any number of variables in the loop and
+there is a 'finally'
+</precondition>
+<action>if possible, get rid of the 'finally'; else make sure 'finally'
+returns a collection the same size of the input sequence
+</action>
+<result>(got rid of any unnecessary finally)
+(loop for e1 in l1
+    collect (list e1 'value))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>regular expression is slow to find last match</title>
+<language>Perl</language>
+<symptoms>regular expression takes a long time to find last element of a
+string.
+</symptoms>
+<example>if ($string =~ /(.*)$tag/) {return $1;}</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>there is a '.*' before the desired expression or a
+'(?!.*) after the desired expression
+</precondition>
+<action>reverse the list and search for the first match. return the
+reverse of the outcome
+</action>
+<result>if (reverse($string) =~ /$reverse($tag)(.*)/) {return reverse($1);}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Substituting a function call does not work</title>
+<language>Perl</language>
+<symptoms>You cannot substitute a function by directly refering to it
+within the standard perl substitute syntax.
+</symptoms>
+<example>s/include_$page/&amp;page_content($page)/;</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>the substitute content string will never be used again
+</precondition>
+<action>simply place an '/e' after the substute syntax so it is
+evaluated as an expression
+</action>
+<result>s/include_$page/&amp;page_content($page)/e;
+</result>
+</repair>
+<repair>
+<precondition>the substitute content string may be used again
+</precondition>
+<action>grab the return value for the function in a variable before
+substituting
+reverse the list and search for the first match. return the reverse of
+the outcome
+</action>
+<result>$pagecontent = &amp;page_content($page);
+s/include_$page/&amp;pagecontent/;
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>equal is case-sensitive</title>
+<language>Common Lisp</language>
+<symptoms>I want to compare whether or not two strings are equivalent,
+but using equal returns nil if the strings are capitalized in different
+ways.
+</symptoms>
+<example>(equal "Test" "test")</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<action>Use string-equal instead of equal if you don't want the test
+to be case sensitive.
+</action>
+<result>(string-equal "Test" "test")
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Getting a character, then a string from the user.</title>
+<language>C++</language>
+<symptoms>I want to prompt the user to input a character, then a string,
+but receive an empty string.
+</symptoms>
+<example>cout &lt;&lt; "Type a character: ";
+cin >> ch;
+cout &lt;&lt; "Type a string: ";
+cin.getline(str,20);</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>ignore(INT_MAX, '\n');
+</action>
+<result>Input string is read correctly by the program.
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Declaring a String</title>
+<language>C++</language>
+<symptoms>I want to declare a null string, but receive an error message.
+</symptoms>
+<example>String s();</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>As entered, you are actually declaring a function which
+returns a string. Instead use String s;
+</action>
+<result>A null valued string has been declared.
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Testing for equality among different types.</title>
+<language>Common Lisp</language>
+<symptoms>The computer says that two values aren't equal when I know they
+are.
+</symptoms>
+<example>(equal 1.5 (/ 3 2))
+</example>
+<explanation>equal tests that two items are the same, in both value and
+type.  It must therefore be used with care on some items such as numbers,
+which can come in many different types and still have the same value.
+</explanation>
+<repairs>
+<repair>
+<precondition>The comparison function is testing numbers, and can be
+changed.
+</precondition>
+<action>Change equal to =.
+</action>
+<result>(= 1.5 (/ 3 2))</result>
+</repair>
+<repair>
+<precondition>The types of the objects can be changed to match.
+</precondition>
+<action>Change the type of one object to that of the other.
+</action>
+<result>(equal 1.5 (coerce (/ 3 2) (type-of 1.5)))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Nesting assignments in let.</title>
+<language>Common Lisp</language>
+<symptoms>I assign several values using a let, but the values are not
+being assigned correctly.
+</symptoms>
+<example>(setf x 1) (let ((x 2) (y x)) (print (list (x y))))
+</example>
+<explanation>When multiple variables are being assigned at once, the let
+statement maintains the old variable scoping until it's done with all
+assignments; therefore, an assignment that depends on a prior assignment
+in the same let will instead use the prior variable's previous value.
+</explanation>
+<repairs>
+<repair>
+<precondition>One assignment depends on a prior assignment in the same
+let.
+</precondition>
+<action>Change let to let*.
+</action>
+<result>(setf x 1) (let* ((x 2) (y x)) (print (list (x y))))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Flushing the print buffer</title>
+<language>C/C++</language>
+<symptoms>I know that valid strings are being sent to stdout to be
+printed, but nothing shows up to the screen.
+</symptoms>
+<example>printf("Hello!");
+</example>
+<explanation>The computer will only write items from a stream when that
+stream gets flushed (usually done when it sees a '\n' or the keyword
+endl).
+</explanation>
+<repairs>
+<repair>
+<precondition>We're in C++, printing to stdout, and it's ok to print a
+new-line after this output.
+</precondition>
+<action>Send an endl to the stream after the desired output.
+</action>
+<result>printf("Hello!"); cout&lt;&lt;endl;</result>
+</repair>
+<repair>
+<precondition>We're in C, using a compiler that flushes upon seeing a
+'\n', and it's ok to print a new-line after this output.
+</precondition>
+<action>Append a '\n' to the output going to the stream.
+</action>
+<result>printf("Hello!\n");</result>
+</repair>
+<repair>
+<precondition>The above cases don't apply
+</precondition>
+<action>Call fflush() to flush the output stream.
+</action>
+<result>printf("Hello!"); fflush(stdout);
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>modify pass-by-value</title>
+<language>C/C++</language>
+<symptoms>A parameter is passed into a function that changes its value,
+but it remains unchanged
+</symptoms>
+<example>void assign( int i )
+{
+  i = 10;
+}
+
+assign( j );</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>pass modified parameter by reference
+</action>
+<result>void assign( int * i )
+{
+  *i = 10;
+}
+
+assign( &amp;j );
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>return local object by reference</title>
+<language>C++</language>
+<symptoms>return value is corrupt
+</symptoms>
+<example>SomeClass&amp; generate_return()
+{
+  SomeClass to_return;
+  return to_return;
+}</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>local object is stack allocated
+</precondition>
+<action>return local objects by value
+</action>
+<result>SomeClass generate_return()
+{
+    SomeClass to_return;
+    return( to_return );
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>infinite list recursion</title>
+<language>Common Lisp</language>
+<symptoms>function recursing over a list never ends
+</symptoms>
+<example>(defun infinite (list)
+  (cons (process (car list))
+        (infinite (cdr list))))</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>list does not end with a non-nil cdr
+</precondition>
+<action>return nil on null list argument
+</action>
+<result>(defun infinite (list)
+  (and (not (null list))
+       (cons (process (car list))
+             (infinite (cdr list)))))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Wrong conditional logic</title>
+<language>C / C++</language>
+<symptoms>I check to see if a variable equals a number, but it
+always returns TRUE
+</symptoms>
+<example>int num = 5;
+if (num = 10)
+  cout &lt;&lt; "This is shouldn't be true!" &lt;&lt; endl;</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>use the == operator in cases of conditionality
+</action>
+<result>num = 5;
+if (num == 10)
+  cout &lt;&lt; "This is won't get printed because it's false!" &lt;&lt; endl;
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Switch does more than it should</title>
+<language>C</language>
+<symptoms>A case is hit in a switch statement, but it doesn't stop there
+</symptoms>
+<example>int num = 0;
+switch (num) {
+  case 0:
+    printf ("ZERO\n");
+  case 1:
+    printf ("ONE\n");
+  case 2:
+    printf ("TWO\n");
+}
+
+actually prints out:
+ZERO
+ONE
+TWO
+
+not the intended:
+ZERO</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>use the BREAK statement after each case to
+break out of the switch statement
+</action>
+<result>int num = 0;
+switch (num) {
+  case 0:
+      printf ("ZERO\n");
+      break;
+  case 1:
+      printf ("ONE\n");
+      break;
+  case 2:
+      printf ("TWO\n");
+      break;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Functions doesn't find element(s) within a list</title>
+<language>Common Lisp</language>
+<symptoms>I use a function to try to find an element in a list,  but it
+doesn't find an element that it should.
+</symptoms>
+<example>>> (remove '(a) '((a) (b) (c) (d)))
+((A) (B) (C) (D))</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>Equality condition
+</precondition>
+<action>TEST #'EQUAL
+This returns true if the elements would print the same way.
+The default for these functions is to use #'EQL
+</action>
+<result>>> (remove '(a) '((a) (b) (c) (d)) :test #'equal)
+((B) (C) (D))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Non-symbol being used as a let variable.</title>
+<language>Common Lisp</language>
+<symptoms>I get this error message for a variable I defined in "let".
+</symptoms>
+<example>(let (x 0) x)</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<action></action>
+<result>(let ((x 0)) x)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Attempt to take the value of the unbound variable X.</title>
+<language>Common Lisp</language>
+<symptoms>I get this error message for no apparent reason even though I
+think I defined all the variables I am using.
+</symptoms>
+<example>(do ((j 1 (1+ j))) (> j 10) (princ j))</example>
+<explanation>You are probably using the lisp syntax incorrectly.
+</explanation>
+<repairs>
+<repair>
+<action>In the
+example given, you should have specified a return value for the end
+condition
+</action>
+<result>(do ((j 1 (1+ j))) ((> j 10) 10) (princ j))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Passing lists of variable names to functions.</title>
+<language>Common Lisp</language>
+<symptoms>I get error messages when I pass a list of variable names to a
+function that expects a list of values as its input.
+</symptoms>
+<example>(setf *x* 1)
+(setf *y* 2)
+(defun foo (lst) (car lst))
+(foo '(*x* *y*))
+returns *x* instead of 1</example>
+<explanation>Using quote creates a list; however it also cancels the
+interpretation of the variables as such.
+</explanation>
+<repairs>
+<repair>
+<action>Instead, use list.</action>
+<result>(foo (list *x* *y*))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>original object not updated</title>
+<language>Common Lisp</language>
+<symptoms>I INCF  a variable that has been set to the CDR of an ASSOC, but
+only the variable is updated and not the actual number in the original list.
+</symptoms>
+<example>(let ((a (list (cons 'x 1))))
+  (setf b (cdr (assoc 'x a))) (incf b) (print a))
+</example>
+<explanation>b becomes simply the number one, and does not point to the number one in the list
+</explanation>
+<repairs>
+<repair>
+<precondition>If the original list must have the incrementation performed
+</precondition>
+<action>set b to the ASSOC and incf the CDR of B
+</action>
+<result>(let ((a (list (cons 'x 1))))
+  (setf b (assoc 'x a)) (incf (cdr b)) (print a))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>memory leak due to improper use to retain counts</title>
+<language>Objective-C</language>
+<symptoms>Objects are not deallocated when a method completes that allocs an object and returns a result.
+</symptoms>
+<example>(NSString *) someMethod()
+{
+  NSString *result = [[NSString alloc] initWithFormat:@"$i", 1]
+  return result;
+}
+</example>
+<explanation>after being initted the NSString object has a retain count of 1 and therefore will not be deallocated after the method finishes.
+</explanation>
+<repairs>
+<repair>
+<precondition>you want to use the same init method, want to return the result, but do not want to retain the object
+</precondition>
+<action>Add the object to the autorelease pool. It will be deallocated when you move outside of the scope in which it was created
+</action>
+<result>(NSString *)someMethod
+{
+  NSString *result = [[NSString alloc] initWithFormat:@"$i", 1]
+  [result autorelease]
+  return result;
+}</result>
+</repair>
+<repair>
+<precondition>You don't mind using a slightly different method, want to return the result, but do not want to retain the object
+</precondition>
+<action>Use a method that returns an autoreleased object like stringWithFomat instead of initWithFormat
+</action>
+<result>(NSString *) someMethod()
+{
+  NSString *result = [[NSString alloc] stringWithFormat:@"$i", 1]
+  return result;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>system call returns unexpected results</title>
+<language>perl</language>
+<symptoms>unexpected results or behavior when making a system call in perl,
+e.g., instead of getting a single column list of simply the files in the
+directory one gets a recursive listing of all subdirectories.
+</symptoms>
+<example>$myVar = system("ls -1"); print $myVar;
+</example>
+<explanation>ls is already aliased in environmental variables to something like alias ls="ls -R",
+</explanation>
+<repairs>
+<repair>
+<precondition>You do not wish to alter the environmental variables
+</precondition>
+<action>use the full path of the command you wish to call
+</action>
+<result>$myVar = system("/bin/ls -1"); print $myVar;</result>
+</repair>
+<repair>
+<precondition>you can change the environmental variables (this is not highly
+recommended as it allows for the pitfall to occur again)
+</precondition>
+<action>remove the alias from shell init scripts
+</action>
+<result>$myVar = system("ls -1"); print $myVar;
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Missing Pixels</title>
+<language>C++ (Open GL)</language>
+<symptoms>While having open GL render a scene pixel by
+pixel, a large clump of pixels did not show up on the
+screen, even though their color values were being
+calculated and their (x, y) coordinates were being
+sent to the glVertex2f draw command.
+</symptoms>
+<example>(Note: For brevity's sake, I'm skipping some sections
+of the code because this was a good-sized chunk of a
+program I wrote for my CS 351 class last quarter.
+Any skipped lines will be denoted with ...)
+
+  glBegin(GL_POINTS);
+
+  if (! textured) {
+    glColor3ub(color,(color-50)%256,(color+100)%256);
+
+    for (int x_cur = x_start; x_cur&lt; x_end; x_cur++) {
+      glVertex2f(x_cur,y_cur);
+    }
+
+    ...
+
+  } else {
+
+    ...
+
+    glColor3ub(red_final, green_final, blue_final);
+    glVertex2f(x_cur, y_cur);
+  }
+
+  glEnd();
+</example>
+<explanation>Only certain functions can be called between
+glBegin and glEnd, and weird results (like missing pixels)
+can occur if other functions are used.
+</explanation>
+<repairs>
+<repair>
+<precondition>only some of the pixels are missing
+</precondition>
+<action>Move the glBegin call so it occurs directly
+before the glVertex2f call and put the glEnd call directly
+after  it.
+</action>
+<result>if (! textured) {
+  glColor3ub(color,(color-50)%256,(color+100)%256);
+
+  for (int x_cur = x_start; x_cur&lt; x_end; x_cur++) {
+    glBegin(GL_POINTS);
+    glVertex2f(x_cur,y_cur);
+    glEnd();
+  }
+  ...
+  } else {
+    ...
+    glBegin(GL_POINTS);
+    glColor3ub(red_final, green_final, blue_final);
+    glVertex2f(x_cur, y_cur);
+    glEnd();
+  }</result>
+</repair>
+<repair>
+<precondition>if none of the pixels are being drawn
+</precondition>
+<action>call glFlush and glSwapBuffers after glEnd.
+(Note: calling glSwapBuffers within a loop can lead to
+flickering.)
+</action>
+<result>glBegin(GL_POINTS);
+
+if (! textured) {
+  glColor3ub(color,(color-50)%256,(color+100)%256);
+
+  for (int x_cur = x_start; x_cur&lt; x_end; x_cur++) {
+    glVertex2f(x_cur,y_cur);
+  }
+  ...
+} else {
+  ...
+  glColor3ub(red_final, green_final, blue_final);
+  glVertex2f(x_cur, y_cur);
+}
+
+glEnd();
+glFlush();
+glSwapBuffers();
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Reading a string with commas</title>
+<language>Common Lisp</language>
+<symptoms>Every time I try to use read-from-string to parse
+a list with a comma in it, I get an error saying "comma not
+inside a backquote".
+</symptoms>
+<example>(read-from-string "Hello, how are you today?" 5)
+
+(Note: Usually this error comes up when reading in a file,
+but I thought I would use a simple string instead to make it
+easier to understand.)
+</example>
+<explanation>Commas are a type of read-macro that cannot be parsed by
+the basic Lisp read functions.
+</explanation>
+<repairs>
+<repair>
+<precondition>if the commas are a necessary part of the string
+</precondition>
+<action>use read-char to process the string letter by letter
+</action>
+<result>(let ((strm (make-string-input-stream
+                       "Hello, how are you today?" 5)))
+  (do ((c (read-char strm) (read-char strm))
+       (s "" (concatenate 'string s (string c))))
+      ((eql c #\space)) s)))
+</result>
+</repair>
+<repair>
+<precondition>if the commas are not necessary and can be
+discarded
+</precondition>
+<action>use remove to take all the commas out of the string
+</action>
+<result>(read-from-string (remove #\, "Hello, how are you today?")
+                  5)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Wrong values when trying to access an array</title>
+<language>C++</language>
+<symptoms>I wrote a function to read in an array of values, but when
+I call the function and try to access the array it returns, all the
+values are wrong.  They seem to be random gibberish.
+</symptoms>
+<example>#include "stdafx.h"
+#include &lt;iostream>
+using namespace std;
+int* get_values(){
+int vals[3];
+for (int ii = 0; ii&lt; 3; ii++)
+  cin >> vals[ii];
+
+  return vals;
+}
+
+
+int _tmain(int argc, _TCHAR* argv[]){
+  int* vals = get_values();
+
+  for (int ii = 0; ii&lt; 3; ii++)
+    cout &lt;&lt; vals[ii] &lt;&lt; endl;
+  return 0;
+}
+</example>
+<explanation>Returning a local variable, unless it was created
+with new, is always a bad idea because when the function exits, the
+destructor frees all of the memory that was being used.  Since a
+pointer was returned, the value at the memory location the pointer
+refers to is saved by the new pointer, but the rest of the values
+in something like an array can easily be lost.
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>pass an array into get_values and edit it directly
+</action>
+<result>#include "stdafx.h"
+#include &lt;iostream>
+
+using namespace std;
+
+void get_values(int* vals) {
+  for (int ii = 0; ii&lt; 3; ii++)
+    cin >> vals[ii];
+}
+
+int _tmain(int argc, _TCHAR* argv[]){
+  int vals[3];
+
+  get_values(vals);
+
+  for (int ii = 0; ii&lt; 3; ii++)
+     cout &lt;&lt; vals[ii] &lt;&lt; endl;
+  return 0;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Models display incorrectly in OpenGL after scaling</title>
+<language>OpenGL</language>
+<symptoms>After manipulating a model/the world with commands such as
+glScalef() it no longer displays or lights correctly.
+</symptoms>
+<example>glPushMatrix();
+glTranslatef(0, -275, -3);
+glScalef(50, 50, 15);
+glDraw3DText(score);
+glPopMatrix();
+</example>
+<explanation>Scaling the models cause all of the obect's normal vectors
+to be incorrect with the new coordinates. glEnable(GL_NORMALIZE)
+normalizes the vectors prior to manipulation, thus preserving their
+integrity.
+</explanation>
+<repairs>
+<repair>
+<action>Before manipulating the objects, enable normalizing.  This will
+correct the effects of the transformation.</action>
+<result>glEnable(GL_NORMALIZE);
+glPushMatrix();
+glTranslatef(0, -275, -3);
+glScalef(50, 50, 15);
+glDraw3DText(score);
+glPopMatrix();
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Infinite loop/program never stops</title>
+<language>N/A</language>
+<symptoms>Upon running a program with an iterative or recursive loop,
+there is a memory overflow or the program never ends.
+</symptoms>
+<example>(defun iter (lst)
+  (...
+    (iter lst)...)
+</example>
+<explanation>In recursive/iterative functions, there needs to be an exit
+case that is properly reached in order for the program to stop.
+Otherwise it will keep looping until broken manually.
+</explanation>
+<repairs>
+<repair>
+<precondition>Using recursion
+</precondition>
+<action>Make sure you are correctly updating the
+recursing variable</action>
+<result>(defun iter (lst)
+  (...
+    (iter (cdr lst))...)
+</result>
+</repair>
+<repair>
+<precondition>Using recursion
+</precondition>
+<action>Make sure you have a valid exit case, one that will always be
+reached</action>
+<result>(defun iter (lst)
+  (if (null lst) ...)
+    (iter (cdr lst))...)
+</result>
+</repair>
+<repair>
+<precondition>Using iteration</precondition>
+<action>In an iterative loop, such as DO or FOR, track the counter variable.
+Make sure it is getting updated correctly, and not modified
+inadvertantly.  some functions may have side effects you are unaware of.
+</action>
+</repair>
+<repair>
+<precondition>Using recursion</precondition>
+<action>It is possible to create a recursive program that simply requires
+too much memory.  If the program is recursing a very large number of
+times, you might be overflowing the stack.  Try another method of
+computation.</action>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Indexing or exception error when using std library</title>
+<language>C++</language>
+<symptoms>While running, the program breaks with either a memory
+exception or with no explanation at all
+</symptoms>
+<example>vector &lt;int> vec;
+vec[58] = 27;
+return 0;
+
+for (int i = 0; i &lt; vec.length(); i++) {
+  cout&lt;&lt; vec[i];
+</example>
+<explanation>You are trying to access a variable that is nonexistant or
+pointing to something other than what you intend.
+</explanation>
+<repairs>
+<repair>
+<precondition>Using std library variables
+</precondition>
+<action>Make sure that the vector/queue/etc... is correctly initialized</action>
+<result>vec.clear();
+vec.resize(100);
+</result>
+</repair>
+<repair>
+<precondition>Using std library variables</precondition>
+<action>Make sure that you are neve accessing an illegal index.  This can
+often happen in loops.  Remember that the length of a variable is out of
+its indexing range, arrays are zero-indexed and thus you need to use
+(length - 1) to avoid stepping out of bounds.  Counter/iterating
+variables often can cause this error.</action>
+<result>for (int i = 0; i &lt; (vec.length() - 1); i++) {
+  cout&lt;&lt; vec[i];
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Unbound variables in a DO or LET statement</title>
+<language>Lisp</language>
+<symptoms>Program breaks with message:  "unbound variable &lt;var>", yet it
+appears to be defined.
+</symptoms>
+<example>(let ((mid (floor (+ end start) 2))
+      (current (aref v mid)))
+            ...
+
+UNBOUND VARIABLE "mid"
+</example>
+<explanation>DO and LET do not allow you to do this, as what appears
+proper order in your writing code may not be how the compiler runs
+Variable in a DO or LET statement cannot be used in the definition
+or update clause of other variables in the same declaration block.
+</explanation>
+<repairs>
+<repair>
+<action>You
+must use either another DO/LET statement or use Lisp funtions DO* or
+LET*</action>
+<result>(let* ((mid (floor (+ end start) 2))
+       (current (aref v mid)))
+or
+(let ((mid (floor (+ end start) 2)))
+   (let ((current (aref v mid)))
+      ...
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Infinite loops on a recursion function</title>
+<language>Common Lisp </language>
+<symptoms>The recursion function runs into a infinite loop
+</symptoms>
+<example>(defun flat (lst)
+  (cond ((listp (car lst))
+         (flat (append (car lst) (cdr lst))))
+        (t (cons (car lst) (flat (cdr lst)))))))
+</example>
+<explanation>This code runs into an infinite loop because it doesn't
+test to see if the
+list lst is empty.
+</explanation>
+<repairs>
+<repair>
+<precondition>No preconditions
+</precondition>
+<action>check to see if the list is empty before continuing.
+</action>
+<result>(defun flat (lst)
+  (cond ((null lst) nil)
+        ((listp (car lst))
+         (flat (append (car lst) (cdr lst))))
+        (t (cons (car lst) (flat (cdr lst)))))))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Off by one in a FOR loop</title>
+<language>C++</language>
+<symptoms>The FOR loop makes one extra iteration or one less iteration.
+This usually
+happens with large number of iterations.
+</symptoms>
+<example>//to print 1 through 1000
+int some_value = 1000;
+for (int i = 1 ; i &lt; some_value ; i++) {
+   cout &lt;&lt; i;
+}
+//OR to print 1 to 999
+int some_value = 1000;
+for (int i = 1 ; i &lt;= some_value ; i++) {
+   cout &lt;&lt; i;
+}
+</example>
+<explanation>The first code prints once less than desired and the second
+code prints
+once more than desired.
+</explanation>
+<repairs>
+<repair>
+<precondition>No preconditions
+</precondition>
+<action>Check to make sure when &lt; or &lt;= is more appropriate.
+</action>
+<result>//to print 1 through 1000
+int some_value = 1000;
+for (int i = 1 ; i &lt;= some_value ; i++) {
+  cout &lt;&lt; i;
+}
+
+//OR to print 1 to 999
+
+int some_value = 1000;
+for (int i = 1 ; i &lt;= some_value ; i++) {
+  cout &lt;&lt; i;
+}
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Two variables in a let with the second variable dependent of the
+first one</title>
+<language>Common Lisp </language>
+<symptoms>The second variable is an unbounded variable
+</symptoms>
+<example>(let ((x 2)
+      (y (+ x 1)))
+ (+ x y))
+</example>
+<explanation>The second variable has no knowledge of the first variable.
+Eventhough the first variable was written
+before the second variable, they are both declared the same time.  The
+above expression is equivalent to
+((lambda (x y) (+ x y)) 2 (+ x 1))
+</explanation>
+<repairs>
+<repair>
+<precondition>No preconditions
+</precondition>
+<action>use let*
+</action>
+<result>(let* ((x 1)
+       (y (+ x 1)))
+  (+ x y))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>fractions display incorrect value. </title>
+<language>C </language>
+<symptoms>When I divide two integers and print the result to the screen, I get 0.
+</symptoms>
+<example>printf("one-third of 11 is %f\n", 11/3);
+</example>
+<explanation>The division function decides what data type to return by its inputs.  When
+its inputs are both integers, it return arguably the most reasonable integer,
+floor(x/y).
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>replace the integer arguments of / with their float counterparts.
+</action>
+<result>printf("one-third of 11 is %f\n", 11.0/3.0);
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Deleting from one list deletes from another </title>
+<language>Lisp </language>
+<symptoms>After making a copy of list lst, using DELETE on lst deletes elements from the
+copy.
+</symptoms>
+<example>(setf copy lst) (delete 'a lst) (print copy)
+</example>
+<explanation>setting copy to lst with SETF points the variable copy to the address in
+memory where lst is stored.  Thus, copy is not a copy but another pointer to
+the same lst.  So deleting an element from lst is the same as deleting an
+element from copy.
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>use COPY-LIST
+</action>
+<result>(setf copy (copy-list lst)) (delete 'a lst (print copy)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>PRINT goes ape </title>
+<language>Lisp </language>
+<symptoms>After building a circular list, attempting to print the list results in an
+infinite printout.
+</symptoms>
+<example>(setf x '(1)) (setf (cdr x) x) (print x)
+</example>
+<explanation>When print is given a cons cell whose car is an atom, it prints the car and
+then, if the cdr is not atom, recursively prints the cdr of the cons.  Since we
+have created a circular list, the cdr is never an atom.
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>Set the global variable *print-circle* to t.
+</action>
+<result>(setf *print-circle* t) (print x)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Not setting a default value on a do loop</title>
+<language>Lisp</language>
+<symptoms>Value of a variable in do loop not updated
+</symptoms>
+<example>(defun occurrences (occ-list)
+;;Bad Line here
+  (do ((search-list occ-list (if (eq? (cdr search-list) "test") 32))
+;;Rest of do loop
+</example>
+<explanation>Doesn't match the correct do syntax,
+therefore it is not updated when if evaluates to false.
+</explanation>
+<repairs>
+<repair>
+<action>Make sure a default argument is always provided
+</action>
+<result>(do ((search-list occ-list (if (eq? (cdr search-list) "test") 32
+search-list))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Deleting the end 0 on a c-string</title>
+<language>C</language>
+<symptoms>Prints garbage/crashes
+</symptoms>
+<example>char *teststring="test"
+
+for(int i=0, i&lt;5, i++){
+  teststring[i]='f';
+}
+
+printf("%s", teststring);
+</example>
+<explanation>Program doesn't know when to stop printing-keeps
+printing garbage until it attempts
+to access protected memory.
+</explanation>
+<repairs>
+<repair>
+<action>Make sure not to overwrite the last 0 in a c-string
+</action>
+<result>for(int i=0, i&lt;4, i++)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Use of Malloc without Free</title>
+<language>C</language>
+<symptoms>GPF, illegal memory access when large inputs are used
+</symptoms>
+<example>buffer=char[10000];
+//buffer is filled with data from input stream...
+
+void setmemory(buffer){
+  allocatedmemory=malloc(sizeof(buffer));
+
+  usememory(allocatedmemory);
+}
+
+void usememory(char *inbuffer){
+//do something with the memory
+//fill the buffer with data again, until the data stream is used up..
+  setmemory(buffer);
+</example>
+<explanation>Program uses up the heap, and attempts
+to write over protected memory
+</explanation>
+<repairs>
+<repair>
+<action>Call free after the memory is used.
+</action>
+<result>void usememory(char *inbuffer){
+//do something with the memory
+  free(inbuffer);
+//fill the buffer with data again, until the data stream
+is used up..
+  setmemory(buffer);
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Superfluous values crashing the stack machine</title>
+<language>Stack Machine / Assembly in WinScheme</language>
+<symptoms>leftover results remaining on the stack following a procedure call crash the virtual machine when returned.  In this example, if the value is not null, both 1 and 0 will be pushed on the stack and returned, leading to too many results returned.
+</symptoms>
+<example>null
+(link 1)
+(load-local 0)
+(jump-if-zero is-null)
+(push 1)
+is-null
+(push 0)
+(return)</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>If the value is not null
+</precondition>
+<action>return after (push 1)
+</action>
+<result>...    (jump-if-zero is-null) (push 1) (return) is-null ....
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Problems with integrating if / cond into a do loop</title>
+<language>Common Lisp</language>
+<symptoms>only a single value is modified in each iteration
+</symptoms>
+<example>(do ((num (1- (length v)) (1- num))
+     (lst nil
+          (if (eql k (char v num))
+              (adjoin (char v (1- num))))))</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>Multiple values changed in the do iteration
+</precondition>
+<action>If and cond require base cases, otherwise the if just returns a single value
+</action>
+<result>(if (eql k (char v num))
+   (adjoin (char v (1- num)))
+   lst)))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Problems with the equal procedure with visually equal strings</title>
+<language>Common Lisp</language>
+<symptoms>Two strings that are visually equivalent are interpreted as incorrect due to case issues.
+</symptoms>
+<example>(equal (subseq line 0 5) "&lt;pre>")</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>If subseq will return the same result, only uppercase.
+</precondition>
+<action>replace the equivalent string.
+</action>
+<result>(equal (subseq line 0 5) "&lt;PRE>")</result>
+</repair>
+<repair>
+<precondition>If the case returned by subseq is unimportant
+</precondition>
+<action>Lowercase the result from subseq, resulting in equal values
+</action>
+<result>(equal (string-downcase (subseq line 0 5)) "&lt;pre>")
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Wrong Output</title>
+<language>C++</language>
+<symptoms>I try to print out a computation with a macro and get the
+wrong output on the screen.
+</symptoms>
+<example>#define A 6
+#define  B 5
+#define C A+B
+
+...
+cout &lt;&lt; "We want 22. We get " &lt;&lt; 2*C &lt;&lt;"."&lt;&lt;endl;
+
+O/P:
+We want 22. We get 17.
+</example>
+<explanation>This is a case of the processor/pre-compiler doing what you
+said and not what you mean.  Remember order of operations matter in C++,
+and the pre-processor does direct text substitution.  So, when the
+substitution is made, order of operations is preserved and the compiler
+does exactly what you asked for.  As a general rule of thumb, you should
+probably explicitly put parentheses around macro expressions for your
+desired order of operations.
+</explanation>
+<repairs>
+<repair>
+<precondition>None
+</precondition>
+<action>Explicitly tell the compiler how you would like the macro to
+be computed with parentheses: Change #define C A+B to #define C (A+B)
+</action>
+<result>We want 22. We get 22.
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Unbound Variable</title>
+<language>lisp</language>
+<symptoms>I initialize a variable inside a do/let, initialize another
+variable to it and get error unbound-variable from the debugger.
+</symptoms>
+<example>
+(do ((lst alist (cdr lst))
+     (key (caar lst))
+          (val (cadr lst)))
+    ((null lst) ...)
+  ...
+</example>
+<explanation>The scope of the variables does not include the initial
+values, because DO and LET variables are created in parallel,
+initialized, then the action begins.
+</explanation>
+<repairs>
+<repair>
+<precondition>None
+</precondition>
+<action>use a LET inside the DO for these variables or just refer to
+them explicitly (i.e. (car lst)):
+</action>
+<result>(do ...
+ (let ((key (car lst)) (val (cdr lst)))
+  ...
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Wrong Output</title>
+<language>Perl, C++?</language>
+<symptoms>I get the wrong output from a ?: expression in Perl
+</symptoms>
+<example>$hour=16;
+( $hour >= 12 ? $declination = "PM" : $declination = "AM" );
+print $declination;
+O/P:
+AM
+</example>
+<explanation>This is a case of the compiler doing exactly what you said
+and not what you wanted.  ?: binds tighter than =. So, the ?: is
+performed and basically you get the equivalent to:
+
+ (test ? $d="..." : $d="...").  Notice the order of operations.
+</explanation>
+<repairs>
+<repair>
+<precondition>None
+</precondition>
+<action>Explicitly tell the compiler how you would like the macro to
+be computed with parentheses (in Perl there are too many ways to do
+things to list all):
+
+  ($hour >= 12) ? ($declination = "PM") : ("$declination = "AM");
+</action>
+<result>PM</result>
+</repair>
+<repair>
+<precondition>None
+</precondition>
+<action>Perhaps a cleaner solution would look like:
+
+$d = ($h >= 12) ? "PM" : "AM";
+</action>
+<result>PM
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Random numbers not random </title>
+<language>C++ </language>
+<symptoms>The numbers generated by "RAND" are not the same every time I run the
+program.
+</symptoms>
+<example>rand();</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<action>The pseudo-random number generator needs to be seeded. Include 'time'
+header and seed(time(null)) in code.
+</action>
+<result>#include &lt;time.h>
+...
+seed(time(null));
+rand();
+...
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Trouble reading file multiple times </title>
+<language>C++ </language>
+<symptoms>I read through a text file, reach EOF, then try to read through it
+again, but can't seem to read anything at all the second time.
+</symptoms>
+<example>while(!in_file.eof()) { ... }
+in_file.seekg(ios:beg);
+while(!in_file.eof()) { ... }</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<action>The status flags need to be reset
+</action>
+<result>while(!in_file.eof()) { ... }
+in_file.seekg(ios:beg);
+in_file.clear();
+while(!in_file.eof()) { ... }
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Trouble reading binary file </title>
+<language>C++ </language>
+<symptoms>When reading binary file, I hit EOF() before the end of the file.
+</symptoms>
+<example>in_file.open("filename.txt", ios:in);
+while(!in_file.eof()) { ... }</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<action>add binary to the open line
+</action>
+<result>in_file.open("filename.txt", ios:in ios:binary);
+while(!in_file.eof()) { ... }
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Error with use of let</title>
+<language>Common Lisp</language>
+<symptoms>I define multiple variables using let and I get an error when
+trying to access them.
+</symptoms>
+<example>(let ((x 1) (y (+ x 1)) (+ x y)))</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>use let* in place of let
+</action>
+<result>(let* ((x 1) (y (+ x 1)) (+ x y)))</result>
+</repair>
+<repair>
+<precondition>none
+</precondition>
+<action>cascade another let within the first let
+</action>
+<result>(let ((x 1)) (let ((y (+ x 1))) (+ x y)))
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Octal numbers</title>
+<language>C</language>
+<symptoms>I am using a array and it outputs the wrong numbers when I call
+it.
+</symptoms>
+<example>int numbers[] = { 001, 010, 014 }; cout &lt;&lt; numbers[1];  It outputs
+8!?</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>The numbers you are defining start with 0's
+</precondition>
+<action>take out the starting zeros (C evaluates these numbers in base 8)
+</action>
+<result>int numbers[] = { 1, 10, 14 }; cout &lt;&lt; numbers[1];  It outputs 10!
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Error in if statement</title>
+<language>C/C++</language>
+<symptoms>I have an if statement that I know should execute, but it doesn't.
+</symptoms>
+<example>if( 0 &lt; a &lt; 5) cout &lt;&lt; a;</example>
+<explanation>
+</explanation>
+<repairs>
+<repair>
+<precondition>none
+</precondition>
+<action>seperate the 2 conditions of the if statement using an &amp;
+</action>
+<result>if( ( 0 &lt; a ) &amp;&amp; ( a &lt; 5) ) cout &lt;&lt; a;
+</result>
+</repair>
+</repairs>
+</bug-fix>
+
+<bug-fix>
+<title>Poor exit test</title>
+<language>Common Lisp</language>
+<symptoms>Passed the LISP bug finder but will loop endlessly if certain
+input is used
+</symptoms>
+<example>(defun printdotsrec (int)
+   (cond ((not (= int 0))
+         (printdotsrec (1- int))
+         (format t "."))))
+</example>
+<explanation>In this code I assumed that the input is a positive number,
+if a negative number is passed in then the function will loop endlessly.
+It passed the LISP bug finder but its clearly a bug. I made the
+assumption that the user will provide valid input
+</explanation>
+<repairs>
+<repair>
+<precondition></precondition>
+<action>do not make assumptions about input and check for
+negative numbers
+</action>
+<result>((> int 0)
+</result>
+</repair>
+</repairs>
+</bug-fix>
+</bug-fixes>

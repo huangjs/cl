@@ -1,0 +1,182 @@
+<html>
+<head><title>INDUCTION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INDUCTION</h2>make a rule that suggests a certain induction
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+
+<pre>
+Example:
+(:induction :corollary t  ; the theorem proved is irrelevant!
+            :pattern (* 1/2 i)
+            :condition (and (integerp i) (&gt;= i 0))
+            :scheme (recursion-by-sub2 i))
+</pre>
+
+<p>
+In ACL2, as in Nqthm, the functions in a conjecture ``suggest'' the
+inductions considered by the system.  Because every recursive
+function must be admitted with a justification in terms of a measure
+that decreases in a well-founded way on a given set of
+``controlling'' arguments, every recursive function suggests a dual
+induction scheme that ``unwinds'' the function from a given
+application.<p>
+
+For example, since <code><a href="APPEND.html">append</a></code> (actually <code><a href="BINARY-APPEND.html">binary-append</a></code>, but we'll ignore
+the distinction here) decomposes its first argument by successive
+<code><a href="CDR.html">cdr</a></code>s as long as it is a non-<code>nil</code> true list, the induction scheme
+suggested by <code>(append x y)</code> has a base case supposing <code>x</code> to be either
+not a true list or to be <code>nil</code> and then has an induction step in which
+the induction hypothesis is obtained by replacing <code>x</code> by <code>(cdr x)</code>.
+This substitution decreases the same measure used to justify the
+definition of <code><a href="APPEND.html">append</a></code>.  Observe that an induction scheme is suggested
+by a recursive function application only if the controlling actuals
+are distinct variables, a condition that is sufficient to ensure
+that the ``substitution'' used to create the induction hypothesis is
+indeed a substitution and that it drives down a certain measure.  In
+particular, <code>(append (foo x) y)</code> does not suggest an induction
+unwinding <code><a href="APPEND.html">append</a></code> because the induction scheme suggested by
+<code>(append x y)</code> requires that we substitute <code>(cdr x)</code> for <code>x</code> and
+we cannot do that if <code>x</code> is not a variable symbol.<p>
+
+Once ACL2 has collected together all the suggested induction schemes
+it massages them in various ways, combining some to simultaneously
+unwind certain cliques of functions and vetoing others because they
+``flaw'' others.  We do not further discuss the induction heuristics
+here; the interested reader should see Chapter XIV of A
+Computational Logic (Boyer and Moore, Academic Press, 1979) which
+represents a fairly complete description of the induction heuristics
+of ACL2.<p>
+
+However, unlike Nqthm, ACL2 provides a means by which the user can
+elaborate the rules under which function applications suggest
+induction schemes.  Such rules are called <code>:induction</code> rules.  The
+definitional principle automatically creates an <code>:induction</code> rule,
+named <code>(:induction fn)</code>, for each admitted recursive function, <code>fn</code>.  It
+is this rule that links applications of <code>fn</code> to the induction scheme
+it suggests.  Disabling <code>(:induction fn)</code> will prevent <code>fn</code> from
+suggesting the induction scheme derived from its recursive
+definition.  It is possible for the user to create additional
+<code>:induction</code> rules by using the <code>:induction</code> rule class in <code><a href="DEFTHM.html">defthm</a></code>.<p>
+
+Technically we are ``overloading'' <code><a href="DEFTHM.html">defthm</a></code> by using it in the
+creation of <code>:induction</code> rules because no theorem need be proved to
+set up the heuristic link represented by an <code>:induction</code> rule.
+However, since <code><a href="DEFTHM.html">defthm</a></code> is generally used to create rules and
+rule-class objects are generally used to specify the exact form of
+each rule, we maintain that convention and introduce the notion of
+an <code>:induction</code> rule.  An <code>:induction</code> rule can be created from any
+lemma whatsoever.
+
+<pre>
+General Form of an :induction Lemma or Corollary:
+T<p>
+
+General Form of an :induction rule-class:
+(:induction :pattern pat-term
+            :condition cond-term
+            :scheme scheme-term)
+</pre>
+
+where <code>pat-term</code>, <code>cond-term</code>, and <code>scheme-term</code> are all terms, <code>pat-term</code>
+is the application of a function symbol, <code>fn</code>, <code>scheme-term</code> is the
+application of a function symbol, <code>rec-fn</code>, that suggests an
+induction, and, finally, every free variable of <code>cond-term</code> and
+<code>scheme-term</code> is a free variable of <code>pat-term</code>.  We actually check that
+<code>rec-fn</code> is either recursively defined -- so that it suggests the
+induction that is intrinsic to its recursion -- or else that another
+<code>:induction</code> rule has been proved linking a call of <code>rec-fn</code> as the
+<code>:pattern</code> to some scheme.<p>
+
+The induction rule created is used as follows.  When an instance of
+the <code>:pattern</code> term occurs in a conjecture to be proved by induction
+and the corresponding instance of the <code>:condition</code> term is known to be
+non-<code>nil</code> (by type reasoning alone), the corresponding instance of the
+<code>:scheme</code> term is created and the rule ``suggests'' the induction, if
+any, suggested by that term.  If <code>rec-fn</code> is recursive, then the
+suggestion is the one that unwinds that recursion.<p>
+
+Consider, for example, the example given above,
+
+<pre>
+(:induction :pattern (* 1/2 i)
+            :condition (and (integerp i) (&gt;= i 0))
+            :scheme (recursion-by-sub2 i)).
+</pre>
+
+In this example, we imagine that <code>recursion-by-sub2</code> is the
+function:
+
+<pre>
+(defun recursion-by-sub2 (i)
+  (if (and (integerp i)
+           (&lt; 1 i))
+      (recursion-by-sub2 (- i 2))
+      t))
+</pre>
+
+Observe that this function recursively decomposes its integer
+argument by subtracting <code>2</code> from it repeatedly and stops when the
+argument is <code>1</code> or less.  The value of the function is irrelevant; it
+is its induction scheme that concerns us.  The induction scheme
+suggested by <code>(recursion-by-sub2 i)</code> is
+
+<pre>
+(and (implies (not (and (integerp i) (&lt; 1 i)))   ; base case
+              (:p i))
+     (implies (and (and (integerp i) (&lt; 1 i))    ; induction step
+                   (:p (- i 2)))
+              (:p i)))
+</pre>
+
+We can think of the base case as covering two situations.  The
+first is when <code>i</code> is not an integer.  The second is when the integer <code>i</code>
+is <code>0</code> or <code>1</code>.  In the base case we must prove <code>(:p i)</code> without further
+help.  The induction step deals with those integer <code>i</code> greater than <code>1</code>,
+and inductively assumes the conjecture for <code>i-2</code> while proving it for
+<code>i</code>.  Let us call this scheme ``induction on <code>i</code> by twos.''<p>
+
+Suppose the above <code>:induction</code> rule has been added.  Then an
+occurrence of, say, <code>(* 1/2 k)</code> in a conjecture to be proved by
+induction would suggest, via this rule, an induction on <code>k</code> by twos,
+provided <code>k</code> was known to be a nonnegative integer.  This is because
+the induction rule's <code>:pattern</code> is matched in the conjecture, its
+<code>:condition</code> is satisfied, and the <code>:scheme</code> suggested by the rule is
+that derived from <code>(recursion-by-sub2 k)</code>, which is induction on <code>k</code> by
+twos.  Similarly, the term <code>(* 1/2 (length l))</code> would suggest no
+induction via this rule, even though the rule ``fires'' because it
+creates the <code>:scheme</code> <code>(recursion-by-sub2 (length l))</code> which suggests no
+inductions unwinding <code>recursion-by-sub2</code> (since the controlling
+argument of <code>recursion-by-sub2</code> in this <code>:scheme</code> is not a variable
+symbol).<p>
+
+Continuing this example one step further illustrates the utility of
+<code>:induction</code> rules.  We could define the function <code>recursion-by-cddr</code>
+that suggests the induction scheme decomposing its <code><a href="CONSP.html">consp</a></code> argument
+two <code><a href="CDR.html">cdr</a></code>s at a time.  We could then add the <code>:induction</code> rule linking
+<code>(* 1/2 (length x))</code> to <code>(recursion-by-cddr x)</code> and arrange for
+<code>(* 1/2 (length l))</code> to suggest induction on <code>l</code> by <code><a href="CDDR.html">cddr</a></code>.<p>
+
+Observe that <code>:induction</code> rules require no proofs to be done.  Such a
+rule is merely a heuristic link between the <code>:pattern</code> term, which may
+occur in conjectures to be proved by induction, and the <code>:scheme</code>
+term, from which an induction scheme may be derived.  Hence, when an
+<code>:induction</code> rule-class is specified in a <code><a href="DEFTHM.html">defthm</a></code> event, the theorem
+proved is irrelevant.  The easiest theorem to prove is, of course,
+<code>t</code>.  Thus, we suggest that when an <code>:induction</code> rule is to be created,
+the following form be used:
+
+<pre>
+(defthm name T
+  :rule-classes ((:induction :pattern pat-term
+                             :condition cond-term
+                             :scheme scheme-term)))
+</pre>
+
+The name of the rule created is <code>(:induction name)</code>.  When that rune
+is disabled the heuristic link between <code>pat-term</code> and <code>scheme-term</code> is
+broken.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

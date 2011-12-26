@@ -1,0 +1,1001 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: HINTS,  Next: I-AM-HERE,  Prev: HIDE,  Up: MISCELLANEOUS
+
+HINTS    advice to the theorem proving process
+
+     Examples:
+     The following :hints value is nonsensical.  Nevertheless, it
+     illustrates all of the available hint keywords:
+     
+     :hints (("Goal"
+              :do-not-induct t
+              :do-not '(generalize fertilize)
+              :expand ((assoc x a)
+                       :lambdas
+                       (:free (y) (:with member (member y z))))
+              :restrict ((<-trans ((x x) (y (foo x)))))
+              :hands-off (length binary-append)
+              :in-theory (set-difference-theories
+                           (current-theory :here)
+                           '(assoc))
+              :induct (and (nth n a) (nth n b))
+              :use ((:instance assoc-of-append
+                               (x a) (y b) (z c))
+                    (:functional-instance
+                      (:instance p-f (x a) (y b))
+                      (p consp)
+                      (f assoc)))
+              :bdd (:vars (c a0 b0 a1 b1) :prove nil :bdd-constructors (cons))
+              :cases ((true-listp a) (consp a))
+              :by (:instance rev-rev (x (cdr z)))
+              :nonlinearp t))
+
+A very common hint is the :use hint, which in general takes as its
+value a list of "lemma instances" (see *note LEMMA-INSTANCE::) but
+which allows a single lemma name as a special case:
+
+     :hints (("[1]Subgoal *1/1.2'" :use lemma23))
+
+ACL2 also provides "computed hints" for the advanced user.  See *Note
+COMPUTED-HINTS::
+
+Background: Hints are allowed in all events that use the theorem
+prover.  During defun events there are two different uses of the
+theorem prover: one to prove termination and another to verify the
+guards.  To pass a hint to the theorem prover during termination
+proofs, use the :hints keyword in the defun's xargs declaration.  To
+pass a hint to the theorem prover during the guard verification of
+defun, use the :guard-hints keyword in the defun's xargs declaration.
+The verify-guards event and the defthm event also use the theorem
+prover.  To pass hints to them, use the :hints keyword argument to the
+event.
+
+     General Form of Common :hints:
+       ((goal-spec :key1 val1 ... :keyn valn)
+        ...
+        (goal-spec :key1 val1 ... :keyn valn))
+
+where goal-spec is as described in the documentation for goal-spec and
+the keys and their respective values are shown below with their
+interpretations.  (We also provide "computed hints" but discuss them
+separately; see *note COMPUTED-HINTS::.)
+
+:DO-NOT-INDUCT
+Value is t, name or nil, indicating whether induction is permitted
+under the specified goal.  If value is t, then the attempt to apply
+induction to the indicated goal or any subgoal under the indicated goal
+will immediately cause the theorem prover to report failure.  Thus, the
+indicated goal must be proved entirely by simplification, destructor
+elimination, and the other "waterfall" processes.  Induction to prove
+the indicated goal (or any subgoal) is not permitted.  See however the
+:induct hint below.  If value is a symbol other than t or nil, the
+theorem prover will give a "bye" to any subgoal that would otherwise be
+attacked with induction.  This will cause the theorem prover to fail
+eventually but will collect the necessary subgoals.  If value is nil,
+this hint means induction is permitted.  Since that is the default,
+there is no reason to use the value nil.
+
+:DO-NOT
+Value is a term having at most the single free variable world, which
+when evaluated (with world bound to the current ACL2 logical world)
+produces a list of symbols that is a subset of the list
+
+     (preprocess ;propositional logic, simple rules
+      simplify   ;as above plus rewriting, linear arithmetic
+      eliminate-destructors
+      fertilize  ;use of equalities
+      generalize
+      eliminate-irrelevance).
+
+The hint indicates that the "processes" named should not be used at or
+below the goal in question.  Thus, to prevent generalization and
+fertilization, say, include the hint
+
+     :do-not '(generalize fertilize)
+
+If value is a single symbol, as in
+
+     :do-not generalize,
+
+it is taken to be '(value).
+
+:EXPAND
+Value is a true list of terms, each of which is of one of the forms
+(let ((v1 t1)...) b) or (fn t1 ... tn), where fn is a defined function
+symbol with formals v1, ..., vn, and body b.  Such a term is said to be
+"expandable:" it can be replaced by the result of substituting the ti's
+for the vi's in b.  The terms listed in the :expand hint are expanded
+when they are encountered by the simplifier while working on the
+specified goal or any of its subgoals.  We permit value to be a single
+such term instead of a singleton list.  *Notes*: (1) Allowed are
+"terms" of the form (:free (var1 var2 ...  varn) pattern) where the
+indicated variables are distinct and pattern is a term.  Such "terms"
+indicate that we consider the indicated variables to be instantiatable,
+in the following sense: whenever the simplifier encounters a term that
+can be obtained from pattern by instantiating the variables (var1 var2
+...  varn), then it expands that term.  (2) Also allowed are "terms" of
+the form (:with name term), where name is a function symbol, a macro
+name that denotes a function symbol (see *note MACRO-ALIASES-TABLE::),
+or a rune.  The corresponding rule of class :rewrite, which is often a
+definition rule but need not be, is then used in place of the current
+body for the function symbol of term; see *note SHOW-BODIES:: and see
+*note SET-BODY::.  If the rule is of the form (implies hyp (equiv lhs
+rhs)), then after matching lhs to the current term in a context that is
+maintaining equivalence relation equiv, ACL2 will replace the current
+term with (if hyp rhs (hide term)), or just rhs if the rule is just
+(equal lhs rhs).  (3) A combination of both :free and :with, as
+described above, is legal.  (4) The term :LAMBDAS is treated specially.
+It denotes the list of all lambda applications (i.e., let expressions)
+encountered during the proof.  Conceptually, this use of :LAMBDAS tells
+ACL2 to treat lambda applications as a notation for substitutions,
+rather than as function calls whose opening is subject to the ACL2
+rewriter's heuristics (specifically, not allowing lambda applications
+to open when they introduce "too many" if terms).
+
+:HANDS-OFF
+Value is a true list of function symbols or lambda expressions,
+indicating that under the specified goal applications of these
+functions are not to be rewritten.  Value may also be a single function
+symbol or lambda expression instead of a list.
+
+:IN-THEORY
+Value is a "theory expression," i.e., a term having at most the single
+free variable world which when evaluated (with world bound to the
+current ACL2 logical world (see *note WORLD::)) will produce a theory
+to use as the current theory for the goal specified.  See *Note
+THEORIES::.
+
+Note that an :IN-THEORY hint will always be evaluated relative to the
+current ACL2 logical world, not relative to the theory of a previous
+goal.  Consider the following example.
+
+     (defthm prop
+       (p (f (g x)))
+       :hints (("Goal"      :in-theory (disable f))
+               ("Subgoal 3" :in-theory (enable  g))))
+
+Consider in particular the theory in effect at Subgoal 3.  This call of
+the enable macro enables g relative to the current-theory of the
+current logical world, _not_ relative to the theory produced by the
+hint at Goal.  Thus, the disable of f on behalf of the hint at Goal
+will be lost at Subgoal 3, and f will be enabled at Subgoal 3 if was
+enabled globally when prop was submitted.
+
+:INDUCT
+Value is either t or a term containing at least one recursively defined
+function symbol.  If t, this hint indicates that the system should
+proceed to apply its induction heuristic to the specified goal (without
+trying simplification, etc.).  If value is of the form (f x1 ... xk),
+where f is a recursively defined function and x1 through xk are
+distinct variables, then the system is to induct according to the
+induction scheme that was stored for f.  For example, for the hint
+:induct (true-listp x), ACL2 will assume that the goal holds for (cdr
+x) when proving the induction step because true-listp recurs on the
+cdr.  More generally, if value is a term other than t, then not only
+should the system apply induction immediately, but it should analyze
+value rather than the goal to generate its induction scheme.  Merging
+and the other induction heuristics are applied.  Thus, if value
+contains several mergeable inductions, the "best" will be created and
+chosen.  E.g., the :induct hint
+
+      (and (nth i a) (nth j a))
+
+suggests simultaneous induction on i, j, and a.
+
+If both an :induct and a :do-not-induct hint are supplied for a given
+goal then the indicated induction is applied to the goal and the
+:do-not-induct hint is inherited by all subgoals generated.
+
+:USE
+Value is a lemma-instance or a true list of lemma-instances, indicating
+that the propositions denoted by the instances be added as hypotheses
+to the specified goal.  See *Note LEMMA-INSTANCE::.  Note that :use
+makes the given instances available as ordinary hypotheses of the
+formula to be proved.  The :instance form of a lemma-instance permits
+you to instantiate the free variables of previously proved theorems any
+way you wish; but it is up to you to provide the appropriate
+instantiations because once the instances are added as hypotheses their
+variables are no longer instantiable.  These new hypotheses participate
+fully in all subsequent rewriting, etc.  If the goal in question is in
+fact an instance of a previously proved theorem, you may wish to use
+:by below.  Note that theories may be helpful when employing :use
+hints; see *note MINIMAL-THEORY::.
+
+:BDD
+This hint indicates that ordered binary decision diagrams (BDDs) with
+rewriting are to be used to prove or simplify the goal.  See *Note
+BDD:: for an introduction to the ACL2 BDD algorithm.
+
+Value is a list of even length, such that every other element, starting
+with the first, is one of the keywords :vars, :bdd-constructors,
+:prove, or :literal.  Each keyword that is supplied should be followed
+by a value of the appropriate form, as shown below; for others, a
+default is used.  Although :vars must always be supplied, we expect
+that most users will be content with the defaults used for the other
+values.
+
+:vars -- A list of ACL2 variables, which are to be treated as Boolean
+variables.  The prover must be able to check, using trivial reasoning
+(see *note TYPE-SET::), that each of these variables is Boolean in the
+context of the current goal.  Note that the prover will use very simple
+heuristics to order any variables that do not occur in :vars (so that
+they are "greater than" the variables that do occur in :vars), and
+these heuristics are often far from optimal.  In addition, any
+variables not listed may fail to be assumed Boolean by the prover,
+which is likely to seriously impede the effectiveness of ACL2's BDD
+algorithm.  Thus, users are encouraged _not_ to rely on the default
+order, but to supply a list of variables instead.  Finally, it is
+allowed to use a value of t for vars.  This means the same as a nil
+value, except that the BDD algorithm is directed to fail unless it can
+guarantee that all variables in the input term are known to be Boolean
+(in a sense discussed elsewhere; see *note BDD-ALGORITHM::).
+
+:literal -- An indication of which part of the current goal should
+receive BDD processing.  Possible values are:
+
+       :all     treat entire goal as a single literal (the default)
+       :conc    process the conclusion
+       n        process the hypothesis with index n (1, 2, ...)
+
+:bdd-constructors -- When supplied, this value should be a list of
+function symbols in the current ACL2 world; it is (cons) by default,
+unless :bdd-constructors has a value in the acl2-defaults-table by
+default, in which case that value is the default.  We expect that most
+users will be content with the default.  See *Note BDD-ALGORITHM:: for
+information about how this value is used.
+
+:prove -- When supplied, this value should be t or nil; it is t by
+default.  When the goal is not proved and this value is t, the entire
+proof will abort.  Use the value nil if you are happy to the proof to
+go on with the simplified term.
+
+:CASES
+Value is a non-empty list of terms.  For each term in the list, a new
+goal is created from the current goal by assuming that term; and also,
+in essence, one additional new goal is created by assuming all the
+terms in the list false.  We say "in essence" because if the
+disjunction of the terms supplied is a tautology, then that final goal
+will be a tautology and hence will in fact never actually be created.
+
+:BY
+Value is a lemma-instance, nil, or a new event name. If the value is a
+lemma-instance (see *note LEMMA-INSTANCE::), then it indicates that the
+goal (when viewed as a clause) is either equal to the proposition
+denoted by the instance, or is subsumed by that proposition when both
+are viewed as clauses.  To view a formula as a clause, union together
+the negations of the hypotheses and add the conclusion.  For example,
+
+     (IMPLIES (AND (h1 t1) (h2 t2)) (c t1))
+
+may be viewed as the clause
+
+     {~(h1 t1) ~(h2 t2) (c t1)}.
+
+Clause c1 is "subsumed" by clause c2 iff some instance of c2 is a
+subset of c1.  For example, the clause above is subsumed by {~(h1 x) (c
+x)}, which when viewed as a formula is (implies (h1 x) (c x)).
+
+If the value is nil or a new name, the prover does not even attempt to
+prove the goal to which this hint is attached.  Instead the goal is
+given a "bye", i.e., it is skipped and the proof attempt continues as
+though the goal had been proved.  If the prover terminates without
+error then it reports that the proof would have succeeded had the
+indicated goals been proved and it prints an appropriate defthm form to
+define each of the :by names.  The "name" nil means "make up a name."
+
+The system does not attempt to check the uniqueness of the :by names
+(supplied or made up), since by the time those goals are proved the
+namespace will be cluttered still further.  Therefore, the final list
+of "appropriate" defthm forms may be impossible to admit without some
+renaming by the user.  If you must invent new names, remember to
+substitute the new ones for the old ones in the :by hints themselves.
+
+:RESTRICT
+Warning: This is a sophisticated hint, suggested by Bishop Brock, that
+is intended for advanced users.  In particular, :restrict hints are
+ignored by the preprocessor, so you might find it useful to give the
+hint :do-not '(preprocess) when using any :restrict hints, at least if
+the rules in question are abbreviations (see *note SIMPLE::).
+
+Value is an association list.  Its members are of the form (x subst1
+subst2 ...), where: x is either (1) a rune whose car is :rewrite or
+:definition or (2) an event name corresponding to one or more such
+runes; and (subst1 subst2 ...) is a non-empty list of substitutions,
+i.e., of association lists pairing variables with terms.  First
+consider the case that x is a :rewrite or :definition rune.  Recall
+that without this hint, the rule named x is used by matching its
+left-hand side (call it lhs) against the term currently being
+considered by the rewriter, that is, by attempting to find a
+substitution s such that the instantiation of lhs using s is equal to
+that term.  If however the :restrict hint contains (x subst1 subst2
+...), then this behavior will be modified by restricting s so that it
+must extend subst1; and if there is no such s, then s is restricted so
+that it must extend subst2; and so on, until the list of substitutions
+is exhausted.  If no such s is found, then the rewrite or definition
+rule named x is not applied to that term.  Finally, if x is an event
+name corresponding to one or more :rewrite or :definition runes (that
+is, x is the "base symbol" of such runes; see *note RUNE::), say runes
+r1, ... rn, then the meaning is the same except that (x subst1 subst2
+...) is replaced by (ri subst1 subst2 ...) for each i.  Once this
+replacement is complete, the hint may not contain two members whose car
+is the same rune.
+
+Note that the substitutions in :restrict hints refer to the variables
+actually appearing in the goals, not to the variables appearing in the
+rule being restricted.
+
+Here is an example, supplied by Bishop Brock.  Suppose that the
+database includes the following rewrite rule, which is probably kept
+disabled.  (We ignore the question of how to prove this rule.)
+
+     cancel-<-*$free:
+     (implies (and (rationalp x)
+                   (rationalp y)
+                   (rationalp z))
+              (equal (< y z)
+                     (if (< x 0)
+                         (> (* x y) (* x z))
+                       (if (> x 0)
+                           (< (* x y) (* x z))
+                         (hide (< y z))))))
+
+Then ACL2 can prove the following theorem (unless other rules get in
+the way), essentially by multiplying both sides by x.
+
+     (thm
+       (implies (and (rationalp x)
+                     (< 1 x))
+                (< (/ x) 1))
+       :hints
+       (("Goal"
+         :in-theory (enable cancel-<-*$free)
+         :restrict ((cancel-<-*$free ((x x) (y (/ x)) (z 1)))))))
+
+The :restrict hint above says that the variables x, y, and z in the
+rewrite rule cancel-<-*$free above should be instantiated respectively
+by x, (/ x), and 1.  Thus (< y z) becomes (< (/ x) 1), and this
+inequality is replaced by the corresponding instance of the
+right-hand-side of cancel-<-*$free.  Since the current conjecture
+assumes (< 1 x), that instance of the right-hand side simplifies to
+
+     (< (* x (/ x)) (* x 1))
+
+which in turn simplifies to (< 1 x), a hypothesis in the present
+theorem.
+
+:NONLINEARP
+Value is t or nil, indicating whether non-linear-arithmetic is active.
+The default value is nil.  See *Note NON-LINEAR-ARITHMETIC::.
+
+
+File: acl2-doc-emacs.info,  Node: I-AM-HERE,  Next: IMMEDIATE-FORCE-MODEP,  Prev: HINTS,  Up: MISCELLANEOUS
+
+I-AM-HERE    a convenient marker for use with rebuild
+
+     Example Input File for Rebuild:
+     (defun fn1 (x y) ...)
+     (defthm lemma1 ...)
+     (defthm lemma2 ...)
+     (i-am-here)
+     The following lemma won't go through.  I started
+     typing the hint but realized I need to prove a
+     lemma first.  See the failed proof attempt in foo.bar.
+     I'm going to quit for the night now and resume tomorrow
+     from home.
+     
+     (defthm lemma3 ...
+       :hints (("Goal" :use (:instance ???
+     ...
+
+By putting an (i-am-here) form at the "frontier" of an evolving file of
+commands, you can use rebuild to load the file up to the (i-am-here).
+I-am-here simply returns an ld error triple and any form that "causes
+an error" will do the same job.  Note that the text of the file after
+the (i-am-here) need not be machine readable.
+
+
+File: acl2-doc-emacs.info,  Node: IMMEDIATE-FORCE-MODEP,  Next: INDUCT,  Prev: I-AM-HERE,  Up: MISCELLANEOUS
+
+IMMEDIATE-FORCE-MODEP    when executable counterpart is enabled,
+ forced hypotheses are attacked immediately
+
+Also see *note DISABLE-IMMEDIATE-FORCE-MODEP:: and see *note
+ENABLE-IMMEDIATE-FORCE-MODEP::.
+
+This function symbol is defined simply to provide a rune which can be
+enabled and disabled.  Enabling
+
+     (:executable-counterpart immediate-force-modep)
+
+causes ACL2 to attack forced hypotheses immediately instead of delaying
+them to the next forcing round.
+
+     Example Hints
+     :in-theory (disable (:executable-counterpart immediate-force-modep))
+                ; delay forced hyps to forcing round
+     :in-theory (enable (:executable-counterpart immediate-force-modep))
+                ; split on forced hyps immediately
+
+See *Note FORCE:: for background information.  When a forced hypothesis
+cannot be established a record is made of that fact and the proof
+continues.  When the proof succeeds a "forcing round" is undertaken in
+which the system attempts to prove each of the forced hypotheses
+explicitly.  However, if the rune (:executable-counterpart
+immediate-force-modep) is enabled at the time the hypothesis is forced,
+then ACL2 does not delay the attempt to prove that hypothesis but
+undertakes the attempt more or less immediately.
+
+
+File: acl2-doc-emacs.info,  Node: INDUCT,  Next: KEYWORD-COMMANDS,  Prev: IMMEDIATE-FORCE-MODEP,  Up: MISCELLANEOUS
+
+INDUCT    hints keyword :INDUCT
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: KEYWORD-COMMANDS,  Next: LAMBDA,  Prev: INDUCT,  Up: MISCELLANEOUS
+
+KEYWORD-COMMANDS    how keyword commands are processed
+
+     Examples:
+     user type-in                 form evaluated
+     :pc 5                        (ACL2::PC '5)
+     :pcs app rev                 (ACL2::PCS 'app 'rev)
+     :length (1 2 3)              (ACL2::LENGTH '(1 2 3))
+
+When a keyword, :key, is read as a command, ACL2 determines whether the
+symbol with the same name in the "ACL2" package, acl2::key, is a
+function or simple macro of n arguments.  If so, ACL2 reads n more
+objects, obj1, ..., objn, and then acts as though it had read the
+following form (for a given key):
+
+     (ACL2::key 'obj1 ... 'objn)
+
+Thus, by using the keyword command hack you avoid typing the
+parentheses, the "ACL2" package name, and the quotation marks.
+
+Note the generality of this hack.  Almost any function or macro in the
+"ACL2" package can be so invoked, not just "commands."  Indeed, there
+is no such thing as a distinguished class of commands.  The one caveat
+is that the keyword hack can be used to invoke a macro only if that
+macro has a simple argument list -- one containing no lambda keywords
+(such as &rest), since they complicate or render impossible the task of
+deciding how many objects to read.  Users may take advantage of the
+keyword command hack by defining functions and macros in the "ACL2"
+package.
+
+
+File: acl2-doc-emacs.info,  Node: LAMBDA,  Next: LD-ERROR-ACTION,  Prev: KEYWORD-COMMANDS,  Up: MISCELLANEOUS
+
+LAMBDA    See *Note TERM::.
+
+
+File: acl2-doc-emacs.info,  Node: LD-ERROR-ACTION,  Next: LD-ERROR-TRIPLES,  Prev: LAMBDA,  Up: MISCELLANEOUS
+
+LD-ERROR-ACTION    determines ld's response to an error
+
+Ld-error-action is an ld special (see *note LD::).  The accessor is
+(ld-error-action state) and the updater is (set-ld-error-action val
+state).  Ld-error-action must be :continue, :return, or :error.  The
+initial value of ld-error-action is :continue, which means that the
+top-level ACL2 command loop will not exit when an error is caused by
+user-typein.  But the default value for ld-error-action on calls of ld
+is :return.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-error-action is one of them.  If, while ld-error-triples is t, a
+form evaluates to three results, the first of which is non-nil and the
+third of which is state, an error is said to have occurred.  If an
+error occurs, ld's action depends on ld-error-action.  If it is
+:continue, ld just continues processing the forms in standard-oi.  If
+it is :return, ld stops and returns as though it had emptied the
+channel.  If it is :error, ld stops and returns, signalling an error to
+its caller.
+
+
+File: acl2-doc-emacs.info,  Node: LD-ERROR-TRIPLES,  Next: LD-EVISC-TUPLE,  Prev: LD-ERROR-ACTION,  Up: MISCELLANEOUS
+
+LD-ERROR-TRIPLES    determines whether a form caused an error during ld
+
+Ld-error-triples is an ld special (see *note LD::).  The accessor is
+(ld-error-triples state) and the updater is (set-ld-error-triples val
+state).  Ld-error-triples must be either t or nil.  The initial value
+of ld-error-triples is t.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-error-triples is one of them.  If this variable has the value t then
+when a form evaluates to 3 values, the first of which is non-nil and
+the third of which is state, an error is deemed to have occurred.  When
+an error occurs in evaluating a form, ld rolls back the ACL2 world to
+the configuration it had at the conclusion of the last error-free form.
+Then ld takes the action determined by ld-error-action.
+
+
+File: acl2-doc-emacs.info,  Node: LD-EVISC-TUPLE,  Next: LD-KEYWORD-ALIASES,  Prev: LD-ERROR-TRIPLES,  Up: MISCELLANEOUS
+
+LD-EVISC-TUPLE    determines whether ld suppresses details when printing
+
+Ld-evisc-tuple is an ld special (see *note LD::).  The accessor is
+(ld-evisc-tuple state) and the updater is (set-ld-evisc-tuple val
+state).  Ld-evisc-tuple must be either nil or a list of the form
+
+     (alist print-level print-length hiding-cars)
+
+where alist is an alist that pairs objects to strings, print-level and
+print-length are either nil or non-negative integers, and hiding-cars
+is a list of symbols.  The initial value of ld-evisc-tuple is nil.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-evisc-tuple is one of them.  Ld may print the forms it is evaluating
+and/or the results of evaluation.  If the value of ld-evisc-tuple is a
+list as shown above, then ld "eviscerates" the objects it prints before
+printing them.  To "eviscerate" an object we replace certain
+substructures within it by strings which are printed in their stead.
+Print-level and print-length, above, are used as described in CLTL (pp
+372) to replace those substructures deeper than print-level by "#" and
+those longer than print-length by "...".  Alist is used to replace any
+substructure occuring as a key in alist by the corresponding string.
+Finally, any consp x that starts with one of the symbols in hiding-cars
+is printed as <hidden>.
+
+The printing of error messages and warnings, as well as certain other
+output, uses a different such evisc-tuple, (default-evisc-tuple state).
+The advanced user can override this evisc-tuple with the state global
+user-default-evisc-tuple.  Similarly, some other printing uses yet
+another evisc-tuple, (term-evisc-tuple t state), which can be overridden
+with state global user-term-evisc-tuple.  We may document these
+mechanisms more fully if there is sufficient user interest.
+
+
+File: acl2-doc-emacs.info,  Node: LD-KEYWORD-ALIASES,  Next: LD-POST-EVAL-PRINT,  Prev: LD-EVISC-TUPLE,  Up: MISCELLANEOUS
+
+LD-KEYWORD-ALIASES    allows the abbreviation of some keyword commands
+
+     Example:
+     (set-ld-keyword-aliases '((:q 0 q-fn)
+                               (:e 0 exit-acl2-macro))
+                             state)
+
+Ld-keyword-aliases is an ld special (see *note LD::).  The accessor is
+(ld-keyword-aliases state) and the updater is (set-ld-keyword-aliases
+val state).  Ld-keyword-aliases must be an alist, each element of which
+is of the form (:keyword n fn), where :keyword is a keyword, n is a
+nonnegative integer, and fn is a function symbol of arity n, a macro
+symbol, or a lambda expression of arity n.  When keyword is typed as an
+ld command, n more forms are read, x1, ..., xn, and the form (fn 'x1
+... 'xn) is then evaluated.  The initial value of ld-keyword-aliases is
+nil.
+
+In the example above, :q has been redefined to have the effect of
+executing (q-fn), so for example if you define
+
+     (defmacro q-fn ()
+       '(er soft 'q "You un-bound :q and now we have a soft error."))
+
+then :q will cause an error, and if you define
+
+     (defmacro exit-acl2-macro () '(exit-ld state))
+
+then :e will cause the effect (it so happens) that :q normally has.  If
+you prefer :e to :q for exiting the ACL2 loop, you might even want to
+put such definitions of q-fn and exit-acl2-macro together with the
+set-ld-keyword-aliases form above in your "acl2-customization.lisp"
+file; see *note ACL2-CUSTOMIZATION::.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-keyword-aliases is one of them.  Ld-keyword-aliases affects how
+keyword commands are parsed.  Generally speaking, ld's command
+interpreter reads ":fn x1 ... xn" as "(fn 'x1 ... 'xn)" when :fn is a
+keyword and fn is the name of an n-ary function.  But this parse is
+overridden, as described above, for the keywords bound in
+ld-keyword-aliases.
+
+
+File: acl2-doc-emacs.info,  Node: LD-POST-EVAL-PRINT,  Next: LD-PRE-EVAL-FILTER,  Prev: LD-KEYWORD-ALIASES,  Up: MISCELLANEOUS
+
+LD-POST-EVAL-PRINT    determines whether and how ld prints the result of evaluation
+
+Ld-post-eval-print is an ld special (see *note LD::).  The accessor is
+(ld-post-eval-print state) and the updater is (set-ld-post-eval-print
+val state).  Ld-post-eval-print must be either t, nil, or
+:command-conventions.  The initial value of ld-post-eval-print is
+:command-conventions.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-post-eval-print is one of them.  If this global variable is t, ld
+prints the result.  In the case of a form that produces a multiple
+value, ld prints the list containing all the values (which, logically
+speaking, is what the form returned).  If ld-post-eval-print is nil, ld
+does not print the values.  This is most useful when ld is used to load
+a previously processed file.
+
+Finally, if ld-post-eval-print is :command-conventions then ld prints
+the result but treats "error triples" specially.  An "error triple" is
+a result, (mv erp val state), that consists of three values, the third
+of which is state.  Many ACL2 functions use such triples to signal
+errors.  The convention is that if erp (the first value) is nil, then
+the function is returning val (the second value) as its conventional
+single result and possibly side-effecting state (as with some output).
+If erp is t, then an error has been caused, val is irrelevant and the
+error message has been printed in the returned state.  Example ACL2
+functions that follow this convention include defun and in-package.  If
+such "error producing" functions are evaluated while ld-post-eval-print
+is set to t, then you would see them producing lists of length 3.  This
+is disconcerting to users accustomed to Common Lisp (where these
+functions produce single results but sometimes cause errors or
+side-effect state).
+
+When ld-post-eval-print is :command-conventions and a form produces an
+error triple (mv erp val state) as its value, ld prints nothing if erp
+is non-nil and otherwise ld prints just val.  Because it is a
+misrepresentation to suggest that just one result was returned, ld
+prints the value of the global variable 'triple-print-prefix before
+printing val.  'triple-print-prefix is initially " ", which means that
+when non-erroneous error triples are being abbreviated to val, val
+appears one space off the left margin instead of on the margin.
+
+In addition, when ld-post-eval-print is :command-conventions and the
+value component of an error triple is the keyword :invisible then ld
+prints nothing.  This is the way certain commands (e.g., :pc) appear to
+return no value.
+
+By printing nothing when an error has been signalled, ld makes it
+appear that the error (whose message has already appeared in state) has
+"thrown" the computation back to load without returning a value.  By
+printing just val otherwise, we suppress the fact that state has
+possibly been changed.
+
+
+File: acl2-doc-emacs.info,  Node: LD-PRE-EVAL-FILTER,  Next: LD-PRE-EVAL-PRINT,  Prev: LD-POST-EVAL-PRINT,  Up: MISCELLANEOUS
+
+LD-PRE-EVAL-FILTER    determines which forms ld evaluates
+
+Ld-pre-eval-filter is an ld special (see *note LD::).  The accessor is
+(ld-pre-eval-filter state) and the updater is (set-ld-pre-eval-filter
+val state).  Ld-pre-eval-filter must be either :all, :query, or a new
+name that could be defined (e.g., by defun or defconst).  The initial
+value of ld-pre-eval-filter is :all.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-pre-eval-filter is one of them.  If the filter is :all, then every
+form read is evaluated.  If the filter is :query, then after a form is
+read it is printed to standard-co and the user is asked if the form is
+to be evaluated or skipped.  If the filter is a new name, then all
+forms are evaluated until that name is introduced, at which time ld
+terminates normally.
+
+The :all filter is, of course, the normal one.  :Query is useful if you
+want to replay selected the commands in some file.  The new name filter
+is used if you wish to replay all the commands in a file up through the
+introduction of the given one.
+
+
+File: acl2-doc-emacs.info,  Node: LD-PRE-EVAL-PRINT,  Next: LD-PROMPT,  Prev: LD-PRE-EVAL-FILTER,  Up: MISCELLANEOUS
+
+LD-PRE-EVAL-PRINT    determines whether ld prints the forms to be eval'd
+
+Ld-pre-eval-print is an ld special (see *note LD::).  The accessor is
+(ld-pre-eval-print state) and the updater is (set-ld-pre-eval-print val
+state).  Ld-pre-eval-print must be either t, nil, or :never.  The
+initial value of ld-pre-eval-print is nil.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-pre-eval-print is one of them.  If this global variable is t, then
+before evaluating the form just read from standard-oi, ld prints the
+form to standard-co.  If the variable is nil, no such printing occurs.
+The t option is useful if you are reading from a file of commands and
+wish to assemble a complete script of the session in standard-co.
+
+The value :never of ld-pre-eval-print is rarely used.  During the
+evaluation of encapsulate and of certify-book forms, subsidiary events
+are normally printed, even if ld-pre-eval-print is nil.  Thus for
+example, when the user submits an encapsulate form, all subsidiary
+events are generally printed even in the default situation where
+ld-pre-eval-print is nil.  But occasionally one may want to suppress
+such printing.  In that case, ld-pre-eval-print should be set to
+:never.  As described elsewhere (see *note SET-INHIBIT-OUTPUT-LST::),
+another way to suppress such printing is to execute
+(set-inhibit-output-lst lst) where lst evaluates to a list including
+'prove and 'event.
+
+
+File: acl2-doc-emacs.info,  Node: LD-PROMPT,  Next: LD-QUERY-CONTROL-ALIST,  Prev: LD-PRE-EVAL-PRINT,  Up: MISCELLANEOUS
+
+LD-PROMPT    determines the prompt printed by ld
+
+Ld-prompt is an ld special (see *note LD::).  The accessor is
+(ld-prompt state) and the updater is (set-ld-prompt val state).
+Ld-prompt must be either nil, t, or a function symbol that, when given
+an open output character channel and state, prints the desired prompt
+to the channel and returns two values: the number of characters printed
+and the state.  The initial value of ld-prompt is t.
+
+The general-purpose ACL2 read-eval-print loop, ld, reads forms from
+standard-oi, evaluates them and prints the result to standard-co.
+However, there are various flags that control ld's behavior and
+ld-prompt is one of them.  Ld-prompt determines whether ld prints a
+prompt before reading the next form from standard-oi.  If ld-prompt is
+nil, ld prints no prompt.  If ld-prompt is t, the default prompt
+printer is used, which displays information that includes the current
+package, default defun-mode, guard checking status (on or off), and
+ld-skip-proofsp; see *note DEFAULT-PRINT-PROMPT::.
+
+If ld-prompt is neither nil nor t, then it should be a function name,
+fn, such that (fn channel state) will print the desired prompt to
+channel in state and return (mv col state), where col is the number of
+characters output (on the last line output).  You may define your own
+prompt printing function.
+
+If you supply an inappropriate prompt function, i.e., one that causes
+an error or does not return the correct number and type of results, the
+following odd prompt will be printed instead:
+
+     Bad Prompt
+     See :DOC ld-prompt>
+
+which will lead you to this message.  You should either call ld
+appropriately next time or assign an appropriate value to ld-prompt.
+
+
+File: acl2-doc-emacs.info,  Node: LD-QUERY-CONTROL-ALIST,  Next: LD-REDEFINITION-ACTION,  Prev: LD-PROMPT,  Up: MISCELLANEOUS
+
+LD-QUERY-CONTROL-ALIST    how to default answers to queries
+
+Ld-query-control-alist is an ld special (see *note LD::).  The accessor
+is (ld-query-control-alist state) and the updater is
+(set-ld-query-control-alist val state).  Roughly speaking,
+ld-query-control-alist is either nil (meaning all queries should be
+interactive), t (meaning all should default to the first accepted
+response), or an alist that pairs query ids to keyword responses.  The
+alist may end in either t or nil, indicating the default value for all
+ids not listed explicitly.  Formally, the ld-query-control-alist must
+satisfy ld-query-control-alistp.  The initial ld-query-control-alist is
+nil, which means all queries are handled interactively.
+
+When an ACL2 query is raised, a unique identifying symbol is printed in
+parentheses after the word "Query".  This symbol, called the "query
+id," can be used in conjunction with ld-query-control-alist to prevent
+the query from being handled interactively.  By "handled interactively"
+we mean that the query is printed to *standard-co* and a response is
+read from *standard-oi*.  The alist can be used to obtain a "default
+value" for each query id.  If this value is nil, then the query is
+handled interactively.  In all other cases, the system handles the
+query without interaction (although text may be printed to standard-co
+to make it appear that an interaction has occurred; see below).  If the
+default value is t, the system acts as though the user responded to the
+query by typing the first response listed among the acceptable
+responses.  If the default value is neither nil nor t, then it must be
+a keyword and one of the acceptable responses.  In that case, the
+system acts as though the user responded with the given keyword.
+
+Next, we discuss how the ld-query-control-alist assigns a default value
+to each query id.  It assigns each id the first value paired with the
+id in the alist, or, if no such pair appears in the alist, it assigns
+the final cdr of the alist as the value.  Thus, nil assigns all ids
+nil.  T assigns all ids t.  '((:filter . nil) (:sysdef . :n) . t)
+assigns nil to the :filter query, :n to the :sysdef query, and t to all
+others.
+
+It remains only to discuss how the system prints text when the default
+value is not nil, i.e., when the query is handled without interaction.
+In fact, it is allowed to pair a query id with a singleton list
+containing a keyword, rather than a keyword, and this indicates that no
+printing is to be done.  Thus for the example above, :sysdef queries
+would be handled noninteractively, with printing done to simulate the
+interaction.  But if we change the example so that :sysdef is paired
+with (:n), i.e., if ld-query-control-alist is '((:filter . nil)
+(:sysdef :n) . t), then no such printing would take place for sysdef
+queries.  Instead, the default value of :n would be assigned "quietly".
+
+
+File: acl2-doc-emacs.info,  Node: LD-REDEFINITION-ACTION,  Next: LD-SKIP-PROOFSP,  Prev: LD-QUERY-CONTROL-ALIST,  Up: MISCELLANEOUS
+
+LD-REDEFINITION-ACTION    to allow redefinition without undoing
+
+Ld-redefinition-action is an ld special (see *note LD::).  The accessor
+is (ld-redefinition-action state) and the updater is
+(set-ld-redefinition-action val state).
+
+*WARNING!*  If ld-redefinition-action is non-nil then ACL2 is liable to
+be made unsafe or unsound by ill-considered definitions.  The keyword
+command :redef will set ld-redefinition-action to a convenient setting
+allowing unsound redefinition.  See below.
+
+When ld-redefinition-action is nil, redefinition is prohibited.  In
+that case, an error message is printed upon any attempt to introduce a
+name that is already in use.  There is one exception to this rule.  It
+is permitted to redefine a function symbol in :program mode to be a
+function symbol in :logic mode provided the formals and body remain the
+same.  This is the standard way a function "comes into" logical
+existence.
+
+Throughout the rest of this discussion we exclude from our meaning of
+"redefinition" the case in which a function in :program mode is
+identically redefined in :logic mode.  At one time, ACL2 freely
+permitted the signature-preserving redefinition of :program mode
+functions but it no longer does.  See *Note REDEFINING-PROGRAMS::.
+
+When ld-redefinition-action is non-nil, you are allowed to redefine a
+name that is already in use.  *The system may be rendered unsound* by
+such an act.  It is important to understand how dangerous redefinition
+is.  Suppose fn is a function symbol that is called from within some
+other function, say g.  Suppose fn is redefined so that its arity
+changes.  Then the definition of g is rendered syntactically ill-formed
+by the redefinition.  This can be devastating since the entire ACL2
+system assumes that terms in its data base are well-formed.  For
+example, if ACL2 executes g by running the corresponding function in
+raw Common Lisp the redefinition of fn may cause raw lisp to break in
+irreparable ways.  As Lisp programmers we live with this all the time
+by following the simple rule: after changing the syntax of a function
+don't run any function that calls it via its old syntax.  This rule
+also works in the context of the evaluation of ACL2 functions, but it
+is harder to follow in the context of ACL2 deductions, since it is hard
+to know whether the data base contains a path leading the theorem
+prover from facts about one function to facts about another.  Finally,
+of course, even if the data base is still syntactically well-formed
+there is no assurance that all the rules stored in it are valid.  For
+example, theorems proved about g survive the redefinition of fn but may
+have crucially depended on the properties of the old fn.  In summary,
+we repeat the warning: *all bets are off if you set*
+ld-redefinition-action to *non*-nil.
+
+ACL2 provides some enforcement of the concern above, by disabling
+certify-book if any world-changing events exist in the certification
+world that were executed with a non-nil value of
+'ld-redefinition-action.  (This value is checked at the end of each
+top-level command, but the value does not change during evaluation of
+embedded event forms; see *note EMBEDDED-EVENT-FORM::.)
+
+If at any point in a session you wish to see the list of all names that
+have been redefined, see *note REDEFINED-NAMES::.
+
+That said, we'll give you enough rope to hang yourself.  When
+ld-redefinition-action is non-nil, it must be a pair, (a .  b).  The
+value of a determines how the system interacts with you when a
+redefinition is submitted.  The value of b allows you to specify how the
+property list of the redefined name is to be "renewed" before the
+redefinition.
+
+There are several dimensions to the space of possibilities controlled
+by part a: Do you want to be queried each time you redefine a name, so
+you can confirm your intention?  (We sometimes make typing mistakes or
+simply forget we have used that name already.)  Do you want to see a
+warning stating that the name has been redefined?  Do you want ACL2
+system functions given special protection from possible redefinition?
+Below are the choices for part a:
+
+     :query -- every attempt to redefine a name will produce a query.
+     The query will allow you to abort the redefinition or proceed.  It
+     will will also allow you to specify the part b for this
+     redefinition.  :Query is the recommended setting for users who
+     wish to dabble in redefinition.
+
+     :warn -- any user-defined function may be redefined but a
+     post-redefinition warning is printed.  The attempt to redefine a
+     system name produces a query.  If you are prototyping and testing
+     a big system in ACL2 this is probably the desired setting for part
+     a.
+
+     :doit -- any user-defined function may be redefined silently
+     (without query or warning) but when an attempt is made to redefine
+     a system function, a query is made.  This setting is recommended
+     when you start making massive changes to your prototyped system
+     (and tire of even the warning messages issued by :warn).
+
+In support of our own ACL2 systems programming there are two other
+settings.  We suggest ordinary users not use them.
+
+     :warn! -- every attempt to redefine a name produces a warning but
+     no query.  Since ACL2 system functions can be redefined this way,
+     this setting should be used by the only-slightly-less-than
+     supremely confident ACL2 system hacker.
+
+     :doit! -- this setting allows any name to be redefined silently
+     (without query or warnings).  ACL2 system functions are fair game.
+     This setting is reserved for the supremely confident ACL2 system
+     hacker.  (Actually, this setting is used when we are loading
+     massively modified versions of the ACL2 source files.)
+
+Part b of ld-redefinition-action tells the system how to "renew" the
+property list of the name being redefined.  There are two choices:
+
+     :erase -- erase all properties stored under the name, or
+
+     :overwrite -- preserve existing properties and let the redefining
+     overwrite them.
+
+It should be stressed that neither of these b settings is guaranteed to
+result in an entirely satisfactory state of affairs after the
+redefinition.  Roughly speaking, :erase returns the property list of the
+name to the state it was in when the name was first introduced.
+Lemmas, type information, etc., stored under that name are lost.  Is
+that what you wanted?  Sometimes it is, as when the old definition is
+"completely wrong." But other times the old definition was "almost
+right" in the sense that some of the work done with it is still
+(intended to be) valid.  In that case, :overwrite might be the correct
+b setting.  For example if fn was a function and is being re-defun'd
+with the same signature, then the properties stored by the new defun
+should overwrite those stored by the old defun but the properties
+stored by defthms will be preserved.
+
+In addition, neither setting will cause ACL2 to erase properties stored
+under other symbols!  Thus, if FOO names a rewrite rule which rewrites
+a term beginning with the function symbol BAR and you then redefine FOO
+to rewrite a term beginning with the function symbol BAZ, then the old
+version of FOO is still available (because the rule itself was added to
+the rewrite rules for BAR, whose property list was not cleared by
+redefining FOO).
+
+The b setting is only used as the default action when no query is made.
+If you choose a setting for part a that produces a query then you will
+have the opportunity, for each redefinition, to specify whether the
+property list is to be erased or overwritten.
+
+The keyword command :redef sets ld-redefinition-action to the pair
+(:query . :overwrite).  Since the resulting query will give you the
+chance to specify :erase instead of :overwrite, this setting is quite
+convenient.  But when you are engaged in heavy-duty prototyping, you
+may wish to use a setting such as :warn or even :doit.  For that you
+will have to invoke a form such as:
+
+     (set-ld-redefinition-action '(:doit . :overwrite) state) .
+
+Encapsulate causes somewhat odd interaction with the user if
+redefinition occurs within the encapsulation because the encapsulated
+event list is processed several times.  For example, if the redefinition
+action causes a query and a non-local definition is actually a
+redefinition, then the query will be posed twice, once during each
+pass.  C'est la vie.
+
+Finally, it should be stressed again that redefinition is dangerous
+because not all of the rules about a name are stored on the property
+list of the name.  Thus, redefinition can render ill-formed terms
+stored elsewhere in the data base or can preserve now-invalid rules.
+See *Note REDUNDANT-EVENTS::, in particular the section "Note About
+Unfortunate Redundancies," for more discussion of potential pitfalls of
+redefinition.
+

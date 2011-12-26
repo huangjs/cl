@@ -1,0 +1,97 @@
+<html>
+<head><title>ADD-MATCH-FREE-OVERRIDE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ADD-MATCH-FREE-OVERRIDE</h2>set <code>:match-free</code> value to <code>:once</code> or <code>:all</code> in existing rules
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(add-match-free-override :once t)
+    ; Try only the first binding of free variables when relieving hypotheses
+    ; of any rule of class :rewrite, :linear, or :forward-chaining.
+(add-match-free-override :all (:rewrite foo) (:rewrite bar))
+    ; For rewrite rules foo and bar, try all bindings of free variables when
+    ; relieving hypotheses.
+(add-match-free-override :clear)
+    ; Restore :match-free to what was originally stored for each rule (either
+    ; :all or :once).
+</pre>
+
+As described elsewhere (see <a href="FREE-VARIABLES.html">free-variables</a>), a <a href="REWRITE.html">rewrite</a>, <a href="LINEAR.html">linear</a>, or
+<a href="FORWARD-CHAINING.html">forward-chaining</a> rule may have free variables in its hypotheses, and
+ACL2 can be directed either to try all bindings (``<code>:all</code>'') or just the
+first (``<code>:once</code>'') when relieving a hypothesis, as a basis for relieving
+subsequent hypotheses.  This direction is generally provided by specifying
+either <code>:match-free :once</code> or <code>:match-free :all</code> in the
+<code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code> of the rule, or by using the most recent
+<code><a href="SET-MATCH-FREE-DEFAULT.html">set-match-free-default</a></code> event.  Also see <a href="RULE-CLASSES.html">rule-classes</a>.<p>
+
+However, if a proof is going slowly, you may want to modify the behavior of
+some such rules so that they use only the first match for free variables in a
+hypothesis when relieving subsequent hypotheses, rather than backtracking and
+trying additional matches as necessary.  The event
+<code>(add-match-free-override :once t)</code> has that effect.  Or at the other
+extreme, perhaps you want to specify all rules as <code>:all</code> rules except for a
+some specific exceptions.  Then you can execute
+<code>(add-match-free-override :all t)</code> followed by, say,
+<code>(add-match-free-override :once (:rewrite foo) (:linear bar))</code>.
+<p>
+
+<pre>
+General Forms:
+(add-match-free-override :clear)
+(add-match-free-override flg t)
+(add-match-free-override flg rune1 rune2 ... runek)
+</pre>
+
+where <code>flg</code> is <code>:once</code> or <code>:all</code> and the <code>runei</code> are <code><a href="RUNE.html">rune</a></code>s.  If
+<code>:clear</code> is specified then all rules will have the <code>:all</code>/<code>:once</code>
+behavior from when they were first stored.  The second general form causes
+all <a href="REWRITE.html">rewrite</a> <a href="LINEAR.html">linear</a>, and <a href="FORWARD-CHAINING.html">forward-chaining</a> rules to have the
+behavior specified by <code>flg</code> (<code>:all</code> or <code>:once</code>).  Finally, the last of
+these, where runes are specified, is additive in the sense that only the
+indicated rules are affected; all others keep the behavior they had just
+before this event was executed (possible because of earlier
+<code>add-match-free-override</code> events).<p>
+
+At the conclusion of this event, ACL2 prints out the list of all
+<code>:</code><code><a href="LINEAR.html">linear</a></code>, <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, and <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> runes
+whose rules contain free variables in hypotheses that are to be bound
+<code>:once</code>, except that if there are no overrides (value <code>:clear</code> was used),
+then <code>:clear</code> is printed.<p>
+
+This event only affects rules that exist at the time it is executed.  Future
+rules are not affected by the override.<p>
+
+Note: This is an event!  It does not print the usual event summary
+but nevertheless changes the ACL2 logical <a href="WORLD.html">world</a> and is so
+recorded.  It uses the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>, and hence its effect is
+<code><a href="LOCAL.html">local</a></code> to the book or <code><a href="ENCAPSULATE.html">encapsulate</a></code> form in which it occurs.<p>
+
+<em>Remarks</em><p>
+
+Lists of the <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="LINEAR.html">linear</a></code>, and
+<code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> <a href="RUNE.html">rune</a>s whose behavior was originally
+<code>:once</code> or <code>:all</code> are returned by the following forms, respectively.
+
+<pre>
+(free-var-runes :once (w state))
+(free-var-runes :all  (w state))
+</pre>
+
+The form
+
+<pre>
+(match-free-override (w state))
+</pre>
+
+evaluates to a pair, whose <code><a href="CAR.html">car</a></code> is a number used by ACL2 to determine
+whether a <a href="RUNE.html">rune</a> is sufficiently old to be affected by the override, and
+whose <code><a href="CDR.html">cdr</a></code> is the list of <a href="RUNE.html">rune</a>s whose behavior is specified as
+<code>:once</code> by <code>add-match-free-override</code>; except, if no runes have been
+overridden, then the keyword <code>:clear</code> is returned.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

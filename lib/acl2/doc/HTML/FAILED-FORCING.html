@@ -1,0 +1,160 @@
+<html>
+<head><title>FAILED-FORCING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>FAILED-FORCING</h2>how to deal with a proof <a href="FAILURE.html">failure</a> in a forcing round
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+See <a href="FORCING-ROUND.html">forcing-round</a> for a background discussion of the notion of
+forcing rounds.  When a proof fails during a forcing round it means
+that the ``gist'' of the proof succeeded but some ``technical
+detail'' failed.  The first question you must ask yourself is
+whether the <a href="FORCE.html">force</a>d goals are indeed theorems.  We discuss the
+possibilities below.
+<p>
+If you believe the <a href="FORCE.html">force</a>d goals are theorems, you should follow the
+usual methodology for ``fixing'' failed ACL2 proofs, e.g., the
+identification of key lemmas and their timely and proper use as
+rules.  See <a href="FAILURE.html">failure</a> and see <a href="PROOF-TREE.html">proof-tree</a>.<p>
+
+The rules designed for the goals of forcing rounds are often just
+what is needed to prove the <a href="FORCE.html">force</a>d hypothesis at the time it is
+<a href="FORCE.html">force</a>d.  Thus, you may find that when the system has been ``taught''
+how to prove the goals of the forcing round no forcing round is
+needed.  This is intended as a feature to help structure the
+discovery of the necessary rules.<p>
+
+If a hint must be provided to prove a goal in a forcing round, the
+appropriate ``goal specifier'' (the string used to identify the goal
+to which the hint is to be applied) is just the text printed on the
+line above the formula, e.g., <code>"[1]Subgoal *1/3''"</code>.
+See <a href="GOAL-SPEC.html">goal-spec</a>.<p>
+
+If you solve a forcing problem by giving explicit <a href="HINTS.html">hints</a> for the
+goals of forcing rounds, you might consider whether you could avoid
+forcing the assumption in the first place by giving those <a href="HINTS.html">hints</a> in
+the appropriate places of the main proof.  This is one reason that
+we print out the origins of each <a href="FORCE.html">force</a>d assumption.  An argument
+against this style, however, is that an assumption might be <a href="FORCE.html">force</a>d
+in hundreds of places in the main goal and proved only once in the
+forcing round, so that by delaying the proof you actually save time.<p>
+
+We now turn to the possibility that some goal in the forcing round
+is not a theorem.<p>
+
+There are two possibilities to consider.  The first is that the
+original theorem has insufficient hypotheses to ensure that all the
+<a href="FORCE.html">force</a>d hypotheses are in fact always true.  The ``fix'' in this case
+is to amend the original conjecture so that it has adequate
+hypotheses.<p>
+
+A more difficult situation can arise and that is when the conjecture
+has sufficient hypotheses but they are not present in the forcing
+round goal.  This can be caused by what we call ``premature''
+forcing.<p>
+
+Because ACL2 rewrites from the inside out, it is possible that it
+will <a href="FORCE.html">force</a> hypotheses while the context is insufficient to establish
+them.  Consider trying to prove <code>(p x (foo x))</code>.  We first rewrite the
+formula in an empty context, i.e., assuming nothing.  Thus, we
+rewrite <code>(foo x)</code> in an empty context.  If rewriting <code>(foo x)</code> <a href="FORCE.html">force</a>s
+anything, that <a href="FORCE.html">force</a>d assumption will have to be proved in an empty
+context.  This will likely be impossible.<p>
+
+On the other hand, suppose we did not attack <code>(foo x)</code> until after we
+had expanded <code>p</code>.  We might find that the value of its second
+argument, <code>(foo x)</code>, is relevant only in some cases and in those cases
+we might be able to establish the hypotheses <a href="FORCE.html">force</a>d by <code>(foo x)</code>.  Our
+premature forcing is thus seen to be a consequence of our ``over
+eager'' rewriting.<p>
+
+Here, just for concreteness, is an example you can try.  In this
+example, <code>(foo x)</code> rewrites to <code>x</code> but has a <a href="FORCE.html">force</a>d hypothesis of
+<code>(rationalp x)</code>.  <code>P</code> does a case split on that very hypothesis
+and uses its second argument only when <code>x</code> is known to be rational.
+Thus, the hypothesis for the <code>(foo x)</code> rewrite is satisfied.  On
+the false branch of its case split, <code>p</code> simplies to <code>(p1 x)</code> which
+can be proved under the assumption that <code>x</code> is not rational.<p>
+
+
+<pre>
+(defun p1 (x) (not (rationalp x)))
+(defun p (x y)(if (rationalp x) (equal x y) (p1 x)))
+(defun foo (x) x)
+(defthm foo-rewrite (implies (force (rationalp x)) (equal (foo x) x)))
+(in-theory (disable foo))
+</pre>
+
+The attempt then to do <code>(thm (p x (foo x)))</code> <a href="FORCE.html">force</a>s the unprovable
+goal <code>(rationalp x)</code>.<p>
+
+Since all ``formulas'' are presented to the theorem prover as single
+terms with no hypotheses (e.g., since <code><a href="IMPLIES.html">implies</a></code> is a function), this
+problem would occur routinely were it not for the fact that the
+theorem prover expands certain ``simple'' definitions immediately
+without doing anything that can cause a hypothesis to be <a href="FORCE.html">force</a>d.
+See <a href="SIMPLE.html">simple</a>.  This does not solve the problem, since it is
+possible to hide the propositional structure arbitrarily deeply.
+For example, one could define <code>p</code>, above, recursively so that the test
+that <code>x</code> is rational and the subsequent first ``real'' use of <code>y</code>
+occurred arbitrarily deeply.<p>
+
+Therefore, the problem remains: what do you do if an impossible goal
+is <a href="FORCE.html">force</a>d and yet you know that the original conjecture was
+adequately protected by hypotheses?<p>
+
+One alternative is to disable forcing entirely.
+See <a href="DISABLE-FORCING.html">disable-forcing</a>.  Another is to <a href="DISABLE.html">disable</a> the rule that
+caused the <a href="FORCE.html">force</a>.<p>
+
+A third alternative is to prove that the negation of the main goal
+implies the <a href="FORCE.html">force</a>d hypothesis.  For example,
+
+<pre>
+(defthm not-p-implies-rationalp
+  (implies (not (p x (foo x))) (rationalp x))
+  :rule-classes nil)
+</pre>
+
+Observe that we make no rules from this formula.  Instead, we
+merely <code>:use</code> it in the subgoal where we must establish <code>(rationalp x)</code>.
+
+<pre>
+(thm (p x (foo x))
+     :hints (("Goal" :use not-p-implies-rationalp)))
+</pre>
+
+When we said, above, that <code>(p x (foo x))</code> is first rewritten in an
+empty context we were misrepresenting the situation slightly.  When
+we rewrite a literal we know what literal we are rewriting and we
+implicitly assume it false.  This assumption is ``dangerous'' in
+that it can lead us to simplify our goal to <code>nil</code> and give up -- we
+have even seen people make the mistake of assuming the negation of
+what they wished to prove and then via a very complicated series of
+transformations convince themselves that the formula is false.
+Because of this ``tail biting'' we make very weak use of the
+negation of our goal.  But the use we make of it is sufficient to
+establish the <a href="FORCE.html">force</a>d hypothesis above.<p>
+
+A fourth alternative is to weaken your desired theorem so as to make
+explicit the required hypotheses, e.g., to prove
+
+<pre>
+(defthm rationalp-implies-main
+  (implies (rationalp x) (p x (foo x)))
+  :rule-classes nil)
+</pre>
+
+This of course is unsatisfying because it is not what you
+originally intended.  But all is not lost.  You can now prove your
+main theorem from this one, letting the <code><a href="IMPLIES.html">implies</a></code> here provide the
+necessary case split.
+
+<pre>
+(thm (p x (foo x))
+     :hints (("Goal" :use rationalp-implies-main)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

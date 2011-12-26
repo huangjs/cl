@@ -1,0 +1,42 @@
+<html>
+<head><title>PUSH-UNTOUCHABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PUSH-UNTOUCHABLE</h2>add name or list of names to the list of untouchable symbols
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(push-untouchable my-var nil)
+(push-untouchable set-mem t)
+<p>
+General Form:
+(push-untouchable name{s}  fn-p :doc doc-string)
+</pre>
+
+where <code>name{s}</code> is a non-<code>nil</code> symbol or a non-<code>nil</code> true list of
+symbols, <code>fn-p</code> is any value (but generally <code>nil</code> or <code>t</code>), and
+<code><a href="DOC-STRING.html">doc-string</a></code> is an optional <a href="DOCUMENTATION.html">documentation</a> string not
+beginning with ``<code>:doc-section</code> ...''.  If <code>name{s}</code> is a symbol it
+is treated as the singleton list containing that symbol.  The effect
+of this event is to union the given symbols into the list of
+``untouchable variables'' in the current world if <code>fn-p</code> is
+<code>nil</code>, else to union the symbols into the list of ``untouchable
+functions''.  This event is redundant if every symbol listed is
+already a member of the appropriate untouchables list (variables or
+functions).<p>
+
+When a symbol is on the untouchables list it is syntactically
+illegal for any event to call a function or macro of that name, if
+<code>fn-p</code> is non-<code>nil</code>, or to change the value of a state global
+variable of that name, if <code>fn-p</code> is <code>nil</code>.  Thus, the effect of
+pushing a function symbol, <code>name</code>, onto untouchables is to prevent
+any future event from using that symbol as a function or macro, or
+as a state global variable (according to <code>fn-p</code>).  This is
+generally done to ``fence off'' some primitive function symbol from
+``users'' after the developer has used the symbol freely in the
+development of some higher level mechanism.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<html>
+<head><title>CASE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CASE</h2>conditional based on if-then-else using <code><a href="EQL.html">eql</a></code>
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(case typ
+  ((:character foo)
+   (open file-name :direction :output))
+  (bar (open-for-bar file-name))
+  (otherwise
+   (my-error "Illegal.")))
+</pre>
+
+is the same as
+
+<pre>
+(cond ((member typ '(:character foo))
+       (open file-name :direction :output))
+      ((eql typ 'bar)
+       (open-for-bar file-name))
+      (t (my-error "Illegal.")))
+</pre>
+
+which in turn is the same as
+
+<pre>
+(if (member typ '(:character foo))
+    (open file-name :direction :output)
+    (if (eql typ 'bar)
+        (open-for-bar file-name)
+        (my-error "Illegal.")))
+<p>
+</pre>
+
+Notice the quotations that appear in the example above:
+<code>'(:character foo)</code> and <code>'bar</code>.<p>
+
+
+<pre>
+General Forms:
+(case expr
+  (x1 val-1)
+  ...
+  (xk val-k)
+  (otherwise val-k+1))<p>
+
+(case expr
+  (x1 val-1)
+  ...
+  (xk val-k)
+  (t val-k+1))<p>
+
+(case expr
+  (x1 val-1)
+  ...
+  (xk val-k))
+</pre>
+
+where each <code>xi</code> is either <code><a href="EQLABLEP.html">eqlablep</a></code> or a true list of <code><a href="EQLABLEP.html">eqlablep</a></code>
+objects.  The final <code>otherwise</code> or <code>t</code> case is optional.<p>
+
+<code>Case</code> is defined in Common Lisp.  See any Common Lisp
+documentation for more information.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,1116 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: MACRO-ALIASES-TABLE,  Next: MAKE-EVENT,  Prev: LOGIC,  Up: EVENTS
+
+MACRO-ALIASES-TABLE    a table used to associate function names with macro names
+
+     Example:
+     (table macro-aliases-table 'append 'binary-append)
+
+This example associates the function symbol binary-append with the
+macro name append.  As a result, the name append may be used as a runic
+designator (see *note THEORIES::) by the various theory functions.
+Thus, for example, it will be legal to write
+
+     (in-theory (disable append))
+
+as an abbreviation for
+
+     (in-theory (disable binary-append))
+
+which in turn really abbreviates
+
+     (in-theory (set-difference-theories (current-theory :here)
+                                         '(binary-append)))
+     
+     General Form:
+     
+     (table macro-aliases-table 'macro-name 'function-name)
+
+or very generally
+
+     (table macro-aliases-table macro-name-form function-name-form)
+
+where macro-name-form and function-name-form evaluate, respectively, to
+a macro name and a function name in the current ACL2 world.  See *Note
+TABLE:: for a general discussion of tables and the table event used to
+manipulate tables.
+
+The table macro-aliases-table is an alist that associates macro symbols
+with function symbols, so that macro names may be used as runic
+designators (see *note THEORIES::).  For a convenient way to add
+entries to this table, see *note ADD-MACRO-ALIAS::.  To remove entries
+from the table with ease, see *note REMOVE-MACRO-ALIAS::.
+
+This table is used by the theory functions.  For example, in order that
+(disable append) be interpreted as (disable binary-append), it is
+necessary that the example form above has been executed.  In fact, this
+table does indeed associate many of the macros provided by the ACL2
+system, including append, with function symbols.  Loosely speaking, it
+only does so when the macro is "essentially the same thing as" a
+corresponding function; for example, (append x y) and (binary-append x
+y) represent the same term, for any expressions x and y.
+
+
+File: acl2-doc-emacs.info,  Node: MAKE-EVENT,  Next: MUTUAL-RECURSION,  Prev: MACRO-ALIASES-TABLE,  Up: EVENTS
+
+MAKE-EVENT    evaluate (expand) a given form and then evaluate the result
+
+Make-event is a utility for generating events.  It provides a
+capability not offered by Lisp macros (see *note DEFMACRO::), as it
+allows access to the ACL2 state and logical world.  In essence, the
+expression (make-event form) replaces itself with the result of
+evaluating form, say, ev, as though one had submitted ev instead of the
+make-event call.  But the evaluation of form may involve state and even
+modify state, for example by attempting to admit some definitions and
+theorems.  Make-event protects the ACL2 logical world so that it is
+restored after form is evaluated, before ev is submitted.
+
+* Menu:
+
+* MAKE-EVENT-DETAILS:: details on make-event expansion
+
+     Examples:
+     
+     ; Trivial example: evaluate (quote (defun foo (x) x)) to obtain
+     ; (defun foo (x) x), which is then evaluated.
+     (make-event (quote (defun foo (x) x)))
+     
+     ; Evaluate (generate-form state) to obtain (mv nil val state), and
+     ; then evaluate val.  (Generate-form is not specified here, but
+     ; imagine for example that it explores the state and then generates
+     ; some desired definition or theorem.)
+     (make-event (generate-form state))
+     
+     ; As above, but make sure that if this form is in a book, then when
+     ; we include the book, the evaluation of (generate-form state)
+     ; should return the same value as it did when the book was
+     ; certified.
+     (make-event (generate-form state)
+                 :check-expansion t)
+     
+     ; As above (where the :check-expansion value can be included or
+     ; not), where if there is an error during expansion, then the error
+     ; message will explain that expansion was on behalf of the indicated
+     ; object, typically specified as the first argument.
+     (make-event (generate-form state)
+                 :on-behalf-of (generate-form state))
+     
+     General Form:
+     (make-event form :check-expansion chk :on-behalf-of obj)
+
+where chk is nil (the default), t, or the intended "expansion result"
+from the evaluation of form (as explained below); and if supplied, obj
+is an arbitrary ACL2 object, used only in reporting errors in
+expansion, i.e., in the evaluation of form.
+
+We strongly recommend that you look at books/make-event/Readme.lsp,
+which summarizes and suggests browsing of some .lisp files in that
+directory, in order to understand make-event, perhaps before continuing
+to read this documentation.  For example, eval.lisp contains
+definitions of macros must-succeed and must-fail that are useful for
+testing and are used in many other books in that directory, especially
+eval-tests.lisp.  Other than the examples, the explanations here should
+suffice for most users.  If you want explanations of subtler details,
+see *note MAKE-EVENT-DETAILS::.
+
+Make-event is related to Lisp macroexpansion in the sense that its
+argument is evaluated to obtain an expansion result, which is evaluated
+again.  Let us elaborate on each of these notions in turn: "is
+evaluated," "expansion result", and "evaluated again."
+
+     "is evaluated" -- The argument can be any expression, which is
+     evaluated as would be any expression submitted to ACL2's top level
+     loop.  Thus, state and user-defined stobjs may appear in the form
+     supplied to make-event.  Henceforth, we will refer to this
+     evaluation as "expansion."  Expansion is actually done in a way
+     that restores ACL2's built-in state global variables, including
+     the logical world, to their pre-expansion values (with a few
+     exceptions -- see *note MAKE-EVENT-DETAILS:: -- and where we note
+     that changes to user-defined state global variables (see *note
+     ASSIGN::) are preserved).  So, for example, events might be
+     evaluated during expansion, but they will disappear from the
+     logical world after expansion returns its result.  Moreover,
+     proofs are enabled by default at the start of expansion (see *note
+     LD-SKIP-PROOFSP::), because an anticipated use of make-event is to
+     call the prover to decide which event to generate, and that would
+     presumably be necessary even if proofs had been disabled.
+
+     "expansion result" -- The above expansion may result in an ordinary
+     (non-state, non-stobj) value, which we call the "expansion
+     result."  Or, expansion may result in a multiple value of the form
+     (mv erp val state stobj-1 ... stobj-k), where k may be 0; in fact
+     the most common case is probably (mv erp val state).  In that
+     case, if erp is not nil, then there is no expansion result, and
+     the original make-event evaluates to a soft error.  If however erp
+     is nil, then the resulting value is val.  Moreover, val must be an
+     embedded event form (see *note EMBEDDED-EVENT-FORM::); otherwise,
+     the original make-event evaluates to a soft error.  Note that
+     error messages from expansion are printed as described under
+     "Error Reporting" below.
+
+     "evaluated again" -- the expansion result is evaluated in place of
+     the original make-event.
+
+Note that the result of expansion can be an ordinary event, but it can
+instead be another call of make-event, or even of a call of a macro that
+expands to a call of make-event.  Or, expansion itself can cause
+subsidiary calls of make-event, for example if expansion uses ld to
+evaluate some make-event forms.  The state global variable
+make-event-debug may be set to a non-nil value in order to see a trace
+of the expansion process, where the level shown (as in "3>") indicates
+the depth of expansions in progress.
+
+Expansion of a make-event call will yield an event that replaces the
+original make-event call.  In particular, if you put a make-event form
+in a book, then in essence it is replaced by its expansion result,
+created during the proof pass of the certify-book process.  We now
+elaborate on this idea of keeping the original expansion.
+
+By default, a make-event call in a certified book is replaced (by a
+process hidden from the user, in an :expansion-alist field of the book's
+certificate) by the expansion result from evaluation of its first
+argument.  Thus, although the book is not textually altered during
+certification, one may imagine a "book expansion" corresponding to the
+original book in which all of the events for which expansion took place
+(during the proof phase of certification) have been replaced by their
+expansions.  A subsequent include-book will then include the book
+expansion corresponding to the indicated book.  When a book is compiled
+during certify-book, it is actually the corresponding book expansion,
+stored as a temporary file, that is compiled instead.  That temporary
+file is deleted after compilation unless one first evaluates the form
+(assign keep-tmp-files t).  Note however that all of the original forms
+must still be legal events (see *note EMBEDDED-EVENT-FORM::).  So for
+example, if the first event in a book is (local (defmacro my-id (x)
+x)), followed by (my-id (make-event ...)), the final "include-book"
+pass of certify-book will fail because my-id is not defined when the
+my-id call is encountered.
+
+The preceding paragraph begins with "by default" because if you specify
+:check-expansion t, then subsequent evaluation of the same make-event
+call -- during the second pass of an encapsulate or during include-book
+-- will do the expansion again and check that the expansion result
+equals the original expansion result.  In the unusual case that you
+know the expected expansion result, res, you can specify
+:check-expansion res.  This will will cause a check that every
+subsequent expansion result for the make-event form is res, including
+the original one.
+
+*Error Reporting.*
+
+Suppose that expansion produces a soft error as described above.  That
+is, suppose that the argument of a make-event call evaluates to a
+multiple value (mv erp val state ...) where erp is not nil.  If erp is
+a string, then that string is printed in the error message.  If erp is
+a cons pair whose car is a string, then the error prints "~@0" with #\0
+bound to that cons pair; see *note FMT::.  Any other non-nil value of
+erp causes a generic error message to be printed.
+
+*Restriction to the Top Level.*
+
+Every form enclosing a make-event call must be an embedded event form
+(see *note EMBEDDED-EVENT-FORM::).  This restriction enables ACL2 to
+track expansions produced by make-event.  For example:
+
+     ; Legal:
+     (progn (with-output
+             :on summary
+             (make-event '(defun foo (x) x))))
+     
+     ; Illegal:
+     (mv-let (erp val state)
+             (make-event '(defun foo (x) x))
+             (mv erp val state))
+
+
+File: acl2-doc-emacs.info,  Node: MAKE-EVENT-DETAILS,  Prev: MAKE-EVENT,  Up: MAKE-EVENT
+
+MAKE-EVENT-DETAILS    details on make-event expansion
+
+The normal user of make-event can probably ignore this section, but we
+include it for completeness.  We assume that the reader has read and
+understood the basic documentation for make-event (see *note
+MAKE-EVENT::), but we begin below with a summary of expansion.
+
+*Introduction*
+
+Here is a summary of how we handle expansion involving make-event forms.
+
+(make-event form :check-expansion nil)
+
+This shows the :check-expansion default of nil, and is typical user
+input.  We compute the expansion exp of form, which is the expansion of
+the original make-event expression and is evaluated in place of that
+expression.
+
+(make-event form :check-expansion t)
+
+The user presumably wants it checked that the expansion doesn't change
+in the future, in particular during include-book.  If the expansion of
+form is exp, then we will evaluate exp to obtain the value as before,
+but this time we record that the expansion of the original make-event
+expression is (make-event form :check-expansion exp) rather than simply
+exp.
+
+(make-event form :check-expansion exp) ; exp a cons
+
+This is generated for the case that :check-expansion is t, as explained
+above.  Evaluation is handled as described in that above case, except
+here we check that the expansion result is the given exp.  (Actually,
+the user is also allowed supply such a form.)  The original make-event
+expression does not undergo any expansion (intuitively, it expands to
+itself).
+
+Now let us take a look at how we expand progn forms (encapsulate is
+handled similarly).
+
+(progn ... (make-event form :check-expansion nil) ...)
+
+The expansion is obtained by replacing the make-event form as follows.
+Let exp be the expansion of form,  Then replace the above make-event
+form, which we denote as F, by (record-expansion F exp).  Here,
+record-expansion is a macro that returns its second argument.
+
+(progn ... (make-event form :check-expansion t) ...)
+
+The expansion is of the form (record-expansion F exp) as in the nil
+case above, except that this time exp is (make-event form
+:check-expansion exp'), where exp' is the expansion of form.
+
+(progn ... (make-event form :check-expansion exp) ...) ; exp a cons
+
+No expansion takes place unless expansion takes place for at least one
+of the other subforms of the progn, in which case each such form F is
+replaced by (record-expansion F exp) where exp is the expansion of F.
+
+*Detailed semantics*
+
+In our explanation of the semantics of make-event, we assume familiarity
+with the notion of "embedded event form" (see *note
+EMBEDDED-EVENT-FORM::).
+
+Let's say that the "actual embedded event form" corresponding to a given
+form is the underlying call of an ACL2 event: that is, LOCALs are
+dropped when ld-skip-proofsp is 'include-book, and macros are expanded
+away, thus leaving us with a progn, a make-event, or an event form
+(possibly encapsulate), any of which might have surrounding local,
+skip-proofs, or with-output calls.
+
+Thus, such an actual embedded event form can be viewed as having the
+form (rebuild-expansion wrappers base-form) where base-form is a progn,
+a make-event, or an event form (possibly encapsulate), and wrappers are
+(as in ACL2 source function destructure-expansion) the result of
+successively removing the event form from the result of macroexpansion,
+leaving a sequence of (local), (skip-proofs), and (with-output ...)
+forms.  In this case we say that the form "destructures into" the
+indicated wrappers and base-form, and that it can be "rebuilt from"
+those wrappers and base-form.
+
+Elsewhere we define the notion of the "expansion result" from an
+evaluation (see *note MAKE-EVENT::), and we mention that when expansion
+concludes, the ACL2 logical world and most of the state are restored to
+their pre-expansion values.  Specifically, after evaluation of the
+argument of make-event (even if it is aborted), the ACL2 logical world
+is restored to its pre-evaluation value, as are all state global
+variables in the list *protected-state-globals-for-make-event*.  Thus,
+assignments to user-defined state globals (see *note ASSIGN::) do
+persist after expansion, since they are not in that list.
+
+We recursively define the combination of evaluation and expansion of an
+embedded event form, as follows.  We also simultaneously define the
+notion of "expansion takes place," which is assumed to propagate upward
+(in a sense that will be obvious), such that if no expansion takes
+place, then the expansion of the given form is considered to be itself.
+It is useful to keep in mind a goal that we will consider later: Every
+make-event subterm of an expansion result has a :check-expansion field
+that is a consp, where for this purpose make-event is viewed as a macro
+that returns its :check-expansion field.  (Implementation note: The
+latest expansion of a make-event, progn, or encapsulate is stored in
+state global 'last-make-event-expansion, except that if no expansion
+has taken place for that form then 'last-make-event-expansion has value
+nil.)
+
+     If the given form is not an embedded event form, then simply cause
+     a soft error, (mv erp val state) where erp is not nil.  Otherwise:
+
+     If the evaluation of the given form does not take place
+     (presumably because local events are being skipped), then no
+     expansion takes place.  Otherwise:
+
+     Let x be the actual embedded event form corresponding to the given
+     form, which destructures into wrappers W and base-form B.  Then the
+     original form is evaluated by evaluating x, and its expansion is as
+     follows.
+
+     If B is (make-event form :check-expansion val), then expansion
+     takes place if and only if val is not a consp and no error occurs,
+     as now described.  Let R be the expansion result from protected
+     evaluation of form, if there is no error.  R must be an embedded
+     event form, or it is an error.  Then evaluate/expand R, where if
+     val is not nil then state global 'ld-skip-proofsp is initialized
+     to nil.  (This initialization is important so that subsequent
+     expansions are checked in a corresponding environment, i.e., where
+     proofs are turned on in both the original and subsquent
+     environments.)  It is an error if this evaluation causes an error.
+     Otherwise, the evaluation yields a value, which is the result of
+     evaluation of the original make-event expression, as well as an
+     expansion, E_R.  Let E be rebuilt from W and E_R.  The expansion of
+     the original form is E if val is nil, and otherwise is the result
+     of replacing the original form's :check-expansion field with E,
+     with the added requirement that if val is not t (thus, a consp)
+     then E must equal val or else we cause an error.
+
+     If B is either (progn form1 form2 ...) or (encapsulate sigs form1
+     form2 ...), then after evaluating B, the expansion of the original
+     form is the result of rebuilding from B, with wrappers W, after
+     replacing each formi in B for which expansion takes place by
+     (record-expansion formi formi'), where formi' is the expansion of
+     formi.  Note that these expansions are determined as the formi are
+     evaluated in sequence (where in the case of encapsulate, this
+     determination occurs only during the first pass).  Except, if no
+     expansion takes place for any formi, then the expansion of the
+     original form is itself.
+
+     Otherwise, the expansion of the original form is itself.
+
+Similarly to the progn and encapsulate cases above, book certification
+causes a book to replaced by its so-called "book expansion."  There,
+each event ev for which expansion took place during the proof pass of
+certification -- say, producing ev' -- is replaced by (record-expansion
+ev ev').
+
+Implementation Note. The book expansion is actually implemented by way
+of the :expansion-alist field of its certificate, which associates
+0-based positions of top-level forms in the book (not including the
+initial in-package form) with their expansions.  Thus, the book's
+source file is not overwritten; rather, the certificate's
+expansion-alist is applied when the book is included or compiled.  End
+of Implementation Note.
+
+It is straightforward by computational induction to see that for any
+expansion of an embedded event form, every make-event sub-event has a
+consp :check-expansion field.  Here, by "sub-event" we mean to expand
+macros; and we also mean to traverse progn and encapsulate forms as
+well as :check-expansion fields of make-event forms.  Thus, we will
+only see make-event forms with consp :check-expansion fields in the
+course of include-book forms, the second pass of encapsulate forms, and
+raw Lisp.  This fact guarantees that an event form will always be
+treated as its original expansion.
+
+*A note on ttags*
+
+See *Note DEFTTAG:: for documentation of the notion of "trust tag"
+("ttag").  Here, we simply observe that if an event (defttag tag-name)
+for non-nil tag-name is admitted during the expansion phase of a
+make-event form, then although a "TTAG NOTE" will be printed to
+standard output, and moreover tag-name must be an allowed tag (see
+*note DEFTTAG::), nevertheless such expansion will not cause tag-name
+to be recorded once the expansion is complete.  That is, there will be
+no lingering effect of this defttag form after the make-event expansion
+is complete; no certificate written will be affected (where we are
+certifying a book), and the set of allowed ttags will not be affected.
+So for example, if this make-event form is in the top-level loop and
+subsequently we certify or include a book, then tag-name will not be
+associated with the top-level loop by this make-event form.
+
+
+File: acl2-doc-emacs.info,  Node: MUTUAL-RECURSION,  Next: NTH-ALIASES-TABLE,  Prev: MAKE-EVENT,  Up: EVENTS
+
+MUTUAL-RECURSION    define some mutually recursive functions
+
+     Example:
+     (mutual-recursion
+      (defun evenlp (x)
+        (if (consp x) (oddlp (cdr x)) t))
+      (defun oddlp (x)
+        (if (consp x) (evenlp (cdr x)) nil)))
+     
+     General Form:
+     (mutual-recursion def1 ... defn)
+     where each defi is a defun form or a defund form.
+
+When mutually recursive functions are introduced it is necessary to do
+the termination analysis on the entire clique of definitions.  Each
+defun form specifies its own measure, either with the :measure keyword
+xarg (see *note XARGS::) or by default to acl2-count.  When a function
+in the clique calls a function in the clique, the measure of the
+callee's actuals must be smaller than the measure of the caller's
+formals -- just as in the case of a simply recursive function.  But
+with mutual recursion, the callee's actuals are measured as specified
+by the callee's defun while the caller's formals are measured as
+specified by the caller's defun.  These two measures may be different
+but must be comparable in the sense that o< decreases through calls.
+
+If you want to specify :hints or :guard-hints (see *note XARGS::), you
+can put them in the xargs declaration of any of the defun forms, as the
+:hints from each form will be appended together, as will the
+guard-hints from each form.
+
+You may find it helpful to use a lexicographic order, the idea being to
+have a measure that returns a list of two arguments, where the first
+takes priority over the second.  Here is an example.
+
+     (include-book "ordinals/lexicographic-ordering" :dir :system)
+     
+     (encapsulate
+      ()
+      (set-well-founded-relation l<) ; will be treated as LOCAL
+     
+      (mutual-recursion
+       (defun foo (x)
+         (declare (xargs :measure (list (acl2-count x) 1)))
+         (bar x))
+       (defun bar (y)
+         (declare (xargs :measure (list (acl2-count y) 0)))
+         (if (zp y) y (foo (1- y))))))
+
+The guard analysis must also be done for all of the functions at the
+same time.  If any one of the defuns specifies the :verify-guards xarg
+to be nil, then guard verification is omitted for all of the functions.
+
+Technical Note: Each defi above must be of the form (defun ...).  In
+particular, it is not permitted for a defi to be a form that will
+macroexpand into a defun form.  This is because mutual-recursion is
+itself a macro, and since macroexpansion occurs from the outside in, at
+the time (mutual-recursion def1 ... defk) is expanded the defi have not
+yet been.  But mutual-recursion must decompose the defi.  We therefore
+insist that they be explicitly presented as defuns or defunds (or a
+mixture of these).
+
+Suppose you have defined your own defun-like macro and wish to use it
+in a mutual-recursion expression.  Well, you can't.  (!)  But you can
+define your own version of mutual-recursion that allows your defun-like
+form.  Here is an example.  Suppose you define
+
+     (defmacro my-defun (&rest args) (my-defun-fn args))
+
+where my-defun-fn takes the arguments of the my-defun form and produces
+from them a defun form.  As noted above, you are not allowed to write
+(mutual-recursion (my-defun ...) ...).  But you can define the macro
+my-mutual-recursion so that
+
+     (my-mutual-recursion (my-defun ...) ... (my-defun ...))
+
+expands into (mutual-recursion (defun ...) ... (defun ...)) by applying
+my-defun-fn to each of the arguments of my-mutual-recursion.
+
+     (defun my-mutual-recursion-fn (lst)
+       (declare (xargs :guard (alistp lst)))
+     
+     ; Each element of lst must be a consp (whose car, we assume, is always
+     ; MY-DEFUN).  We apply my-defun-fn to the arguments of each element and
+     ; collect the resulting list of DEFUNs.
+     
+       (cond ((atom lst) nil)
+             (t (cons (my-defun-fn (cdr (car lst)))
+                      (my-mutual-recursion-fn (cdr lst))))))
+     
+     (defmacro my-mutual-recursion (&rest lst)
+     
+     ; Each element of lst must be a consp (whose car, we assume, is always
+     ; MY-DEFUN).  We obtain the DEFUN corresponding to each and list them
+     ; all inside a MUTUAL-RECURSION form.
+     
+       (declare (xargs :guard (alistp lst)))
+       (cons 'mutual-recursion (my-mutual-recursion-fn lst))).
+
+
+File: acl2-doc-emacs.info,  Node: NTH-ALIASES-TABLE,  Next: PROGN,  Prev: MUTUAL-RECURSION,  Up: EVENTS
+
+NTH-ALIASES-TABLE    a table used to associate names for nth/update-nth printing
+
+     Example:
+     (table nth-aliases-table 'st0 'st)
+
+This example associates the symbol st0 with the symbol st.  As a
+result, when the theorem prover prints terms of the form (nth n st0) or
+(update-nth n val st0), where st is a stobj whose nth accessor function
+is f-n, then it will print n as *f-n*.
+
+     General Form:
+     (table nth-aliases-table 'alias-name 'name)
+
+This event causes alias-name to be treated like name for purposes of
+the printing of terms that are calls of nth and update-nth.  (Note
+however that name is not recursively looked up in this table.)  Both
+must be symbols other than state.  See *Note TERM::, in particular the
+discussion there of untranslated terms.
+
+For a convenient way to add entries to this table, see *note
+ADD-NTH-ALIAS::.  To remove entries from the table with ease, see *note
+REMOVE-NTH-ALIAS::.
+
+
+File: acl2-doc-emacs.info,  Node: PROGN,  Next: PROGN!,  Prev: NTH-ALIASES-TABLE,  Up: EVENTS
+
+PROGN    evaluate some events
+
+     Example Form:
+     (progn (defun foo (x) x)
+            (defmacro my-defun (&rest args)
+              (cons 'defun args))
+            (my-defun bar (x) (foo x)))
+     
+     General form:
+     (progn event1 event2 ... eventk)
+
+where k >= 0 and each eventi is a legal embedded event form (see *note
+EMBEDDED-EVENT-FORM::).  These events are evaluated in sequence.  A
+utility is provided to assist in debugging failures of such execution;
+see *note REDO-FLAT::.
+
+NOTE: If the eventi above are not all legal embedded event forms (see
+*note EMBEDDED-EVENT-FORM::), consider using er-progn or (with great
+care!) progn! instead.
+
+For a related event form that does allows introduction of constraints
+and local events, see *note ENCAPSULATE::.
+
+ACL2 does not allow the use of progn in definitions.  Instead, the
+macro er-progn can be used for sequencing state-oriented operations;
+see *note ER-PROGN:: and see *note STATE::.  If you are using
+single-threaded objects (see *note STOBJ::) you may wish to define a
+version of er-progn that cascades the object through successive
+changes.  ACL2's pprogn is the state analogue of such a macro.
+
+If your goal is simply to execute a sequence of top-level forms, for
+example a sequence of definitions, consider using ld instead; see *note
+LD::.
+
+
+File: acl2-doc-emacs.info,  Node: PROGN!,  Next: PROGRAM,  Prev: PROGN,  Up: EVENTS
+
+PROGN!    evaluate some forms, not necessarily events
+
+*WARNING!*  This event is intended for advanced users who, in essence,
+want to build extensions of ACL2.  See see *note DEFTTAG::, in
+particular, the "WARNING" there.
+
+Progn! can be used like progn, even in books.  But unlike progn, progn!
+does not require its constituent forms to be events (see *note
+EMBEDDED-EVENT-FORM::).  (However, see *note MAKE-EVENT:: for a
+"Restriction to the Top Level" that still applies under a call of
+progn!.)
+
+Because progn! allows non-events, it differs from progn in another
+important respect: progn! is illegal unless there is an active ttag;
+see *note DEFTTAG::.
+
+See book/misc/hacker.lisp for two macros, with-raw-mode and
+with-redef-allowed, each defined in terms of progn!, that allow
+arbitrary forms in contexts that would normally require legal embedded
+event forms.
+
+Given a form (progn! form1 form2 ... formk), ACL2 will evaluate each
+formi in turn (for i from 1 to k).  If a form returns more than one
+value (see *note MV::) where the first value returned is not nil, then
+no later form will be evaluated and the result returned by the progn!
+call will be (mv erp val state) for some non-nil value erp, signifying
+an error (see *note LD-ERROR-TRIPLES::).  Otherwise the evaluation is
+considered to have succeeded, and will continue on later forms.
+
+The normal undoing mechanism does not generally apply to forms within a
+progn! that are not legal ACL2 events (see *note EMBEDDED-EVENT-FORM::).
+In particular, note that a non-local call of progn! in an encapsulate
+event will generally be evaluated twice: once on each pass.  This fact
+is worth keeping in mind if you are using progn! to change the state of
+the system; ask yourself if it is acceptable to apply that
+state-changing operation more than once.
+
+The following rather sophisticated example illustrates the power of
+progn!.  Here, state-global-let* is an advanced programming feature
+that binds state global variables (see *note STATE::, in particular the
+discussion of the global table) to values.
+
+     (progn!
+     
+      (remove-untouchable 'ld-redefinition-action nil)
+     
+      (state-global-let*
+       ((ld-redefinition-action '(:doit . :overwrite)))
+     
+       (defund foo (x)
+         (cons x x)))
+     
+      (push-untouchable 'ld-redefinition-action nil))
+
+
+File: acl2-doc-emacs.info,  Node: PROGRAM,  Next: PUSH-UNTOUCHABLE,  Prev: PROGN!,  Up: EVENTS
+
+PROGRAM    to set the default defun-mode to :program
+
+     Example:
+     ACL2 !>:program
+     ACL2 p!>
+
+Typing the keyword :program sets the default defun-mode to :program.
+
+Functions defined in :program mode are logically undefined but can be
+executed on constants outside of deductive contexts.  See *Note
+DEFUN-MODE::.
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.
+
+See *Note DEFUN-MODE:: for a discussion of the defun-modes available
+and what their effects on the logic are.  See *Note
+DEFAULT-DEFUN-MODE:: for a discussion of how the default defun-mode is
+used.  This event is equivalent to (table acl2-defaults-table
+:defun-mode :program), and hence is local to any books and encapsulate
+events in which it occurs. See *Note ACL2-DEFAULTS-TABLE::.
+
+Recall that the top-level form :program is equivalent to (program); see
+*note KEYWORD-COMMANDS::.  Thus, to change the default defun-mode to
+:program in a book, use (program), which is an embedded event form,
+rather than :program, which is not a legal form for books.  See *Note
+EMBEDDED-EVENT-FORM::.
+
+
+File: acl2-doc-emacs.info,  Node: PUSH-UNTOUCHABLE,  Next: REDO-FLAT,  Prev: PROGRAM,  Up: EVENTS
+
+PUSH-UNTOUCHABLE    add name or list of names to the list of untouchable symbols
+
+     Examples:
+     (push-untouchable my-var nil)
+     (push-untouchable set-mem t)
+     
+     General Form:
+     (push-untouchable name{s}  fn-p :doc doc-string)
+
+where name{s} is a non-nil symbol or a non-nil true list of symbols,
+fn-p is any value (but generally nil or t), and doc-string is an
+optional documentation string not beginning with ":doc-section ...".
+If name{s} is a symbol it is treated as the singleton list containing
+that symbol.  The effect of this event is to union the given symbols
+into the list of "untouchable variables" in the current world if fn-p is
+nil, else to union the symbols into the list of "untouchable
+functions".  This event is redundant if every symbol listed is already
+a member of the appropriate untouchables list (variables or functions).
+
+When a symbol is on the untouchables list it is syntactically illegal
+for any event to call a function or macro of that name, if fn-p is
+non-nil, or to change the value of a state global variable of that
+name, if fn-p is nil.  Thus, the effect of pushing a function symbol,
+name, onto untouchables is to prevent any future event from using that
+symbol as a function or macro, or as a state global variable (according
+to fn-p).  This is generally done to "fence off" some primitive
+function symbol from "users" after the developer has used the symbol
+freely in the development of some higher level mechanism.
+
+
+File: acl2-doc-emacs.info,  Node: REDO-FLAT,  Next: REMOVE-BINOP,  Prev: PUSH-UNTOUCHABLE,  Up: EVENTS
+
+REDO-FLAT    redo up through a failure in an encapsulate or progn
+
+When one submits an encapsulate or progn event and one of its
+sub-events fails, ACL2 restores its logical world as though the
+encapsulate or progn had not been run.  But sometimes one would like to
+debug the failure by re-executing all sub-events that succeeded up to
+the point of failure, and then re-executing the failed sub-event.  Said
+differently, imagine that the top-level encapsulate or progn form, as
+well as all such sub-forms, were flattened into a list of events that
+were then submitted to ACL2 up to the point of failure.  This would put
+us in the state in which the original failed event had failed, so we
+could now submit that failed event and try modifying it, or first
+proving additional events, in order to get it admitted.
+
+Redo-flat is provided for this purpose.  Consider the following (rather
+nonsensical) example, in which the defun of f3 fails (the body is y but
+the formal parameter list is (x)).
+
+     (encapsulate
+      ()
+      (defun f1 (x) x)
+      (encapsulate ()
+                   (local (defthm hack (equal (car (cons x y)) x))))
+      (encapsulate ()
+                   (local (defthm hack (equal (+ x y) (+ y x)))))
+      (encapsulate ()
+                   (make-event '(defun f2 (x) x))
+                   (progn (defthm foo (equal x x) :rule-classes nil)
+                          (defun f3 (x) y)))
+      (defun f4 (x) x)
+      (defun f5 (x) y))
+
+After this attempt fails, you can evaluate the following form.
+
+     (redo-flat)
+
+This will first lay down a deflabel event, (deflabel r), so that you
+can eventually remove your debugging work with (:ubt! r).  Then the
+successful sub-events that preceded the failure will be executed with
+proofs skipped (so that this execution is fast).  Then, the failed
+event will be executed.  Finally, a :pbt command is executed so that
+you can see a summary of the events that executed successfully.
+
+You can eliminate some of the steps above by supplying keyword values,
+as follows.
+
+     (redo-flat
+      :succ  succ ; Skip the successful sub-events if val is nil.
+      :fail  fail ; Skip the failed sub-event if val is nil.
+      :label lab  ; Skip deflabel if lab or succ is nil, else use (deflabel lab).
+      :pbt   val  ; Skip the final :pbt if val, lab, or succ is nil.
+      )
+
+Also, you can avoid skipping proofs for the successful sub-events by
+supplying keyword :succ-ld-skip-proofsp with a valid value for
+ld-skip-proofsp; see *note LD-SKIP-PROOFSP::.
+
+If you prefer only to see the successful and failed sub-events, without
+any events being re-executed, you may evaluate the following form
+instead.
+
+     (redo-flat :show t)
+
+For the example above, this command produces the following output.
+
+
+     List of events (from encapsulate or progn) preceding the failure:
+     
+     ((DEFUN F1 (X) X)
+      (ENCAPSULATE NIL
+                   (LOCAL (DEFTHM HACK (EQUAL (CAR (CONS X Y)) X))))
+      (ENCAPSULATE NIL
+                   (LOCAL (DEFTHM HACK (EQUAL (+ X Y) (+ Y X)))))
+      (MAKE-EVENT '(DEFUN F2 (X) X))
+      (DEFTHM FOO (EQUAL X X)
+              :RULE-CLASSES NIL))
+     
+     Failed event:
+     
+     (DEFUN F3 (X) Y)
+     ACL2 !>
+
+Redo-flat uses a scheme that should not cause spurious name conflicts
+for local events.  Above, it is mentioned that events are "flattened";
+now we clarify this notion.  Each sub-event that succeeds and is an
+encapsulate or progn is left intact.  Only such events that fail are
+replaced by their component events.  Thus, in the example above, there
+is no conflict between the two local sub-events named "hack," because
+these are contained in successful encapsulate sub-events, which are
+therefore not flattened.  The progn and two encapsulate events
+surrounding the definition of f3 are, however, flattened, because that
+definition failed to be admitted.
+
+Unfortunately, an event must actually fail in order for redo-flat to
+work.  So if the system is "stuck" on an event, then you may find it
+helpful to insert an illegal event just in front of it before
+submitting the encapsulate or progn.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-BINOP,  Next: REMOVE-DEFAULT-HINTS,  Prev: REDO-FLAT,  Up: EVENTS
+
+REMOVE-BINOP    remove the association of a binary function name with a macro name
+
+     Example:
+     (remove-binop binary-append)
+     
+     General Form:
+     (remove-binop binop)
+
+See *Note ADD-BINOP:: for a discussion of how to associate a macro name
+with a binary function name for proof output purposes.  This form sets
+binop-table to the result of deleting the association of a macro name
+with the given binary function name.  If the function name has no such
+association, then this form still generates an event, but the event has
+no real effect.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-DEFAULT-HINTS,  Next: REMOVE-DEFAULT-HINTS!,  Prev: REMOVE-BINOP,  Up: EVENTS
+
+REMOVE-DEFAULT-HINTS    remove from the default hints
+
+
+     Examples:
+     (remove-default-hints '((computed-hint-1 clause)
+                             (computed-hint-2 clause
+                                              stable-under-simplificationp)))
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.  It is
+local to the book or encapsulate form in which it occurs (see *note
+REMOVE-DEFAULT-HINTS!:: for a corresponding non-local event).
+
+     General Form:
+     (remove-default-hints lst)
+
+where lst is a list.  Generally speaking, the elements of lst should be
+suitable for use as computed-hints.  Also see *note ADD-DEFAULT-HINTS::.
+
+If some elements of the given list do not belong to the existing default
+hints, they will simply be ignored by this event.
+
+Finally, note that the effects of set-default-hints, add-default-hints,
+and remove-default-hints are local to the book in which they appear.
+Thus, users who include a book with such forms will not have their
+default hints affected by such forms.  In order to export the effect of
+setting the default hints, use set-default-hints!, add-default-hints!,
+or remove-default-hints!.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-DEFAULT-HINTS!,  Next: REMOVE-DIVE-INTO-MACRO,  Prev: REMOVE-DEFAULT-HINTS,  Up: EVENTS
+
+REMOVE-DEFAULT-HINTS!    remove from the default hints non-locally
+
+Please see *note REMOVE-DEFAULT-HINTS::, which is the same as
+remove-default-hints!  except that the latter is not local to the
+encapsulate or the book in which it occurs.  Probably
+remove-default-hints is to be preferred unless you have a good reason
+for wanting to export the effect of this event outside the enclosing
+encapsulate or book.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-DIVE-INTO-MACRO,  Next: REMOVE-INVISIBLE-FNS,  Prev: REMOVE-DEFAULT-HINTS!,  Up: EVENTS
+
+REMOVE-DIVE-INTO-MACRO    removes association of proof-checker diving function with macro name
+
+     Example:
+     (remove-dive-into-macro logand)
+
+This feature undoes the effect of add-dive-into-macro, which is used so
+that the proof-checker's DV command and numeric diving commands (e.g.,
+3) will dive properly into subterms.  Please see *note
+ADD-DIVE-INTO-MACRO:: and especially see *note DIVE-INTO-MACROS-TABLE::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-INVISIBLE-FNS,  Next: REMOVE-MACRO-ALIAS,  Prev: REMOVE-DIVE-INTO-MACRO,  Up: EVENTS
+
+REMOVE-INVISIBLE-FNS    make some unary functions no longer invisible
+
+     Examples:
+     (remove-invisible-fns (binary-+ unary-- foo)
+
+The setting above has makes unary functions unary- and foo no longer
+"invisible" for the purposes of applying permutative :rewrite rules to
+binary-+ trees.
+
+     General Form:
+     (remove-invisible-fns top-fn unary-fn1 ... unary-fnk)
+
+where top-fn is a function symbol and the unary-fni are unary function
+symbols.
+
+See *Note ADD-INVISIBLE-FNS:: and also see *note INVISIBLE-FNS-TABLE::
+and see *note SET-INVISIBLE-FNS-TABLE::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-MACRO-ALIAS,  Next: REMOVE-NTH-ALIAS,  Prev: REMOVE-INVISIBLE-FNS,  Up: EVENTS
+
+REMOVE-MACRO-ALIAS    remove the association of a function name with a macro name
+
+     Example:
+     (remove-macro-alias append)
+     
+     General Form:
+     (remove-macro-alias macro-name)
+
+See *Note MACRO-ALIASES-TABLE:: for a discussion of macro aliases; also
+see *note ADD-MACRO-ALIAS::.  This form sets macro-aliases-table to the
+result of deleting the key macro-name from that table.  If the name
+does not occur in the table, then this form still generates an event,
+but the event has no real effect.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-NTH-ALIAS,  Next: REMOVE-UNTOUCHABLE,  Prev: REMOVE-MACRO-ALIAS,  Up: EVENTS
+
+REMOVE-NTH-ALIAS    remove the association of one symbol with another for printing of nth/update-nth terms
+
+     Example:
+     (remove-nth-alias append)
+     
+     General Form:
+     (remove-nth-alias alias-name)
+
+See *Note NTH-ALIASES-TABLE:: for further discussion; also see *note
+ADD-NTH-ALIAS::.  This form sets nth-aliases-table to the result of
+deleting the key alias-name from that table.  If the name does not
+occur in the table, then this form still generates an event, but the
+event has no real effect.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-UNTOUCHABLE,  Next: RESET-PREHISTORY,  Prev: REMOVE-NTH-ALIAS,  Up: EVENTS
+
+REMOVE-UNTOUCHABLE    remove name or list of names to the list of untouchable symbols
+
+     Examples:
+     (remove-untouchable my-var nil)
+     (remove-untouchable set-mem t)
+     
+     General Form:
+     (remove-untouchable name{s}  fn-p :doc doc-string)
+
+where name{s} is a non-nil symbol or a non-nil true list of symbols,
+fn-p is any value (but generally nil or t), and doc-string is an
+optional documentation string not beginning with ":doc-section ...".
+If name{s} is a symbol it is treated as the singleton list containing
+that symbol.  The effect of this event is to remove the given symbols
+from the list of "untouchable variables" in the current world if fn-p
+is nil, else to remove the symbols into the list of "untouchable
+functions".  This event is redundant if no symbol listed is a member of
+the appropriate untouchables list (variables or functions).
+
+Note that remove-untouchable is illegal by default, since it can be used
+to provide access to ACL2 internal functions and data structures that
+are intentionally made untouchable for the user.  If you want to call
+it, you must first create an active trust tag; see *note DEFTTAG::.
+
+Also See *Note PUSH-UNTOUCHABLE::.
+
+
+File: acl2-doc-emacs.info,  Node: RESET-PREHISTORY,  Next: SET-BACKCHAIN-LIMIT,  Prev: REMOVE-UNTOUCHABLE,  Up: EVENTS
+
+RESET-PREHISTORY    reset the prehistory
+
+     Examples:
+     (reset-prehistory)   ; restart command numbering at 0
+     (reset-prehistory t) ; as above, and also disable ubt-prehistory
+     
+     General Forms:
+     (reset-prehistory)
+     (reset-prehistory permanent-p)
+     (reset-prehistory permanent-p doc-string)
+
+where permanent-p is t or nil, and doc-string is an optional
+documentation string not beginning with ":doc-section ...".  After
+execution of this command, ACL2 will change the numbering provided by
+its history utilities so that this reset-prehistory command (or the
+top-level compound command containing it, which for example might be an
+include-book) is assigned the number 0.  The only way to undo this
+command is with command ubt-prehistory.  However, even that is
+disallowed if permanent-p is t.
+
+Note that the second argument of certify-book, which specifies the
+number of commands in the certification world (i.e., since
+ground-zero), is not sensitive to reset-prehistory; rather, it expects
+the number of commands since ground-zero.  To see such commands, :pbt
+:start.
+
+See *Note UBT-PREHISTORY:: for how to undo a reset-prehistory command
+that does not have a permanent-p of t.
+
+
+File: acl2-doc-emacs.info,  Node: SET-BACKCHAIN-LIMIT,  Next: SET-BODY,  Prev: RESET-PREHISTORY,  Up: EVENTS
+
+SET-BACKCHAIN-LIMIT    Sets the backchain-limit used by the rewriter
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.
+Moreover, its effect is to set the acl2-defaults-table, and hence its
+effect is local to the book or encapsulate form containing it; see
+*note ACL2-DEFAULTS-TABLE::.
+
+This event sets the global backchain-limit used by the ACL2 rewriter.
+It must be nil or a non-negative integer.  (See *Note BACKCHAIN-LIMIT::
+for details.)
+
+     :set-backchain-limit nil  ; do not impose any additional limits
+     :set-backchain-limit 0    ; allow only type reasoning for relieving
+                               ; hypotheses
+     :set-backchain-limit 500  ; allow backchaining to a depth of no more
+                               ; than 500
+     (set-backchain-limit 500) ; same as above
+
+The default limit is nil.
+
+
+File: acl2-doc-emacs.info,  Node: SET-BODY,  Next: SET-BOGUS-MUTUAL-RECURSION-OK,  Prev: SET-BACKCHAIN-LIMIT,  Up: EVENTS
+
+SET-BODY    set the definition body
+
+     Examples:
+     (set-body foo (:definition foo)) ; restore original definition of foo
+     (set-body foo foo) ; same as just above
+     (set-body foo my-foo-def) ; use my-foo-def for the body of foo
+     (set-body foo (:definition my-foo-def)) ; same as just above
+
+Rules of class :definition can install a new definition body, used for
+example by :expand hints.  See *Note DEFINITION:: and also see *note
+HINTS:: for a detailed discussion of the :install-body fields of
+:definition rules and their role in :expand hints.
+
+There may be several such definitions, but by default, the latest one
+is used by :expand hints.  Although the :with keyword may be used in
+:expand hints to override this behavior locally (see *note HINTS::), it
+may be convenient to install a definition for expansion other than the
+latest one -- for example, the original definition.  Set-body may be
+used for this purpose.
+
+     General Form:
+     (set-body function-symbol rule-name)
+
+where rule-name is either a :definition rune or is a function symbol,
+sym, which represents the rune (:definition sym).
+
+You can view all definitions available for expansion; see *note
+SHOW-BODIES::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-BOGUS-MUTUAL-RECURSION-OK,  Next: SET-CASE-SPLIT-LIMITATIONS,  Prev: SET-BODY,  Up: EVENTS
+
+SET-BOGUS-MUTUAL-RECURSION-OK    allow unnecessary ``mutual recursion''
+
+     Examples:
+     (set-bogus-mutual-recursion-ok t)
+     (set-bogus-mutual-recursion-ok nil)
+     (set-bogus-mutual-recursion-ok :warn)
+
+By default, ACL2 checks that when a "clique" of more than one function
+is defined simultaneously (using mutual-recursion or defuns), then
+every body calls at least one of the functions in the "clique."  Below,
+we refer to definitional events that fail this check as "bogus" mutual
+recursions.  The check is important because ACL2 does not store
+induction schemes for functions defined with other functions in a
+mutual-recursion or defuns event.  Thus, ACL2 may have difficulty
+proving theorems by induction that involve such functions.  Moreover,
+the check can call attention to bugs, since users generally intend that
+their mutual recursions are not bogus.
+
+Nevertheless, there are times when it is advantageous to allow bogus
+mutual recursions, for example when they are generated mechanically,
+even at the expense of losing stored induction schemes.  The first
+example above allows bogus mutual recursion.  The second example
+disallows bogus mutual recursion; this is the default.  The third
+example allows bogus mutual recursion, but prints an appropriate
+warning.
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.
+Moreover, its effect is to set the acl2-defaults-table, and hence its
+effect is local to the book or encapsulate form containing it; see
+*note ACL2-DEFAULTS-TABLE::.
+
+     General Form:
+     (set-bogus-mutual-recursion-ok flg)
+
+where flg is either t, nil, or :warn.
+

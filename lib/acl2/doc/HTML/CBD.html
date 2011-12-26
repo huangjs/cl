@@ -1,0 +1,123 @@
+<html>
+<head><title>CBD.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CBD</h2>connected book directory string
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+
+<pre>
+Example:
+ACL2 !&gt;:cbd
+"/usr/home/smith/"
+</pre>
+
+The connected book directory is a nonempty string that specifies a
+directory as an absolute pathname.  (See <a href="PATHNAME.html">pathname</a> for a
+discussion of file naming conventions.)  When <code><a href="INCLUDE-BOOK.html">include-book</a></code> is given
+a relative book name it elaborates it into a full book name,
+essentially by appending the connected book directory string to the
+left and <code>".lisp"</code> to the right.  (For details,
+see <a href="BOOK-NAME.html">book-name</a> and also see <a href="FULL-BOOK-NAME.html">full-book-name</a>.)  Furthermore,
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> temporarily sets the connected book directory to the
+directory string of the resulting full book name so that references
+to inferior <a href="BOOKS.html">books</a> in the same directory may omit the directory.
+See <a href="SET-CBD.html">set-cbd</a> for how to set the connected book directory string.
+<p>
+
+<pre>
+General Form:
+(cbd)
+</pre>
+
+This is a macro that expands into a term involving the single free
+variable <code><a href="STATE.html">state</a></code>.  It returns the connected book directory string.<p>
+
+The connected book directory (henceforth called the ``<code>cbd</code>'') is
+used by <code><a href="INCLUDE-BOOK.html">include-book</a></code> to elaborate the supplied book name into a
+full book name (see <a href="FULL-BOOK-NAME.html">full-book-name</a>).  For example, if the <code>cbd</code>
+is <code>"/usr/home/smith/"</code> then the elaboration of the <a href="BOOK-NAME.html">book-name</a>
+<code>"project/task-1/arith"</code> (to the <code>".lisp"</code> extension) is
+<code>"/usr/home/smith/project/task-1/arith.lisp"</code>.  That
+<a href="FULL-BOOK-NAME.html">full-book-name</a> is what <a href="INCLUDE-BOOK.html">include-book</a> opens to read the
+source text for the book.<p>
+
+The <code>cbd</code> may be changed using <code><a href="SET-CBD.html">set-cbd</a></code> (see <a href="SET-CBD.html">set-cbd</a>).
+Furthermore, during the processing of the <a href="EVENTS.html">events</a> in a book,
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> sets the <code>cbd</code> to be the directory string of the
+<a href="FULL-BOOK-NAME.html">full-book-name</a> of the book.  Thus, if the <code>cbd</code> is
+<code>"/usr/home/smith/"</code> then during the processing of <a href="EVENTS.html">events</a> by
+
+<pre>
+(include-book "project/task-1/arith")
+</pre>
+
+the <code>cbd</code> will be set to <code>"/usr/home/smith/project/task-1/"</code>.
+Note that if <code>"arith"</code> recursively includes a subbook, say
+<code>"naturals"</code>, that resides on the same directory, the
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> event for it may omit the specification of that
+directory.  For example, <code>"arith"</code> might contain the event
+
+<pre>
+  (include-book "naturals").
+</pre>
+
+In general, suppose we have a superior book and several inferior
+<a href="BOOKS.html">books</a> which are included by <a href="EVENTS.html">events</a> in the superior book.  Any
+inferior book residing on the same directory as the superior book
+may be referenced in the superior without specification of the
+directory.<p>
+
+We call this a ``relative'' as opposed to ``absolute'' naming.  The
+use of relative naming is preferred because it permits <a href="BOOKS.html">books</a>
+(and their accompanying inferiors) to be moved between directories
+while maintaining their <a href="CERTIFICATE.html">certificate</a>s and utility.  Certified
+<a href="BOOKS.html">books</a> that reference inferiors by absolute file names are unusable
+(and rendered uncertified) if the inferiors are moved to new
+directories.<p>
+
+<em>Technical Note and a Challenge to Users:</em><p>
+
+After elaborating the book name to a full book name, <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+opens a channel to the file to process the <a href="EVENTS.html">events</a> in it.  In some
+host Common Lisps, the actual file opened depends upon a notion of
+``connected directory'' similar to our connected book directory.
+Our intention in always elaborating book names into absolute
+filename strings (see <a href="PATHNAME.html">pathname</a> for terminology) is to
+circumvent the sensitivity to the connected directory.  But we may
+have insufficient control over this since the ultimate file naming
+conventions are determined by the host operating system rather than
+Common Lisp (though, we do check that the operating system
+``appears'' to be one that we ``know'' about).  Here is a question,
+which we'll pose assuming that we have an operating system that
+calls itself ``Unix.''  Suppose we have a file name, filename, that
+begins with a slash, e.g., <code>"/usr/home/smith/..."</code>.  Consider two
+successive invocations of CLTL's
+
+<pre>
+(open filename :direction :input)
+</pre>
+
+separated only by a change to the operating system's notion of
+connected directory.  Must these two invocations produce streams to
+the same file?  A candidate string might be something like
+<code>"/usr/home/smith/*/usr/local/src/foo.lisp"</code> which includes some
+operating system-specific special character to mean ``here insert
+the connected directory'' or, more generally, ``here make the name
+dependent on some non-ACL2 aspect of the host's state.''  If such
+``tricky'' name strings beginning with a slash exist, then we have
+failed to isolate ACL2 adequately from the operating system's file
+naming conventions.  Once upon a time, ACL2 did not insist that the
+<code>cbd</code> begin with a slash and that allowed the string
+<code>"foo.lisp"</code> to be tricky because if one were connected to
+<code>"/usr/home/smith/"</code> then with the empty <code>cbd</code> <code>"foo.lisp"</code>
+is a full book name that names the same file as
+<code>"/usr/home/smith/foo.lisp"</code>.  If the actual file one reads is
+determined by the operating system's state then it is possible for
+ACL2 to have two distinct ``full book names'' for the same file, the
+``real'' name and the ``tricky'' name.  This can cause ACL2 to
+include the same book twice, not recognizing the second one as
+redundant.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

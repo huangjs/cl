@@ -1,0 +1,233 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html><head>
+<title>Lisp Web Servers</title>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</head>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Lisp Web Servers</DIV>
+
+<H2>Web Overview</H2>
+
+<P>A web server is just a machine connected to the Internet,
+running a computer program that listens to requests for content,
+such as HTML files.
+Those requests come from programs, such as browsers, running on
+other computers also connected to the Internet. For this to work,
+there has to be an agreed language for both the requests and
+what's sent back. That
+language is the HyperText Transfer Protocol (HTTP).</P>
+
+<P>Rather than repeat what's been written many times, I refer
+you to</P>
+
+<UL>
+<LI>
+<a href="http://computer.howstuffworks.com/internet-infrastructure.htm/printable" target="_top">
+How the Internet Works</a> for
+a basic description
+of many aspects of how the web works.</LI>
+
+<LI>
+<a href="http://www.jmarshall.com/easy/http/" target="_top">
+HTTP Made Really Easy</A>
+by James Marshall, which focusses on the basics of HTTP
+in particular.
+</LI>
+</UL>
+
+<H2>Web Servers with Lisp</H2>
+
+<P>The nice thing about the web is that all
+communication between programs is done using HTTP,
+which uses simple commands in plain text.
+That simplicity means that you
+can write a web server or browser in any language
+you like, as long as it lets you read and write
+to the network.</P>
+
+<P>Writing a server or browser from scratch would be
+pretty tedious, though. Fortunately, many languages
+now have code libraries to take care of such details as
+reading and writing characters to the network,
+parsing HTTP commands, creating threads (lightweight
+parallel processes) for each request to support simultaneous
+users, and so on.</P>
+
+<P>For Common Lisp there are two major code libraries for
+web services:</P>
+
+<UL>
+<LI>
+Franz, Inc.'s
+<a href="http://opensource.franz.com/aserve/" target="_top">AServe library</a>
+for Allegro Common Lisp for PC's
+running Windows and Unix.
+</LI>
+
+<LI>John Mallory's
+<a href="http://www.ai.mit.edu/projects/iiip/doc/cl-http/home-page.html" target="_top">
+CL-HTTP</a>,
+which runs on many Common Lisp's, including Macintosh Common
+Lisp, LispWorks, and older versions
+of Allegro.
+</LI>
+</UL>
+
+<P>In this course, we use Franz, Inc.'s
+AServe library, for a number of reasons:</P>
+
+<UL>
+<LI>Most students are using Allegro, so they already
+have AServe available and ready to load.</LI>
+
+<LI>AServe is very
+similar to HTTP libraries for other languages. For example,
+AServe's responses and entities are much like
+Java's requests and responses.</LI>
+
+<LI>AServe's HTML macro is simple to explain, easy to implement, and
+extends automatically to new HTML elements and XML.</LI>
+
+<LI>AServe has better (or at least more easily found) documentation
+than CL-HTTP.</LI>
+
+<LI>It's a lot easier to implement AServe on top of CL-HTTP
+than CL-HTTP on top of AServe.</LI>
+</UL>
+
+<P>For those students not using Allegro, there
+is 
+<a href="http://sourceforge.net/projects/portableaserve/" target="_top">
+a portable AServe library</a> that runs in a number of 
+Common Lisp's. I use it in LispWorks Personal Edition.</P>.
+
+<a name="use"></a><hr>
+<H2>How to Use AServe</H2>
+
+
+<P>Switch to the <tt>cs325-user</tt> package in your Listener window:</P>
+
+<blockquote><pre>(in-package :cs325-user)</pre></blockquote>
+
+<P>You make URL's available to users with functions like
+<code>publish</code>, <code>publish-file</code>,
+and <code>publish-directory</code>.
+These functions link specific URL's to Lisp functions or HTML files.
+(This corresponds to servlet mappings
+in Java web applications.)</p>
+
+<p>To test AServe on your
+system, 
+
+<ul>
+<li>load the AllegroServe code:
+<ul>
+<li>Allegro Users: just type <code>(require :aserve)</code></li>
+<li>Others: load the file <code>portableaserve/INSTALL.lisp</code></li>
+</ul>
+</li>
+
+<li>load the example AServe code in
+<code><a href="../programs/test-aserve.lisp">test-aserve.lisp</a></code>
+</li>
+
+<li>start the server by evaluating <code>(net.aserve:start :port 8000)</code></li>
+
+<li>point a browser to <a href="http://localhost:8000/">http://localhost:8000/</a>
+</li>
+</ul>
+
+<p>8000 is a <em>port</em>. Ports are simply numbers operating systems use
+as a kind of address to determine which program should process a
+network message. Low numbers are pre-assigned to standard services, e.g., 
+80 is the default for a web server. For development, use a safe high number.
+In the unlikely case that your machine is already using port 8000
+for some service, try some other number over 1024. Use that number in
+your <code>localhost</code> URL.</p>
+
+<p class="quote">If you have a firewall running on your machine, and
+you should, the first time you start the server, you should get an
+alert saying that your Lisp is trying to access the network. Tell
+your firewall this is OK.</p>
+
+<p>The URL <a href="http://localhost:8000/">http://localhost:8000/</a>
+should take you to a page published by the code in
+<code><a href="../programs/test-aserve.lisp">test-aserve.lisp</a></code>.
+If it doesn't, look at the error message you got.</p>
+
+<ul>
+<li>If the error says a connection could not be made, then
+make sure AServe started without error, that
+you gave the right port number, and that your firewall, if any,
+isn't rejecting messages on that port.</li>
+<li>If the errors says the page could not be found, then 
+the server is running. Try loading 
+<code><a href="../programs/test-aserve.lisp">test-aserve.lisp</a></code>.
+again and make sure there are no errors.</li>
+</ul>
+
+<p>The home page published by 
+<code><a href="../programs/test-aserve.lisp">test-aserve.lisp</a></code>.
+has links to several examples of things you can
+do with the AServe package:</p>
+
+<ul>
+<li><a href="http://localhost:8000/apropos">http://localhost:8000/apropos</a> should take you to a page that lets you look
+up all symbols defined in your Lisp</li>
+<li><a href="http://localhost:8000/base/fields.html">http://localhost:8000/base/fields.html</a> you to a simple example of an
+HTML form that can be filled in and sent to Lisp for processing
+by Lisp code</li>
+<li><a href="http://localhost:8000/critic">http://localhost:8000/critic</a> should take you to a page where you can 
+submit Lisp code to the Lisp Critic in a
+web page</li>
+</ul>
+
+<p>These are all very simple examples. Use the code in
+<code><a href="../programs/test-aserve.lisp">test-aserve.lisp</a></code>
+to guide you 
+when creating other Lisp-based web pages.</p>
+
+
+<p>While your server is running, any machine on the Internet can
+access your pages. To access your server from another machine,
+replace <code>localhost</code> with your server's Internet name or IP address.
+For example, if your machine's IP address was
+555.100.10.100, then you could critique Lisp by
+typing this URL in your browser:
+</P>
+
+<blockquote><pre>http://555.100.10.100:8000/cs325/critic</pre></blockquote>
+
+<P>To avoid hackers attacking your system, and to reduce system
+load, shut down AServe when testing is done:</P>
+
+<blockquote><pre>(net.aserve:shutdown)</pre></blockquote>
+
+<P>For more examples, see:</P>
+
+<ul>
+<li>
+<a href="http://opensource.franz.com/aserve/aserve-dist/doc/tutorial.html" target="_top">
+the AServe tutorial</a></li>
+<li>
+<a href="http://opensource.franz.com/aserve/aserve-dist/doc/aserve.html" target="_top">
+the AServe reference</a></li>
+<li><a href="http://www.gigamonkeys.com/book/practical-web-programming-with-allegroserve.html">
+Web Programming with AllegroServe</a>, a chapter from
+Peter Seibel's upcoming <a href="http://www.gigamonkeys.com/book/">Practical Common Lisp</a></li>
+</ul>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

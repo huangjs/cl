@@ -1,0 +1,105 @@
+<html>
+<head><title>NOTE3.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE3</h2>Acl2 Version 1.3 Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+<a href="PROGRAMMING.html">Programming</a> mode has been eliminated.  Instead, all functions have a
+``color'' which indicates what can be done with the function.  For
+example, <code>:red</code> functions can be executed but have no axioms
+describing them.  Thus, <code>:red</code> functions can be introduced after
+passing a simple syntactic check and they can be redefined without
+undoing.  But nothing of consequence can be proved about them.  At
+the other extreme are <code>:gold</code> functions which can be executed and
+which also have passed both the termination and the <a href="GUARD.html">guard</a>
+verification proofs.  The color of a function can be specified with
+the new <code><a href="XARGS.html">xargs</a></code> keyword, <code>:color</code>, which, if omitted defaults to the
+global setting of <code>ld-color</code>.  <code>Ld-color</code> replaces <code>load-mode</code>.  Setting
+<code>ld-color</code> to <code>:red</code> causes behavior similar to the old <code>:g-mode</code>.
+Setting <code>ld-color</code> to <code>:gold</code> causes behavior similar to the old
+<code>:v-mode</code>.  It is possible to prototype your system in <code>:red</code> and then
+convert <code>:red</code> functions to :<code>blue</code> individually by calling
+<code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> on them.  They can then be converted to <code>:gold</code>
+with <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.  This allows us to undertake to verify the
+termination and <a href="GUARD.html">guard</a>s of system functions.  See <code>:</code><code><a href="DOC.html">doc</a></code> color for an
+introduction to the use of colors.<p>
+
+Type prescription rules have been added.  Recall that in Nqthm, some
+<code><a href="REWRITE.html">rewrite</a></code> rules were actually stored as ``<a href="TYPE-PRESCRIPTION.html">type-prescription</a>s.''  Such
+rules allow the user to inform Nqthm's primitive type mechanism as
+to the kinds of shells returned by a function.  Earlier versions of
+Acl2 did not have an analogous kind of rule because Acl2's type
+mechanism is complicated by <a href="GUARD.html">guard</a>s.  Version 1.3 supports
+<code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rules.  See <a href="TYPE-PRESCRIPTION.html">type-prescription</a>.<p>
+
+Three more new <a href="RULE-CLASSES.html">rule-classes</a> implement congruence-based rewriting.
+It is possible to identify a binary relation as an equivalence
+relation (see <a href="EQUIVALENCE.html">equivalence</a>), to show that one equivalence
+relation refines another (see <a href="REFINEMENT.html">refinement</a>) and to show that a
+given equivalence relation is maintained when rewriting a given
+function call, e.g., <code>(fn ...xk...)</code>, by maintaining another
+equivalence relation while rewriting the <code>k</code>th argument
+(see <a href="CONGRUENCE.html">congruence</a>).  If <code>r</code> has been shown to be an <a href="EQUIVALENCE.html">equivalence</a>
+relation and then <code>(implies hyps (r (foo x) (bar x)))</code> is proved as a
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule, then instances of <code>(foo x)</code> will be replaced by
+corresponding instances of <code>(bar x)</code> provided the instance occurs in a
+slot where the maintainence of <code>r-equivalence</code> is known to be
+sufficient and <code>hyps</code> can be established as usual.<p>
+
+In Version 1.2, <a href="RULE-CLASSES.html">rule-classes</a> were simple keywords, e.g., <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or
+<code>:</code><code><a href="ELIM.html">elim</a></code>.  In Version 1.3, <a href="RULE-CLASSES.html">rule-classes</a> have been elaborated to allow
+you to specify how the theorem ought to be used as a rule.  That is,
+the new <a href="RULE-CLASSES.html">rule-classes</a> allows you to separate the mathematical
+statement of the formula from its interpretation as a rule.
+See <a href="RULE-CLASSES.html">rule-classes</a>.<p>
+
+Rules used to be named by symbols, e.g., <code><a href="CAR.html">car</a></code> and <code>car-cons</code> were the
+names of rules.  Unfortunately, this was ambiguous because there are
+three rules associated with function symbols: the symbolic
+definition, the executable counterpart, and the <a href="TYPE-PRESCRIPTION.html">type-prescription</a>;
+many different rules might be associated with theorems, depending on
+the rule classes.  In Version 1.3 rules are named by ``<a href="RUNE.html">rune</a>s''
+(which is just short hand for ``rule names'').  Example <a href="RUNE.html">rune</a>s are
+<code>(:definition car)</code>, <code>(:executable-counterpart car)</code>, and
+<code>(:type-prescription car . 1)</code>.  Every rule added by an event has a
+different name and you can <a href="ENABLE.html">enable</a> and <a href="DISABLE.html">disable</a> them independently.
+See <a href="RUNE.html">rune</a> and see <a href="THEORIES.html">theories</a>.<p>
+
+The identity function <code><a href="FORCE.html">force</a></code>, of one argument, has been added and
+given a special interpretation by the functions responsible for
+establishing hypotheses in backchaining: When the system fails to
+establish some hypothesis of the form <code>(force term)</code>, it simply
+assumes it is true and goes on, delaying until later the
+establishment of term.  In particular, pushes a new subgoal to prove
+term in the current context.  When that subgoal is attacked, all of
+the resources of the theorem prover, not just rewriting, are brought
+to bear.  Thus, for example, if you wish to prove the rule
+<code>(implies (good-statep s) (equal (exec s n) s'))</code> and it is your
+expectation that every time <code>exec</code> appears its first argument is a
+<code>good-statep</code> then you might write the rule as
+<code>(implies (force (good-statep s)) (equal (exec s n) s'))</code>.  This
+rule is essentially an unconditional rewrite of <code>(exec s n)</code> to
+<code>s'</code> that spawns the new goal <code>(good-statep s)</code>.  See <a href="FORCE.html">force</a>.
+Because you can now specify independently how a theorem is used as a
+rule, you need not write the <code><a href="FORCE.html">force</a></code> in the actual theorem proved.
+See <a href="RULE-CLASSES.html">rule-classes</a>.<p>
+
+Version 1.3 supports a facility similar to Nqthm's <code><a href="BREAK-LEMMA.html">break-lemma</a></code>.
+See <a href="BREAK-REWRITE.html">break-rewrite</a>.  You can install ``<a href="MONITOR.html">monitor</a>s'' on <a href="RUNE.html">rune</a>s that
+will cause interactive breaks under certain conditions.<p>
+
+Acl2 also provides ``<a href="WORMHOLE.html">wormhole</a>s'' which allow you to write functions
+that cause interaction with the user but which do not require that
+you have access to <code><a href="STATE.html">state</a></code>.  See <a href="WORMHOLE.html">wormhole</a>.<p>
+
+The rewriter now automatically backchains to stronger recognizers.
+There is no user hook to this feature but it may simplify some
+proofs with which older versions of Acl2 had trouble.  For example,
+if the rewriter is trying to prove <code>(rationalp (foo a b c))</code> it is now
+smart enough to try lemmas that match with <code>(integerp (foo a b c))</code>.
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

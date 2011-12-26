@@ -1,0 +1,51 @@
+<html>
+<head><title>TTAGS-SEEN.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TTAGS-SEEN</h2>list some declared trust tags (ttags)
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+General Forms:
+:ttags-seen
+(ttags-seen)
+</pre>
+
+Suppose the output is as follows.
+
+<pre>
+(T NIL)
+(FOO "/home/bob/bar.lisp"
+     "/home/cindy/bar.lisp")
+Warning: This output is minimally trustworthy (see :DOC TTAGS-SEEN).
+</pre>
+
+This output indicates that the current logical <a href="WORLD.html">world</a> has seen the
+declaration of trust tag <code>T</code> at the top-level (see <a href="DEFTTAG.html">defttag</a>) and the
+declaration of trust tag <code>FOO</code> in the two books included from the listed
+locations.  The warning emphasizes that this command cannot be used to
+validate the ``purity'' of an ACL2 session, because using a ttag renders
+enough power to hide from this or any other command the fact that the ttag
+was ever declared.
+<p>
+As discussed elsewhere (see <a href="DEFTTAG.html">defttag</a>), the only reliable way to validate
+the ``purity'' of a session is to watch for ``<code>TTAG NOTE</code>'' output.<p>
+
+Another shortcoming of this command is that it only checks the current
+logical <a href="WORLD.html">world</a> for ttag declarations.  For example, one could execute a
+<code><a href="DEFTTAG.html">defttag</a></code> event; then use <code><a href="PROGN_bang_.html">progn!</a></code> and <code><a href="SET-RAW-MODE.html">set-raw-mode</a></code> to replace
+system functions with corrupt definitions or to introduce inconsistent axioms
+in the <code><a href="GROUND-ZERO.html">ground-zero</a></code> <a href="WORLD.html">world</a>; and finally, execute <code>:</code><code><a href="UBT_bang_.html">1</a></code>
+to remove all evidence of the ttag in the <a href="WORLD.html">world</a> while leaving in place
+the corrupt definitions or axioms.  The base world is now tainted, meaning we
+could prove <code>nil</code> or certify a book that proves <code>nil</code>, but the resulting
+session or book would contain no trace of the ttag that tainted it!<p>
+
+Despite shortcomings, this command might be useful to system hackers.  It
+also serves to illustrate the inherent flaw in asking a session whether or
+how it is ``tainted'', justifying the ``<code>TTAG NOTE</code>'' approach
+(see <a href="DEFTTAG.html">defttag</a>).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

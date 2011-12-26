@@ -1,0 +1,411 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Deductive Retrieval</title>
+<link href="../styles/cs325.css" rel="stylesheet" type=
+"text/css">
+</head>
+<body>
+<div id="logo"><a class="plain" href="../index.html" target=
+"_top"><img src="../images/cs325logo.gif" alt="CS 325 Logo"
+border="0"></a></div>
+
+<div id="banner">Deductive Retrieval</div>
+
+<h2>Introduction</h2>
+
+<p>Deductive retrieval is a generalization of simple data
+retrieval. A data retriever has a database of assertions, e.g.,
+<code>(married john mary)</code>, <code>(in chicago illinois)</code>, and
+so on. The main operations are</p>
+
+<ul>
+<li>storing assertions in the database</li>
+
+<li>retrieving all assertions that match a <em>query
+pattern</em></li>
+</ul>
+
+<p>The retriever looks through the database and returns all the
+assertions that match the input query pattern. Assertions are
+usually indexed and organized for fast retrieval, but the
+semantics is as if all assertions are matched against the
+query.</p>
+
+<p><b>A deductive retriever</b> adds the following operations:</p>
+
+<ul>
+<li>storing rules in the database</li>
+
+<li>using those rules to infer answers to queries, in addition to
+the assertions explicitly stored</li>
+</ul>
+
+<p>A simple deductive retriever in Lisp is 
+<a href="../programs/ddr.lisp">ddr.lisp</a>.
+The general concepts are described in this document,
+and functions for using it are described 
+<a href="ddr.html">here</a>.
+
+<p>Deductive retrieval has these major processes:</p>
+
+<ul>
+<li>unification -- generalized pattern matching</li>
+
+<li>backward chaining -- linking rules together to form a
+conclusion</li>
+
+<li>backtracking -- trying all possibilities until one or all
+answers are found</li>
+</ul>
+
+<h2>Pattern Matching</h2>
+
+<p>A pattern can be any form, e.g., <code>(in tiger savannah)</code>,
+but usually a pattern will have variables, e.g., <code>(in ?x
+savannah)</code>. A form without variables is sometimes called a
+<em>constant</em> form.</p>
+
+<p>A form matches a pattern all corresponding elements of the
+form and pattern can be matched. Constant elements match each
+other if they are equal. Variable elements can match anything,
+but if multiple occurrences of the same variable must match the
+same thing.</p>
+
+<p>The result of a match is a <em>list</em> of binding lists. A
+binding list is a list of <code>(<em>variable value</em>)</code>
+pairs, recording each pattern variable and the corresponding form
+element.</p>
+
+<p>For example, the result of matching <code>(in ?x savannah)</code>
+with <code>(in tiger savannah)</code> is <code>(((?x tiger)))</code>.</p>
+
+<p>With simple patterns, the result of a match will be either
+<code>NIL</code> or a list of one binding list. It is possible to
+extend patterns in such a way that multiple bindings can occur,
+i.e., there is more than one way the pattern can match the
+form.</p>
+
+<p>In particular, matching <code>(in tiger savannah)</code> with
+<code>(in tiger savannah)</code> will produce <code>(nil)</code>, while
+matching <code>(in tiger savannah)</code> with <code>(in tiger
+swamp)</code> will produce <code>nil</code>.</p>
+
+<h2>Unification</h2>
+
+<p>Unification introduces one additional feature to normal
+pattern matching. It allows a pattern to match a pattern. This
+raises a number of complexities. For example, a variable can bind
+to another variable, or even to itself. Fortunately, these issues
+have been worked out long ago, and the code for implementing
+unification, while subtle and subject to pitfalls, is not all
+that complicated. It can be found in the <code>unify.lisp</code>
+file.</p>
+
+<p>Patterns matching against patterns is important for backward
+chaining.</p>
+
+<h2>The Knowledge Base</h2>
+
+<p>The knowledge base for <a href="ddr.html">our deductive retriever</a> contains:</p>
+
+<ul>
+<li>simple assertions, e.g., <code>(in tiger savannah)</code></li>
+
+<li>backward chaining rules, e.g., <code>(&lt;- (near ?x grass) (in
+?x savannah))</code></li>
+
+<li>forward chaining rules, e.g., <code>(-&gt; (predator-of ?x ?y)
+(prey-of ?y ?x))</code></li>
+</ul>
+
+<p>Assertions and rules are stored using <code>(tell
+<em>form</em>)</code>, e.g.,</p>
+
+<pre>
+&gt; (tell '(at tiger savannah))
+&gt; (tell '(&lt;- (near ?x grass) (at ?x savannah)))
+&gt; (tell '(-&gt; (predator-of ?x ?y) (prey-of ?y ?x)))
+</pre>
+
+<h2>Answering Queries</h2>
+
+<p>A query is asked by typing <code>(ask <em>query</em>)</code>.
+The query can be any form.</p>
+
+<p>If the query is a constant form, then we're effectively asking
+a yes or no question. For example, to ask "Is the tiger near
+grass?" we type:</p>
+
+<pre>
+&gt; (ask '(at tiger savannah))
+((AT TIGER SAVANNAH))
+</pre>
+
+<p>The result is a list of answers to the query found in the KB.
+There's just one answer to this query.</p>
+
+<h2>Backward Chaining</h2>
+
+<p>Now consider a query very similar to the previous one:</p>
+
+<pre>
+&gt; (ask '(near tiger grass)
+((NEAR TIGER GRASS))
+</pre>
+
+<p>The query is still a "yes/no" questions, and the answer still
+says "yes" but <code>(near tiger
+grass)</code> was not explicitly stored in the knowledge base. It
+was inferred using the backward chaining rule "something is near
+grass if it is in a savannah."</p>
+
+<p>In this case, only one rule was needed to derive the answer.
+In general, though, many rules may be chained together.</p>
+
+<p>For example, let's add a rule that says that if you're near
+something, you can bite it:</p>
+
+<pre>
+&gt; (tell '(&lt;- (can-bite ?x ?y) (near ?x ?y)))
+</pre>
+
+<p>Now let's ask if the tiger can bite grass:</p>
+
+<pre>
+&gt; (ask '(can-bite tiger grass))
+((CAN-BITE TIGER GRASS))
+</pre>
+
+<p>The answer is obviously yes, but it required two rules and an
+assertion to prove it. The retriever found a rule that said the
+tiger could bite grass if it was near grass. It then found a rule
+that said a tiger would be near grass if it was in a savannah.
+Finally, it found the assertion that the tiger was indeed in a
+savannah.</p>
+
+<p>The two rules and the assertion form a chain, or proof, of the
+assertion that the tiger can bite grass. The retriever will find
+all the chains that it can. Chains always terminate in
+assertions.</p>
+
+<h2>Deductive Retrieval versus Logic</h2>
+
+<p>Deductive retrieval is based on logical principles, but a
+deductive retriever is different from a theorem prover in a
+number of significant ways.</p>
+
+<p>First, deductive retrievers are very limited in what they can
+deduce, for two reasons:</p>
+
+<ul>
+<li>Rules are limited to the form <code>(&lt;- <em>predication
+pattern pattern</em> ...)</code>; You can't directly represent
+statements like "Either Mary or John will come to the
+party."</li>
+
+<li>Inference is limited to backward chaining to assertions.
+Suppose one chain of rules for proving <code>P</code> shows that
+<code>P</code> is true if <code>(NOT A)</code> is true, while another
+chain shows <code>P</code> is true if <code>A</code> is true, but neither
+<code>A</code> nor <code>(NOT A)</code>has been asserted. Proving that
+<code>P</code> is true requires assuming <code>A</code> and assuming
+<code>(NOT A)</code>, a technique not in our retriever.</li>
+</ul>
+
+<p>Deductive retrieval also uses techniques not available in
+logic. Prolog, for example, applies rules in the order in which
+they were defined, so that different proofs are possible,
+depending on the order in which rules are specified. Prolog also
+has a "cut" operation that allows a rule to eliminate other proof
+paths from the search process. Our retriever has a mechanism for
+allowing arbitrary Lisp code to be executed during retrieval.</p>
+
+<h2>Representing Knowledge in Rules</h2>
+
+<p>There are many ways to represent a rule in English as
+deductive retrieval rules. Just as with the frame system, you
+have to develop a coherent ontology, i.e., a set of predicates
+and objects.</p>
+
+<p>For example, consider the rule "something can satisfy its
+hunger with something if it's near something it eats." There are many parts to be
+represented in this rule:</p>
+
+<ul>
+<li>"can"</li>
+
+<li>"satisfy"</li>
+
+<li>"near"</li>
+
+<li>"hunger"</li>
+
+<li>"is food it eats"</li>
+</ul>
+
+<p>There's no single right answer to these questions, though some
+answers are better than others, depending how sophisticated you
+need the retriever to be, how efficient it should, how easy you
+want it to be for others to add rules, and so on.</p>
+
+<p>We've already chosen a representation for "near," namely
+<code>(near <em>x y</em>)</code>. "Can" is a complex concept that
+still puzzles philosophers. "Hunger" is an interesting property,
+because it keeps coming back. "Satisfying hunger" is not an
+all-or-none result, but a matter of degree, ranging from "hungry
+but surviving" to "stuffed to the gills."</p>
+
+<p>However, for our purposes, we don't care about any of these
+issues. We just want to know whether something will starve or
+not. Therefore, we'll merge all these concepts into one
+predicate. <code>(can-satisfy-hunger-with <em>x y</em>)</code> that
+represents the claim that <em>x</em> could satisfy the problem of
+hunger by eating <em>y</em>.</p>
+
+<p>For "food it eats" we'll use the predicate <code>(eats
+<em>x y</em>)</code> to say that <code><em>y</em></code> is a food that
+<code><em>x</em></code> eats.</p>
+
+<p>Our rule then becomes something like this:</p>
+
+<pre>
+(&lt;- (can-satisfy-hunger-with ?x ?y)
+    (eats ?x ?y)
+    (near ?x ?y))
+</pre>
+
+<p>The difference between the above and</p>
+
+<pre>
+(&lt;- (can-satisfy-hunger ?x)
+    (near ?x ?y)
+    (eats ?x ?y))
+</pre>
+
+<p>is purely one of possible efficiency. The predicate that
+generally has fewer answers should be tested first. In the
+extreme case, a predicate that is often false should be tested as
+early as possible in a rule, to avoid needless testing of other
+parts of the rule. The same answers would be returned by either
+form of the rule.</p>
+
+<p>Since we already have a <code>predator-of</code> predicate,
+let's link that to <code>eats</code>:</p>
+
+<pre>
+&gt; (tell '(<- (eats ?y ?x) (predator-of ?x ?y)))
+</pre>
+
+<p>The important point is that every one of these choices for
+predicates, include the <code>near</code> predicate, could have been
+made differently. The odds are great that the rules that result
+from the choices used here will not work well for a system
+reasoning about spatial relationships, detailed animal behavior,
+and so on.</p>
+
+
+<h2>Backtracking</h2>
+
+
+<p>Assume we've loaded the 
+assertions in <code>*tiger-kb*</code> in 
+<a href="../programs/ddr-tests.lisp" target="_top">ddr-tests.lisp</a>.</p>
+
+<pre>
+&gt; (load "ddr-tests.lisp")
+...
+&gt; (in-package :ddr-tests)
+...
+&gt; (init-kb *tiger-kb*)
+...</pre>
+
+<p>Now, let's ask how our
+tiger can satisfy its hunger:</p>
+
+<pre>
+&gt; (ask '(can-satisfy-hunger-with tiger ?x))
+</pre>
+
+
+<p>The retriever will find that it has to choose something
+the tiger eats. To do that, it has to choose something a tiger is a
+predator of. Suppose it picks <code>zebra</code>. Now, the
+retriever will ask <code>(near tiger zebra)</code>. This query will
+fail, because there is no zebra in the same place as the tiger.</p>
+
+<p>The fact that this query has failed doesn't mean that the
+tiger can't eat something. It means that the retriever has to
+"back up" and look for another answer to <code>(predator-of tiger
+...)</code>. The other possible answer is <code>antelope</code>.
+This leads to the query <code>(near tiger antelope)</code>
+which eventually succeeds.</p>
+
+<p>The backing up process, undoing one possible match when it
+doesn't pan out, is called <em>backtracking</em>. It's one of the
+classic <em>weak</em> methods of AI, so called because it always
+works, even when the system is knowledge poor, but it may not
+work very efficiently. Basically, backtracking means writing your
+code to try all possibilities, because your code isn't smart
+enough to know the right thing to do.</p>
+
+<h2>Extending the Retriever</h2>
+
+<p>Many predicates are very difficult or inefficient to do with
+logical rules. For example, <code>(&lt; <em>x y</em>)</code> should
+return true if <code>x</code> is less than <code>y</code>, but try
+defining this with pure logic. It can be done, but you have to
+axomiatize arithmetic first.</p>
+
+<p>On the other hand, our retriever is running on top of Lisp,
+and it's trivial to tell if <code>x</code> is less than <code>y</code> in
+Lisp. So, why not allow our retriever to call Lisp functions?</p>
+
+<p>We do this in our retriever by defining <em>retrieval
+methods</em>. A retrieval method for a predicate <code>P</code> is
+basically a function to call when the retriever sees anything of
+the form <code>(P ...)</code>. Retrieval methods are defined
+using</p>
+
+<pre class="code-syntax">
+(define-retrieval-method <i>name</i> (<i>var</i>)
+  <i>body</i>)
+</pre>
+
+<p><code><em>name</em></code>
+is the name of the predicate for which the method is being
+defined, e.g., <code>&lt;</code>.<code><em>var</em></code> will be bound
+to the pattern beginning with that predicate, that the retriever
+has come across.</p>
+
+<p>The retrieval method has to be prepared for variables in its
+arguments. For example, if <code>(&lt; ?x ?y)</code> appears in a
+rule, then <code>?x</code> and <code>?y</code> will be replaced by their
+bindings, if any, but any unbound variable will still be in the
+pattern passed to the retrieval method.</p>
+
+<p>In the case of <code>&lt;</code>, we'll assume that it's OK to
+simply fail if there are any unbound, or otherwise non-numeric,
+arguments.</p>
+
+<pre>
+(define-retrieval-method &lt; (pat)
+  (destructuring-bind (x y) (pattern-args pat)
+    (and (numberp x)
+         (numberp y)
+         (&lt; x y)
+         (make-empty-bindings)))
+</pre>
+
+<p>A retrieval method should always return a list of bindings
+lists, or <code>NIL</code>, so that the predicate will act like every
+other predicate in the system.</p>
+
+<hr>
+<p id="closing">Comments? <img src="../images/comments.gif"
+align="bottom"> Send mail to <a href=
+"mailto:riesbeck@cs.northwestern.edu">Chris Riesbeck</a>.</p>
+</body>
+</html>
+

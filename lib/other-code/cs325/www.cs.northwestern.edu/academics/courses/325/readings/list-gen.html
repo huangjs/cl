@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html><head>
+<title>List Generators</title>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</head>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">List Generators</DIV>
+
+<p><strong>glist</strong> is a tiny Common Lisp library that supports list generators,
+also known as &quot;lazy lists.&quot; This particular implementation is derived
+from that in Charniak,
+Riesbeck, McDermott and Meehan's 
+<a href="https://www.erlbaum.com/shop/tek9.asp?pg=products&specific=0-89859-609-2" target="_blank">Artificial Intelligence Programming, 2nd ed</a>.
+Similar libraries can be found by searching the web for &quot;Lisp lazy lists.&quot;
+A good discussion with advanced examples, using Scheme, can be found
+in <a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-24.html#%_sec_3.5">Section 3.5</a> of 
+Abelson and Sussman's 
+<a href="http://mitpress.mit.edu/sicp/">The Structure and Interpretation of Computer Programs</a>.
+They're called "streams" there.
+</p>
+
+<p>Generated lists are useful for </p>
+<ul>
+<li> working with infinite lists -- see <a href="#gintegers">the gintegers example</a></li>
+<li>converting code that generates a list of answers into code that generates
+answers one at a time -- see <a href="#gflatten">the gflatten example</a></li>
+</ul>
+
+<h2>How to use glist</h2>
+
+<p>To get the glist functions, load
+<a href="../programs/glist.lisp">glist.lisp</a>. The functions are in the package
+<code>glist</code>. Therefore you either need to put 
+<code>glist:</code> before any <b>glist</b> 
+function name, or evaluate <code>(use-package :glist)</code> first.</p>
+
+<p>To see and run some examples of list generators, 
+load <a href="../programs/glist-tests.lisp">glist-tests.lisp</a>. 
+This defines and tests several simple examples, using
+<a href="lisp-unit.html">the lisp-unit package</a>.
+The examples are described <a href="#examples">below</a>.</p>
+
+<h2> List Generators</h2>
+<p>A list generator is a data structure representing a &quot;promise&quot; of
+a list. A generator is created with the macro <code>delay</code>.</p>
+<blockquote>
+<pre>(delay <em>exp1 exp2</em> ...)</pre>
+</blockquote>
+<p>returns a generator that, when accessed by the <strong>glist</strong> functions
+  described below, will return a list. The first time the generator is accessed,
+  the expressions are evaluated, left to right, and the value of the last is stored
+  as the generated list. Subsequent accesses retrieved that list.</p>
+<blockquote>
+  <p><em>Errors will occur if a delay doesn't return either a list or another
+    generator!</em></p>
+</blockquote>
+<p>To get the actual elements in a generated list, use the following, all of which
+  behave, on the surface, like their Lisp counterparts. All of them handle generators,
+  normal lists, and lists containing generators.</p>
+<ul>
+  <li><code>(gcar <em>glist</em>)</code> -- returns the first real element, if
+    any, of <em>glist</em></li>
+  <li><code>(gcdr <em>glist</em>)</code> -- returns the tail, if any, of <em>glist</em></li>
+  <li><code>(gnull <em>glist</em>)</code> -- return true if <em>glist</em> is
+    empty</li>
+  <li><code>(gpop <em>glist</em>)</code> -- return the first element of <em>glist</em>
+    and set glist to it's gcdr</li>
+  <li><code>(gappend <em>glist1 glist2</em>)</code> -- return a list generator
+    that is the concatenation of the two <em>glists</em>.</li>
+</ul>
+<p>Note that <code>gappend</code> returns a list generator. Internally, it uses
+  <code>delay</code> to postpone appending until elements are accessed.</p>
+<h2><a name="examples"></a>Examples</h2>
+<p>Using generated lists is easy, but it can take a while to get used to creating
+  them. A trivial but not very useful example is</p>
+<blockquote>
+  <pre>(defun silly-example ()
+  (let ((gl (glist:delay '(a b))))
+    (format t "~%GCAR = ~S GCDR = ~S"
+            (glist:gcar gl) (glist:gcdr gl))
+    (do ()
+        ((glist:gnull gl))
+      (format t "~%GPOP = ~S" (gpop gl)))))
+
+ > (silly-example)
+GCAR = A GCDR = (B)
+GPOP = A
+GPOP = B
+NIL</pre>
+</blockquote>
+<p>The call to <code>delay</code> in this code creates a list generator that,
+  when accessed, will return the list <code>(a b)</code>. The code then shows
+  what happens when using <code>gcar</code>, <code>gcdr</code>, <code>gnull</code>
+  and <code>gpop</code> on the generator. This is just to demonstrate these functions.
+  There's no real reason for this kind of code.</p>
+<p><a name="gintegers"></a>More useful is creating infinite lists. For example,
+  suppose we wanted to have a source of all the integers from N on. The key is
+  to define a recursive function that return a list with one number <em>plus a
+  promise for more</em>.</p>
+
+<blockquote>
+  <pre>(defun gintegers (&optional (n 0))
+  (cons n (glist:delay (gintegers (1+ n)))))</pre>
+</blockquote>
+<p>To see how to use this list, here's a function that prints the first 5 elements
+  in the generated list. It returns the list so that you can see that it's ready
+  to generate more values.</p>
+<blockquote>
+  <pre>(defun show-gintegers ()
+  (let ((gl (gintegers 3)))
+    (dotimes (n 5 gl)
+      (format t "~S " (glist:gpop gl)))))
+
+> (show-gintegers)
+3 4 5 6 7
+(8 . #&lt;gen #&lt;closure (LAMBDA NIL (GINTEGERS (1+ N)))>>)</pre>
+</blockquote>
+<p><a name="gflatten"></a>Now let's consider converting some code that returns
+  a list of answers to code that returns answers one at a time. A classic simple
+  Lisp function is <code>flatten</code> which returns a &quot;flattened&quot;
+  list, or, seen another way, a list of all the atoms nested anywhere in a list.
+  First, here's the normal <code>flatten</code>:</p>
+
+<blockquote>
+  <pre>(defun flatten (x)
+  (cond ((null x) nil)
+        ((atom x) (list x))
+        (t (append (flatten (car x))
+                   (flatten (cdr x))))))
+
+> (flatten '(((a b) c d) e f))
+(A B C D E F)</pre>
+</blockquote>
+<p>Now, here's the one-at-a-time version. It's identical except for the use of
+  <code>gappend</code>.</p>
+<blockquote>
+  <pre>(defun gflatten (x)
+  (cond ((null x) nil)
+        ((atom x) (list x))
+        (t (glist:gappend (gflatten (car x))
+                          (gflatten (cdr x))))))</pre>
+</blockquote>
+<p><code>gappend</code> returns a list generator, not a list, so we can get its
+  results in a loop, one at a time. Here, we get the first 3 results. Note that
+  the generated list still has more parts of the list to search.</p>
+<blockquote>
+  <pre>(defun show-gflatten ()
+  (let ((gl (gflatten '(((a b) c d) e f))))
+    (dotimes (n 3 gl)
+      (format t "~S " (glist:gpop gl)))))
+
+> (show-gflatten)
+A B C
+(D . #&lt;gen #&lt;closure (SUBFUNCTION 2 GAPPEND) 205ED1E2>>)</pre>
+</blockquote>
+<p>In general, any generator you design will use either <code>delay</code> or
+  <code>gappend</code> (or both) to create lists that promise values, without
+  actually creating them until they're asked for.</p>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

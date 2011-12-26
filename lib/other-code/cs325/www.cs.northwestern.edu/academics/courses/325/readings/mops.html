@@ -1,0 +1,304 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+   <TITLE>Frames and MOPs</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Frames and MOPs</DIV>
+
+<P>Suppose we were developing an AI program that reasoned about
+people. One of the first things we'd need to represent is a person,
+e.g.,</P>
+
+<P><TABLE BORDER=1 WIDTH="100%">
+   <TR>
+      <TH>
+         <P>Representation
+      </TH><TH>
+         <P>What it says
+      </TH></TR>
+   <TR>
+      <TD>
+         <PRE>john-1: male-person
+  name = "John Smith"
+  age = 22
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>A male person, named "John Smith," who is 22 years old.
+         This piece of knowledge will be referred to internally by
+         the identifying label <CODE>john-1</CODE>.
+      </TD></TR>
+   <TR>
+      <TD>
+         <PRE>event-3: event
+  actor = john-1
+  action = ingest
+  object = apple-92
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>An event where John ate an apple. This will be referred
+         to internally by the label <CODE>event-3</CODE>.
+      </TD></TR>
+</TABLE></P>
+
+<P>This representation was invented and used by many AI researchers,
+and given the generic name <EM>frame</EM> by Minsky in 1975. The
+frame format can be used to represent objects, events, abstract
+relationships, and so on.</P>
+
+<P>Schank's Memory Organization Packets (MOPs) are frames primarily
+used to represent episodic memory, that is, memories of particular
+events and their generalizations.</P>
+
+<P>For this course, we will use <A HREF="frames.html">a simple
+implementation of MOPs and frames</A> that is easy to understand,
+use, and extend.</P>
+
+<H2>The structure of a frame</H2>
+
+<P>A frame has (at least) the following parts:</P>
+
+<UL>
+   <LI>a name, e.g., <CODE>john-1</CODE>
+
+   <LI>zero or more abstractions (classes to which the concept
+   belongs), e.g., <CODE>male-person</CODE>
+
+   <LI>zero or more <EM>slots</EM> that describe particular
+   properties of the concept, e.g., <CODE>name = "John Smith"</CODE>
+   and <CODE>age = 22</CODE>.
+</UL>
+
+<P>The name is for internal cross-reference purposes. Each frame has
+one name, and there is at most one frame for each name. Names help us
+keep straight two concepts that otherwise appear identical. For
+example, we might know about two 22-year-old men named John Smith,
+<CODE>john-1</CODE> and <CODE>john-2</CODE>.</P>
+
+<H2>Abstractions of frames</H2>
+
+<P>The classes to which a concept belongs are sometimes called the
+<EM>abstractions</EM> of that concept. Conversely, the members of a
+class are called its <EM>specializations</EM>.</P>
+
+<P>An abstraction can itself be another frame. For example,</P>
+
+<P><TABLE BORDER=1 WIDTH="100%">
+   <TR>
+      <TH>
+         <P>Representation
+      </TH><TH>
+         <P>What it says
+      </TH></TR>
+   <TR>
+      <TD>
+         <PRE>male-person: person
+  gender = male
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>the concept named <CODE>male-person</CODE> has the
+         abstraction <CODE>person</CODE> and the slot <CODE>gender =
+         male</CODE>
+      </TD></TR>
+   <TR>
+      <TD>
+         <PRE>ingest-event: event
+  action = ingest
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>the class of all events involving ingesting
+      </TD></TR>
+</TABLE></P>
+
+<H2>Slots of a frame</H2>
+
+<P>The slots of a frame represent particular attributes of the
+concept being represented, e.g., its age, color, component parts, and
+so on.</P>
+
+<P>A slot has two parts, a <EM>role</EM> and a <EM>filler</EM>. The
+role names the attribute, and the filler gives its value.</P>
+
+<P>For example, in the <CODE>john-1</CODE> frame, <CODE>name</CODE>
+and <CODE>age</CODE> are roles, and <CODE>"John Smith"</CODE> and
+<CODE>22</CODE> are fillers.</P>
+
+<P>Fillers can be the names of frames, e.g., the filler
+<CODE>john-1</CODE> in <CODE>event-3</CODE>.</P>
+
+<H2>Hierarchies of abstractions</H2>
+
+<P>Consider the following set of frames we might want to define,
+ignoring for the moment the slots in each one:</P>
+
+<UL>
+   <LI><CODE>john-1</CODE>, a <CODE>male-person</CODE>
+
+   <LI><CODE>male-person</CODE>, a <CODE>person</CODE>
+
+   <LI><CODE>person</CODE>, an <CODE>animate-thing</CODE>
+
+   <LI><CODE>animate-thing</CODE>, a <CODE>thing</CODE>
+</UL>
+
+<P>In AI, this is called an <EM>abstraction hierarchy</EM>. Another
+name is <EM>conceptual taxonomy</EM>. Such hierarchies are often
+drawn graphically, with the most abstract items at the top and the
+most specific items at the bottom. For example, the chain of
+abstractions above might be part of a larger tree of abstractions,
+like this:</P>
+
+<P ALIGN=CENTER><IMG SRC="../images/john-tree.gif" WIDTH=301
+HEIGHT=161 ALIGN=bottom></P>
+
+<P>Everything in this tree, except <CODE>john-1</CODE>, is an
+abstraction. <CODE>john-1</CODE> is an <EM>instance</EM> (or
+<EM>individual</EM>).</P>
+
+<P>An instance can not have anything below it in the tree. That is,
+while we might have an abstraction for "people named John," under
+which <CODE>john-1</CODE> and <CODE>john-2</CODE> might fit, it
+doesn't make sense to talk about instances of <CODE>john-1</CODE>.
+<CODE>john-1</CODE> is a unique individual. We, most of the AI
+community, and probably most average human reasoners, ignore such
+philosophical conundrums as "how can John, age 22, be the same
+individual as John, age 10, when all the cells in his body have been
+replaced in those 12 years?"</P>
+
+<H3>Immediate abstractions</H3>
+
+<P>When we talk about the abstraction of some concept, we will
+normally mean anything that is above the concept in the abstraction
+hierarchy. Sometimes, we will talk about the "immediate abstractions"
+of a concept to refer to those concepts that are exactly one link up
+the hierarchy.</P>
+
+<H2>Inheritance</H2>
+
+<P>An important idea related to abstraction hierarchies is
+<EM>inheritance</EM>. A concept inherits attributes of its
+abstractions. If elephants are grey, and Clyde is an elephant, then
+Clyde is grey. If Mary is a person, people are vertebrates, and all
+vertebrates have bones, then Mary has bones.</P>
+
+<H3>Inheritance as default knowledge</H3>
+
+<P>There are several different ways to view inherited attributes. In
+some of the earliest systems, such as Fahlman's NETL, concepts
+inherited "virtual copies" of the slots on their abstractions.
+Furthermore, the inherited slot was treated as a default, which could
+be overridden. Thus, we might have</P>
+
+<P><TABLE BORDER=1 WIDTH="100%">
+   <TR>
+      <TH>
+         <P>Representation
+      </TH><TH>
+         <P>What it says
+      </TH></TR>
+   <TR>
+      <TD>
+         <PRE>elephant: animal
+  color = grey
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>elephants are normally grey...
+      </TD></TR>
+   <TR>
+      <TD>
+         <PRE>clyde-1: elephant
+  color = white
+&nbsp;</PRE>
+      </TD><TD VALIGN=top>
+         <P>...but Clyde is a white elephant
+      </TD></TR>
+</TABLE></P>
+
+<P>This interpretation of inherited attributes has problems, however.
+The first problem is that if fillers can be overridden, then any
+concept can be put under any other concept. For example, you could
+say that a clock is an elephant with all the attributes of elephant
+overridden appropriately. The second problem arises when you have
+multiple inheritance.</P>
+
+<H3>Multiple inheritance</H3>
+
+<P><EM>Multiple inheritance</EM> occurs when a concept has more than
+one one immediate abstraction. For example, John might be both a
+person and a circus performer, where the class of circus performers
+includes people, elephants, trained fleas, lions, tigers, bears, and
+several other subclasses of animate things. Graphically, the
+abstraction hierarchy looks something like this:</P>
+
+<P ALIGN=CENTER><IMG SRC="../images/john-dag.gif" WIDTH=391
+HEIGHT=161 ALIGN=bottom></P>
+
+<P>The concept <CODE>john-1</CODE> inherits from both <CODE>
+person</CODE> and <CODE>circus-performer</CODE>. Thus, we might
+conclude that <CODE>john-1</CODE> has bones and wears colorful
+costumes.</P>
+
+<P>But what if the abstractions have conflicting default attributes?
+The classic conundrum in this area of AI is the Nixon paradox. Nixon
+was a Republican and a Quaker. Assume that by default Republicans
+believe in war and Quakers don't. Then what does Nixon believe?</P>
+
+<H3>Inheritance as constraint knowledge</H3>
+
+<P>An alternative interpretation of inherited attributes is that they
+are <EM>constraints</EM>. That is, if an abstraction says that
+elephants are grey, then any instance of an elephant be some shade of
+grey color.</P>
+
+<P>Constraints can be refined by specializations of an abstraction,
+but they can't be overridden. Thus, if some elephants are white, we
+can't say elephants are grey. We might say instead that elephants as
+a group have some color, then create two subclasses of elephants,
+white ones and grey ones.</P>
+
+<P>This approach resolves the examples above by not allowing them to
+be represented in the first place. You can't put the clock class
+under the elephant class, because the attributes of clocks don't
+satisfy the constraints of elephants. If Nixon believes in war, then
+either he is not a Quaker or Quakers don't have that constraint.</P>
+
+<P>An abstraction such as Republican Quakers can be formed, but it
+will have no members, because nothing can satisfy all the inherited
+constraints.</P>
+
+<H3>The right interpretation of inheritance</H3>
+
+<P>The "inheritance of defaults" approach captures an important part
+of human reasoning. If we hear that Mary went to Europe, we assume,
+by default, that she flew, because trips to Europe are usually by
+plane. The "scruffies" of AI, who are concerned with making systems
+work, take the "defaults" approach. They accept the fact that their
+systems <EM>could</EM> make clocks a kind of elephant, but believe
+that reasonable learning algorithms won't do this.</P>
+
+<P>The "inheritance of constraints" approach is appealing to the
+"neats" of AI, because it avoids paradoxes and lends itself to
+logical formulation. The hard, i.e., intractable, problem turns out
+to be determining when one constraint could legally specialize
+another. This is logically equivalent to theorem proving.</P>
+
+<P>The obvious generalization algorithms, including those used in
+some classic MOP-based programs, e.g., CYRUS, build
+constraint-oriented hierarchies. This is because new abstractions are
+formed by taking features common to some set of instances.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

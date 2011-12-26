@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Chapter 2 Notes</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 2 Notes</DIV>
+
+<H3>Page 13</H3>
+
+<P>The comment that <CODE>not</CODE> and <CODE>null</CODE> do exactly
+the same thing is correct but this does not make the two functions
+interchangable.</P>
+
+<P>Use <CODE>not</CODE> on values that are conceptually true or
+false, i.e., calls to predicate such as <CODE>atom</CODE> or
+<CODE>some</CODE>, or variables that hold flag values.</P>
+
+<P>Use <CODE>null</CODE> on variables and function calls that contain
+or return lists. (Actually, in many cases you should use
+<CODE>endp</CODE>.)</P>
+
+<P>Some examples:</P>
+
+<P ALIGN=CENTER><TABLE BORDER=1 CELLPADDING=1 WIDTH="100%">
+   <TR>
+      <TH>
+         <P>Code
+      </TH><TH>
+         <P>Good Style?
+      </TH><TH>
+         <P>Why
+      </TH></TR>
+   <TR>
+      <TD>
+         <P><CODE>(null l)</CODE>
+      </TD><TD align>
+         <P ALIGN=CENTER>Yes
+      </TD><TD>
+         <P>tests a list variable for emptiness
+      </TD></TR>
+   <TR>
+      <TD>
+         <P><CODE>(not l)</CODE>
+      </TD><TD>
+         <P ALIGN=CENTER>No
+      </TD><TD>
+         <P>tests a list variable for falseness
+      </TD></TR>
+   <TR>
+      <TD>
+         <P><CODE>(not (null l))</CODE>
+      </TD><TD>
+         <P ALIGN=CENTER>Yes
+      </TD><TD>
+         <P>tests a list variable for non-emptiness
+      </TD></TR>
+   <TR>
+      <TD>
+         <P><CODE>(null (&gt; x 2))</CODE>
+      </TD><TD>
+         <P ALIGN=CENTER>No
+      </TD><TD>
+         <P>tests a predicate for emptiness
+      </TD></TR>
+</TABLE></P>
+
+<P>Final note: even though <CODE>(not (null l))</CODE> is technically
+equivalent to just <CODE>l</CODE>, use the former not the latter, if
+<CODE>l</CODE> is a variable containing a list, as its name implies.
+</P>
+
+<H3>Page 16</H3>
+
+<P>The definition of <CODE>our-member</CODE> is a good example of
+Graham's preference for <CODE>if</CODE> over
+<CODE>cond</CODE>. The <CODE>cond</CODE> version is more standard
+Common Lisp, because it avoids the nested conditional:</P>
+
+<PRE>(defun our-member (obj lst)
+  (cond ((null lst) nil)
+        ((eql obj (car lst)) lst)
+        (t (our-member obj (cdr lst)))))
+&nbsp;</PRE>
+
+<H3>Page 24</H3>
+
+<P><CODE>show-squares</CODE> is another example where
+<CODE>cond</CODE> is more appropriate. In this case, it avoids the
+need for a nested <CODE>progn</CODE>.</P>
+
+<PRE>(defun show-squares (i end)
+  (cond ((&gt; i end) 'done)
+        (t (format t "~A ~A~%" i (* i i))
+           (show-squares (+ i 1) end))))
+&nbsp;</PRE>
+
+<H3>Page 37</H3>
+
+<P><CODE>compr</CODE> and <CODE>n-elts</CODE> are both terrible
+function names. The former suggests nothing at all, except a
+confusing similarity to <CODE>compress</CODE>, and the latter
+suggests that it generates a list of N elements, not a pair of the
+form <CODE>(</CODE><EM><CODE>number
+element</CODE></EM><CODE>)</CODE>.</P>
+
+<P>Names like <CODE>compr</CODE>, <CODE>compress2</CODE>,
+<CODE>recursive-compress</CODE> are typical names that programmers
+generate when at a loss for how to name a function. They're all
+terrible.</P>
+
+<P>Here's an important rule for names:</P>
+
+<BLOCKQUOTE><P>Never name a function by its relationship to another
+function. Always name a function by the task it does.</P>
+</BLOCKQUOTE>
+
+<P>If you follow the <A HREF="../cardinal-rule.html">Cardinal Rule of
+Functions</A>, then generating a good name should not be hard. Just
+name it for the single task that it does.</P>
+
+<P>If two functions do similar tasks, they usually differ by the kind
+of arguments they take, e.g., <CODE>compress-list</CODE> versus
+<CODE>compress-string</CODE>. If they do the same thing to the same
+arguments, then why are there two functions?</P>
+
+<P>In this particular case, <CODE>compr</CODE>'s primary task is
+<EM>not</EM> "compress a list." It's "given an object and a list,
+collect a run for the given object." The run collected is returned in
+the form of a pair of the form <CODE>(</CODE><EM><CODE>length
+object</CODE></EM><CODE>)</CODE>.</P>
+
+<P>Unfortunately, <CODE>compr</CODE> has a secondary task, which is
+to recursively repeat this process with the remainder of the list.
+This is a common problem with recursive code. It mixes control
+structure with tasks and that makes it harder to name. The best we
+can do is probably something like <CODE>scan-and-compress</CODE>.
+</P>
+
+<P>Or we could do <A HREF="generators.html">generators.html</A> .
+</P>
+
+
+<H3>Page 38</H3>
+
+<P><CODE>list-of</CODE> is unnecessary. Common Lisp already has a
+function <CODE>make-list</CODE> that does the same thing.</P>
+
+<P>This is fortunate because there's a much more interesting use for
+the name <CODE>list-of</CODE> in the macro exercises.</P>
+
+<H3>Page 39</H3>
+
+<P>In this class, we'll use <CODE>require</CODE> rather than
+<CODE>load</CODE>, so you would load the list compression code with
+</P>
+
+<PRE>(require "compress")
+&nbsp;</PRE>
+
+<P>The advantages of <CODE>require</CODE> over <CODE>load</CODE> are:
+</P>
+
+<UL>
+   <LI>if <CODE>compress.lisp</CODE> has already been loaded, it
+   won't be loaded again
+   
+   <LI>if your Lisp uses some extension other than "lisp", you don't
+   have to change anything, because <CODE>require</CODE> generates
+   the appropriate extension automatically.
+</UL>
+
+<P>The disadvantages of <CODE>require</CODE> are</P>
+
+<UL>
+   <LI>it was underspecified in the Common Lisp reference manual, so
+   different implementations do different things
+   
+   <LI>because of these differences, <CODE>require</CODE> was
+   temporarily dropped from Common Lisp, so some implementations
+   don't have it
+   
+   <LI>like <CODE>loop</CODE>, it has a religious aspect; the battle
+   is between:
+   
+   <UL>
+      <LI>the centralists, who favor defining all module dependencies
+      in one place with <CODE>defsystem</CODE>, and
+      
+      <LI>the decentralists, who favor defining what a module depends
+      on in the module
+   </UL>
+</UL>
+
+<P>Unfortunately for the centralists, there is no Common Lisp
+standard for <CODE>defsystem</CODE>. Unfortunately for the
+decentralists, most implementations of <CODE>require</CODE> are
+pretty weak.</P>
+
+<H3>Page 52</H3>
+
+<P><code>bfs</code> is a terrible name.Also, the nested 
+<code>let</code>'s might be better done
+as a subfunction, e.g.,</P>
+
+<PRE>(defun breadth-first-search (end queue net)
+  (if (null queue)
+      nil
+      (expand-queue end (car queue) (cdr queue) net)))
+
+(defun expand-queue (end path queue net)
+  (let ((node (car path)))
+    (if (eql node end)
+        (reverse path)
+        (breadth-first-search end
+                              (append queue
+                                      (new-paths path node net))
+                              net))))</PRE>
+
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

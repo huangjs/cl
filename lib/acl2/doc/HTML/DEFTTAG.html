@@ -1,0 +1,182 @@
+<html>
+<head><title>DEFTTAG.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFTTAG</h2>introduce a trust tag (ttag)
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+General Forms:
+(defttag tag-name)
+(defttag tag-name :doc doc-string)
+</pre>
+
+where <code>tag-name</code> is a symbol.  The <code>:doc doc-string</code> argument is
+optional; if supplied, then it must be a valid <a href="DOCUMENTATION.html">documentation</a> string
+(see <a href="DOC-STRING.html">doc-string</a>), and the <code>defttag</code> call will generate a corresponding
+<code><a href="DEFDOC.html">defdoc</a></code> event.  For the rest of this discussion we ignore the <code>:doc</code>
+argument.<p>
+
+<strong>WARNING!</strong>  This event is intended for advanced users who, in essence,
+want to build extensions of ACL2.  Anyone who uses this event, even by way of
+including books, is placing trust in the correctness of all forms executed in
+the scope of that <code>defttag</code> event.  (Thus, it may be a good idea if the
+scope of a <code>defttag</code> event, which is the enclosing book or
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> event, is kept small.)  The documentation below explains
+this issue in detail.<p>
+
+This event introduces or removes a so-called active trust tag (or ``ttag'',
+pronounced ``tee tag'').  An active ttag is a non-<code>nil</code> symbol (tag) that
+is associated with potentially unsafe acts.  For example, <code><a href="SYS-CALL.html">sys-call</a></code> can
+be used in an unsafe way, for example to overwrite files, or worse
+(see <a href="SYS-CALL.html">sys-call</a> for a frightening example from Bob Boyer).  Therefore, calls
+of <code><a href="SYS-CALL.html">sys-call</a></code> are illegal unless a <code>defttag</code> event has been executed.
+If one introduces an active ttag and then writes definitions that calls
+<code><a href="SYS-CALL.html">sys-call</a></code>, presumably in a defensibly ``safe'' way, then responsibility
+for those calls is attributed to that ttag.  This attribution (or blame!) is
+at the level of <a href="BOOKS.html">books</a>; a book's <a href="CERTIFICATE.html">certificate</a> contains a list of
+ttags that are active in that book, or in a book that is included (possibly
+<a href="LOCAL.html">local</a>ly), or in a book included in a book that is included (either
+inclusion being potentially <a href="LOCAL.html">local</a>), and so on.  We explain all this in
+more detail below.<p>
+
+<code>(Defttag tag-name)</code> is essentially equivalent to
+
+<pre>
+(table acl2-defaults-table :ttag tag-name)
+</pre>
+
+and hence is <code><a href="LOCAL.html">local</a></code> to any <a href="BOOKS.html">books</a> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>
+in which it occurs; see <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.  We say more about the scope of
+<code>defttag</code> forms below.<p>
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless executes the above <code><a href="TABLE.html">table</a></code> event and hence changes the ACL2
+logical <a href="WORLD.html">world</a>, and is so recorded.  Although no event summary is
+printed, it is important to note that the ``TTAG NOTE'', discussed below, is
+always printed for a non-nil <code>tag-name</code>.
+<p>
+<strong>Active ttags.</strong>  Suppose <code>tag-name</code> is a non-<code>nil</code> symbol.  Then
+<code>(defttag tag-name)</code> sets <code>tag-name</code> to be the ``active ttag.''  There
+must be an active ttag in order for there to be any mention of certain
+function and macro symbols, including <code><a href="SYS-CALL.html">sys-call</a></code>; evaluate the form
+<code>(strip-cars *ttag-fns-and-macros*)</code> to see the full list of such symbols.
+On the other hand, <code>(defttag nil)</code> removes the active ttag, if any; there
+is then no active ttag.  The scope of a <code>defttag</code> form in a book being
+certified or included is limited to subsequent forms in the same book before
+the next <code>defttag</code> (if any) in that book.  Similarly, if a <code>defttag</code> form
+is evaluated in the top-level loop, then its effect is limited to subsequent
+forms in the top-level loop before the next <code>defttag</code> in the top-level loop
+(if any).  Moreoever, <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is illegal when a ttag is active; of
+course, in such a circumstance one can execute <code>(defttag nil)</code> in order to
+allow book certification.<p>
+
+<strong>Ttag notes and the ``certifier.''</strong>  When a <code>defttag</code> is executed with
+an argument other than <code>nil</code>, output is printed, starting on a fresh line
+with:  <code>TTAG NOTE</code>.  For example:
+
+<pre>
+ACL2 !&gt;(defttag foo)<p>
+
+TTAG NOTE: Adding ttag FOO from the top level loop.
+ FOO
+ACL2 !&gt;
+</pre>
+
+If the <code>defttag</code> occurs in an included book, the message looks like this.
+
+<pre>
+TTAG NOTE (for included book): Adding ttag FOO from file /u/smith/acl2/my-book.lisp.
+</pre>
+
+The ``<code>TTAG NOTE</code>'' message is always printed on a single line.  The
+intention is that one can search the standard output for all such notes in
+order to find all <i>defttag</i> events.  In a sense, <i>defttag</i> events can
+allow you to define your own system on top of ACL2 (for example,
+see <a href="PROGN_bang_.html">progn!</a>).  So in order for someone else (who we might call the
+``certifier'') to be confident that your collection of <a href="BOOKS.html">books</a> is
+meaningful, that certifier should certify all the user-supplied books from
+scratch and check either that no <code>:ttags</code> were supplied to
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code>, or else look for every <code>TTAG NOTE</code> in the standard
+output in order to locate all <code>defttag</code> <a href="EVENTS.html">events</a> with non-<code>nil</code>
+tag-name.  In this way, the certifier can in principle decide whether to be
+satisfied that those <code>defttag</code> events did not allow inappropriate forms in
+the user-supplied books.<p>
+
+<strong>Allowed ttags when certifying and including books.</strong>  A <code>defttag</code> form
+may not be evaluated unless its argument is a so-called ``allowed'' ttag.
+All ttags are allowed in the interactive top-level loop.  However, during
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> and <code><a href="INCLUDE-BOOK.html">include-book</a></code>, the set of allowed ttags is
+restricted according to the <code>:ttags</code> keyword argument.  If this argument is
+omitted then no ttag is allowed, so a <code>defttag</code> call will fail during book
+certification or inclusion in this case.  This restriction applies even to
+<code>defttag</code> forms already evaluated in the so-called certification <a href="WORLD.html">world</a>
+at the time <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is called.  But note that <code>(defttag nil)</code> is
+always legal.<p>
+
+A <code>:ttags</code> argument of <code><a href="CERTIFY-BOOK.html">certify-book</a></code> and <code><a href="INCLUDE-BOOK.html">include-book</a></code> can have
+value <code>:all</code>, indicating that every ttag is allowed, i.e., no restriction
+is being placed on the arguments, just as in the interactive top-level loop.
+Otherwise, the value is a true list of ttag specifications, each having one
+of the following forms, where <code>sym</code> is a non-<code>nil</code> symbol.
+
+<blockquote>
+(1) <code>sym</code><p>
+
+(2) <code>(sym)</code><p>
+
+(3) <code>(sym x1 x2 ... xk)</code>, where k &gt; 0 and each <code>xi</code> is a string, except
+that one <code>xi</code> may be <code>nil</code>.</blockquote>
+<p>
+
+In Case (1), <code>(defttag sym)</code> is allowed to occur in at most one book or
+else in the top-level loop (i.e., the certification world for a book under
+certification or a book being included).  Case (2) allows <code>(defttag sym)</code>
+to occur in an unlimited number of books.  For case (3) the <code>xi</code> specify
+where <code>(defttag sym)</code> may occur, as follows.  The case that <code>xi</code> is
+<code>nil</code> refers to the top-level loop, while all other <code>xi</code> are filenames,
+where the <code>".lisp"</code> extension is optional and relative pathnames are
+considered to be relative to the connected book directory (see <a href="CBD.html">cbd</a>).<p>
+
+An error message, as shown below, illustrates how ACL2 enforcess the notion
+of allowed ttags.  Suppose that you call <code><a href="CERTIFY-BOOK.html">certify-book</a></code> with argument
+<code>:ttags (foo)</code>, where you have already executed <code>(defttag foo)</code> in the
+certification world (i.e., before calling <code><a href="CERTIFY-BOOK.html">certify-book</a></code>).  Then ACL2
+immediately associates the ttag <code>foo</code> with <code>nil</code>, where again, <code>nil</code>
+refers to the top-level loop.  If ACL2 then encounters <code>(defttag foo)</code>
+inside that book, you will get the following error (using the full book name
+for the book, as shown):
+
+<pre>
+ACL2 Error in ( TABLE ACL2-DEFAULTS-TABLE ...):  The ttag FOO associated
+with file /u/smith/work/my-book.lisp is not among the set of ttags permitted
+in the current context, namely:
+  ((FOO NIL)).
+See :DOC defttag.
+</pre>
+
+In general the structure displayed by the error message, which is
+<code>((FOO NIL))</code> in this case, represents the currently allowed ttags with
+elements as discussed in (1) through (3) above.  In this case, that list's
+unique element is <code>(FOO NIL)</code>, meaning that ttag <code>FOO</code> is only allowed at
+the top level (as represented by <code>NIL</code>).<p>
+
+<strong>Associating ttags with books and with the top-level loop.</strong>  When a book
+is certified, each form <code>(defttag tag)</code> that is encountered for non-<code>nil</code>
+<code>tag</code> in that book or an included book is recorded in the generated
+<a href="CERTIFICATE.html">certificate</a>, which associates <code>tag</code> with the <a href="FULL-BOOK-NAME.html">full-book-name</a> of
+the book containing that <code>deftag</code>.  If such a <code>defttag</code> form is
+encountered outside a book, hence in the <a href="PORTCULLIS.html">portcullis</a> of the book being
+certified or one of its included books, then <code>tag</code> is associated with
+<code>nil</code> in the generated <a href="CERTIFICATE.html">certificate</a>.  Note that the notion of
+``included book'' here applies to the recursive notion of a book either
+included directly in the book being certified or else included in such a
+book, where we account even for <a href="LOCAL.html">local</a>ly included books.<p>
+
+For examples of ways to take advantage of ttags, see
+<code>books/misc/hacker.lisp</code> and see <a href="TTAGS-SEEN.html">ttags-seen</a>, see <a href="PROGN_bang_.html">progn!</a>,
+see <a href="REMOVE-UNTOUCHABLE.html">remove-untouchable</a>, see <a href="SET-RAW-MODE.html">set-raw-mode</a>, and see <a href="SYS-CALL.html">sys-call</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

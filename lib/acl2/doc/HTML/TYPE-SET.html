@@ -1,0 +1,160 @@
+<html>
+<head><title>TYPE-SET.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TYPE-SET</h2>how type information is encoded in ACL2
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+To help you experiment with type-sets we briefly note the following
+utility functions.<p>
+
+<code>(type-set-quote x)</code> will return the type-set of the object <code>x</code>.  For
+example, <code>(type-set-quote "test")</code> is <code>2048</code> and
+<code>(type-set-quote '(a b c))</code> is <code>512</code>.<p>
+
+<code>(type-set 'term nil nil nil nil (ens state) (w state) nil nil nil)</code> will
+return the type-set of <code>term</code>.  For example,
+
+<pre>
+(type-set '(integerp x) nil nil nil nil (ens state) (w state) nil nil nil)
+</pre>
+
+will return (mv 192 nil).  192, otherwise known as <code>*ts-boolean*</code>,
+is the type-set containing <code>t</code> and <code>nil</code>.  The second result may
+be ignored in these experiments.  <code>Term</code> must be in the
+<code>translated</code>, internal form shown by <code>:</code><code><a href="TRANS.html">trans</a></code>.  See <a href="TRANS.html">trans</a>
+and see <a href="TERM.html">term</a>.<p>
+
+<code>(type-set-implied-by-term 'x nil 'term (ens state)(w state) nil)</code>
+will return the type-set deduced for the variable symbol <code>x</code> assuming
+the <code>translated</code> term, <code>term</code>, true.  The second result may be ignored
+in these experiments.  For example,
+
+<pre>
+(type-set-implied-by-term 'v nil '(integerp v)
+                          (ens state) (w state) nil)
+</pre>
+
+returns <code>11</code>.<p>
+
+<code>(convert-type-set-to-term 'x ts (ens state) (w state) nil)</code> will
+return a term whose truth is equivalent to the assertion that the
+term <code>x</code> has type-set <code>ts</code>.  The second result may be ignored in these
+experiments.  For example
+
+<pre>
+(convert-type-set-to-term 'v 523 (ens state) (w state) nil)
+</pre>
+
+returns a term expressing the claim that <code>v</code> is either an integer
+or a non-<code>nil</code> true-list.  <code>523</code> is the <code>logical-or</code> of <code>11</code> (which
+denotes the integers) with <code>512</code> (which denotes the non-<code>nil</code>
+true-lists).
+<p>
+The ``actual primitive types'' of ACL2 are listed in
+<code>*actual-primitive-types*</code>, whose elements are shown below.  Each
+actual primitive type denotes a set -- sometimes finite and
+sometimes not -- of ACL2 objects and these sets are pairwise
+disjoint.  For example, <code>*ts-zero*</code> denotes the set containing 0 while
+<code>*ts-positive-integer*</code> denotes the set containing all of the positive
+integers.
+
+<pre>
+*TS-ZERO*                  ;;; {0}
+*TS-POSITIVE-INTEGER*      ;;; positive integers
+*TS-POSITIVE-RATIO*        ;;; positive non-integer rationals
+*TS-NEGATIVE-INTEGER*      ;;; negative integers
+*TS-NEGATIVE-RATIO*        ;;; negative non-integer rationals
+*TS-COMPLEX-RATIONAL*      ;;; complex rationals
+*TS-NIL*                   ;;; {nil}
+*TS-T*                     ;;; {t}
+*TS-NON-T-NON-NIL-SYMBOL*  ;;; symbols other than nil, t
+*TS-PROPER-CONS*           ;;; null-terminated non-empty lists
+*TS-IMPROPER-CONS*         ;;; conses that are not proper
+*TS-STRING*                ;;; strings
+*TS-CHARACTER*             ;;; characters
+</pre>
+<p>
+
+The actual primitive types were chosen by us to make theorem proving
+convenient.  Thus, for example, the actual primitive type <code>*ts-nil*</code>
+contains just <code>nil</code> so that we can encode the hypothesis ``<code>x</code> is <code>nil</code>''
+by saying ``<code>x</code> has type <code>*ts-nil*</code>'' and the hypothesis ``<code>x</code> is
+non-<code>nil</code>'' by saying ``<code>x</code> has type complement of <code>*ts-nil*</code>.''  We
+similarly devote a primitive type to <code>t</code>, <code>*ts-t*</code>, and to a third type,
+<code>*ts-non-t-non-nil-symbol*</code>, to contain all the other ACL2 symbols.<p>
+
+Let <code>*ts-other*</code> denote the set of all Common Lisp objects other than
+those in the actual primitive types.  Thus, <code>*ts-other*</code> includes such
+things as floating point numbers and CLTL array objects.  The actual
+primitive types together with <code>*ts-other*</code> constitute what we call
+<code>*universe*</code>.  Note that <code>*universe*</code> is a finite set containing one
+more object than there are actual primitive types; that is, here we
+are using <code>*universe*</code> to mean the finite set of primitive types, not
+the infinite set of all objects in all of those primitive types.
+<code>*Universe*</code> is a partitioning of the set of all Common Lisp objects:
+every object belongs to exactly one of the sets in <code>*universe*</code>.<p>
+
+Abstractly, a ``type-set'' is a subset of <code>*universe*</code>.  To say that a
+term, <code>x</code>, ``has type-set <code>ts</code>'' means that under all possible
+assignments to the variables in <code>x</code>, the value of <code>x</code> is a member of
+some member of <code>ts</code>.  Thus, <code>(cons x y)</code> has type-set
+<code>{*ts-proper-cons* *ts-improper-cons*}</code>.  A term can have more than
+one type-set.  For example, <code>(cons x y)</code> also has the type-set
+<code>{*ts-proper-cons* *ts-improper-cons* *ts-nil*}</code>.  Extraneous types
+can be added to a type-set without invalidating the claim that a
+term ``has'' that type-set.  Generally we are interested in the
+smallest type-set a term has, but because the entire theorem-proving
+problem for ACL2 can be encoded as a type-set question, namely,
+``Does <code>p</code> have type-set complement of <code>*ts-nil*</code>?,'' finding the
+smallest type-set for a term is an undecidable problem.  When we
+speak informally of ``the'' type-set we generally mean ``the
+type-set found by our heuristics'' or ``the type-set assumed in the
+current context.''<p>
+
+Note that if a type-set, <code>ts</code>, does not contain <code>*ts-other*</code> as an
+element then it is just a subset of the actual primitive types.  If
+it does contain <code>*ts-other*</code> it can be obtained by subtracting from
+<code>*universe*</code> the complement of <code>ts</code>.  Thus, every type-set can be
+written as a (possibly complemented) subset of the actual primitive
+types.<p>
+
+By assigning a unique bit position to each actual primitive type we
+can encode every subset, <code>s</code>, of the actual primitive types by the
+nonnegative integer whose ith bit is on precisely if <code>s</code> contains the
+ith actual primitive type.  The type-sets written as the complement
+of <code>s</code> are encoded as the <code>twos-complement</code> of the encoding of <code>s</code>.  Those
+type-sets are thus negative integers.  The bit positions assigned to
+the actual primitive types are enumerated from <code>0</code> in the same order
+as the types are listed in <code>*actual-primitive-types*</code>.  At the
+concrete level, a type-set is an integer between <code>*min-type-set*</code> and
+<code>*max-type-set*</code>, inclusive.<p>
+
+For example, <code>*ts-nil*</code> has bit position <code>6</code>.  The type-set containing
+just <code>*ts-nil*</code> is thus represented by <code>64</code>.  If a term has type-set <code>64</code>
+then the term is always equal to <code>nil</code>.  The type-set containing
+everything but <code>*ts-nil*</code> is the twos-complement of <code>64</code>, which is <code>-65</code>.
+If a term has type-set <code>-65</code>, it is never equal to <code>nil</code>.  By ``always''
+and ``never'' we mean under all, or under no, assignments to the
+variables, respectively.<p>
+
+Here is a more complicated example.  Let <code>s</code> be the type-set
+containing all of the symbols and the natural numbers.  The relevant
+actual primitive types, their bit positions and their encodings are:
+
+<pre>
+actual primitive type       bit    value<p>
+
+*ts-zero*                    0       1
+*ts-positive-integer*        1       2
+*ts-nil*                     6      64
+*ts-t*                       7     128
+*ts-non-t-non-nil-symbol*    8     256
+</pre>
+
+Thus, the type-set <code>s</code> is represented by <code>(+ 1 2 64 128 256)</code> = <code>451</code>.
+The complement of <code>s</code>, i.e., the set of all objects other than the
+natural numbers and the symbols, is <code>-452</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

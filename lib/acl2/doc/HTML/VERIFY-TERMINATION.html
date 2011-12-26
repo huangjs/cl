@@ -1,0 +1,99 @@
+<html>
+<head><title>VERIFY-TERMINATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>VERIFY-TERMINATION</h2>convert a function from :program mode to :logic mode
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(verify-termination fact)
+<p>
+General Forms:
+(verify-termination fn dcl ... dcl)
+(verify-termination (fn1 dcl ... dcl)
+                    (fn2 dcl ... dcl)
+                    ...)
+</pre>
+
+where <code>fn</code> and the <code>fni</code> are function symbols having <code>:</code><code><a href="PROGRAM.html">program</a></code> mode
+(see <a href="DEFUN-MODE.html">defun-mode</a>) and all of the <code>dcl</code>s are either <code><a href="DECLARE.html">declare</a></code>
+forms or <a href="DOCUMENTATION.html">documentation</a> strings.  The first form above is an
+abbreviation for
+
+<pre>
+(verify-termination (fn dcl ... dcl))
+</pre>
+
+so we limit our discussion to the second form.  Each of the <code>fni</code>
+must be in the same clique of mutually recursively defined
+functions, but not every function in the clique need be among the
+<code>fni</code>.<p>
+
+<code>Verify-termination</code> attempts to establish the admissibility of the
+<code>fni</code>. <code>Verify-termination</code> retrieves their definitions, creates modified
+definitions using the <code>dcl</code>s supplied above, and resubmits these
+definitions.  You could avoid using <code>verify-termination</code> by typing the new
+definitions yourself.  So in that sense, <code>verify-termination</code> adds no new
+functionality.  But if you have prototyped your system in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode and tested it, you can use <code>verify-termination</code> to resubmit your
+definitions and change their <a href="DEFUN-MODE.html">defun-mode</a>s to <code>:</code><code><a href="LOGIC.html">logic</a></code>, addings
+<a href="HINTS.html">hints</a> without having to retype or recopy the code.<p>
+
+The <code><a href="DEFUN.html">defun</a></code> <a href="COMMAND.html">command</a> executed by <code>verify-termination</code> is obtained
+by retrieving the <code><a href="DEFUN.html">defun</a></code> (or <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code>) <a href="COMMAND.html">command</a> that
+introduced the clique in question and then possibly modifying each definition
+as follows.  Consider a function, <code>fn</code>, in the clique.  If <code>fn</code> is not
+among the <code>fni</code> above, its definition is left unmodified other than to add
+<code>(declare (xargs :mode :logic))</code>.  Otherwise, <code>fn</code> is some <code>fni</code> and we
+modify its definition by inserting into it the corresponding <code>dcl</code>s listed
+with <code>fni</code> in the arguments to <code>verify-termination</code>, as well as
+<code>(declare (xargs :mode :logic))</code>.  In addition, we throw out from the old
+declarations in <code>fn</code> the <code>:mode</code> specification and anything that is
+specified in the new <code>dcl</code>s.<p>
+
+For example, suppose that <code>fact</code> was introduced with:
+
+<pre>
+(defun fact (n)
+  (declare (type integer n)
+           (xargs :mode :program))
+  (if (zp n) 1 (* n (fact (1- n))))).
+</pre>
+
+Suppose later we do <code>(verify-termination fact)</code>.  Then the
+following definition is submitted.
+
+<pre>
+(defun fact (n)
+  (declare (type integer n))
+  (if (zp n) 1 (* n (fact (1- n))))).
+</pre>
+
+Observe that this is the same definition as the original one, except
+the old specification of the <code>:mode</code> has been deleted so that the
+<a href="DEFUN-MODE.html">defun-mode</a> now defaults to <code>:</code><code><a href="LOGIC.html">logic</a></code>.  Although the termination
+proof succeeds, ACL2 also tries to verify the <a href="GUARD.html">guard</a>, because we have
+(implicitly) provided a <a href="GUARD.html">guard</a>, namely <code>(integerp n)</code>, for this
+function.  (See <a href="GUARD.html">guard</a> for a general discussion of guards, and
+see <a href="TYPE-SPEC.html">type-spec</a> for a discussion of how type declarations are
+used in guards.)  Unfortunately, the <a href="GUARD.html">guard</a> verification fails,
+because the subterm <code>(zp n)</code> requires that <code>n</code> be nonnegative, as
+can be seen by invoking <code>:args zp</code>.  (For a discussion of termination
+issues relating to recursion on the naturals, see <a href="ZERO-TEST-IDIOMS.html">zero-test-idioms</a>.)
+So we might be tempted to submit the following:
+
+<pre>
+(verify-termination
+ fact 
+ (declare (xargs :guard (and (integerp n) (&lt;= 0 n))))).
+</pre>
+
+However, this is considered a changing of the guard (from <code>(integerp n)</code>),
+which is illegal.  If we instead change the guard in the earlier <code>defun</code>
+after undoing that earlier definition with <code>:</code><code><a href="UBT.html">ubt</a></code><code> fact</code>, then
+<code>(verify-termination fact)</code> will succeed.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<html>
+<head>
+   <title>2004 AI Qual Programming Solution</title>
+</head>
+<body bgcolor="#ffffff">
+
+<hr>
+
+<h1>Mapping a frame to triples</h1>
+
+<p>This is a relatively straightforward recursive function. 
+The main things I was looking for was:</p>
+
+<ul>
+<li>being able to infer from just the examples the syntax of 
+both frames and triples,</li>
+
+<li>being able to code the top-down recursion cleanly, with
+no extra parameters or global variables, and</li>
+
+<li>realizing that when a non-atomic filler was seen, a name had
+to be generated, passed to the recursive call, and also used to
+generate a triple.</li>
+</ul>
+
+<blockquote><pre>(defun make-triples (frame &amp;optional (id (gentemp "NODE")))
+  (when (consp frame)
+    (cons `(,id type ,(car frame))
+          (mapcan #'(lambda (slot)
+                      (make-slot-triples slot id))
+                  (cdr frame)))))
+
+(defun make-slot-triples (slot id)
+  (destructuring-bind (role filler) slot
+    (if (atom filler)
+      `((,id ,role ,filler))
+      (let ((filler-id (gentemp "NODE")))
+        `((,id ,role ,filler-id)
+          ,@(make-triples filler filler-id))))))
+</pre></blockquote>
+
+<h1>Mapping triples to a frame</h1>
+
+<p>The loop for this mapping requires a little
+more thought. First, you have to
+find the "type triple" for the outermost frame. Most people
+assumed this was the first triple, but that's an unnecessary
+restriction, since it's not hard to find a type triple with an ID
+not linked to by any other triple. See <tt>get-top-triple</tt>
+below.</p>
+
+<p>Once you have that triple, the frame will be a list beginning
+with the type followed by a role-filler pair for every non-type triple
+that begins with the same ID. If the filler is a symbol that
+appears in some type triple, then you need to first recursively
+construct the frame for that ID.</p>
+
+<blockquote><pre>(defun make-frame (triples &amp;optional (triple (get-top-triple triples)))
+  (destructuring-bind (id nil type) triple
+    (cons type
+          (mapcan #'(lambda (triple)
+                      (destructuring-bind (triple-id role filler) triple
+                        (when (and (eql id triple-id)
+                                   (not (type-triple-p triple)))
+                          (let ((type-triple (get-type-triple filler triples)))
+                            `((,role
+                               ,(if (null type-triple)
+                                  filler
+                                  (make-frame triples type-triple))))))))
+                  triples))))
+
+(defun get-top-triple (triples)
+  (find-if #'(lambda (triple)
+               (and (type-triple-p triple)
+                    (top-id-p (car triple) triples)))
+           triples))
+
+(defun get-type-triple (id triples)
+  (find-if #'(lambda (triple)
+               (and (type-triple-p triple)
+                    (eql (car triple) id)))
+           triples))
+
+(defun top-id-p (id triples)
+  (not (find id triples :key #'caddr)))
+
+(defun type-triple-p (triple)
+  (eql (cadr triple) 'type))
+</pre></blockquote>
+  
+<hr>
+</body>
+</html>

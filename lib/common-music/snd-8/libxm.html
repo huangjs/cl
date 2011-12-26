@@ -1,0 +1,160 @@
+<html>
+<head>
+<title>xm</title>
+<style type="text/css">
+<!-- 
+	EM.red {color:red; font-style:normal}
+        EM.typing {color:maroon; font-style: normal}
+        EM.listener {color:darkblue; font-style: normal}
+        EM.tab {font-style: normal; font-size: small; font-family: fixed}
+	EM.def {font-weight: bold; font-style: normal}
+	H1 {text-align: center}
+	UL {list-style-type: none}
+
+	A {text-decoration:none}
+	A:hover {text-decoration:underline}
+	A.quiet {color:black; text-decoration:none}
+	A.quiet:hover {text-decoration:underline}
+-->
+</style>
+</head>
+<body bgcolor=white>
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h1>xm</h1></td></tr></table>
+<br>
+<p>libxm provides Guile/Ruby/Forth bindings for Xlib, Xt, Xp, Xpm, and Xm (Motif);
+or alternatively (under the name libxg) Gtk, gdk, gdk-pixbuf, pango, and some of glib;
+and much of OpenGL.
+You can build it with just X, and so on -- see README.libxm for details.
+There are several example files in the libxm package -- anything with
+the extension "scm" or "rb".  libxm can be used directly with Guile, Ruby or Forth,
+providing a graphical user-interface for scripts.
+</p>
+<p>
+All libxm names are exactly the same as the C name except that
+a "." is prepended (in Guile) to struct field accessors -- this prefix (and the postfix) can be set via the macros
+XM_PREFIX, XM_FIELD_PREFIX and XM_POSTFIX to whatever you like --
+"x:" or "&lt;" and "&gt;", etc.  In Ruby, I'm prepending "R"; in Forth "F".
+I chose not to try to make these names fit into the
+"Scheme culture" (i.e. adding random dashes and uncapitalizing everything)
+because it is already too hard to keep track of the thousands of names
+in these libraries.  By using the exact C name, embedded caps and all,
+there's no uncertainty about what the corresponding libxm name is;
+XmScaleSetValue becomes XmScaleSetValue.
+There are several differences between the C versions and the libxm
+versions; these are listed at the start of xm.c and xg.c.  Briefly,
+an Arg list (in Motif) is a lisp list of name/value pairs and the "len" arg associated with it is optional;
+ref args are usually returned by the procedure in a list, and not passed in unless an initial value is needed;
+array args are passed as lists, and returned as lists;
+pointers to structs are '(type val) where val is opaque except via accessors  
+(that is, all non-simple types are lists in xm where the first element is a symbol describing the type
+and the second is usually the C value stored directly as an unsigned long);
+"Va" args are passed and returned as lists, and the list length argument is optional;
+XtCallback procedure args are passed by value;
+the various "client data" args are optional;
+XtCallbackLists are passed as lists of procedure/data pairs;
+where an explicit NULL is needed as an arg, use #f (or '() for list args);
+structs are accessed by the field name and the lisp variable (which contains the struct type) --
+(.pixel color) for example, or (.foreground gcvalue);
+blank structs, where needed, can be created via (Name) -- (XColor) or (XGCValues) for example.
+</p>
+<p>
+You can use libxm directly in guile.  Here is an example script:
+</p>
+<pre>
+#!/usr/local/bin/guile -s
+!#
+
+(let ((libxm (dynamic-link "libxm.so")))
+  (dynamic-call (dynamic-func "Init_libxm" libxm) #f))
+
+(let* ((shell-app (XtVaOpenApplication 
+		    "Test" 0 '() applicationShellWidgetClass
+		    (list XmNallowShellResize #t)))
+       (app (cadr shell-app))
+       (shell (car shell-app))
+       (black (BlackPixelOfScreen 
+		(DefaultScreenOfDisplay 
+		  (XtDisplay shell)))))
+  (if (not (XtIsApplicationShell shell))
+      (display "not appshell"?))
+  (XtSetValues shell (list XmNtitle "Hi!"))
+  (let* ((main-pane 
+	  (XtVaCreateManagedWidget 
+	    "main-pane" xmFormWidgetClass shell
+	    (list XmNforeground       black
+		  XmNtopAttachment    XmATTACH_FORM
+		  XmNbottomAttachment XmATTACH_FORM
+		  XmNleftAttachment   XmATTACH_FORM
+		  XmNrightAttachment  XmATTACH_FORM
+		  XmNallowResize      #t)))
+	 (button (XtCreateManagedWidget 
+		   "push me" xmPushButtonWidgetClass main-pane '() 0)))
+    (XtAddCallback button XmNactivateCallback 
+		    (lambda (widget context event-info)
+		      (display widget)
+		      (display (.reason event-info))
+		      (display context))
+		    123)
+    (XtRealizeWidget shell)
+    (XtAppMainLoop app)))
+</pre>
+<p>To use libxm from some existing program, you need only
+export the caller's XtAppContext and main shell widget (mainly to
+get the Display variable).  In Snd, the g_main_widgets procedure
+passes back a list:
+</p>
+<pre>
+  return(XEN_CONS(XEN_WRAP_APPCONTEXT(MAIN_APP(ss)),
+	   XEN_CONS(XEN_WRAP_WIDGET(MAIN_SHELL(ss)),
+             XEN_CONS(XEN_WRAP_WIDGET(MAIN_PANE(ss)),...))));
+</pre>
+<p>The XEN entities are from the xen package that provides
+a wrapper for extension-language-specific functions
+and macros. 
+</p>
+<pre>
+  (set! app (car (<a class=quiet href="extsnd.html#mainwidgets">main-widgets</a>)))
+</pre>
+<p>For many examples, see event.scm, snd-motif.scm, popup.scm, new-effects.scm,
+popup.rb, effects.rb, snd-xm.rb,
+and snd-test.scm in the Snd tarball. There is
+also some further discussion of this stuff in Snd's grfsnd.html (Ruby examples,
+etc).  Here's a version of "hello world":
+</p>
+<pre>
+#!/usr/local/bin/guile -s
+!#
+
+(use-modules (ice-9 optargs))
+
+(let ((libxg (dynamic-link "libxg.so")))
+  (dynamic-call (dynamic-func "init_xg" libxg) #f))
+
+;;; translation of /usr/share/doc/gtk2-devel-2.0.6/examples/helloworld/helloworld.c
+
+(gtk_init 0 #f)
+(let ((window (gtk_window_new GTK_WINDOW_TOPLEVEL)))
+  (g_signal_connect window "delete_event" 
+		    (lambda (w e data)
+		      (gtk_main_quit)
+		      #t))
+  (g_signal_connect window "destroy" 
+		    (lambda (w data)
+		      (gtk_main_quit)))
+
+  (gtk_container_set_border_width (GTK_CONTAINER window) 10)
+
+  (let ((button (gtk_button_new_with_label "Click Me!")))
+    (g_signal_connect button "clicked" 
+		      (lambda (w data)
+			(display "Hello World")))
+
+    (gtk_container_add (GTK_CONTAINER window) button)
+    (gtk_widget_show button)
+    (gtk_widget_show window)
+    (gtk_main)
+    ))
+</pre>
+</body>
+</html>

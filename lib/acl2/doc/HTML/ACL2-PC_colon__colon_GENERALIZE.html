@@ -1,0 +1,48 @@
+<html>
+<head><title>ACL2-PC_colon__colon_GENERALIZE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::GENERALIZE</h3>(primitive)
+<code>   </code>perform a generalization
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(generalize 
+ ((and (true-listp x) (true-listp y)) 0)
+ ((append x y) w))
+<p>
+General Form:
+(generalize &amp;rest substitution)
+</pre>
+
+Generalize using the indicated substitution, which should be a
+non-empty list.  Each element of that list should be a two-element
+list of the form <code>(term variable)</code>, where <code>term</code> may use abbreviations.
+The effect of the instruction is to replace each such term in the
+current goal by the corresponding variable.  This replacement is
+carried out by a parallel substitution, outside-in in each
+hypothesis and in the conclusion.  More generally, actually, the
+``variable'' (second) component of each pair may be <code>nil</code> or a number,
+which causes the system to generate a new name of the form <code>_</code> or <code>_n</code>,
+with <code>n</code> a natural number; more on this below.  However, when a
+variable is supplied, it must not occur in any goal of the current
+proof-checker state.<p>
+
+When the ``variable'' above is <code>nil</code>, the system will treat it as the
+variable <code>|_|</code> if that variable does not occur in any goal of the
+current proof-checker state.  Otherwise it treats it as <code>|_0|</code>, or
+<code>|_1|</code>, or <code>|_2|</code>, and so on, until one of these is not among the
+variables of the current proof-checker state.  If the ``variable''
+is a non-negative integer <code>n</code>, then the system treats it as <code>|_n|</code>
+unless that variable already occurs among the current goals, in
+which case it increments n just as above until it obtains a new
+variable.<p>
+
+<strong>Note:</strong>  The same variable may not occur as the variable component of
+two different arguments (though <code>nil</code> may occur arbitrarily many
+times, as may a positive integer).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

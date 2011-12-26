@@ -1,0 +1,50 @@
+<html>
+<head><title>NOTE-2-8-RULES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-8-RULES</h3>ACL2 Version  2.8 Notes on Changes in Rules, Definitions, and Constants
+<pre>Major Section:  <a href="NOTE-2-8.html">NOTE-2-8</a>
+</pre><p>
+
+The <a href="THEORY.html">theory</a> <code><a href="MINIMAL-THEORY.html">minimal-theory</a></code> has been changed by adding the
+<a href="DEFINITION.html">definition</a> <a href="RUNE.html">rune</a> for <code><a href="MV-NTH.html">mv-nth</a></code> to the theory.  A corresponding
+change has been made to the theory warning mechanism, which was failing to
+warn if the definition of <code>mv-nth</code> is disabled, even though calls of
+<code>mv-nth</code> can be expanded by special-purpose code in the rewriter.  Thanks
+to Serita Van Groningen for pointing out this problem with the theory warning
+mechanism. <p>
+
+The <code><a href="DEFEVALUATOR.html">defevaluator</a></code> event has been modified so that in the body of the
+evaluator function, to add a new case <code>(ATOM X)</code> (returning <code>nil</code>) has
+been inserted immediately after the case <code>(EQ (CAR X) 'QUOTE)</code>.  This is a
+no-op semantically but may speed up proofs.  Thanks to Warren Hunt for
+suggesting this change.<p>
+
+A new form of <code>:</code><code><a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a></code> rule is now allowed:
+
+<pre>
+(if (fn x) concl1 concl2)
+</pre>
+
+This is equivalent to an existing form:
+
+<pre>
+(and (implies (fn x) concl1)
+     (implies (not (fn x)) concl2))
+</pre>
+
+Thanks to Josh Purinton for bringing this to our attention.<p>
+
+Rewrite rules <code>realpart-+</code> and <code>imagpart-+</code> have been added in order
+to simplify the <code><a href="REALPART.html">realpart</a></code> and <code><a href="IMAGPART.html">imagpart</a></code> (respectively) of a sum.
+They follow from a theorem <code>add-def-complex</code> that equates a sum with
+the complex number formed by adding real and imaginary parts.  All three
+of these theorems may be found in source file <code>axioms.lisp</code>.  Thanks to
+Eric Smith for raising a question leading to these additions, as well as
+to Joe Hendrix and Vernon Austel for helpful suggestions.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

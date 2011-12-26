@@ -1,0 +1,55 @@
+<html>
+<head><title>DEFCONG.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFCONG</h2>prove that one <a href="EQUIVALENCE.html">equivalence</a> relation preserves another in a given
+<code>   </code> argument position of a given function
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(defcong set-equal iff (memb x y) 2)<p>
+
+is an abbreviation for
+(defthm set-equal-implies-iff-memb-2
+  (implies (set-equal y y-equiv)
+           (iff (memb x y) (memb x y-equiv)))
+  :rule-classes (:congruence))
+</pre>
+
+See <a href="CONGRUENCE.html">congruence</a> and also see <a href="EQUIVALENCE.html">equivalence</a>.
+<p>
+
+<pre>
+General Form:
+(defcong equiv1 equiv2 term k
+  :rule-classes rule-classes
+  :instructions instructions
+  :hints hints
+  :otf-flg otf-flg
+  :event-name event-name
+  :doc doc)
+</pre>
+
+where <code>equiv1</code> and <code>equiv2</code> are known <a href="EQUIVALENCE.html">equivalence</a> relations, <code>term</code> is a
+call of a function <code>fn</code> on the correct number of distinct variable
+arguments <code>(fn x1 ... xn)</code>, <code>k</code> is a positive integer less than or equal
+to the arity of <code>fn</code>, and other arguments are as specified in the
+documentation for <code><a href="DEFTHM.html">defthm</a></code>.  The <code>defcong</code> macro expands into a call
+of <code><a href="DEFTHM.html">defthm</a></code>.  The name of the <code><a href="DEFTHM.html">defthm</a></code> event is
+<code>equiv1-implies-equiv2-fn-k</code> unless an <code>:event-name</code> keyword argument is
+supplied for the name.  The term of the theorem is
+
+<pre>
+(implies (equiv1 xk yk)
+         (equiv2 (fn x1... xk ...xn)
+                 (fn x1... yk ...xn))).
+</pre>
+
+The rule-class <code>:</code><code><a href="CONGRUENCE.html">congruence</a></code> is added to the <code><a href="RULE-CLASSES.html">rule-classes</a></code> specified,
+if it is not already there.  All other arguments to the generated
+<code><a href="DEFTHM.html">defthm</a></code> form are as specified by the keyword arguments above.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

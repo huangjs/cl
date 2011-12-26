@@ -1,0 +1,43 @@
+<html>
+<head><title>HARD-ERROR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>HARD-ERROR</h2>print an error message and stop execution
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+<code>(Hard-error ctx str alist)</code> causes evaluation to halt with a short
+message using the ``context'' <code>ctx</code>.  An error message is first printed
+using the string <code>str</code> and alist <code>alist</code> that are of the same kind
+as expected by <code><a href="FMT.html">fmt</a></code>.  See <a href="FMT.html">fmt</a>.  Also see <a href="ER.html">er</a> for a macro that provides a
+unified way of signaling errors.
+<p>
+<code>Hard-error</code> has a guard of <code>t</code>.  Also see <a href="ILLEGAL.html">illegal</a> for a
+similar capability which however has a guard of <code>nil</code> that supports
+static checking using <code><a href="GUARD.html">guard</a></code> verification, rather than using dynamic
+(run-time) checking.   This distinction is illustrated elsewhere:
+see <a href="PROG2$.html">prog2$</a> for examples.<p>
+
+Semantically, <code>hard-error</code> ignores its arguments and always returns
+<code>nil</code>.  But if a call <code>(hard-error ctx str alist)</code> is encountered
+during evaluation, then the string <code>str</code> is printed using the
+association list <code>alist</code> (as in <code><a href="FMT.html">fmt</a></code>), after which evaluation halts
+immediately.  Here is a trivial, contrived example.
+
+<pre>
+ACL2 !&gt;(cons 3 (hard-error 'my-context
+                            "Printing 4: ~n0"
+                            (list (cons #\0 4))))<p>
+
+
+HARD ACL2 ERROR in MY-CONTEXT:  Printing 4: four<p>
+
+<p>
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.<p>
+
+ACL2 !&gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

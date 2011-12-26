@@ -1,0 +1,42 @@
+<html>
+<head><title>KEYWORD-COMMANDS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>KEYWORD-COMMANDS</h2>how keyword commands are processed
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+user type-in                 form evaluated
+:pc 5                        (ACL2::PC '5)
+:pcs app rev                 (ACL2::PCS 'app 'rev)
+:length (1 2 3)              (ACL2::LENGTH '(1 2 3))
+</pre>
+
+<p>
+When a keyword, <code>:key</code>, is read as a command, ACL2 determines whether
+the symbol with the same name in the <code>"ACL2"</code> package, <code>acl2::key</code>, is
+a function or simple macro of n arguments.  If so, ACL2 reads <code>n</code> more
+objects, <code>obj1</code>, ..., <code>objn</code>, and then acts as though it had read the
+following form (for a given <code>key</code>):
+
+<pre>
+(ACL2::key 'obj1 ... 'objn)
+</pre>
+
+Thus, by using the keyword command hack you avoid typing the
+parentheses, the <code>"ACL2"</code> package name, and the quotation marks.<p>
+
+Note the generality of this hack.  Almost any function or macro in
+the <code>"ACL2"</code> package can be so invoked, not just ``commands.''
+Indeed, there is no such thing as a distinguished class of commands.
+The one caveat is that the keyword hack can be used to invoke a
+macro only if that macro has a simple argument list -- one
+containing no lambda keywords (such as <code>&amp;rest</code>), since they complicate
+or render impossible the task of deciding how many objects to read.
+Users may take advantage of the keyword command hack by defining
+functions and macros in the <code>"ACL2"</code> package.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

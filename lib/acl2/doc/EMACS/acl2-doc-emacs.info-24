@@ -1,0 +1,1064 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: NU-REWRITER,  Next: OBDD,  Prev: NORMALIZE,  Up: MISCELLANEOUS
+
+NU-REWRITER    rewriting NTH/UPDATE-NTH expressions
+
+The rewriter contains special provisions for rewriting expressions
+composed of nth, update-nth, update-nth-array, together with let
+expressions and other applications of non-recursive functions or lambda
+expressions.  For details see the paper "Rewriting for Symbolic
+Execution of State Machine Models" by J Strother Moore.  Also see *note
+SET-NU-REWRITER-MODE::.
+
+The "nu-rewriter" is a recent addition to the main rewrite engine in
+ACL2.  Consider the expression
+
+      (let ((s (update-nth 1 (new-a x s) s)))
+        (let ((s (update-nth 2 (new-b x s) s)))
+          (let ((s (update-nth 3 (new-c x s) s)))
+            s)))
+
+If the lets in this expression are expanded, a very large expression
+results because of the duplicate occurrences of s:
+
+     (update-nth 3
+                 (new-c x
+                        (update-nth 2
+                                    (new-b x
+                                           (update-nth 1
+                                                       (new-a x s)
+                                                       s))
+                                    (update-nth 1
+                                                (new-a x s)
+                                                s)))
+                 (update-nth 2
+                             (new-b x
+                                    (update-nth 1
+                                                (new-a x s)
+                                                s))
+                             (update-nth 1
+                                         (new-a x s)
+                                         s))).
+
+This expansion of the let expression can be very expensive in space and
+time.  In particular, the (new-a x s) expression might be rewritten
+many times.
+
+Now imagine asking what 2nd component of the structure is.  That is,
+consider
+
+      (nth 2
+           (let ((s (update-nth 1 (new-a x s) s)))
+             (let ((s (update-nth 2 (new-b x s) s)))
+               (let ((s (update-nth 3 (new-c x s) s)))
+                 s))))
+
+The normal ACL2 rewrite engine would answer this question by first
+rewriting the arguments to the nth expression; in particular, it would
+expand the nested let expression to the large nested update-nth
+expression and then, using rules such as
+
+     (defthm nth-update-nth
+       (equal (nth m (update-nth n val l))
+              (if (equal (nfix m) (nfix n))
+                  val (nth m l))))
+
+would reduce the expression to (new-b x (update-nth 1 (new-a x s) s)).
+
+The purpose of the nu-rewriter is to allow simplifications like this
+without first expanding the lets.  The "nu" in the name is an acronym
+for "nth/update-nth".  The nu-rewriter knows how to move an nth into a
+let without expanding the let and how to simplify it if it nestles up
+against an update-nth.
+
+There are four characteristics of this problem: the presence of nth,
+the presence of update-nth, the use of let to provide "sequential"
+updates, and the use of constant indices.  Nth and update-nth need not
+occur explicitly; they may be used inside of definitions of "wrapper"
+functions.
+
+Because the nu-rewriter changes the order in which things are rewritten,
+its routine use can make ACL2 unable to reproduce old proofs.  It is
+therefore switched off by default.  If your application exhibits the
+characteristics above, you might wish to switch the nu-rewriter on
+using set-nu-rewriter-mode.
+
+More will eventually be written about the nu-rewriter.  However, it is
+described in detail in the paper cited at the beginning of this
+documentation topic.
+
+
+File: acl2-doc-emacs.info,  Node: OBDD,  Next: ORDINALS,  Prev: NU-REWRITER,  Up: MISCELLANEOUS
+
+OBDD    ordered binary decision diagrams with rewriting
+
+See *Note BDD:: for information on this topic.
+
+
+File: acl2-doc-emacs.info,  Node: ORDINALS,  Next: OTF-FLG,  Prev: OBDD,  Up: MISCELLANEOUS
+
+ORDINALS    ordinals in ACL2
+
+Ordinals are used in ACL2 for proving termination in the admission of
+recursive function definitions.  For a proof that the ACL2 ordinals are
+well-founded, see *note PROOF-OF-WELL-FOUNDEDNESS::.
+
+The representation of ordinals changed in ACL2 Version_2.8, and is due
+to Pete Manolios and Daron Vroon.  They have also defined algorithms
+for ordinal arithmetic, created a library of theorems to reason about
+ordinal arithmetic, and written the rest of this documentation in order
+to explain this change.  We thank them for their efforts.  Although
+they have provided the implementation and even modified the distributed
+books and workshop books as needed, we have looked over their work and
+are maintaining it (and this documentation); if there are any bugs,
+they should be considered ours (Matt Kaufmann and J Moore).
+
+A book is included for compatibility with the representation before
+Version_2.8.  For books that contain events relying on the previous
+ordinal implementation, insert the following lines before the first
+such event:
+
+     (include-book "ordinals/e0-ordinal" :dir :system)
+     (set-well-founded-relation e0-ord-<)
+
+The new ordinal representation is based on a slightly different version
+of Cantor Normal Form than that used by the old ordinals.  An advantage
+of the new representation is that it is exponentially more succinct
+than the old representation.
+
+While pre-Version_2.8 ACL2 versions provided built-in functions for
+checking if an object is an ordinal and for comparing two ordinals,
+they did not provide support for reasoning about and constructing
+ordinals.  The books in the directory books/ordinals provide such
+support.  First, they provide efficient algorithms for ordinal
+arithmetic (including addition, subtraction, multiplication, and
+exponentiation).  The algorithms and their complexity are described in
+the following paper.
+
+     Manolios, Panagiotis & Vroon, Daron.
+     Algorithms for ordinal arithmetic.
+     Baader, Franz (ed),
+     19th International Conference on Automated Deduction--CADE-19.
+     Pages 243-257 of LNAI, vol. 2741.  Springer-Verlag.
+
+Second, the algorithms are mechanically verified and libraries of
+theorems which can be used to automate reasoning involving the ordinals
+are provided.  For details, see the following paper.
+
+     Manolios, Panagiotis & Vroon, Daron.
+     Ordinal arithmetic in ACL2.
+     Kaufmann, Matt, & Moore, J Strother (eds).
+     Fourth International Workshop on the ACL2 Theorem
+     Prover and Its Applications (ACL2-2003),
+     July, 2003.
+     See URL http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/.
+
+We now describe aspects of the above mentioned books in more detail.
+
+The new ordering function is o< and the new ordinal recognizer is o-p.
+See also natp, posp, o<=, o>, o>=, o-first-expt, o-first-coeff, o-rst,
+make-ord, o-finp, and o-infp.
+
+The old ordinals were based on the following formulation of Cantor
+Normal Form:
+
+For any ordinal, a < epsilon-0, there exist natural numbers p and n,
+and ordinals a1 >= a2 >= ... >= an > 0 such that a > a1 and a = w^(a1)
++ w^(a2) + ... + w^(an) + p.
+
+Thus, a predicate recognizing ACL2's old ordinals is given by the
+following definition.
+
+     (defun e0-ordinalp (x)
+       (if (consp x)
+           (and (e0-ordinalp (car x))
+                (not (equal (car x) 0))
+                (e0-ordinalp (cdr x))
+                (or (atom (cdr x))
+                    (not (e0-ord-< (car x) (cadr x)))))
+         (and (integerp x)
+              (>= x 0))))
+
+The new representation is based on a corollary to the above theorem,
+which we get by the left distributive property of ordinal
+multiplication over ordinal addition. Thus, w^a + w^a = (w^a)2, w^a +
+w^a + w^a = (w^a)3 and so forth. The corollary is as follows:
+
+For any ordinal, a < epsilon-0, there exist natural numbers p and n,
+positive integers x1, x2, ..., xn and ordinals a1 > a2 > ... > an > 0
+such that a > a1 and a = w^(a1)x1 + w^(a2)x2 + ... + w^(an)xn + p.
+
+Instead of representing an ordinal as a list of non-increasing
+ordinals, we represent it as a list of exponent-coefficient pairs, such
+that the exponents are strictly decreasing (see *note O-P::).  Note
+that this representation is exponentially more efficient than the old
+representation.
+
+The ordinal arithmetic functions: o+, o-, o*, and o^ are defined in the
+ordinals library (in the subdirectory books/ordinals). To use them,
+include the book ordinals-without-arithmetic or ordinals, depending on
+whether you want the arithmetic books included or not (ordinals
+includes books/arithmetic/top-with-meta). To use the old ordinals,
+include the book e0-ordinal and run the command
+(set-well-founded-relation e0-ord-<)
+
+The file books/arithmetic/natp-posp is a book for reasoning about posp
+and natp.  We recommend using this book if you have to reason about
+posp and natp.  It is included in books/arithmetic/top, which is
+included in books/arithmetic/top-with-meta, which is included in
+books/ordinals/ordinals.
+
+If you have a good reason to use the old definitions of the ordinals
+(e.g., because of legacy code and theorems), then we provide a
+convenient way to do this.  In the book ordinal-isomorphism we prove
+that the new ordinals are order-isomorphic to the old ordinals and thus
+theorems proved in one context can be directly transferred to the
+other.  For an example of how to do this, look at the book defmul in
+the directory books/workshops/2000/ruiz/multiset.
+
+The ordinals books have been used to prove non-trivial theorems.  For a
+good example, see the books in the directory
+books/workshops/2003/sustik/support, where Matyas Sustik proves
+Dickson's lemma.
+
+Finally, many termination proofs can be carried out with weaker
+orderings than the ordinals up to epsilon-0.  For example, many
+inductive theorem provers only know that the lexicographic ordering on
+natural numbers is well-founded.  The book lexicographic-ordering
+contains a definition of such an ordering l< whose arguments are either
+a list of natural numbers, or a natural number.  In the book we prove
+that l< is well-founded (that is, we prove a :well-founded-relation
+defthm and provide a macro llist to simplify the generation of measure
+functions.  We also show how to use l< to prove that the famous
+Ackermann function terminates.  Finally, since l< does something
+reasonable with natural numbers, it gets along with acl2-count, the
+default measure chosen by ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: OTF-FLG,  Next: PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS,  Prev: ORDINALS,  Up: MISCELLANEOUS
+
+OTF-FLG    pushing all the initial subgoals
+
+The value of this flag is normally nil.  If you want to prevent the
+theorem prover from abandoning its initial work upon pushing the second
+subgoal, set :otf-flg to t.
+
+Suppose you submit a conjecture to the theorem prover and the system
+splits it up into many subgoals.  Any subgoal not proved by other
+methods is eventually set aside for an attempted induction proof.  But
+upon setting aside the second such subgoal, the system chickens out and
+decides that rather than prove n>1 subgoals inductively, it will
+abandon its initial work and attempt induction on the originally
+submitted conjecture.  The :otf-flg (Onward Thru the Fog) allows you to
+override this chickening out. When :otf-flg is t, the system will push
+all the initial subgoals and proceed to try to prove each,
+independently, by induction.
+
+Even when you don't expect induction to be used or to succeed, setting
+the :otf-flg is a good way to force the system to generate and display
+all the initial subgoals.
+
+For defthm and thm, :otf-flg is a keyword argument that is a peer to
+:rule-classes and :hints.  It may be supplied as in the following
+examples; also see *note DEFTHM::.
+
+     (thm (my-predicate x y) :rule-classes nil :otf-flg t)
+     
+     (defthm append-assoc
+       (equal (append (append x y) z)
+              (append x (append y z)))
+       :hints (("Goal" :induct t))
+       :otf-flg t)
+
+The :otf-flg may be supplied to defun via the xargs declare option.
+When you supply an :otf-flg hint to defun, the flag is effective for
+the termination proofs and the guard proofs, if any.
+
+
+File: acl2-doc-emacs.info,  Node: PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS,  Next: PRINT-DOC-START-COLUMN,  Prev: OTF-FLG,  Up: MISCELLANEOUS
+
+PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS    re-defining undone defpkgs
+
+Suppose (defpkg "pkg" imports) is the most recently executed successful
+definition of "pkg" in this ACL2 session and that it has since been
+undone, as by :ubt.  Any future attempt in this session to define "pkg"
+as a package must specify an identical imports list.
+
+The restriction stems from the need to implement the reinstallation of
+saved logical worlds as in error recovery and the :oops command.
+Suppose that the new defpkg attempts to import some symbol, a::sym, not
+imported by the previous definition of "pkg".  Because it was not
+imported in the original package, the symbol pkg::sym, different from
+a::sym, may well have been created and may well be used in some saved
+worlds.  Those saved worlds are Common Lisp objects being held for you
+"behind the scenes."  In order to import a::sym into "pkg" now we would
+have to unintern pkg::sym, rendering those saved worlds ill-formed.  It
+is because of saved worlds that we do not actually clear out a package
+when it is undone.
+
+At one point we thought it was sound to allow the new defpkg to import
+a subset of the old.  But that is incorrect.  Suppose the old
+definition of "pkg" imported a::sym but the new one does not.  Suppose
+we allowed that and implemented it simply by setting the imports of
+"pkg" to the new subset.  Then consider the conjecture (eq a::sym
+pkg::sym).  This ought not be a theorem because we did not import
+a::sym into "pkg".  But in fact in AKCL it is a theorem because
+pkg::sym is read as a::sym because of the old imports.
+
+
+File: acl2-doc-emacs.info,  Node: PRINT-DOC-START-COLUMN,  Next: PROMPT,  Prev: PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS,  Up: MISCELLANEOUS
+
+PRINT-DOC-START-COLUMN    printing the one-liner
+
+     Examples:
+     (assign print-doc-start-column nil)
+     (assign print-doc-start-column 17)
+
+This state global variable controls the column in which the "one-liner"
+of a formatted documentation string is printed.  Generally, when :doc
+is used to print a documentation string, the name of the documented
+concept is printed and then :doc tabs over to print-doc-start-column
+and prints the one-liner.  If the name extends past the desired column,
+:doc outputs a carriage return and then tabs over to the column.  If
+print-doc-start-column is nil, :doc just starts the one-liner two
+spaces from the end of the name, on the same line.  The initial value
+of print-doc-start-column is 15.
+
+
+File: acl2-doc-emacs.info,  Node: PROMPT,  Next: PROOF-OF-WELL-FOUNDEDNESS,  Prev: PRINT-DOC-START-COLUMN,  Up: MISCELLANEOUS
+
+PROMPT    the prompt printed by ld
+
+The prompt printed by ACL2 conveys information about various "modes."
+See *Note DEFAULT-PRINT-PROMPT:: and see *note LD-PROMPT:: for details.
+
+The prompt during raw Lisp breaks is, with most Common Lisp
+implementations, adjusted by ACL2 to include the string "[RAW LISP"],
+in order to reminder users not to submit ACL2 forms there; see *note
+BREAKS::.  For Lisps that seem to use the same code for printing
+prompts at the top-level as in breaks, the top-level prompt is
+similarly adjusted.  For Lisps with the above prompt adjustment, The
+following forms may be executed in raw Lisp (i.e., after typing :q).
+
+     (install-new-raw-prompt) ; install prompt with [RAW LISP] as described above
+     (install-old-raw-prompt) ; revert to original prompt from host Common Lisp
+
+
+File: acl2-doc-emacs.info,  Node: PROOF-OF-WELL-FOUNDEDNESS,  Next: PSEUDO-TERMP,  Prev: PROMPT,  Up: MISCELLANEOUS
+
+PROOF-OF-WELL-FOUNDEDNESS    a proof that o< is well-founded on o-ps
+
+The soundness of ACL2 rests in part on the well-foundedness of o< on
+o-ps.  This can be taken as obvious if one is willing to grant that
+those concepts are simply encodings of the standard mathematical
+notions of the ordinals below epsilon-0 and its natural ordering
+relation.  But it is possible to prove that o< is well-founded on o-ps
+without having to assert any connection to the ordinals and that is
+what we do here.  The book books/ordinals/proof-of-well-foundedness
+carries out the proof outlined below in ACL2, using only that the
+natural numbers are well-founded.
+
+Before outlining the above mentioned proof, we note that in the
+analogous documentation page of ACL2 Version_2.7, there is a proof of
+the well-foundedness of e0-ord-< on e0-ordinalps, the less-than relation
+and recognizer for the old ordinals (that is, for the ordinals
+appearing in ACL2 up through that version).  Manolios and Vroon have
+given a proof in ACL2 Version_2.7 that the current ordinals (based on
+o< and o-p) are order-isomorphic to the old ordinals (based on e0-ord-<
+and e0-ordinalp).  Their proof establishes that switching from the old
+ordinals to the current ordinals preserves the soundness of ACL2.  For
+details see their paper:
+
+     Manolios, Panagiotis & Vroon, Daron.
+     Ordinal arithmetic in ACL2.
+     Kaufmann, Matt, & Moore, J Strother (eds).
+     Fourth International Workshop on the ACL2 Theorem
+     Prover and Its Applications (ACL2-2003),
+     July, 2003.
+     See URL http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/.
+
+We now give an outline of the above mentioned proof of
+well-foundedness.  We first observe three facts about o< on ordinals
+that have been proved by ACL2 using only structural induction on lists.
+These theorems can be proved by hand.
+
+     (defthm transitivity-of-o<
+       (implies (and (o< x y)
+                     (o< y z))
+                (o< x z))
+       :rule-classes nil)
+     
+     (defthm non-circularity-of-o<
+       (implies (o< x y)
+                (not (o< y x)))
+       :rule-classes nil)
+     
+     (defthm trichotomy-of-o<
+       (implies (and (o-p x)
+                     (o-p y))
+                (or (equal x y)
+                    (o< x y)
+                    (o< y x)))
+       :rule-classes nil)
+
+These three properties establish that o< orders the o-ps.  To put such
+a statement in the most standard mathematical nomenclature, we can
+define the macro:
+
+     (defmacro o<= (x y)
+       `(not (o< ,y ,x)))
+
+and then establish that o<= is a relation that is a simple, complete
+(i.e., total) order on ordinals by the following three lemmas, which
+have been proved:
+
+     (defthm antisymmetry-of-o<=
+       (implies (and (o-p x)
+                     (o-p y)
+                     (o<= x y)
+                     (o<= y x))
+                (equal x y))
+       :rule-classes nil
+       :hints (("Goal" :use non-circularity-of-o<)))
+     
+     (defthm transitivity-of-o<=
+       (implies (and (o-p x)
+                     (o-p y)
+                     (o<= x y)
+                     (o<= y z))
+                (o<= x z))
+       :rule-classes nil
+       :hints (("Goal" :use transitivity-of-o<)))
+     
+     (defthm trichotomy-of-o<=
+       (implies (and (o-p x)
+                     (o-p y))
+                (or (o<= x y)
+                    (o<= y x)))
+       :rule-classes nil
+       :hints (("Goal" :use trichotomy-of-o<)))
+
+Crucially important to the proof of the well-foundedness of o< on o-ps
+is the concept of ordinal-depth, abbreviated od:
+
+     (defun od (l)
+       (if (o-finp l)
+           0
+         (1+ (od (o-first-expt l)))))
+
+If the od of an o-p x is smaller than that of an o-p y, then x is o< y:
+
+     (defun od-1 (x y)
+       (if (o-finp x)
+           (list x y)
+         (od-1 (o-first-expt x) (o-first-expt y))))
+     
+     (defthm od-implies-ordlessp
+       (implies (and (o-p x)
+                     (< (od x) (od y)))
+                (o< x y))
+       :hints (("Goal"
+                :induct (od-1 x y))))
+
+Remark.  A consequence of this lemma is the fact that if s = s(1),
+s(2), ... is an infinite, o< descending sequence of o-ps, then
+od(s(1)), od(s(2)), ... is a "weakly" descending sequence of
+non-negative integers: od(s(i)) is greater than or equal to od(s(i+1)).
+
+_Lemma Main._  For each non-negative integer n, o< well-orders the set
+of o-ps with od less than or equal to n .
+
+      Base Case.  n = 0.  The o-ps with 0 od are the non-negative
+      integers.  On the non-negative integers, o< is the same as <.
+     
+      Induction Step.  n > 0.  We assume that o< well-orders the
+      o-ps with od less than n.
+     
+        If o< does not well-order the o-ps with od less than or equal to n,
+        consider, D, the set of infinite, o< descending sequences of o-ps of od
+        less than or equal to n.  The first element of a sequence in D has od n.
+        Therefore, the o-first-expt of the first element of a sequence in D has od
+        n-1.  Since o<, by IH, well-orders the o-ps with od less than n, the set
+        of o-first-expts of first elements of the sequences in D has a minimal
+        element, which we denote by B and which has od of n-1.
+     
+        Let k be the minimum integer such that for some infinite, o< descending
+        sequence s of o-ps with od less than or equal to n, the first element of s
+        has an o-first-expt of B and an o-first-coeff of k.  Notice that k is
+        positive.
+     
+        Having fixed B and k, let s = s(1), s(2), ... be an infinite, o<
+        descending sequence of o-ps with od less than or equal to n such that s(1)
+        has a o-first-expt of B and an o-first-coeff of k.
+     
+        We show that each s(i) has a o-first-expt of B and an o-first-coeff of
+        k. For suppose that s(j) is the first member of s either with o-first-expt
+        B and o-first-coeff m (m neq k) or with o-first-expt B' and o-first-coeff
+        B' (B' neq B). If (o-first-expt s(j)) = B', then B' has od n-1 (otherwise,
+        by IH, s would not be infinite) and B' is o< B, contradicting the
+        minimality of B. If 0 < m < k, then the fact that the sequence beginning
+        at s(j) is infinitely descending contradicts the minimality of k. If m >
+        k, then s(j) is greater than its predecessor; but this contradicts the
+        fact that s is descending.
+     
+        Thus, by the definition of o<, for s to be a decreasing sequence of o-ps,
+        (o-rst s(1)), (o-rst s(2)), ... must be a decreasing sequence. We end by
+        showing this cannot be the case. Let t = t(1), t(2), ... be an infinite
+        sequence of o-ps such that t(i) = (o-rst s(i)). Then t is infinitely
+        descending. Furthermore, t(1) begins with an o-p B' that is o< B. Since t
+        is in D, t(1) has od n, therefore, B' has od n-1. But this contradicts the
+        minimality of B. Q.E.D.
+
+Theorem.  o< well-orders the o-ps.  Proof.  Every infinite, o<
+descending sequence of o-ps has the property that each member has od
+less than or equal to the od, n, of the first member of the sequence.
+This contradicts Lemma Main.  Q.E.D.
+
+
+File: acl2-doc-emacs.info,  Node: PSEUDO-TERMP,  Next: REDEF,  Prev: PROOF-OF-WELL-FOUNDEDNESS,  Up: MISCELLANEOUS
+
+PSEUDO-TERMP    a predicate for recognizing term-like s-expressions
+
+     Example Forms:
+     (pseudo-termp '(car (cons x 'nil)))      ; has value t
+     (pseudo-termp '(car x y z))              ; also has value t!
+     (pseudo-termp '(delta (h x)))            ; has value t
+     (pseudo-termp '(delta (h x) . 7))        ; has value nil (not a true-listp)
+     (pseudo-termp '((lambda (x) (car x)) b)) ; has value t
+     (pseudo-termp '(if x y 123))             ; has value nil (123 is not quoted)
+     (pseudo-termp '(if x y '123))            ; has value t
+
+If x is the quotation of a term, then (pseudo-termp x) is t.  However,
+if x is not the quotation of a term it is not necessarily the case that
+(pseudo-termp x) is nil.
+
+See *Note TERM:: for a discussion of the various meanings of the word
+"term" in ACL2.  In its most strict sense, a term is either a legal
+variable symbol, a quoted constant, or the application of an n-ary
+function symbol or closed lambda-expression to n terms.  By "legal
+variable symbol" we exclude constant symbols, such as t, nil, and
+*ts-rational*.  By "quoted constants" we include 't (aka (quote t)),
+'nil, '31, etc., and exclude constant names such as t, nil and
+*ts-rational*, unquoted constants such as 31 or 1/2, and ill-formed
+quote expressions such as (quote 3 4).  By "closed lambda expression"
+we exclude expressions, such as (lambda (x) (cons x y)), containing
+free variables in their bodies.  Terms typed by the user are translated
+into strict terms for internal use in ACL2.
+
+The predicate termp checks this strict sense of "term" with respect to
+a given ACL2 logical world; See *Note WORLD::.  Many ACL2 functions,
+such as the rewriter, require certain of their arguments to satisfy
+termp.  However, as of this writing, termp is in :program mode and thus
+cannot be used effectively in conjectures to be proved.  Furthermore,
+if regarded simply from the perspective of an effective guard for a
+term-processing function, termp checks many irrelevant things.  (Does
+it really matter that the variable symbols encountered never start and
+end with an asterisk?)  For these reasons, we have introduced the
+notion of a "pseudo-term" and embodied it in the predicate
+pseudo-termp, which is easier to check, does not require the logical
+world as input, has :logic mode, and is often perfectly suitable as a
+guard on term-processing functions.
+
+A pseudo-termp is either a symbol, a true list of length 2 beginning
+with the word quote, the application of an n-ary pseudo-lambda
+expression to a true list of n pseudo-terms, or the application of a
+symbol to a true list of n pseudo-termps.  By an "n-ary pseudo-lambda
+expression" we mean an expression of the form (lambda (v1 ... vn)
+pterm), where the vi are symbols (but not necessarily distinct legal
+variable symbols) and pterm is a pseudo-termp.
+
+Metafunctions may use pseudo-termp as a guard.
+
+
+File: acl2-doc-emacs.info,  Node: REDEF,  Next: REDEF!,  Prev: PSEUDO-TERMP,  Up: MISCELLANEOUS
+
+REDEF    a common way to set ld-redefinition-action
+
+     Example and General Form:
+     ACL2 !>:redef
+
+This command sets ld-redefinition-action to '(:query . :overwrite).
+
+As explained elsewhere (see *note LD-REDEFINITION-ACTION::), this
+allows redefinition of functions and other events without undoing.  A
+query will be made every time a redefinition is commanded; the user
+must explicitly acknowledge that the redefinition is intentional.  It
+is possible to set ld-redefinition-action so that the redefinition of
+non-system functions occurs quietly.  See *Note
+LD-REDEFINITION-ACTION::.
+
+
+File: acl2-doc-emacs.info,  Node: REDEF!,  Next: REDEFINED-NAMES,  Prev: REDEF,  Up: MISCELLANEOUS
+
+REDEF!    system hacker's redefinition command
+
+     Example and General Form:
+     ACL2 !>:redef!
+     ACL2 p!>
+
+This command sets ld-redefinition-action to '(:warn! . :overwrite) sets
+the default defun-mode to :program, and invokes (set-state-ok t).  It
+also introduces (defttag :redef!), so that redefinition of system
+functions will be permitted; see *note DEFTTAG::.
+
+This command is intended for those who are modifying ACL2 source code
+definitions.  Thus, note that even system functions can be redefined
+with a mere warning.  Be careful!
+
+
+File: acl2-doc-emacs.info,  Node: REDEFINED-NAMES,  Next: REDUNDANT-EVENTS,  Prev: REDEF!,  Up: MISCELLANEOUS
+
+REDEFINED-NAMES    to collect the names that have been redefined
+
+     Example and General Forms:
+     (redefined-names state)
+
+This function collects names that have been redefined in the current
+ACL2 state.  :Program mode functions that were reclassified to :logic
+functions are not collected, since such reclassification cannot imperil
+soundness because it is allowed only when the new and old definitions
+are identical.
+
+Thus, if (redefined-names state) returns nil then no unsafe definitions
+have been made, regardless of ld-redefinition-action.  See *Note
+LD-REDEFINITION-ACTION::.
+
+
+File: acl2-doc-emacs.info,  Node: REDUNDANT-EVENTS,  Next: RESTRICT,  Prev: REDEFINED-NAMES,  Up: MISCELLANEOUS
+
+REDUNDANT-EVENTS    allowing a name to be introduced ``twice''
+
+Sometimes an event will announce that it is "redundant".  When this
+happens, no change to the logical world has occurred.  This happens
+when the logical name being defined is already defined and has exactly
+the same definition, from the logical point of view.  This feature
+permits two independent books, each of which defines some name, to be
+included sequentially provided they use exactly the same definition.
+
+When are two logical-name definitions considered exactly the same?  It
+depends upon the kind of name being defined.
+
+A deflabel event is never redundant.  This means that if you have a
+deflabel in a book and that book has been included (without error),
+then references to that label denote the point in history at which the
+book introduced the label.  See the note about shifting logical names,
+below.
+
+A defun or mutual-recursion (or defuns) event is redundant if for each
+function to be introduced, there has already been introduced a function
+with the same name, the same formals, and syntactically identical
+:guard, :measure, type declarations, stobjs declarations and body
+(before macroexpansion), and an appropriate mode (see the discussion of
+"appropriate modes" below).  Exceptions: (1) If either definition is
+declared :non-executable (see *note XARGS::), then the two events must
+be identical.  (2) It is permissible for one definition to have a
+:guard of t and the other to have no explicit guard (hence, the guard
+is implicitly t).  (3) The :measure check is avoided if we are skipping
+proofs (for example, during include-book), and otherwise, the new
+definition may have a :measure of (:? v1 ... vk), where (v1 ... vk)
+enumerates the variables occurring in the measure stored for the old
+definition.
+
+A verify-guards event is redundant if the function has already had its
+guards verified.
+
+A defaxiom or defthm event is redundant if there is already an axiom or
+theorem of the given name and both the formula (after macroexpansion)
+and the rule-classes are syntactically identical.  Note that a defaxiom
+can make a subsequent defthm redundant, and a defthm can make a
+subsequent defaxiom redundant as well.
+
+A defconst is redundant if the name is already defined either with a
+syntactically identical defconst event or one that defines it to have
+the same value.
+
+A defstobj is redundant if there is already a defstobj event with the
+same name that has exactly the same field descriptors (see *note
+DEFSTOBJ::), in the same order, and with the same :renaming value if
+:renaming is supplied for either event.
+
+A defmacro is redundant if there is already a macro defined with the
+same name and syntactically identical arguments, guard, and body.
+
+A defpkg is redundant if a package of the same name with exactly the
+same imports has been defined.
+
+A deftheory is never redundant.  The "natural" notion of equivalent
+deftheory forms is that the names and values of the two theory
+expressions are the same.  But since most theory expressions are
+sensitive to the context in which they occur, it seems unlikely to us
+that two deftheorys coming from two sequentially included books will
+ever have the same values.  So we prohibit redundant theory
+definitions.  If you try to define the same theory name twice, you will
+get a "name in use" error.
+
+An in-theory event is never redundant because it doesn't define any
+name.
+
+A push-untouchable event is redundant if every name supplied is already
+a member of the corresponding list of untouchable symbols.
+
+A remove-untouchable event is redundant if no name supplied is a member
+of the corresponding list of untouchable symbols.
+
+A reset-prehistory event is redundant if it does not cause any change.
+
+A set-body event is redundant if the indicated body is already the
+current body.
+
+Table and defdoc events are never redundant because they don't define
+any name.
+
+An encapsulate event is redundant if and only if a syntactically
+identical encapsulate has already been executed under the same
+default-defun-mode.
+
+An include-book is redundant if the book has already been included.
+
+_Note About Appropriate Modes:_
+
+Suppose a function is being redefined and that the formals, guards,
+types, stobjs, and bodies are identical.  When are the modes (:program
+or :logic) "appropriate?"  Identical modes are appropriate.  But what
+if the old mode was :program and the new mode is :logic?  This is
+appropriate, provided the definition meets the requirements of the
+logical definitional principle.  That is, you may redefine "redundantly"
+a :program mode function as a :logic mode function provide the measure
+conjectures can be proved.  This is what verify-termination does.  Now
+consider the reverse style of redefinition.  Suppose the function was
+defined in :logic mode and is being identically redefined in :program
+mode.  This is inappropriate.  We do not permit the downgrading of a
+function from :logic mode to :program mode, since that might produce a
+logical world in which there were theorems about a :program mode
+function, violating one of ACL2's basic assumptions.
+
+_Note About Shifting Logical Names:_
+
+Suppose a book defines a function fn and later uses fn as a logical
+name in a theory expression.  Consider the value of that theory
+expression in two different sessions.  In session A, the book is
+included in a world in which fn is not already defined, i.e., in a
+world in which the book's definition of fn is not redundant.  In
+session B, the book is included in a world in which fn is already
+identically defined.  In session B, the book's definition of fn is
+redundant.  When fn is used as a logical name in a theory expression,
+it denotes the point in history at which fn was introduced.  Observe
+that those points are different in the two sessions.  Hence, it is
+likely that theory expressions involving fn will have different values
+in session A than in session B.
+
+This may adversely affect the user of your book.  For example, suppose
+your book creates a theory via deftheory that is advertised just to
+contain the names generated by the book.  But suppose you compute the
+theory as the very last event in the book using:
+
+     (set-difference-theories (universal-theory :here)
+                              (universal-theory fn))
+
+where fn is the very first event in the book and happens to be a defun
+event.  This expression returns the advertised set if fn is not already
+defined when the book is included.  But if fn were previously
+(identically) defined, the theory is larger than advertised.
+
+The moral of this is simple: when building books that other people will
+use, it is best to describe your theories in terms of logical names
+that will not shift around when the books are included.  The best such
+names are those created by deflabel.
+
+_Note About Unfortunate Redundancies:_
+
+Notice that our syntactic criterion for redundancy of defun events does
+not allow redefinition to take effect unless there is a syntactic change
+in the definition.  The following example shows how an attempt to
+redefine a function can fail to make any change.
+
+     (set-ld-redefinition-action '(:warn . :overwrite) state)
+     (defmacro mac (x) x)
+     (defun foo (x) (mac x))
+     (defmacro mac (x) (list 'car x))
+     (defun foo (x) (mac x)) ; redundant, unfortunately; foo does not change
+     (thm (equal (foo 3) 3)) ; succeeds, showing that redef of foo didn't happen
+
+The call of macro mac was expanded away when the first definition of
+foo was processed, so the new definition of mac is not seen in foo
+unless foo is redefined; yet our attempt at redefinition failed!  An
+easy workaround is first to supply a different definition of foo, just
+before the last definition of foo above.  Then that final definition
+will no longer be redundant.
+
+The phenomenon illustrated above can occur even without macros.  Here
+is a more complex example, based on one supplied by Grant Passmore.
+
+     (defun n3 () 0)
+     (defun n4 () 1)
+     (defun n5 () (> (n3) (n4))) ; body is normalized to nil
+     (thm (equal (n5) nil)) ; succeeds, trivially
+     (set-ld-redefinition-action '(:warn . :overwrite) state)
+     (defun n3 () 2)
+
+If now we execute (thm (equal (n5) nil)), it still succeeds even though
+we expect (n5) = (> (n3) (n4)) = (> 2 1) = t.  That is because the body
+of n5 was normalized to nil.  (Such normalization can be avoided; see
+the brief discussion of :normalize in the documentation for defun.)
+So, given this unfortunate situation, one might expect at this point
+simply to redefine n5 using the same definition as before, in order to
+pick up the new definition of n3.  Such "redefinition" would, however,
+be redundant, for the same reason as in the previous example:  no
+syntactic change was made to the definition.  The same workaround
+applies as before: redefine n5 to be something different, and then
+redefine n5 again to be as desired.
+
+A related phenomenon can occur for encapsulate.  As explained above, an
+encapsulate event is redundant if it is identical to one already in the
+database.  Consider then the following contrived example.
+
+     (encapsulate () (defun foo (x) x))
+     (set-ld-redefinition-action '(:warn . :overwrite) state)
+     (defun foo (x) (cons x x))
+     (encapsulate () (defun foo (x) x)) ; redundant!
+
+The last encapsulate event is redundant because it meets the criterion
+for redundancy: it is identical to the earlier encapsulate event.  A
+workaround can be to add something trivial to the encapsulate, for
+example:
+
+     (encapsulate ()
+       (deflabel try2) ; ``Increment'' to try3 next time, and so on.
+       (defun foo (x) x))
+
+The examples above are suggestive but by no means exhaustive.  Consider
+the following example.
+
+     (defstub f1 () => *)
+     (set-ld-redefinition-action '(:warn . :overwrite) state)
+     (defun f1 () 3)
+     (defstub f1 () => *) ; redundant -- has no effect
+
+The reason that the final defstub is redundant is that defstub is a
+macro that expands to a call of encapsulate; so this is very similar to
+the immediately preceding example.
+
+
+File: acl2-doc-emacs.info,  Node: RESTRICT,  Next: REWRITE-STACK-LIMIT,  Prev: REDUNDANT-EVENTS,  Up: MISCELLANEOUS
+
+RESTRICT    hints keyword :RESTRICT
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: REWRITE-STACK-LIMIT,  Next: SAVING-AND-RESTORING,  Prev: RESTRICT,  Up: MISCELLANEOUS
+
+REWRITE-STACK-LIMIT    limiting the stack depth of the ACL2 rewriter
+
+ACL2 users can create rules of class :rewrite (see *note RULE-CLASSES::)
+that have the potential of causing an infinite loop in the ACL2
+rewriter.  This could lead to Lisp stack overflows and even
+segmentation faults.  For this reason, the depth of certain calls of
+functions in the ACL2 rewriter is limited by default using the value of
+the form (rewrite-stack-limit (w state)).  To see the limit in action,
+execute the following forms.
+
+     (defthm app-assoc-1
+       (equal (append (append x y) z)
+              (append x y z)))
+     (defthm app-assoc-2
+       (equal (append x y z)
+              (append (append x y) z)))
+     (thm (equal (append a b c) xxx)
+          ; try without these hints to see a slightly different error message
+          :hints (("Goal" :do-not '(preprocess))))
+
+The ensuing error message shows a stack of one greater than the value of
+(rewrite-stack-limit (w state)), which by default is the value of the
+constant *default-rewrite-stack-limit*.  The error message also explains
+how to use :brr t and (cw-gstack) to find looping rewrite rules.
+
+This limit can be changed; see *note SET-REWRITE-STACK-LIMIT::.
+
+For a related limit, see *note BACKCHAIN-LIMIT::.
+
+
+File: acl2-doc-emacs.info,  Node: SAVING-AND-RESTORING,  Next: SHOW-BODIES,  Prev: REWRITE-STACK-LIMIT,  Up: MISCELLANEOUS
+
+SAVING-AND-RESTORING    saving and restoring your logical state
+
+One normally works on an ACL2-based project by developing books, which
+can then be included when continuing on that project in later ACL2
+sessions; see *note INCLUDE-BOOK::.  However, this approach can be
+time-consuming when there are very large collections of books to be
+included.  See see *note SAVE-EXEC:: for the description of a utility
+that saves your ACL2 state so that you can immediately re-start later
+in that same state.
+
+
+File: acl2-doc-emacs.info,  Node: SHOW-BODIES,  Next: SIGNATURE,  Prev: SAVING-AND-RESTORING,  Up: MISCELLANEOUS
+
+SHOW-BODIES    show the potential definition bodies
+
+     Examples:
+     (show-bodies foo)
+     :show-bodies foo
+
+A definition made using defun installs a so-called "body" of a function
+symbol, as do certain :definition rules.  Such bodies are used in a
+number of ways, including the application of :expand hints; see *note
+DEFINITION::, in particular the discussion of "body" there, and see
+*note HINTS:: for a discussion of the :expand hint.  Also see *note
+SET-BODY:: for how to change which of the available definitions (among
+the original definition and appropriate :definition rules) is the one
+that provides the body.  The show-bodies command displays the available
+such bodies in an appropriate format, starting with the one that is
+currently used as the body.
+
+     General Forms:
+     (show-bodies function-symbol)
+     :show-bodies function-symbol
+
+
+File: acl2-doc-emacs.info,  Node: SIGNATURE,  Next: SIMPLE,  Prev: SHOW-BODIES,  Up: MISCELLANEOUS
+
+SIGNATURE    how to specify the arity of a constrained function
+
+     Examples:
+     ((hd *) => *)
+     ((printer * state) => (mv * * state))
+     ((mach * mach-state * state) => (mv * mach-state)
+     
+     General Form:
+     ((fn ...) => *)
+     ((fn ...) => stobj)
+     or
+     ((fn ...) => (mv ...))
+
+where fn is the constrained function symbol, ... is a list of asterisks
+and/or the names of single-threaded objects and stobj is a
+single-threaded object name.  ACL2 also supports an older style of
+signature described below after we describe the preferred style.
+
+Signatures specify three syntactic aspects of a function symbol: (1)
+the "arity" or how many arguments the function takes, (2) the
+"multiplicity" or how many results it returns via MV, and (3) which of
+those arguments and results are single-threaded objects and which
+objects they are.
+
+For a discussion of single-threaded objects, see *note STOBJ::.  For
+the current purposes it is sufficient to know that every single-
+threaded object has a unique symbolic name and that state is the name
+of the only built-in single-threaded object.  All other stobjs are
+introduced by the user via defstobj.  An object that is not a
+single-threaded object is said to be "ordinary."
+
+The general form of a signature is ((fn x1 ... xn) => val).  So a
+signature has two parts, separated by the symbol "=>".  The first part,
+(fn x1 ... xn), is suggestive of a call of the constrained function.
+The number of "arguments," n, indicates the arity of fn.  Each xi must
+be a symbol.  If a given xi is the symbol "*" then the corresponding
+argument must be ordinary.  If a given xi is any other symbol, that
+symbol must be the name of a single-threaded object and the
+corresponding argument must be that object.  No stobj name may occur
+twice among the xi.
+
+The second part, val, of a signature is suggestive of a term and
+indicates the "shape" of the output of fn.  If val is a symbol then it
+must be either the symbol "*" or the name of a single-threaded object.
+In either case, the multiplicity of fn is 1 and val indicates whether
+the result is ordinary or a stobj.  Otherwise, val is of the form (mv
+y1 ... yk), where k > 1.  Each yi must be either the symbol "*" or the
+name of a stobj.  Such a val indicates that fn has multiplicity k and
+the yi indicate which results are ordinary and which are stobjs.  No
+stobj name may occur twice among the yi.
+
+Finally, a stobj name may appear in val only if appears among the xi.
+
+Before ACL2 supported user-declared single-threaded objects there was
+only one single-threaded object: ACL2's built-in notion of state.  The
+notion of signature supported then gave a special role to the symbol
+state and all other symbols were considered to denote ordinary objects.
+ACL2 still supports the old form of signature, but it is limited to
+functions that operate on ordinary objects or ordinary objects and
+state.
+
+     Old-Style General Form:
+     (fn formals result)
+
+where fn is the constrained function symbol, formals is a suitable list
+of formal parameters for it, and result is either a symbol denoting
+that the function returns one result or else result is an mv
+expression, (mv s1 ... sn), where n>1, each si is a symbol, indicating
+that the function returns n results.  At most one of the formals may be
+the symbol STATE, indicating that corresponding argument must be ACL2's
+built-in state.  If state appears in formals then state may appear once
+in result.  All "variable symbols" other than state in old style
+signatures denote ordinary objects, regardless of whether the symbol
+has been defined to be a single-threaded object name!
+
+We also support a variation on old style signatures allowing the user
+to declare which symbols (besides state) are to be considered
+single-threaded object names.  This form is
+
+     (fn formals result :stobjs names)
+
+where names is either the name of a single-threaded object or else is a
+list of such names.  Every name in names must have been previously
+defined as a stobj via defstobj.
+
+
+File: acl2-doc-emacs.info,  Node: SIMPLE,  Next: SPECIOUS-SIMPLIFICATION,  Prev: SIGNATURE,  Up: MISCELLANEOUS
+
+SIMPLE    :definition and :rewrite rules used in preprocessing
+
+     Example of simple rewrite rule:
+     (equal (car (cons x y)) x)
+     
+     Examples of simple definition:
+     (defun file-clock-p (x) (integerp x))
+     (defun naturalp (x)
+       (and (integerp x) (>= x 0)))
+
+The theorem prover output sometimes refers to "simple" definitions and
+rewrite rules.  These rules can be used by the preprocessor, which is
+one of the theorem prover's "processes" understood by the :do-not hint;
+see *note HINTS::.
+
+The preprocessor expands certain definitions and uses certain rewrite
+rules that it considers to be "fast".  There are two ways to qualify as
+fast.  One is to be an "abbreviation", where a rewrite rule with no
+hypotheses or loop stopper is an "abbreviation" if the right side
+contains no more variable occurrences than the left side, and the right
+side does not call the functions if, not or implies.  Definitions and
+rewrite rules can both be abbreviations; the criterion for definitions
+is similar, except that the definition must not be recursive.  The
+other way to qualify applies only to a non-recursive definition, and
+applies when its body is a disjunction or conjunction, according to a
+perhaps subtle criterion that is intended to avoid case splits.
+

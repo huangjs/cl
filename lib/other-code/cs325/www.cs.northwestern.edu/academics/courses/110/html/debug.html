@@ -1,0 +1,485 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>EECS 110 Visual Studio Debugging Notes</title>
+<LINK href="../cs110.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+
+.code {
+  background-color: white;
+  color: red;
+  margin-left: 10%
+}
+
+.image {
+  text-align: center;
+}
+</style>
+
+</head>
+
+<body class="regular">
+
+<TABLE width="100%" border="0" cellspacing="0" cellpadding="10%">
+  <TR>
+    <TD class="pagetitle">EECS 110: Visual Studio Debugging Notes
+    </TD>
+    <TD class="menu">
+      <A class="menu" href="../index.html">Home</A><br>
+      <A class="menu" href="info.html">General Info</A><br>
+      <A class="menu" href="links.html">Help</A><br>
+    </TD>
+    <TD class="menu">
+      <A class="menu" href="notes.html">Lectures</A><br>
+      <A class="menu" href="hw.html">Homework </A><br>
+      <!-- <A class="menu" href="exams.html">Exams</A><br> -->
+    </TD>
+  </TR>
+</TABLE>
+
+<h2>Introduction</h2>
+
+<p>
+This tutorial was written for Visual Studio 6.0. Some of the images included here look 
+slightly different in .NET. I'm planning to update it, but until then, refer to 
+<a href="http://csciwww.etsu.edu/blair/Using_Debugger.htm">this site</a> 
+for additional detail. But do read this page first, as it includes some
+background material.
+</p>
+
+<p>There are several types of errors that can occur at different stages 
+of the programming process: <a href="#compiler">compiler errors</a>, 
+<a href="#linker">linker errors</a> and <a href="#runtime">run-time 
+errors</a>. In this tutorial we will discuss each type and explain 
+how you can use the tools provided by Visual Studio to find and correct them.
+</p>
+
+<a name="compiler"></a>
+<h2>Compiler Errors</h2>
+
+<h3>Description</h3>
+
+<p>These are the errors that are reported by the compiler.  Usually they are 
+simple syntax errors such as misspelled words or missing punctuation. 
+</p>
+
+<h3>Example</h3>
+
+<p>Let's try to compile the following program and see what happens:
+</p>
+
+<pre class="code">
+int main () {
+   printf("Hello World!\n)
+   return 0;
+</pre>
+
+<p>The compiler gives us the following warnings and errors:
+</p>
+
+<pre class="code">
+D:\test.c(2) : warning C4013: 'printf' undefined; assuming extern returning int
+D:\test.c(2) : error C2001: newline in constant
+D:\test.c(3) : error C2143: syntax error : missing ')' before 'return'
+D:\test.c(4) : fatal error C1004: unexpected end of file found
+</pre>
+
+<p>First, we have a warning on line 2. It means that the compiler could not 
+find a definition for function <tt>printf</tt>. However, it is possible that 
+the definition of this function is in another file of the same project. Since
+it is
+the job of the linker to "link" together the different files of a project, the
+compiler assumes that the problem will be solved at the linking stage. This is 
+why it gives us only a warning. In this case, however, we <b>have</b> made
+a mistake. The function <code>printf</code> is defined in the standard library
+<code>stdio.h</code> which should have been included in the program. 
+</p>
+
+<p>
+We also have an error on line 2:</p>
+
+<pre class="code">
+   printf("Hello World!\n)
+</pre>
+
+<p>
+The error message suggests that a newline occurred when it wasn't expected. We 
+notice that the message that is to be printed is not enclosed in double quotes.
+This caused the compiler to think that <code>Hello World!\n)</code> is all part 
+of the message but then, when the line ended and the message did not, the 
+compiler got confused. To fix this we need to insert the closing double-quote
+at the end of the message.
+</p>
+
+<p>Now we have an error on line 3. It was expecting a closing parenthesis 
+before <code>return</code> but it wasn't there. This is a propagated error. The 
+closing parenthesis <b>is</b> there but, because we forgot to close the quotes, the
+compiler thought that it was part of the message to be printed. So we can ignore
+this error.
+</p>
+<p>
+Finally, we get to the last message. This is easy to figure out. The program
+seems to have ended when it shouldn't have: we missed the closing brace for the
+<code>main</code> function. 
+</p>
+<p>Let's see what the corrected program looks like:
+</p>
+
+<pre class="code">
+#include&lt;stdio.h&gt;>
+
+int main () {
+   printf("Hello World!\n")
+   return 0;
+}
+</pre>
+
+<p>Compile it:
+</p>
+
+<pre class="code">
+D:\test.c(5) : error C2143: syntax error : missing ';' before 'return'
+</pre>
+
+<p>Oops! We have another error: we forgot to terminate the <code>printf</code>
+statement with a semicolon. The final, correct program is now:
+</p>
+
+<pre class="code">
+#include&lt;stdio.h&gt;
+
+int main () {
+   printf("Hello World!\n");
+   return 0;
+}
+</pre>
+
+<hr>
+
+<a name="linker"></a>
+<h2>Linker Errors</h2>
+
+<h3>Description</h3>
+
+<p>These errors are caused when you forget to define or implement a function.
+</p>
+
+<h3>Example</h3>
+
+<p>
+Let's compile and link the following program:
+</p>
+
+<pre class="code">
+int main () {
+   myfunction();
+   return 0;
+}
+</pre>
+
+<p>The compiler will give us a warning about <code>myfunction</code> but will compile
+the program successfully. When we link, however, we get:
+</p>
+
+<pre class="code">
+test.obj : error LNK2001: unresolved external symbol _myfunction
+Debug/test.exe : fatal error LNK1120: 1 unresolved externals
+</pre>
+
+<p>This is the linker's way of saying "I could not find a definition of function
+<code>myfunction</code> anywhere!".
+</p>
+
+<p>
+What does <em>anywhere</em> mean? The linker first looks at the other files
+of the project (if there are any). If it does not find the definition there,
+it looks at the files in the <code>Include</code> directory. This is a directory
+that contains the files where the standard C library functions are defined.
+Note that the linker only looks there because we have set up Visual Studio
+this way. Otherwise it would only look at the other files of the project. 
+</p>
+
+<p>
+Would we get a linker error if we had not included <code>stdio.h</code> in the 
+program of the first example? The answer is no, because <code>stdio.h</code> is in 
+the <code>Include</code> directory and the linker would find <code>printf</code>
+when it looked there.
+</p>
+
+<hr>
+
+<a name="runtime"></a>
+
+<h2>Run-time Errors</h2>
+
+<h3>Description</h3>
+
+<p>These are logical errors, that is, errors in the design of your program.
+They occur when you run your program and they are the most difficult to find. 
+The only indication that there is an error is a wrong output or a fault that
+causes your program to crash. A program may run fine for years and then suddenly
+crash on some input because of a logical error. That's why you
+should always test your programs extensively.
+</p>
+
+<p>
+The process of locating the source of logical errors and correcting them is
+called <b>debugging</b>. The term was coined by Admiral Grace Hopper in the 
+1940s. According to her journal, when they opened up a computer to try and 
+find out why a program was not working, they 
+discovered a moth that had gotten inside and caused the
+problem. Since then, initially hardware and then logical errors have been 
+called "bugs".
+To see a picture of this first bug, which had the honor of being pasted onto 
+the journal,  
+click <a href="http://americanhistory.si.edu/collections/object.cfm?key=35&amp;objkey=30">here</a>.
+</p>
+
+<p>
+A <b>debugger</b> is a tool that helps you find logical errors. It enables
+you to execute your program one line at a time or in sections, to 
+stop execution at a specific point and to check the values of 
+variables as you go along. This way, you can better understand how your 
+program behaves (as opposed to how you think it behaves) and find the
+exact location where the problem is. What the debugger cannot tell you is 
+why the problem occurs. This is something you have to figure out yourself.
+</p>
+
+<p>
+A simple but often useful method of debugging is by
+inserting <code>printf</code> statements in various places in the program. This 
+enables us to:
+</p>
+
+<ul>
+<li> Find out whether a specific part of the program is ever reached during 
+     execution.
+<li> Print out the values of different variables at specific points in the 
+     program.
+</ul>
+
+
+<h3>Example</h3>
+
+<p>Now, we will learn how to use the Visual C++ debugger to find the bugs in the
+following program:
+</p>
+
+<pre class="code">
+/* *******************************************
+ * This program reads five integers from the *
+ * keyboard and then computes and prints     *
+ * their average on the screen.              * 
+ ******************************************* */
+
+#include&lt;stdio.h&gt;
+#define SIZE 5
+
+int main () {
+  float sum, ave;
+  int i;
+  int num[SIZE]; // array to hold the numbers
+  for (i=1; i<=SIZE; i++) {
+    printf("Enter a number: ");
+    scanf("%d", &amp;num[i]);
+  }
+  for (i=1; i<=SIZE; i++) 
+    sum=sum+num[i];
+  ave=sum/SIZE;
+  printf("The average is: %f\n", ave);
+  return 0;
+}
+</pre>
+
+<p>This program compiles and links successfully. Let's see what happens when 
+we execute it:
+</p>
+
+<pre class="code">
+Enter a number: 1
+Enter a number: 2
+Enter a number: 3
+Enter a number: 4
+Enter a number: 5
+The average is: -21474833.600000
+Press any key to continue
+</pre>
+
+<p>There is obviously something wrong. Let's use the debugger to find out what:
+</p>
+
+<h3> Setting up</h3>
+
+<p>The following figure shows the Build and Debug toolbars.
+To make them appear on your Visual C++ desktop, right-click on the blank space
+next to the existing toolbars and select <b>Build Minibar</b> and then 
+<b>Debug</b>. 
+</p>
+
+<p class="image">
+<img src="../images/toolbar.gif" alt="VS toolbars">
+</p>
+
+
+<h3> Setting breakpoints</h3>
+
+<p>A breakpoint is a point in the program where you want the execution to stop 
+temporarily so that you can examine the values of variables. It allows you
+to run through portions of the program that are correct and concentrate on
+those that aren't (or haven't been checked yet).
+</p>
+
+<p>
+The symbol for the breakpoint is : <img src="../images/breakpoint.gif" alt="VS breakpoint symbol">
+</p>
+
+<p>
+Let's say we decide to set a breakpoint right before the 
+second <code>for</code>-loop. Move the cursor to the beginning of the 
+line <code>for (i=1; i<=SIZE; i++)</code>
+and click on the breakpoint symbol. A red dot will appear on the margin left
+of the cursor:</p>
+
+<p class="image">
+<img src="../images/breakpoint1.gif" alt="VS breakpoint mark">
+</p>
+
+<p>
+Now, to run the program until the breakpoint, click the Go button: 
+<img src="../images/go.gif" alt="VS go button">
+You will need to enter the five integers for the program to get there. Notice
+the yellow arrow that shows you where in the program you currently are.
+</p>
+
+<p>
+Once we have reached the breakpoint, we want to check the contents of the array
+<code>num</code> to make sure it is fine. Do do that, type the name of the array,
+num, in the Watch window (lower right):
+</p>
+
+<p class="image">
+<img src="../images/watch.gif" alt="VS watch window">
+</p>
+
+<p>
+The value shown is the address of the beginning of the array. Click the plus
+sign to the left of <code>num</code> to expand the array and see its contents:
+</p>
+
+<p class="image">
+<img src="../images/watchval.gif" alt="VS watch variable value">
+</p>
+
+<p>
+Aha! The first element of the array is junk. Why did this happen? Something 
+must have gone wrong earlier on. Let's remove this breakpoint since it has
+served its purpose: Move the mouse cursor on the line where the breakpoint is,
+right-click and select "Remove breakpoint".
+</p>
+
+<p>
+Now, we are going to go through the program one step at a time.
+</p>
+
+<h3>Stepping through the program</h3>
+
+<p>To step through the program, we use the following icons:
+</p>
+
+<ul>
+<li>
+<img src="../images/stepin.gif" alt="VS step into button"> <b>Step into</b> a statement. 
+Used to execute a single
+statement. If the statement contains a function call, it will step into the
+function.</li>
+
+<li>
+<img src="../images/stepover.gif" alt="VS step over button"> <b>Step over</b> a statement. 
+Used to execute a single statement and jump to the beginning of the next one. </li>
+
+<li>
+<img src="../images/stepout.gif" alt="VS step out button"> <b>Step out</b> of a block. 
+Used to step out
+of a block. </li>
+
+<li>
+<img src="../images/runto.gif" alt="VS run to button"> <b>Run to</b> the cursor. Executes all statements
+up to where the cursor is.
+</li>
+
+</ul>
+
+<p><b>Note:</b> If you click the Step into button at the wrong moment you may 
+step into the code for a standard function (such as <code>printf</code>) and 
+assembly code will then be displayed:
+</p>
+
+<p class="image">
+<img src="../images/assembly.gif" alt="VS assembly code">
+</p>
+
+<p>To exit this code, just click the Step Out icon. 
+</p>
+
+<p>
+Now, let's stop the debugging process so that we may restart. Click the 
+Stop Debugging button: <img src="../images/stop.gif" alt="VS stop button">
+</p>
+
+<p>
+We are ready to start the step-by-step execution of our program. Click the 
+Step Over button until you get to the first <code>for</code>-loop. Make sure you
+have <code>num</code> in the watch window and that it is expanded. 
+</p>
+
+<p>
+Step-Over a couple of times until you get to the <code>scanf</code>. Note that 
+once you are there, when you try to step-over again, you can't. This is 
+because <code>scanf</code> is waiting for input from the keyboard. Bring the 
+I/O window to the top and type 1. 
+</p>
+
+<p>
+Look at the watch window. num[1] has become 1 whereas all the other slots of
+the array contain junk. But the first element 
+of the array, the one that should contain the value we entered, is num[0], not
+num[1]. Why did the number go into num[1]? Let's look at the leftmost watch 
+window which shows the current value of <code>i</code>. It is 1, when it should
+have been 0. The debugger told us where the problem is (<code>i</code> contains the
+wrong value when the loop begins), now our brain has to figure out why this 
+happened and how it can be fixed. The answer in this case is simple. The loop 
+should be going from 0 to SIZE-1 and not from 1 to SIZE because the C language
+uses zero-indexing for arrays.
+</p>
+
+<p>
+There are other errors in the program. See if the debugger can help you find 
+them.</p>
+
+<h3>The Watch Windows</h3>
+
+<p>As you saw above, there are two watch windows. The leftmost is the one that 
+shows the values of the most current variables (those in the current scope). 
+Use the rightmost one to watch the values of other variables or to perform 
+computations. For example, you may want to watch the value of 
+<code>num[0]+num[1]+num[2]</code>:
+</p>
+
+<p class="image">
+<img src="../images/watch2.gif" alt="VS watch expressions">
+</p>
+
+<p>Note that the value of <code>i</code> is red. This happens whenever the value
+of a variable is updated (to attract your attention). 
+</p>
+
+<hr>
+<p>
+  <a href="http://validator.w3.org/check?uri=referer"><img
+      src="http://www.w3.org/Icons/valid-html401"
+      alt="Valid HTML 4.01 Strict" height="31" width="88"></a>
+</p>
+</body>
+</html>

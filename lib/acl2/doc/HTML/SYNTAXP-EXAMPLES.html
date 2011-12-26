@@ -1,0 +1,235 @@
+<html>
+<head><title>SYNTAXP-EXAMPLES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>SYNTAXP-EXAMPLES</h3>examples pertaining to syntaxp hypotheses
+<pre>Major Section:  <a href="SYNTAXP.html">SYNTAXP</a>
+</pre><p>
+
+See <a href="SYNTAXP.html">syntaxp</a> for a basic discussion of the use of <code>syntaxp</code> to control
+rewriting.
+<p>
+A common syntactic restriction is
+
+<pre>
+(SYNTAXP (AND (CONSP X) (EQ (CAR X) 'QUOTE)))
+</pre>
+
+or, equivalently,
+
+<pre>
+(SYNTAXP (QUOTEP X)).
+</pre>
+
+A rule with such a hypothesis can be applied only if <code>x</code> is bound to
+a specific constant.  Thus, if <code>x</code> is <code>23</code> (which is actually
+represented internally as <code>(quote 23)</code>), the test evaluates to <code>t</code>; but
+if <code>x</code> prints as <code>(+ 11 12)</code> then the test evaluates to <code>nil</code>
+(because <code>(car x)</code> is the symbol <code><a href="BINARY-+.html">binary-+</a></code>).  We see the use
+of this restriction in the rule
+
+<pre>
+(implies (and (syntaxp (quotep c))
+              (syntaxp (quotep d)))
+         (equal (+ c d x)
+                (+ (+ c d) x))).
+</pre>
+
+If <code>c</code> and <code>d</code> are constants, then the
+<code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of <code><a href="BINARY-+.html">binary-+</a></code> will evaluate the sum
+of <code>c</code> and <code>d</code>.  For instance, under the influence of this rule 
+
+<pre>
+(+ 11 12 foo)
+</pre>
+
+rewrites to
+
+<pre>
+(+ (+ 11 12) foo)
+</pre>
+
+which in turn rewrites to <code>(+ 23 foo)</code>.  Without the syntactic
+restriction, this rule would loop with the built-in rules
+<code>ASSOCIATIVITY-OF-+</code> or <code>COMMUTATIVITY-OF-+</code>.<p>
+
+We here recommend that the reader try the affects of entering expressions
+such as the following at the top level ACL2 prompt.
+
+<pre>
+(+ 11 23)
+(+ '11 23)
+(+ '11 '23)
+(+ ''11 ''23)
+:trans (+ 11 23)
+:trans (+ '11 23)
+:trans (+ ''11 23)
+:trans (+ c d x)
+:trans (+ (+ c d) x)
+</pre>
+
+We also recommend that the reader verify our claim above about looping
+by trying the affect of each of the following rules individually.
+
+<pre>
+(defthm good
+   (implies (and (syntaxp (quotep c))
+                 (syntaxp (quotep d)))
+            (equal (+ c d x)
+                   (+ (+ c d) x))))<p>
+
+(defthm bad
+   (implies (and (acl2-numberp c)
+                 (acl2-numberp d))
+            (equal (+ c d x)
+                   (+ (+ c d) x))))
+</pre>
+
+on (the false) theorems:
+
+<pre>
+(thm
+  (equal (+ 11 12 x) y))<p>
+
+(thm
+  (implies (and (acl2-numberp c)
+                (acl2-numberp d)
+                (acl2-numberp x))
+           (equal (+ c d x) y))).
+</pre>
+
+One can use <code>:</code><code><a href="BRR.html">brr</a></code>, perhaps in conjunction with
+<code><a href="CW-GSTACK.html">cw-gstack</a></code>, to investigate any looping.<p>
+
+Here is a simple example showing the value of rule <code>good</code> above.  Without
+<code>good</code>, the <code>thm</code> form below fails.
+
+<pre>
+(defstub foo (x) t)<p>
+
+(thm (equal (foo (+ 3 4 x)) (foo (+ 7 x))))
+</pre>
+<p>
+
+The next three examples further explore the use of <code>quote</code> in
+<code><a href="SYNTAXP.html">syntaxp</a></code> hypotheses.<p>
+
+We continue the examples of <code><a href="SYNTAXP.html">syntaxp</a></code> hypotheses with a rule from
+<code>books/finite-set-theory/set-theory.lisp</code>.  We will not discuss
+here the meaning of this rule, but it is necessary to point out that
+<code>(ur-elementp nil)</code> is true in this book.
+
+<pre>
+(defthm scons-nil
+  (implies (and (syntaxp (not (equal a ''nil)))
+                (ur-elementp a))
+           (= (scons e a)
+              (scons e nil)))).
+</pre>
+
+Here also, <code><a href="SYNTAXP.html">syntaxp</a></code> is used to prevent looping.  Without the
+restriction, <code>(scons e nil)</code> would be rewritten to itself since
+<code>(ur-elementp nil)</code> is true.<br>
+
+Question: Why the use of two quotes in <code>''nil</code>?<br>
+
+Hints: <code>Nil</code> is a constant just as 23 is.  Try <code>:trans (cons a nil)</code>,
+<code>:trans (cons 'a 'nil)</code>, and <code>:trans (cons ''a ''nil)</code>.
+Also, don't forget that the arguments to a function are evaluated before
+the function is applied.<p>
+
+The next two rules move negative constants to the other side of an
+inequality.
+
+<pre>
+(defthm |(&lt; (+ (- c) x) y)|
+  (implies (and (syntaxp (quotep c))
+                (syntaxp (&lt; (cadr c) 0))
+                (acl2-numberp y))
+           (equal (&lt; (+ c x) y)
+                  (&lt; (fix x) (+ (- c) y)))))<p>
+
+(defthm |(&lt; y (+ (- c) x))|
+  (implies (and (syntaxp (quotep c))
+                (syntaxp (&lt; (cadr c) 0))
+                (acl2-numberp y))
+           (equal (&lt; y (+ c x))
+                  (&lt; (+ (- c) y) (fix x)))))
+</pre>
+
+Questions: What would happen if <code>(&lt; (cadr c) '0)</code> were used?
+What about <code>(&lt; (cadr c) ''0)</code>?<p>
+
+One can also use <code>syntaxp</code> to restrict the application of a rule
+to a particular set of variable bindings as in the following taken from
+<code>books/ihs/quotient-remainder-lemmas.lisp</code>.
+
+<pre>
+(encapsulate ()<p>
+
+  (local
+   (defthm floor-+-crock
+     (implies
+      (and (real/rationalp x)
+           (real/rationalp y)
+           (real/rationalp z)
+           (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
+      (equal (floor (+ x y) z)
+             (floor (+ (+ (mod x z) (mod y z))
+                       (* (+ (floor x z) (floor y z)) z)) z)))))<p>
+
+  (defthm floor-+
+    (implies
+     (and (force (real/rationalp x))
+          (force (real/rationalp y))
+          (force (real/rationalp z))
+          (force (not (equal z 0))))
+     (equal (floor (+ x y) z)
+            (+ (floor (+ (mod x z) (mod y z)) z)
+               (+ (floor x z) (floor y z))))))<p>
+
+  )
+</pre>
+
+We recommend the use of <code>:</code><code>brr</code> to investigate the use of
+<code>floor-+-crock</code>.<p>
+
+Another useful restriction is defined by
+
+<pre>
+(defun rewriting-goal-literal (x mfc state)<p>
+
+  ;; Are we rewriting a top-level goal literal, rather than rewriting
+  ;; to establish a hypothesis from a rewrite (or other) rule?<p>
+
+  (declare (ignore x state))
+  (null (access metafunction-context mfc :ancestors))).
+</pre>
+
+We use this restriction in the rule
+
+<pre>
+(defthm |(&lt; (* x y) 0)|
+    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                  (rationalp x)
+                  (rationalp y))
+             (equal (&lt; (* x y) 0)
+                    (cond ((equal x 0)
+                           nil)
+                          ((equal y 0)
+                           nil)
+                          ((&lt; x 0)
+                           (&lt; 0 y))
+                          ((&lt; 0 x)
+                           (&lt; y 0))))))
+</pre>
+
+which has been found to be useful, but which also leads to excessive
+thrashing in the linear arithmetic package if used indiscriminately.<p>
+
+See <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a> for information on the use of <code>mfc</code>
+and <code>metafunction-context</code>.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

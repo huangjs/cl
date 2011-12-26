@@ -1,0 +1,143 @@
+<html>
+<head><title>IO.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>IO</h2>input/output facilities in ACL2
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example:
+(mv-let
+  (channel state)
+  (open-input-channel "foo.lisp" :object state)
+  (mv-let (eofp obj state)
+          (read-object channel state)
+          (.
+            .
+             (let ((state (close-input-channel channel state)))
+                   (mv final-ans state))..)))
+</pre>
+
+Also see <a href="FILE-READING-EXAMPLE.html">file-reading-example</a>.
+<p>
+<ul>
+<li><h3><a href="PRINC$.html">PRINC$</a> -- print a string
+</h3>
+</li>
+
+<li><h3><a href="SET-ACL2-PRINT-BASE.html">SET-ACL2-PRINT-BASE</a> -- control radix in which number are printed
+</h3>
+</li>
+
+<li><h3><a href="SET-ACL2-PRINT-CASE.html">SET-ACL2-PRINT-CASE</a> -- control whether symbols are printed in upper case or in lower case
+</h3>
+</li>
+
+</ul>
+
+ACL2 supports input and output facilities equivalent to a subset
+of those found in Common Lisp.  ACL2 does not support random access
+files or bidirectional streams.  In Common Lisp, input and output
+are to or from objects of type <code>stream</code>.  In ACL2, input and output
+are to or from objects called ``channels,'' which are actually
+symbols.  Although a channel is a symbol, one may think of it
+intuitively as corresponding to a Common Lisp stream.  Channels are
+in one of two ACL2 packages, <code>"ACL2-INPUT-CHANNEL"</code> and
+<code>"ACL2-OUTPUT-CHANNEL"</code>.  When one ``opens'' a file one gets back
+a channel whose <code><a href="SYMBOL-NAME.html">symbol-name</a></code> is the file name passed to ``open,''
+postfixed with <code>-n</code>, where <code>n</code> is a counter that is incremented
+every time an open or close occurs.<p>
+
+There are three channels which are open from the beginning and which
+cannot be closed:
+
+<pre>
+  acl2-input-channel::standard-character-input-0
+  acl2-input-channel::standard-object-input-0
+  acl2-input-channel::standard-character-output-0
+</pre>
+
+All three of these are really Common Lisp's <code>*standard-input*</code> or
+<code>*standard-output*</code>, appropriately.<p>
+
+For convenience, three global variables are bound to these rather
+tedious channel names:
+
+<pre>
+  *standard-ci*
+  *standard-oi*
+  *standard-co*
+</pre>
+
+Common Lisp permits one to open a stream for several different
+kinds of <code>io</code>, e.g. character or byte.  ACL2 permits an additional
+type called ``object''.  In ACL2 an ``io-type'' is a keyword, either
+<code>:character</code>, <code>:byte</code>, or <code>:object</code>.  When one opens a file, one specifies
+a type, which determines the kind of io operations that can be done
+on the channel returned.  The types <code>:character</code> and <code>:byte</code> are
+familiar.  Type <code>:object</code> is an abstraction not found in Common Lisp.
+An <code>:object</code> file is a file of Lisp objects.  One uses <code>read-object</code> to
+read from <code>:object</code> files and <code>print-object$</code> to print to <code>:object</code> files.
+(The reading and printing are really done with the Common Lisp <code>read</code>
+and <code>print</code> functions.)<p>
+
+File-names are strings.  ACL2 does not support the Common Lisp type
+<code><a href="PATHNAME.html">pathname</a></code>.<p>
+
+Here are the names, formals and output descriptions of the ACL2 io 
+functions.
+
+<pre>
+Input Functions:
+  (open-input-channel (file-name io-type state) (mv channel state))
+  (open-input-channel-p (channel io-type state) boolean)
+  (close-input-channel (channel state) state)
+  (read-char$ (channel state) (mv char/nil state)) ; nil for EOF
+  (peek-char$ (channel state) boolean)
+  (read-byte$ (channel state) (mv byte/nil state)) ; nil for EOF
+  (read-object (channel state) (mv eof-read-flg obj-read state))<p>
+
+Output Functions:
+  (open-output-channel (file-name io-type state) (mv channel state))
+  (open-output-channel-p (channel io-type state) boolean)
+  (close-output-channel (channel state) state)
+  (princ$ (obj channel state) state)
+  (write-byte$ (byte channel state) state)
+  (print-object$ (obj channel state) state)
+  (fms  (string alist channel state evisc-tuple) state)
+  (fms! (string alist channel state evisc-tuple) state)
+  (fmt  (string alist channel state evisc-tuple) (mv col state))
+  (fmt! (string alist channel state evisc-tuple) (mv col state))
+  (fmt1 (string alist col channel state evisc-tuple) (mv col state))
+  (fmt1! (string alist col channel state evisc-tuple) (mv col state))
+  (cw (string arg0 arg1 ... argn) nil)
+</pre>
+
+The ``formatting'' functions are particularly useful;
+see <a href="FMT.html">fmt</a> and see <a href="CW.html">cw</a>.  In particular, <code><a href="CW.html">cw</a></code> prints to a
+``comment window'' and does not involve the ACL2 <code><a href="STATE.html">state</a></code>, so many may
+find it easier to use than <code><a href="FMT.html">fmt</a></code> and its variants.  The functions
+<code><a href="FMS_bang_.html">fms!</a></code>, <code><a href="FMT_bang_.html">fmt!</a></code>, and <code><a href="FMT1_bang_.html">fmt1!</a></code> are the same as their respective functions
+without the ``<code>!</code>,'' except that the ``<code>!</code>'' functions are guaranteed to
+print forms that can be read back in (at a slight readability cost).<p>
+
+When one enters ACL2 with <code>(lp)</code>, input and output are taken from
+<code><a href="_star_STANDARD-OI_star_.html">*standard-oi*</a></code> to <code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code>.  Because these are synonyms for
+<code>*standard-input*</code> and <code>*standard-output*</code>, one can drive ACL2 io off of
+arbitrary Common Lisp streams, bound to <code>*standard-input*</code> and
+<code>*standard-output*</code> before entry to ACL2.<p>
+
+By default, symbols are printed in upper case when vertical bars are
+not required, as specified by Common Lisp.  See <a href="SET-ACL2-PRINT-CASE.html">set-acl2-print-case</a> for how
+to get ACL2 to print symbols in lower case.<p>
+
+By default, numbers are printed in radix 10 (base 10).See <a href="SET-ACL2-PRINT-BASE.html">set-acl2-print-base</a>
+for how to get ACL2 to print numbers in radix 2, 8, or 16.<p>
+
+Finally, we note that the distributed book <code>books/misc/file-io.lisp</code>
+contains useful file io functions whose definitions illustrate some of the
+features described above.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

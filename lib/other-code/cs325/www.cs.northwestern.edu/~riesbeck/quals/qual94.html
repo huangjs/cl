@@ -1,0 +1,153 @@
+<!--This file created 7/2/97 10:18 AM by Claris Home Page version 2.0-->
+<HTML>
+<HEAD>
+   <TITLE>Qual '94 Programming Question</TITLE>
+   <META NAME=GENERATOR CONTENT="Claris Home Page 2.0">
+   <X-SAS-WINDOW TOP=42 BOTTOM=621 LEFT=3 RIGHT=533>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<H1 ALIGN=CENTER>1994 Qual Programming Question</H1>
+
+<P>This document discusses the Lisp programming question for the 1994
+Ph.D. Qualifying Exam in Artificial Intelligence, given at the
+Institute for the Learning Sciences. You should first read the
+question below and try to do the problem yourself. If you want to put
+yourself in the position of the students who took the qual, give
+yourself one hour.</P>
+
+<P>After doing the problem, read <A HREF="analysis94.html">an
+analysis of the problem</A>. This will help you "grade" your
+solution.</P>
+
+<P>Finally, for comparison purposes, you can look at my
+<A HREF="solution94.html">solution</A>. It was <EM>not</EM> done in
+an hour.</P>
+
+<ADDRESS>
+<HR>
+</ADDRESS>
+
+<P>Congratulations! You've been hired to help build UGH (the Ultimate
+GBS Helper), a tool for making simple investigate goal-based scenario
+systems. An investigative GBS has the following standard structure:
+</P>
+
+<BLOCKQUOTE><P>The student has to determine which of several possible
+outcome actions to do, by doing a series of probes (experiments,
+explorations, etc.) to gather evidence for some hypothesis about
+what's going on in the scenario.</P></BLOCKQUOTE>
+
+<P>For example, in a sickle cell counselor GBS, there are:</P>
+
+<UL>
+   <LI><U>Possible hypotheses</U>: The husband and the wife have
+   either sickle cell disease, sickle cell trait, or neither.
+   
+   <LI><U>Outcome actions</U>: Tell them that their children might
+   inherit the disease, the trait, or neither.
+   
+   <LI><U>Probe actions</U>: Looking at the husband's or wife's blood
+   with a microscope, or doing a genetic analysis with an
+   electrophoresis machine.
+</UL>
+
+<P>Each probe yields a particular result, and each result is evidence
+for or against one or more hypotheses. A key issue in such a GBS is
+noticing when the student selects an outcome action that is either
+unjustified by or inconsistent with the results of the probes done so
+far.</P>
+
+<H1>Your job</H1>
+
+<P>Your job is to write the module that keeps track of the student's
+probes and the hypotheses they affect. Other parts of the UGH system
+will handle the interface and deciding how to respond if the student
+selects an unjustified or inconsistent outcome action.</P>
+
+<P>The UGH group has already defined some simple representations for
+the sickle cell application to help you design your module.</P>
+
+<BLOCKQUOTE><PRE>(setq *possible-facts*
+   `((husband-has-disease husband-has-trait husband-ok)
+     (wife-has-disease    wife-has-trait    wife-ok)</PRE>
+</BLOCKQUOTE>
+
+<PRE><TT>&nbsp;</TT></PRE>
+
+<P><TT>*possible-facts*</TT> holds a list of lists of facts. Exactly
+one fact in each set has to be true.</P>
+
+<BLOCKQUOTE><PRE>(setq *probe-results*
+   `((look-husband-blood
+       (husband-sickle-blood husband-has-disease)
+	  (husband-round-blood husband-has-trait)
+	  (husband-round-blood husband-ok))
+	(electro-husband-blood
+	  (husband-trait-sign husband-has-disease)
+	  (husband-trait-sign husband-has-trait)
+	  (husband-no-trait-sign husband-ok))
+      ...
+	))</PRE></BLOCKQUOTE>
+
+<PRE><TT>&nbsp;</TT></PRE>
+
+<P><TT>*probe-results*</TT> says how facts affect probe results. Each
+item in the list is the name of a possible probe action, followed by
+lists of results and the facts that have to be true for that result
+to occur. Although it doesn't occur here, if a particular result is
+followed by several fact names, that means that all those facts have
+to be true for a particular result to occur. Notice that the same
+result, e.g., seeing round blood cells, may occur for more than one
+reason--that's what makes investigations tricky! The remaining items
+in the above list, for looking at the wife's blood, should be
+obvious.</P>
+
+<BLOCKQUOTE><PRE>(setq *scenario* `(husband-has-trait wife-ok))</PRE>
+</BLOCKQUOTE>
+
+<P>A scenario is just a consistent set of true facts. In this
+scenario, the husband has the sickle cell trait, but the wife has
+neither the disease nor the trait.</P>
+
+<P>Specify the design (and as much implementation as you have time
+for) for the following functions:</P>
+
+<UL>
+   <LI><TT>do-probe</TT>(<I>probe-name</I>, <I>scenario</I>) --
+   returns the result of the probe for the given set of facts. For
+   simplicity, in an UGH investigative GBS, probe actions do not
+   affect the facts in a scenario. 
+   
+   <P>Ex. <TT>(do-probe 'look-wife-blood)</TT> should return
+   <TT>wife-round-blood</TT>.</P>
+   
+   <LI><TT>consistent-p</TT>(<I>fact-name</I>) -- returns true if the
+   fact named has not been disproven by the results of any probes
+   done so far. 
+   
+   <P>Ex. <TT>(consistent-p 'wife-has-disease)</TT> should return
+   false after the <TT>do-probe</TT> just mentioned, but
+   <TT>(consistent-p `wife-has-trait)</TT> should still return true.
+   </P>
+</UL>
+
+<P>The UGH group is working under tight memory constraints. There's
+no room for loading some constraint maintenance package. You have to
+do all this in regular Common Lisp.</P>
+
+<P>Since you may be taken off the project at any time, even at an
+hour's notice, describe your algorithms well enough so that another
+programmer could take over.</P>
+
+<P>As you do this, you should also comment on any flaws (fatal or
+inconvenient) that you see in the above scheme. Are there kinds of
+evidential relationships between results and hypotheses that can't be
+represented? Are there kinds of justification relationships between
+hypotheses and outcome actions that can't be represented?</P>
+
+<P>
+<HR>
+</P>
+</BODY>
+</HTML>

@@ -1,0 +1,231 @@
+<html>
+<head><title>LD.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD</h2>the ACL2 read-eval-print loop, file loader, and <a href="COMMAND.html">command</a> processor
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(LD "foo.lisp")              ; read and evaluate each form in file
+                             ; "foo.lisp", in order
+(LD "foo.lisp" :ld-pre-eval-print t)
+                             ; as above, but print each form to standard
+                             ; character output just before it is evaluated<p>
+
+General Form:
+(LD standard-oi                  ; open obj in channel, stringp file name
+                                 ; to open and close, or list of forms
+<p>
+; Optional keyword arguments:
+    :dir                ...      ; use this add-include-book-dir directory
+    :standard-co        ...      ; open char out or file to open and close
+    :proofs-co          ...      ; open char out or file to open and close
+    :current-package    ...      ; known package name
+    :ld-skip-proofsp    ...      ; nil, 'include-book, or t
+                                 ;   (see <a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a>)
+    :ld-redefinition-action ...  ; nil or '(:a . :b)
+    :ld-prompt          ...      ; nil, t, or some prompt printer fn
+    :ld-keyword-aliases ...      ; an alist pairing keywords to parse info
+    :ld-pre-eval-filter ...      ; :all, :query, or some new name
+    :ld-pre-eval-print  ...      ; nil, t, or :never
+    :ld-post-eval-print ...      ; nil, t, or :command-conventions
+    :ld-evisc-tuple     ...      ; nil or '(alist nil nil level length)
+    :ld-error-triples   ...      ; nil or t
+    :ld-error-action    ...      ; :return (default), :continue or :error
+    :ld-query-control-alist ...  ; alist supplying default responses
+    :ld-verbose         ...)     ; nil or t
+</pre>
+<p>
+
+<code>Ld</code> is the top-level ACL2 read-eval-print loop.  (When you call <code><a href="LP.html">lp</a></code>, a
+little initialization is done in raw Common Lisp and then <code>ld</code> is
+called.)  <code>ld</code> is also a general-purpose ACL2 file loader and a
+<a href="COMMAND.html">command</a> interpreter.  <code>Ld</code> is actually a macro that expands to a
+function call involving <code><a href="STATE.html">state</a></code>.  <code>Ld</code> returns an ``error/value/state''
+triple as explained below.<p>
+
+The arguments to <code>ld</code>, except for <code>:dir</code>, all happen to be global
+variables in <code><a href="STATE.html">state</a></code>.  For example, <code>'</code><code><a href="CURRENT-PACKAGE.html">current-package</a></code> and
+<code>'</code><code><a href="LD-VERBOSE.html">ld-verbose</a></code> are global variables, which may be accessed via
+<code>(@ current-package)</code> and <code>(@ ld-verbose)</code>.  When <code>ld</code> is called, it
+``binds'' these variables.  By ``binds'' we actually mean the variables are
+globally set but restored to their old values on exit.  Because <code>ld</code>
+provides the illusion of <a href="STATE.html">state</a> global variables being bound, they are
+called ``<code>ld</code> specials'' (after the Lisp convention of calling a variable
+``special'' if it is referenced freely after having been bound).<p>
+
+Note that all arguments but the first are passed via keyword.  Any
+variable not explicitly given a value in a call retains its pre-call
+value, with the exception of <code>:</code><code><a href="LD-ERROR-ACTION.html">ld-error-action</a></code>, which defaults to
+<code>:return</code> if not explicitly specified.<p>
+
+Just as an example to drive the point home: If <code><a href="CURRENT-PACKAGE.html">current-package</a></code> is
+<code>"ACL2"</code> and you typed
+
+<pre>
+(ld *standard-oi* :current-package "MY-PKG")
+</pre>
+
+you would find yourself in (an inner) read-eval-print loop in
+which the <a href="CURRENT-PACKAGE.html">current-package</a> was <code>"MY-PKG"</code>.  You could operate
+there as long as you wished, changing the current package at will.
+But when you typed <code>:</code><code><a href="Q.html">q</a></code> you would return to the outer
+read-eval-print loop where the current package would still be
+<code>"ACL2"</code>.<p>
+
+Roughly speaking, <code>ld</code> repeatedly reads a form from <code><a href="STANDARD-OI.html">standard-oi</a></code>,
+evaluates it, and prints its result to <code><a href="STANDARD-CO.html">standard-co</a></code>.  It does this until
+the form evaluates to an error triple whose value component is <code>:</code><code><a href="Q.html">q</a></code>
+or until the input channel or list is emptied.  However, <code>ld</code> has many
+bells and whistles controlled by the <code>ld</code> specials.  Each such special is
+documented individually.  For example, see the documentation for
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, <code><a href="CURRENT-PACKAGE.html">current-package</a></code>, <code><a href="LD-PRE-EVAL-PRINT.html">ld-pre-eval-print</a></code>, etc.<p>
+
+A more precise description of <code>ld</code> is as follows.  In the description below
+we use the <code>ld</code> specials as variables, e.g., we say ``a form is read from
+<code><a href="STANDARD-OI.html">standard-oi</a></code>.''  By this usage we refer to the current value of the
+named <a href="STATE.html">state</a> global variable, e.g., we mean ``a form is read from the
+current value of <code>'</code><code><a href="STANDARD-OI.html">standard-oi</a></code>.'' This technicality has an important
+implication: If while interacting with <code>ld</code> you change the value of one of
+the <code>ld</code> specials, e.g., <code>'</code><code><a href="STANDARD-OI.html">standard-oi</a></code>, you will change the
+behavior of <code>ld</code>, e.g., subsequent input will be taken from the new value.<p>
+
+Three <code>ld</code> specials are treated as channels: <code><a href="STANDARD-OI.html">standard-oi</a></code> is treated
+as an object input channel and is the source of forms evaluated by <code>ld</code>;
+<code><a href="STANDARD-CO.html">standard-co</a></code> and <code><a href="PROOFS-CO.html">proofs-co</a></code> are treated as character output
+channels and various flavors of output are printed to them.  However, the
+supplied values of these specials need not actually be channels; several
+special cases are recognized.<p>
+
+If the supplied value of one of these is in fact an open channel of the
+appropriate type, that channel is used and is not closed by <code>ld</code>.  If the
+supplied value of one of these specials is a string, the string is treated as
+a file name in (essentially) Unix syntax (see <a href="PATHNAME.html">pathname</a>) and a channel of the
+appropriate type is opened to/from that file.  Any channel opened by <code>ld</code>
+during the binding of the <code>ld</code> specials is automatically closed by <code>ld</code>
+upon termination.  If <code><a href="STANDARD-CO.html">standard-co</a></code> and <code><a href="PROOFS-CO.html">proofs-co</a></code> are equal
+strings, only one channel to that file is opened and is used for both.<p>
+
+As a special convenience, when <code><a href="STANDARD-OI.html">standard-oi</a></code> is a string and the <code>:dir</code>
+argument is also provided, we look up <code>:dir</code> in the table of directories
+maintained by <code><a href="ADD-INCLUDE-BOOK-DIR.html">add-include-book-dir</a></code>, and prepend this directory to
+<code><a href="STANDARD-OI.html">standard-oi</a></code> to create the filename.  (In this case, however, we require
+that <code>standard-oi</code> is a relative pathname, not an absolute pathname.)  For
+example, one can write
+<code>(ld "arithmetic/top-with-meta.lisp" :dir :system)</code> to <code>ld</code> that
+particular system library.  (Of course, you should almost always load books
+like <code>arithmetic/top-with-meta</code> using <code><a href="INCLUDE-BOOK.html">include-book</a></code> instead of
+<code>ld</code>.)  If <code>:dir</code> is not specified, then a relative pathname is resolved
+using the connected book directory; see <a href="CBD.html">cbd</a>.<p>
+
+Several other alternatives are allowed for <code><a href="STANDARD-OI.html">standard-oi</a></code>.  If
+<code><a href="STANDARD-OI.html">standard-oi</a></code> is a true list then it is taken as the list of forms to
+be processed.  If <code><a href="STANDARD-OI.html">standard-oi</a></code> is a list ending in an open channel,
+then <code>ld</code> processes the forms in the list and then reads and processes
+the forms from the channel.  Analogously, if <code><a href="STANDARD-OI.html">standard-oi</a></code> is a list
+ending a string, an object channel from the named file is opened and
+<code>ld</code> processes the forms in the list followed by the forms in the
+file.  That channel is closed upon termination of <code>ld</code>.<p>
+
+The remaining <code>ld</code> specials are handled more simply and generally have
+to be bound to one of a finite number of tokens described in the
+<code>:</code><code><a href="DOC.html">doc</a></code> entries for each <code>ld</code> special.  Should any <code>ld</code> special be supplied
+an inappropriate value, an error message is printed.<p>
+
+Next, if <code><a href="LD-VERBOSE.html">ld-verbose</a></code> is <code>t</code>, <code>ld</code> prints the message ``ACL2 loading
+name'' where <code>name</code> names the file or channel from which forms are
+being read.  At the conclusion of <code>ld</code>, it will print ``Finished
+loading name'' if <code><a href="LD-VERBOSE.html">ld-verbose</a></code> is <code>t</code>.<p>
+
+Finally, <code>ld</code> repeatedly executes the ACL2 read-eval-print step, which
+may be described as follows.  A <a href="PROMPT.html">prompt</a> is printed to <code><a href="STANDARD-CO.html">standard-co</a></code> if
+<code><a href="LD-PROMPT.html">ld-prompt</a></code> is non-<code>nil</code>.  The format of the <a href="PROMPT.html">prompt</a> is determined by
+<code><a href="LD-PROMPT.html">ld-prompt</a></code>.  If it is <code>t</code>, the default ACL2 <a href="PROMPT.html">prompt</a> is used.  If it is
+any other non-<code>nil</code> value then it is treated as an ACL2 function that
+will print the desired <a href="PROMPT.html">prompt</a>.  See <a href="LD-PROMPT.html">ld-prompt</a>.  In the
+exceptional case where <code>ld</code>'s input is coming from the terminal
+<code>(*standard-oi*)</code> but its output is going to a different sink (i.e.,
+<code><a href="STANDARD-CO.html">standard-co</a></code> is not <code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code>), we also print the <a href="PROMPT.html">prompt</a> to the
+terminal.<p>
+
+<code>Ld</code> then reads a form from <code><a href="STANDARD-OI.html">standard-oi</a></code>.  If the object read is a
+keyword, <code>ld</code> constructs a ``keyword command form'' by possibly
+reading several more objects.  See <a href="KEYWORD-COMMANDS.html">keyword-commands</a>.  This
+construction process is sensitive to the value of
+<code><a href="LD-KEYWORD-ALIASES.html">ld-keyword-aliases</a></code>.  See <a href="LD-KEYWORD-ALIASES.html">ld-keyword-aliases</a>.  Otherwise, the
+object read is treated as the command form.<p>
+
+<code>Ld</code> next decides whether to evaluate or skip this form, depending on
+<code><a href="LD-PRE-EVAL-FILTER.html">ld-pre-eval-filter</a></code>.  Initially, the filter must be either <code>:all</code>,
+<code>:query</code>, or a new name.  If it is <code>:all</code>, it means all forms are
+evaluated.  If it is <code>:query</code>, it means each form that is read is
+displayed and the user is queried.  Otherwise, the filter is a name
+and each form that is read is evaluated as long as the name remains
+new, but if the name is ever introduced then no more forms are read
+and <code>ld</code> terminates.  See <a href="LD-PRE-EVAL-FILTER.html">ld-pre-eval-filter</a>.<p>
+
+If the form is to be evaluated, first prints the form to
+<code><a href="STANDARD-CO.html">standard-co</a></code>, if <code><a href="LD-PRE-EVAL-PRINT.html">ld-pre-eval-print</a></code> is <code>t</code>.  With this feature, <code>ld</code> can
+process an input file or form list and construct a script of the
+session that appears as though each form was typed in.
+See <a href="LD-PRE-EVAL-PRINT.html">ld-pre-eval-print</a>.<p>
+
+<code>Ld</code> then evaluates the form, with <code><a href="STATE.html">state</a></code> bound to the current <a href="STATE.html">state</a>.
+The result is some list of (multiple) values.  If a <a href="STATE.html">state</a> is among the
+values, then <code>ld</code> uses that <a href="STATE.html">state</a> as the subsequent current <a href="STATE.html">state</a>.<p>
+
+Depending on <code><a href="LD-ERROR-TRIPLES.html">ld-error-triples</a></code>, <code>ld</code> may interpret the result as an
+``error.'' See <a href="LD-ERROR-TRIPLES.html">ld-error-triples</a>.  We first discuss <code>ld</code>'s
+behavior if no error signal is detected (either because none was
+sent or because <code>ld</code> is ignoring them as per <code><a href="LD-ERROR-TRIPLES.html">ld-error-triples</a></code>).<p>
+
+In the case of a non-erroneous result, <code>ld</code> does two things: First, if
+the logical <a href="WORLD.html">world</a> in the now current <a href="STATE.html">state</a> is different than the
+<a href="WORLD.html">world</a> before execution of the form, <code>ld</code> adds to the <a href="WORLD.html">world</a> a ``<a href="COMMAND.html">command</a>
+landmark'' containing the form evaluated.
+See <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>.  Second, <code>ld</code> prints the result to
+<code><a href="STANDARD-CO.html">standard-co</a></code>, according to <code><a href="LD-POST-EVAL-PRINT.html">ld-post-eval-print</a></code>.  If <code><a href="LD-POST-EVAL-PRINT.html">ld-post-eval-print</a></code>
+is <code>nil</code>, no result is printed.  If it is <code>t</code>, all of the results are
+printed as a list of (multiple) values.  Otherwise, it is
+<code>:command-conventions</code> and only the non-erroneous ``value'' component
+of the result is printed.  See <a href="LD-POST-EVAL-PRINT.html">ld-post-eval-print</a>.<p>
+
+Whenever <code>ld</code> prints anything (whether the input form, a query, or
+some results) it ``eviscerates'' it if <code><a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a></code> is non-<code>nil</code>.
+Essentially, evisceration is a generalization of Common Lisp's use
+of <code>*print-level*</code> and <code>*print-length*</code> to hide large substructures.
+See <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a>.<p>
+
+We now return to the case of a form whose evaluation signals an
+error.  In this case, <code>ld</code> first restores the ACL2 logical <a href="WORLD.html">world</a> to
+what it was just before the erroneous form was evaluated.  Thus, a
+form that partially changes the <a href="WORLD.html">world</a> (i.e., begins to store
+properties) and then signals an error, has no effect on the <a href="WORLD.html">world</a>.
+You may see this happen on <a href="COMMAND.html">command</a>s that execute several <a href="EVENTS.html">events</a>
+(e.g., an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or a <code><a href="PROGN.html">progn</a></code> of several <code><a href="DEFUNS.html">defuns</a></code>): even though the
+output makes it appear that the initial <a href="EVENTS.html">events</a> were executed, if an
+error is signalled by a later event the entire block of <a href="EVENTS.html">events</a> is
+discarded.<p>
+
+After rolling back, <code>ld</code> takes an action determined by
+<code><a href="LD-ERROR-ACTION.html">ld-error-action</a></code>.  If the action is <code>:continue</code>, <code>ld</code> merely iterates the
+read-eval-print step.  Note that nothing suggestive of the value of
+the ``erroneous'' form is printed.  If the action is <code>:return</code>, <code>ld</code>
+terminates normally.  If the action is <code>:error</code>, <code>ld</code> terminates
+signalling an error to its caller.  If its caller is in fact another
+instance of <code>ld</code> and that instance is watching out for error signals,
+the entire <a href="WORLD.html">world</a> created by the erroneous inner <code>ld</code> will be discarded
+by the outer <code>ld</code>.<p>
+
+<code>Ld</code> returns an error triple, <code>(mv erp val state)</code>.  <code>Erp</code> is <code>t</code> or <code>nil</code>
+indicating whether an error is being signalled.  If no error is
+signalled, <code>val</code> is the ``reason'' <code>ld</code> terminated and is one of <code>:exit</code>
+(meaning <code>:</code><code><a href="Q.html">q</a></code> was read), <code>:eof</code> (meaning the input source was
+exhausted), <code>:error</code> (meaning an error occurred but has been
+supressed) or <code>:filter</code> (meaning the <code><a href="LD-PRE-EVAL-FILTER.html">ld-pre-eval-filter</a></code> terminated
+<code>ld</code>).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

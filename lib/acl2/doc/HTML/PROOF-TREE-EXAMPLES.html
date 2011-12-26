@@ -1,0 +1,324 @@
+<html>
+<head><title>PROOF-TREE-EXAMPLES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PROOF-TREE-EXAMPLES</h2>proof tree example
+<pre>Major Section:  <a href="PROOF-TREE.html">PROOF-TREE</a>
+</pre><p>
+
+See <a href="PROOF-TREE.html">proof-tree</a> for an introduction to proof trees, and for a
+list of related topics.  Here we present a detailed example followed
+by a shorter example that illustrates proof by induction.
+<p>
+Consider the <a href="GUARD.html">guard</a> proof for the definition of a function
+<code>cancel_equal_plus</code>; the body of this definition is of no importance
+here.  The first proof tree display is:
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+     |  &lt;18 subgoals&gt;
+</pre>
+
+This is to be read as follows.
+
+<blockquote>
+ At this stage of the proof we have encountered the top-level goal,
+ named "Goal", which generated 18 subgoals using the
+ ``preprocess'' process.  We have not yet begun to work on those
+ subgoals.
+</blockquote>
+
+The corresponding message from the ordinary prover output is:
+
+<blockquote>
+ By case analysis we reduce the conjecture to the following 18
+ conjectures.
+</blockquote>
+
+Note that the field just before the name of the goal (<code>"Goal"</code>),
+which here contains the number 18, indicates the number of cases
+(children) created by the goal using the indicated process.  This
+number will remain unchanged as long as this goal is displayed.<p>
+
+The next proof tree display is:
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   1 |  Subgoal 18 simp
+     |  |  &lt;1 subgoal&gt;
+     |  &lt;17 more subgoals&gt;
+</pre>
+
+which indicates that at this point, the prover has used the
+simplification (``simp'') process on Subgoal 18 to create one
+subgoal (``&lt;1 subgoal&gt;'').  The vertical bar (``|'') below ``Subgoal
+18'', accompanied by the line below it, signifies that there are 17
+siblings of Subgoal 18 that remain to be processed.<p>
+
+The next proof tree displayed is:
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   1 |  Subgoal 18 simp
+c  2 |  |  Subgoal 18' ELIM
+     |  |  |  &lt;2 subgoals&gt;
+     |  &lt;17 more subgoals&gt;
+</pre>
+
+Let us focus on the fourth line of this display:
+
+<pre>
+c  2 |  |  Subgoal 18' ELIM
+</pre>
+
+The ``c'' field marks this goal as a ``checkpoint'', i.e., a goal
+worthy of careful scrutiny.  In fact, any goal that creates children
+by a process other than ``preprocess'' or ``simp'' is marked as a
+checkpoint.  In this case, the destructor-elimination (``<a href="ELIM.html">ELIM</a>'')
+process has been used to create subgoals of this goal.  The
+indentation shows that this goal, Subgoal 18', is a child of Subgoal
+18.  The number ``2'' indicates that 2 subgoals have been created
+(by <a href="ELIM.html">ELIM</a>).  Note that this information is consistent with the line
+just below it, which says ``&lt;2 subgoals&gt;''.<p>
+
+Finally, the last line of this proof tree display,
+
+<pre>
+     |  &lt;17 more subgoals&gt;
+</pre>
+
+is connected by vertical bars (``|'') up to the string
+<code>"Subgoal 18"</code>, which suggests that there are 17 immediate
+subgoals of Goal remaining to process after Subgoal 18.  Note that
+this line is indented one level from the second line, which is the
+line for the goal named <code>"Goal"</code>.  The display is intended to
+suggest that the subgoals of Goal that remain to be proved consist
+of Subgoal 18 together with 17 more subgoals.<p>
+
+The next proof tree display differs from the previous one only in
+that now, Subgoal 18' has only one more subgoal to be processed.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   1 |  Subgoal 18 simp
+c  2 |  |  Subgoal 18' ELIM
+     |  |  |  &lt;1 more subgoal&gt;
+     |  &lt;17 more subgoals&gt;
+</pre>
+
+Note that the word ``more'' in ``&lt;1 more subgoal&gt;'' tells us that
+there was originally more than one subgoal of Subgoal 18.  In fact
+that information already follows from the line above, which (as
+previously explained) says that Subgoal 18' originally created 2
+subgoals.<p>
+
+The next proof tree display occurs when the prover completes the
+proof of that ``1 more subgoal'' referred to above.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+     |  &lt;17 more subgoals&gt;
+</pre>
+
+Then, Subgoal 17 is processed and creates one subgoal, by
+simplification:
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   1 |  Subgoal 17 simp
+     |  |  &lt;1 subgoal&gt;
+     |  &lt;16 more subgoals&gt;
+</pre>
+
+... and so on.<p>
+
+Later in the proof one might find the following successive proof
+tree displays.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+     |  &lt;9 more subgoals&gt;<p>
+
+( DEFUN CANCEL_EQUAL_PLUS ...)<p>
+
+  18 Goal preprocess
+   0 |  Subgoal 9 simp (FORCED)
+     |  &lt;8 more subgoals&gt;
+</pre>
+
+These displays tell us that Subgoal 9 simplified to <code>t</code> (note that
+the ``0'' shows clearly that no subgoals were created), but that
+some rule's hypotheses were <a href="FORCE.html">force</a>d.  Although this goal is not
+checkpointed (i.e., no ``c'' appears on the left margin), one can
+cause such goals to be checkpointed;
+see <a href="CHECKPOINT-FORCED-GOALS.html">checkpoint-forced-goals</a>.<p>
+
+In fact, the proof tree displayed at the end of the ``main proof''
+(the 0-th forcing round) is as follows.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   0 |  Subgoal 9 simp (FORCED)
+   0 |  Subgoal 8 simp (FORCED)
+   0 |  Subgoal 7 simp (FORCED)
+   0 |  Subgoal 6 simp (FORCED)
+   0 |  Subgoal 4 simp (FORCED)
+   0 |  Subgoal 3 simp (FORCED)
+</pre>
+
+This is followed by the following proof tree display at the start
+of the forcing round.
+
+<pre>
+  18 Goal preprocess
+   0 |  Subgoal 9 simp (FORCED [1]Subgoal 4)
+   0 |  Subgoal 8 simp (FORCED [1]Subgoal 6)
+   0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+   0 |  Subgoal 6 simp (FORCED [1]Subgoal 3)
+   0 |  Subgoal 4 simp (FORCED [1]Subgoal 5)
+   0 |  Subgoal 3 simp (FORCED [1]Subgoal 2)
+++++++++++++++++++++++++++++++
+   6 [1]Goal FORCING-ROUND
+   2 |  [1]Subgoal 6 preprocess
+     |  |  &lt;2 subgoals&gt;
+     |  &lt;5 more subgoals&gt;
+</pre>
+
+This display shows which goals to ``blame'' for the existence of
+each goal in the forcing round.  For example, Subgoal 9 is to blame
+for the creation of [1]Subgoal 4.<p>
+
+Actually, there is no real goal named <code>"[1]Goal"</code>.  However, the
+line
+
+<pre>
+   6 [1]Goal FORCING-ROUND
+</pre>
+
+appears in the proof tree display to suggest a ``parent'' of the
+six top-level goals in that forcing round.  As usual, the numeric
+field before the goal name contains the original number of children
+of that (virtual, in this case) goal -- in this case, 6.<p>
+
+In our example proof, Subgoal 6 eventually gets proved, without
+doing any further forcing.  At that point, the proof tree display
+looks as follows.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   0 |  Subgoal 9 simp (FORCED [1]Subgoal 4)
+   0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+   0 |  Subgoal 6 simp (FORCED [1]Subgoal 3)
+   0 |  Subgoal 4 simp (FORCED [1]Subgoal 5)
+   0 |  Subgoal 3 simp (FORCED [1]Subgoal 2)
+++++++++++++++++++++++++++++++
+   6 [1]Goal FORCING-ROUND
+     |  &lt;5 more subgoals&gt;
+</pre>
+
+Notice that the line for Subgoal 8,
+
+<pre>
+   0 |  Subgoal 8 simp (FORCED [1]Subgoal 6)
+</pre>
+
+no longer appears.  That is because the goal [1]Subgoal 6 has been
+proved, along with all its children; and hence, the proof of Subgoal
+8 no longer depends on any further reasoning.<p>
+
+The final two proof tree displays in our example are as follows.
+
+<pre>
+( DEFUN CANCEL_EQUAL_PLUS ...)
+  18 Goal preprocess
+   0 |  Subgoal 7 simp (FORCED [1]Subgoal 1)
+++++++++++++++++++++++++++++++
+   6 [1]Goal FORCING-ROUND
+   2 |  [1]Subgoal 1 preprocess
+   1 |  |  [1]Subgoal 1.1 preprocess
+   1 |  |  |  [1]Subgoal 1.1' simp
+c  3 |  |  |  |  [1]Subgoal 1.1'' ELIM
+     |  |  |  |  |  &lt;1 more subgoal&gt;<p>
+
+( DEFUN CANCEL_EQUAL_PLUS ...)
+&lt;&lt;PROOF TREE IS EMPTY&gt;&gt;
+</pre>
+
+The explanation for the empty proof tree is simple:  once
+[1]Subgoal 1.1.1 was proved, nothing further remained to be proved.
+In fact, the much sought-after ``Q.E.D.'' appeared shortly after the
+final proof tree was displayed.<p>
+
+Let us conclude with a final, brief example that illustrates proof
+by induction.  Partway through the proof one might come across the
+following proof tree display.
+
+<pre>
+( DEFTHM PLUS-TREE-DEL ...)
+   1 Goal preprocess
+   2 |  Goal' simp
+c  0 |  |  Subgoal 2 PUSH *1
+     |  |  &lt;1 more subgoal&gt;
+</pre>
+
+This display says that in the attempt to prove a theorem called
+<code>plus-tree-del</code>, preprocessing created the only child Goal' from Goal,
+and Goal' simplified to two subgoals.  Subgoal 2 is immediately
+pushed for proof by induction, under the name ``*1''.  In fact if
+Subgoal 1 simplifies to <code>t</code>, then we see the following successive
+proof tree displays after the one shown above.
+
+<pre>
+( DEFTHM PLUS-TREE-DEL ...)
+   1 Goal preprocess
+   2 |  Goal' simp
+c  0 |  |  Subgoal 2 PUSH *1<p>
+
+( DEFTHM PLUS-TREE-DEL ...)
+   1 Goal preprocess
+   2 |  Goal' simp
+c  0 |  |  Subgoal 2 PUSH *1
+++++++++++++++++++++++++++++++
+c  6 *1 INDUCT
+     |  &lt;5 more subgoals&gt;
+</pre>
+
+The separator ``+++++...'' says that we are beginning another trip
+through the waterfall.  In fact this trip is for a proof by
+induction (as opposed to a forcing round), as indicated by the word
+``INDUCT''.  Apparently *1.6 was proved immediately, because it was
+not even displayed; a goal is only displayed when there is some work
+left to do either on it or on some goal that it brought (perhaps
+indirectly) into existence.<p>
+
+Once a proof by induction is completed, the ``PUSH'' line that
+refers to that proof is eliminated (``pruned'').  So for example,
+when the present proof by induction is completed, the line
+
+<pre>
+c  0 |  |  Subgoal 2 PUSH *1
+</pre>
+
+is eliminated, which in fact causes the lines above it to be
+eliminated (since they no longer refer to unproved children).
+Hence, at that point one might expect to see:
+
+<pre>
+( DEFTHM PLUS-TREE-DEL ...)
+&lt;&lt;PROOF TREE IS EMPTY&gt;&gt;
+</pre>
+
+However, if the proof by induction of *1 necessitates further
+proofs by induction or a forcing round, then this ``pruning'' will
+not yet be done.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

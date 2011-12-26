@@ -1,0 +1,105 @@
+<html>
+<head>
+   <title>2003 AI Qual Programming Solution</title>
+</head>
+<body bgcolor="#ffffff">
+
+<hr>
+<h1>2003 AI Qual Programming Solution</h1>
+
+<p>
+This was meant to be an easy problem, and indeed 2
+out of 4 people got basically working code, with good
+modularity. One was in Lisp, the other in Perl. The
+Perl was substantially longer -- so much for quick
+and dirty. Another Lisp answer was basically OK but
+not as polished.
+</p>
+<p>
+However, the best answers, while clearly written,
+were inefficient and longer than necessary. The 
+Lisp solutions in particular consed up a storm
+when calculating distances, when no consing should
+be needed for that part at all.
+</p>
+<p>
+And no answer allowed for arbitrary stopping predicates,
+though the Perl code comments noted this limitation.
+</p>
+<p>
+The code below, as suggested by the question, uses lists
+for everything, but still conses much less and is shorter
+than any submitted code.
+</p>
+
+<blockquote><pre>(defun test-find-clusters (&amp;optional (n 3))
+  (find-clusters '((1 1) (2 1) (1 2) (5 5) (4 5) (5 4) (-2 -2) (-1 -1))
+                 #'(lambda (c) (<= (length c) n))))
+
+;;; (find-clusters point-list stop-fn) => cluster-list
+;;;   Creates a list of clusters, one per point, then
+;;;   repeatedly merges clusters until (stop-fn clusters) is true.
+
+(defun find-clusters (points stop-fn)
+  (do ((clusters (mapcar #'list points) (merge-closest-clusters clusters)))
+      ((or (null (cdr clusters))
+           (funcall stop-fn clusters))
+       clusters)))
+
+;;; (merge-closest-clusters clusters) => clusters
+;;;    Returns clusters with the 2 closest clusters merged.
+;;;    DESTRUCTIVE.
+;;;    Assumes at least 2 clusters
+
+(defun merge-closest-clusters (clusters)
+  (multiple-value-bind (c1 c2) (get-closest-clusters clusters)
+    (nconc c1 c2)
+    (delete c2 clusters)))
+
+;;; (get-closest-clusters clusters) => cluster1, cluster2
+;;;   Returns the 2 closest clusters
+;;;   Assumes at least 2 clusters
+
+(defun get-closest-clusters (clusters)
+  (let (best-dist save1 save2)
+    (map-pairs #'(lambda (c1 c2)
+                   (let ((dist (cluster-distance c1 c2)))
+                     (when (or (null best-dist)
+                               (< dist best-dist))
+                       (setq best-dist dist save1 c1 save2 c2))))
+               clusters clusters)
+    (values save1 save2)))
+
+;;; (cluster-distance cluster1 cluster2) => number
+;;;   Returns the average of the point distances between two clusters.
+
+(defun cluster-distance (c1 c2)
+  (let ((sum 0))
+    (map-pairs #'(lambda (p1 p2)
+                   (incf sum (point-distance p1 p2)))
+               c1 c2)
+    (/ sum (* (length c1) (length c2)))))
+
+;;; (point-distance point1 point2) => number
+;;;   Returns the Euclidean distance between two points
+
+(defun point-distance (p1 p2)
+  (let ((sum 0))
+    (mapc #'(lambda (x1 x2)
+              (incf sum (* (- x1 x2) (- x1 x2))))
+          p1 p2)
+    (sqrt sum)))
+
+;;; (map-pairs fn list1 list2)
+;;;   Calls (fn x y) for every pair (x, y) from (list1, list2)
+;;;   except when x is y.
+
+(defun map-pairs (fn l1 l2)
+  (dolist (x1 l1)
+    (dolist (x2 l2)
+      (unless (eq x1 x2)
+        (funcall fn x1 x2)))))
+</pre></blockquote>
+<hr>
+</body>
+</html>

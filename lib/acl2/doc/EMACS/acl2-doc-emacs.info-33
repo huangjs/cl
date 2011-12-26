@@ -1,0 +1,1319 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: O-FINP,  Next: O-FIRST-COEFF,  Prev: NUMERATOR,  Up: PROGRAMMING
+
+O-FINP    recognizes if an ordinal is finite
+
+We introduce the function o-finp which returns t for any ordinal that
+is finite, else nil.  This function is equivalent to the function atom,
+and is introduced so that we can disable its definition when dealing
+with ordinals (also see *note MAKE-ORD::).
+
+
+File: acl2-doc-emacs.info,  Node: O-FIRST-COEFF,  Next: O-FIRST-EXPT,  Prev: O-FINP,  Up: PROGRAMMING
+
+O-FIRST-COEFF    returns the first coefficient of an ordinal
+
+An ACL2 ordinal is either a natural number or, for an infinite ordinal,
+a list whose elements are exponent-coefficient pairs (see *note O-P::).
+In the latter case, this function returns the cdr of the first pair in
+the list.  In the case of a natural number, this function returns the
+ordinal itself (since a natural number, n, can be thought of as (w^0)n).
+
+For the corresponding exponent, see *note O-FIRST-EXPT::.
+
+
+File: acl2-doc-emacs.info,  Node: O-FIRST-EXPT,  Next: O-INFP,  Prev: O-FIRST-COEFF,  Up: PROGRAMMING
+
+O-FIRST-EXPT    the first exponent of an ordinal
+
+An ACL2 ordinal is either a natural number or, for an infinite ordinal,
+a list whose elements are exponent-coefficient pairs (see *note O-P::).
+In the latter case, this function returns the car of the first pair in
+the list.  In the case of a natural number, the value returned is 0
+(since a natural number, n, can be thought of as (w^0)n).
+
+For the corresponding coefficient, see *note O-FIRST-COEFF::.
+
+
+File: acl2-doc-emacs.info,  Node: O-INFP,  Next: O-P,  Prev: O-FIRST-EXPT,  Up: PROGRAMMING
+
+O-INFP    recognizes if an ordinal is infinite
+
+O-infp is a macro.  (O-infp x) opens up to (not (o-finp x)) (see *note
+O-FINP::).
+
+
+File: acl2-doc-emacs.info,  Node: O-P,  Next: O-RST,  Prev: O-INFP,  Up: PROGRAMMING
+
+O-P    a recognizer for the ordinals up to epsilon-0
+
+Using the nonnegative integers and lists we can represent the ordinals
+up to epsilon-0. The ordinal representation used in ACL2 has changed as
+of Version_2.8 from that of Nqthm-1992, courtesy of Pete Manoilios and
+Daron Vroon; additional discussion may be found in "Ordinal Arithmetic
+in ACL2", proceedings of ACL2 Workshop 2003,
+http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/.  Previously,
+ACL2's notion of ordinal was very similar to the development given in
+"New Version of the Consistency Proof for Elementary Number Theory" in
+The Collected Papers of Gerhard Gentzen, ed. M.E. Szabo, North-Holland
+Publishing Company, Amsterdam, 1969, pp 132-213.
+
+The following essay is intended to provide intuition about ordinals.
+The truth, of course, lies simply in the ACL2 definitions of o-p and o<.
+
+Very intuitively, think of each non-zero natural number as by being
+denoted by a series of the appropriate number of strokes, i.e.,
+
+     0             0
+     1             |
+     2             ||
+     3             |||
+     4             ||||
+     ...           ...
+
+Then "omega," here written as w, is the ordinal that might be written as
+
+     w             |||||...,
+
+i.e., an infinite number of strokes.  Addition here is just
+concatenation.  Observe that adding one to the front of w in the
+picture above produces w again, which gives rise to a standard
+definition of w:  w is the least ordinal such that adding another
+stroke at the beginning does not change the ordinal.
+
+We denote by w+w or w*2 the "doubly infinite" sequence that we might
+write as follows.
+
+     w*2           |||||... |||||...
+
+One way to think of w*2 is that it is obtained by replacing each stroke
+in 2 (||) by w.  Thus, one can imagine w*3, w*4, etc., which leads
+ultimately to the idea of "w*w," the ordinal obtained by replacing each
+stroke in w by w.  This is also written as "omega squared" or w^2, or:
+
+      2
+     w             |||||... |||||... |||||... |||||... |||||... ...
+
+We can analogously construct w^3 by replacing each stroke in w by w^2
+(which, it turns out, is the same as replacing each stroke in w^2 by
+w).  That is, we can construct w^3 as w copies of w^2,
+
+      3              2       2       2       2
+     w              w  ...  w  ...  w  ...  w ... ...
+
+Then we can construct w^4 as w copies of w^3, w^5 as w copies of w^4,
+etc., ultimately suggesting w^w.  We can then stack omegas, i.e.,
+(w^w)^w etc.  Consider the "limit" of all of those stacks, which we
+might display as follows.
+
+            .
+           .
+          .
+         w
+        w
+       w
+      w
+     w
+
+That is epsilon-0.
+
+Below we begin listing some ordinals up to epsilon-0; the reader can
+fill in the gaps at his or her leisure.  We show in the left column the
+conventional notation, using w as "omega," and in the right column the
+ACL2 object representing the corresponding ordinal.
+
+       ordinal            ACL2 representation
+     
+       0                  0
+       1                  1
+       2                  2
+       3                  3
+       ...                ...
+       w                 '((1 . 1) . 0)
+       w+1               '((1 . 1) . 1)
+       w+2               '((1 . 1) . 2)
+       ...                ...
+       w*2               '((1 . 2) . 0)
+       (w*2)+1           '((1 . 2) . 1)
+       ...                ...
+       w*3               '((1 . 3) . 0)
+       (w*3)+1           '((1 . 3) . 1)
+       ...                ...
+     
+        2
+       w                 '((2 . 1) . 0)
+       ...                ...
+     
+        2
+       w +w*4+3          '((2 . 1) (1 . 4) . 3)
+       ...                ...
+     
+        3
+       w                 '((3 . 1) . 0)
+       ...                ...
+     
+     
+        w
+       w                 '((((1 . 1) . 0) . 1) . 0)
+       ...                ...
+     
+        w  99
+       w +w  +w4+3       '((((1 . 1) . 0) . 1) (99 . 1) (1 . 4) . 3)
+       ...                ...
+     
+         2
+        w
+       w                 '((((2 . 1) . 0) . 1) . 0)
+     
+       ...                ...
+     
+         w
+        w
+       w                 '((((((1 . 1) . 0) . 1) . 0) . 1) . 0)
+       ...               ...
+
+Observe that the sequence of o-ps starts with the natural numbers
+(which are recognized by natp). This is convenient because it means
+that if a term, such as a measure expression for justifying a recursive
+function (see *note O<::) must produce an o-p, it suffices for it to
+produce a natural number.
+
+The ordinals listed above are listed in ascending order.  This is the
+ordering tested by o<.
+
+The "epsilon-0 ordinals" of ACL2 are recognized by the recursively
+defined function o-p.  The base case of the recursion tells us that
+natural numbers are epsilon-0 ordinals.  Otherwise, an epsilon-0
+ordinal is a list of cons pairs whose final cdr is a natural number,
+((a1 . x1) (a2 . x2) ... (an . xn) . p).  This corresponds to the
+ordinal (w^a1)x1 + (w^a2)x2 + ... + (w^an)xn + p.  Each ai is an
+ordinal in the ACL2 representation that is not equal to 0.  The
+sequence of the ai's is strictly decreasing (as defined by o<). Each xi
+is a positive integer (as recognized by posp).
+
+Note that infinite ordinals should generally be created using the
+ordinal constructor, make-ord, rather than cons. The functions
+o-first-expt, o-first-coeff, and o-rst are ordinals destructors.
+Finally, the function o-finp and the macro o-infp tell whether an
+ordinal is finite or infinite, respectively.
+
+The function o< compares two epsilon-0 ordinals, x and y.  If both are
+integers, (o< x y) is just x<y.  If one is an integer and the other is
+a cons, the integer is the smaller.  Otherwise, o< recursively compares
+the o-first-expts of the ordinals to determine which is smaller.  If
+they are the same, the o-first-coeffs of the ordinals are compared.  If
+they are equal, the o-rsts of the ordinals are recursively compared.
+
+Fundamental to ACL2 is the fact that o< is well-founded on epsilon-0
+ordinals.  That is, there is no "infinitely descending chain" of such
+ordinals.  See *Note PROOF-OF-WELL-FOUNDEDNESS::.
+
+
+File: acl2-doc-emacs.info,  Node: O-RST,  Next: O<,  Prev: O-P,  Up: PROGRAMMING
+
+O-RST    returns the rest of an infinite ordinal
+
+An ACL2 infinite ordinal is a list whose elements are
+exponent-coefficient pairs (see *note O-P:: and see *note O-INFP::).
+The first exponent and first coefficient of an ordinal can be obtained
+by using o-first-expt and o-first-coeff respectively.  To obtain the
+rest of the ordinal (for recursive analysis), use the o-rst function.
+It returns the rest of the ordinal after the first exponent and
+coefficient are removed.
+
+
+File: acl2-doc-emacs.info,  Node: O<,  Next: O<=,  Prev: O-RST,  Up: PROGRAMMING
+
+O<    the well-founded less-than relation on ordinals up to epsilon-0
+
+If x and y are both o-ps (see *note O-P::) then (o< x y) is true iff x
+is strictly less than y.  o< is well-founded on the o-ps.  When x and y
+are both nonnegative integers, o< is just the familiar "less than"
+relation (<).
+
+o< plays a key role in the formal underpinnings of the ACL2 logic.  In
+order for a recursive definition to be admissible it must be proved to
+"terminate."  By terminate we mean that the arguments to the function
+"get smaller" as the function recurses and this sense of size
+comparison must be such that there is no "infinitely descending"
+sequence of ever smaller arguments.  That is, the relation used to
+compare successive arguments must be well-founded on the domain being
+measured.
+
+The most basic way ACL2 provides to prove termination requires the user
+to supply (perhaps implicitly) a mapping of the argument tuples into
+the ordinals with some "measure" expression in such a way that the
+measures of the successive argument tuples produced by recursion
+decrease according to the relation o<.  The validity of this method
+rests on the well-foundedness of o< on the o-ps.
+
+Without loss of generality, suppose the definition in question
+introduces the function f, with one formal parameter x (which might be
+a list of objects).  Then we require that there exist a measure
+expression, (m x), that always produces an o-p.  Furthermore, consider
+any recursive call, (f (d x)), in the body of the definition.  Let hyps
+be the conjunction of terms, each of which is either the test of an if
+in the body or else the negation of such a test, describing the path
+through the body to the recursive call in question.  Then it must be a
+theorem that
+
+       (IMPLIES hyps (O< (m (d x)) (m x))).
+
+When we say o< is "well-founded" on the o-ps we mean that there is no
+infinite sequence of o-ps such that each is smaller than its
+predecessor in the sequence.  Thus, the theorems that must be proved
+about f when it is introduced establish that it cannot recur forever
+because each time a recursive call is taken (m x) gets smaller.  From
+this, and the syntactic restrictions on definitions, it can be shown
+(as on page 44 in "A Computational Logic", Boyer and Moore, Academic
+Press, 1979) that there exists a function satisfying the definition;
+intuitively, the value assigned to any given x by the alleged function
+is that computed by a sufficiently large machine.  Hence, the logic is
+consistent if the axiom defining f is added.
+
+See *Note O-P:: for a discussion of the ordinals and how to compare two
+ordinals.
+
+The definitional principle permits the use of relations other than o<
+but they must first be proved to be well-founded on some domain.  See
+*Note WELL-FOUNDED-RELATION::.  Roughly put, alternative relations are
+shown well-founded by providing an order-preserving mapping from their
+domain into the ordinals.  See *Note DEFUN:: for details on how to
+specify which well-founded relation is to be used.
+
+
+File: acl2-doc-emacs.info,  Node: O<=,  Next: O>,  Prev: O<,  Up: PROGRAMMING
+
+O<=    the less-than-or-equal relation for the ordinals
+
+o<= is a macro and (o<= x y) expands to (not (o< y x)).  See *Note O<::.
+
+
+File: acl2-doc-emacs.info,  Node: O>,  Next: O>=,  Prev: O<=,  Up: PROGRAMMING
+
+O>    the greater-than relation for the ordinals
+
+O> is a macro and (o> x y) expands to (o< y x).  See *Note O<::.
+
+
+File: acl2-doc-emacs.info,  Node: O>=,  Next: ODDP,  Prev: O>,  Up: PROGRAMMING
+
+O>=    the greater-than-or-equal relation for the ordinals
+
+O>= is a macro and (o>= x y) expands to (not (o< x y)).  See *Note O<::.
+
+
+File: acl2-doc-emacs.info,  Node: ODDP,  Next: OPEN-INPUT-CHANNEL,  Prev: O>=,  Up: PROGRAMMING
+
+ODDP    test whether an integer is odd
+
+(oddp x) is true if and only if x is odd, i.e., not even in the sense
+of evenp.
+
+The guard for oddp requires its argument to be an integer.
+
+Oddp is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: OPEN-INPUT-CHANNEL,  Next: OPEN-INPUT-CHANNEL-P,  Prev: ODDP,  Up: PROGRAMMING
+
+OPEN-INPUT-CHANNEL    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: OPEN-INPUT-CHANNEL-P,  Next: OPEN-OUTPUT-CHANNEL,  Prev: OPEN-INPUT-CHANNEL,  Up: PROGRAMMING
+
+OPEN-INPUT-CHANNEL-P    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: OPEN-OUTPUT-CHANNEL,  Next: OPEN-OUTPUT-CHANNEL-P,  Prev: OPEN-INPUT-CHANNEL-P,  Up: PROGRAMMING
+
+OPEN-OUTPUT-CHANNEL    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: OPEN-OUTPUT-CHANNEL-P,  Next: OR,  Prev: OPEN-OUTPUT-CHANNEL,  Up: PROGRAMMING
+
+OPEN-OUTPUT-CHANNEL-P    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: OR,  Next: PAIRLIS,  Prev: OPEN-OUTPUT-CHANNEL-P,  Up: PROGRAMMING
+
+OR    disjunction
+
+Or is the macro for disjunctions.  Or takes any number of arguments and
+returns the first that is non-nil, or nil if there is no non-nil
+element.
+
+Or is a Common Lisp macro.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: PAIRLIS,  Next: PAIRLIS$,  Prev: OR,  Up: PROGRAMMING
+
+PAIRLIS    See *Note PAIRLIS$::
+
+The Common Lisp language allows its pairlis function to construct an
+alist in any order!  So we have to define our own version: See *Note
+PAIRLIS$::.
+
+
+File: acl2-doc-emacs.info,  Node: PAIRLIS$,  Next: PEEK-CHAR$,  Prev: PAIRLIS,  Up: PROGRAMMING
+
+PAIRLIS$    zipper together two lists
+
+The Common Lisp language allows its pairlis function to construct an
+alist in any order!  So we have to define our own version, pairlis$.
+It returns the list of pairs obtained by consing together successive
+respective members of the given lists until the first list runs out.
+(Hence in particular, if the second argument is nil then each element
+of the first argument is paired with nil.)
+
+The guard for pairlis$ requires that its arguments are true lists.
+
+
+File: acl2-doc-emacs.info,  Node: PEEK-CHAR$,  Next: PKG-WITNESS,  Prev: PAIRLIS$,  Up: PROGRAMMING
+
+PEEK-CHAR$    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: PKG-WITNESS,  Next: PLUSP,  Prev: PEEK-CHAR$,  Up: PROGRAMMING
+
+PKG-WITNESS    return a specific symbol in the indicated package
+
+For any string pkg that names a package currently known to ACL2,
+(pkg-witness pkg) is a symbol in that package whose symbol-name is the
+value of constant *pkg-witness-name*.  Logically, this is the case even
+if the package is not currently known to ACL2.  However, if pkg-witness
+is called on a string that is not the name of a package known to ACL2,
+a hard Lisp error will result.
+
+(Pkg-witness pkg) has a guard of (and (stringp pkg) (not (equal pkg
+""))).  If pkg is not a string, then (pkg-witness pkg) is equal to
+(pkg-witness "ACL2")
+
+
+File: acl2-doc-emacs.info,  Node: PLUSP,  Next: POSITION,  Prev: PKG-WITNESS,  Up: PROGRAMMING
+
+PLUSP    test whether a number is positive
+
+(Plusp x) is true if and only if x > 0.
+
+The guard of plusp requires its argument to be a rational (real, in
+ACL2(r)) number.
+
+Plusp is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: POSITION,  Next: POSITION-EQ,  Prev: PLUSP,  Up: PROGRAMMING
+
+POSITION    position of an item in a string or a list, using eql as test
+
+(Position item seq) is the least index (zero-based) of the element item
+in the string or list seq, if in fact item is an element of seq.
+Otherwise (position item seq) is nil.
+
+(Position item lst) is provably the same in the ACL2 logic as
+(position-equal item lst).  It has a stronger guard than position-equal
+because uses eql to test equality of item with members of lst.  Its
+guard requires that either lst is a string, or else lst is a true list
+such that either (eqlablep item) or all members of lst are eqlablep.
+See *Note POSITION-EQUAL:: and see *note POSITION-EQ::.
+
+Position is a Common Lisp function.  See any Common Lisp documentation
+for more information.  Since ACL2 functions cannot take keyword
+arguments (though macros can), the ACL2 functions position-equal and
+position-eq are defined to correspond to calls of the Common Lisp
+function position whose keyword argument :test is equal or eq,
+respectively.
+
+
+File: acl2-doc-emacs.info,  Node: POSITION-EQ,  Next: POSITION-EQUAL,  Prev: POSITION,  Up: PROGRAMMING
+
+POSITION-EQ    position of an item in a string or a list, using eq as test
+
+(Position-eq item seq) is the least index (zero-based) of the element
+item in the list seq, if in fact item is an element of seq.  Otherwise
+(position-eq item seq) is nil.
+
+(Position-eq item lst) is provably the same in the ACL2 logic as
+(position item lst) and (position-equal item lst) when lst is a true
+list, but it has a stronger guard because it uses eq for a more
+efficient test for whether item is equal to a given member of lst.  Its
+guard requires that lst is a true list, and moreover, either item is a
+symbol or lst is a list of symbols.  See *Note POSITION-EQUAL:: and see
+*note POSITION::, which unlike position-eq have guards that allow the
+second argument to be a string.
+
+
+File: acl2-doc-emacs.info,  Node: POSITION-EQUAL,  Next: POSP,  Prev: POSITION-EQ,  Up: PROGRAMMING
+
+POSITION-EQUAL    position of an item in a string or a list
+
+(Position item seq) is the least index (zero-based) of the element item
+in the string or list seq, if in fact item is an element of seq.
+Otherwise (position item seq) is nil.
+
+(Position-equal item lst) has a guard of (true-listp lst).
+Position-equal has the same functionality as the Common Lisp function
+position, except that it uses the equal function to test whether item
+is the same as each successive element of lst.  See *Note POSITION::
+and see *note POSITION-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: POSP,  Next: PPROGN,  Prev: POSITION-EQUAL,  Up: PROGRAMMING
+
+POSP    a recognizer for the positive integers
+
+(posp x) is logically equivalent to (not (zp x)) (see *note ZP::) and
+also   to (and (natp x) (not (equal x 0))).  We recommend the file
+books/ordinals/natp-posp as a book for reasoning about posp and   natp.
+This book is included in books/arithmetic/top and
+books/arithmetic/top-with-meta.
+
+
+File: acl2-doc-emacs.info,  Node: PPROGN,  Next: PRINT-OBJECT$,  Prev: POSP,  Up: PROGRAMMING
+
+PPROGN    evaluate a sequence of forms that return state
+
+     Example Form:
+     (pprogn
+      (cond ((or (equal (car l) #\) (equal (car l) slash-char))
+             (princ$ #\ channel state))
+            (t state))
+      (princ$ (car l) channel state)
+      (mv (cdr l) state))
+
+The convention for pprogn usage is to give it a non-empty sequence of
+forms, each of which (except possibly for the last) returns state (see
+*note STATE::) as its only value.  The state returned by each but the
+last is passed on to the next.  The value or values of the last form
+are returned as the value of the pprogn.
+
+If you are using single-threaded objects you may wish to define an
+analogue of this function for your own stobj.
+
+General Form:
+
+     (PPROGN form1
+             form2
+             ...
+             formk
+             result-form)
+
+This general form is equivalent, via macro expansion, to:
+
+     (LET ((STATE form1))
+          (LET ((STATE form2))
+               ...
+               (LET ((STATE formk))
+                    result-form)))
+
+
+File: acl2-doc-emacs.info,  Node: PRINT-OBJECT$,  Next: PROG2$,  Prev: PPROGN,  Up: PROGRAMMING
+
+PRINT-OBJECT$    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: PROG2$,  Next: PROOFS-CO,  Prev: PRINT-OBJECT$,  Up: PROGRAMMING
+
+PROG2$    execute two forms and return the value of the second one
+
+See *Note HARD-ERROR::, see *note ILLEGAL::, and see *note CW:: for
+examples of functions to call in the first argument of prog2$.
+
+Semantically, (Prog2$ x y) equals y; the value of x is ignored.
+However, x is first evaluated for side effect.  Since the ACL2
+programming language is applicative, there can be no logical impact of
+evaluating x.  However, x may involve a call of a function such as
+hard-error or illegal, which can cause so-called "hard errors", or a
+call of cw to perform output.
+
+Here is a simple, contrived example using hard-error.  The intention is
+to check at run-time that the input is appropriate before calling
+function bar.
+
+     (defun foo-a (x)
+       (declare (xargs :guard (consp x)))
+       (prog2$
+        (or (good-car-p (car x))
+            (hard-error 'foo-a
+                        "Bad value for x: ~p0"
+                        (list (cons #\0 x))))
+        (bar x)))
+
+The following similar function uses illegal instead of hard-error.
+Since illegal has a guard of nil, guard verification would guarantee
+that the call of illegal below will never be made (at least when guard
+checking is on; see *note SET-GUARD-CHECKING::).
+
+     (defun foo-b (x)
+       (declare (xargs :guard (and (consp x) (good-car-p (car x)))))
+       (prog2$
+        (or (good-car-p (car x))
+            (illegal 'foo-b
+                     "Bad value for x: ~p0"
+                     (list (cons #\0 x))))
+        (bar x)))
+
+We conclude with a simple example using cw from the ACL2 sources.
+
+     (defun print-terms (terms iff-flg wrld)
+     
+     ; Print untranslations of the given terms with respect to iff-flg, following
+     ; each with a newline.
+     
+     ; We use cw instead of the fmt functions because we want to be able to use this
+     ; function in print-type-alist-segments (used in brkpt1), which does not return
+     ; state.
+     
+       (if (endp terms)
+           terms
+         (prog2$
+          (cw "~q0" (untranslate (car terms) iff-flg wrld))
+          (print-terms (cdr terms) iff-flg wrld))))
+
+
+File: acl2-doc-emacs.info,  Node: PROOFS-CO,  Next: PROPER-CONSP,  Prev: PROG2$,  Up: PROGRAMMING
+
+PROOFS-CO    the proofs character output channel
+
+Proofs-co is an ld special (see *note LD::).  The accessor is
+(proofs-co state) and the updater is (set-proofs-co val state).
+Proofs-co must be an open character output channel.  It is to this
+channel that defun, defthm, and the other event commands print their
+commentary.
+
+"Proofs-co" stands for "proofs character output." The initial value of
+proofs-co is the same as the value of *standard-co* (see *note
+*STANDARD-CO*::).
+
+
+File: acl2-doc-emacs.info,  Node: PROPER-CONSP,  Next: PUT-ASSOC-EQ,  Prev: PROOFS-CO,  Up: PROGRAMMING
+
+PROPER-CONSP    recognizer for proper (null-terminated) non-empty lists
+
+Proper-consp is the function that checks whether its argument is a
+non-empty list that ends in nil.  Also see *note TRUE-LISTP::.
+
+
+File: acl2-doc-emacs.info,  Node: PUT-ASSOC-EQ,  Next: PUT-ASSOC-EQL,  Prev: PROPER-CONSP,  Up: PROGRAMMING
+
+PUT-ASSOC-EQ    modify an association list by associating a value with a key
+
+(Put-assoc-eq name val alist) returns an alist that is the same as the
+list alist, except that the first pair in alist with a car of name is
+replaced by (cons name val), if there is one.  If there is no such
+pair, then (cons name val) is added at the end.  Note that the order of
+the keys occurring in alist is unchanged (though a new key may be
+added).
+
+The guard of (put-assoc-eq name val alist) requires that alist is an
+alistp, and moreover, either name is a symbol or alist is a
+symbol-alistp.
+
+
+File: acl2-doc-emacs.info,  Node: PUT-ASSOC-EQL,  Next: PUT-ASSOC-EQUAL,  Prev: PUT-ASSOC-EQ,  Up: PROGRAMMING
+
+PUT-ASSOC-EQL    modify an association list by associating a value with a key
+
+(Put-assoc-eql name val alist) returns an alist that is the same as the
+list alist, except that the first pair in alist with a car of name is
+replaced by (cons name val), if there is one.  If there is no such
+pair, then (cons name val) is added at the end.  Note that the order of
+the keys occurring in alist is unchanged (though a new key may be
+added).
+
+The guard of (put-assoc-eql name val alist) requires that alist is an
+alistp, and moreover, either name is eqlablep or alist is an
+eqlable-alistp.
+
+
+File: acl2-doc-emacs.info,  Node: PUT-ASSOC-EQUAL,  Next: RASSOC,  Prev: PUT-ASSOC-EQL,  Up: PROGRAMMING
+
+PUT-ASSOC-EQUAL    modify an association list by associating a value with a key
+
+(Put-assoc-equal name val alist) returns an alist that is the same as
+the list alist, except that the first pair in alist with a car of name
+is replaced by (cons name val), if there is one.  If there is no such
+pair, then (cons name val) is added at the end.
+
+The guard of (put-assoc-equal name val alist) requires that alist is an
+alistp.
+
+
+File: acl2-doc-emacs.info,  Node: RASSOC,  Next: RASSOC-EQ,  Prev: PUT-ASSOC-EQUAL,  Up: PROGRAMMING
+
+RASSOC    look up value in association list, using eql as test
+
+(Rassoc x alist) is similar to (assoc x alist), the difference being
+that it looks for the first pair in the given alist whose cdr, rather
+than car, is eql to x.  See *Note ASSOC::.
+
+The guard of rassoc requires its second argument to be an alist, and in
+addition, that either its first argument is eqlablep or else all second
+components of pairs belonging to the second argument are eqlablep.  See
+*Note EQLABLEP::.
+
+Rassoc is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: RASSOC-EQ,  Next: RASSOC-EQUAL,  Prev: RASSOC,  Up: PROGRAMMING
+
+RASSOC-EQ    look up value in association list, using eq as test
+
+(Rassoc-eq x alist) is similar to (assoc-eq x alist), the difference
+being that it looks for the first pair in the given alist whose cdr,
+rather than car, is eq to x.  See *Note ASSOC::.
+
+The guard of rassoc-eq requires its second argument to be an alist, and
+in addition, that either its first argument is a symbolp or else all
+second components of pairs belonging to the second argument are
+symbolps.
+
+Rassoc is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: RASSOC-EQUAL,  Next: RATIONAL-LISTP,  Prev: RASSOC-EQ,  Up: PROGRAMMING
+
+RASSOC-EQUAL    look up value in association list, using equal as test
+
+(Rassoc-equal x alist) is similar to (assoc-equal x alist), the
+difference being that it looks for the first pair in the given alist
+whose cdr, rather than car, is equal to x.  See *Note ASSOC-EQUAL::.
+
+The guard of rassoc-equal requires its second argument to be an alist.
+See *Note RASSOC:: and see *note RASSOC-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: RATIONAL-LISTP,  Next: RATIONALP,  Prev: RASSOC-EQUAL,  Up: PROGRAMMING
+
+RATIONAL-LISTP    recognizer for a true list of rational numbers
+
+The predicate rational-listp tests whether its argument is a true list
+of rational numbers.
+
+
+File: acl2-doc-emacs.info,  Node: RATIONALP,  Next: READ-BYTE$,  Prev: RATIONAL-LISTP,  Up: PROGRAMMING
+
+RATIONALP    recognizer for rational numbers (ratios and integers)
+
+(rationalp x) is true if and only if x is an rational number.
+
+
+File: acl2-doc-emacs.info,  Node: READ-BYTE$,  Next: READ-CHAR$,  Prev: RATIONALP,  Up: PROGRAMMING
+
+READ-BYTE$    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: READ-CHAR$,  Next: READ-OBJECT,  Prev: READ-BYTE$,  Up: PROGRAMMING
+
+READ-CHAR$    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: READ-OBJECT,  Next: REAL/RATIONALP,  Prev: READ-CHAR$,  Up: PROGRAMMING
+
+READ-OBJECT    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: REAL/RATIONALP,  Next: REALFIX,  Prev: READ-OBJECT,  Up: PROGRAMMING
+
+REAL/RATIONALP    recognizer for rational numbers (including real number in ACL2(r))
+
+For most ACL2 users, this is a macro abbreviating rationalp.  In
+ACL2(r) (see *note REAL::), this macro abbreviates the predicate realp,
+which holds for real numbers as well (including rationals).  Most ACL2
+users can ignore this macro and use rationalp instead, but many books
+in the ACL2 distribution use real/rationalp so that these books will be
+suitable for ACL2(r) as well.
+
+
+File: acl2-doc-emacs.info,  Node: REALFIX,  Next: REALPART,  Prev: REAL/RATIONALP,  Up: PROGRAMMING
+
+REALFIX    coerce to a real number
+
+Realfix simply returns any real number argument unchanged, returning 0
+on a non-real argument.  Also see *note NFIX::, see *note IFIX::, see
+*note RFIX::, and see *note FIX:: for analogous functions that coerce
+to a natural number, an integer, a rational, and a number, respectively.
+
+Realfix has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: REALPART,  Next: REDEFINING-PROGRAMS,  Prev: REALFIX,  Up: PROGRAMMING
+
+REALPART    real part of a complex number
+
+Completion Axiom:
+
+     (equal (realpart x)
+            (if (acl2-numberp x)
+                (realpart x)
+              0))
+
+Guard for (realpart x):
+
+     (acl2-numberp x)
+
+
+File: acl2-doc-emacs.info,  Node: REDEFINING-PROGRAMS,  Next: REM,  Prev: REALPART,  Up: PROGRAMMING
+
+REDEFINING-PROGRAMS    an explanation of why we restrict redefinitions
+
+ACL2 does not in general allow the redefinition of functions because
+logical inconsistency can result:  previously stored theorems can be
+rendered invalid if the axioms defining the functions involved are
+changed.  However, to permit prototyping of both :program and :logic
+mode systems, ACL2 permits redefinition if the user has accepted
+logical responsibility for the consequences by setting
+ld-redefinition-action to an appropriate non-nil value.  The refusal of
+ACL2 to support the unrestricted redefinition of :program mode
+functions may appear somewhat capricious.  After all, what are the
+logical consequences of changing a definition if no axioms are involved?
+
+Three important points should be made before we discuss redefinition
+further.
+
+The first is that ACL2 does support redefinition (of both :program and
+:logic functions) when ld-redefinition-action is non-nil.
+
+The second is that a "redefinition" that does not change the mode,
+formals, guards, type declarations, stobjs, or body of a function is
+considered redundant and is permitted even when ld-redefinition-action
+is nil.  We recognize and permit redundant definitions because it is not
+uncommon for two distinct books to share identical function
+definitions.  When determining whether the body of a function is
+changed by a proposed redefinition, we actually compare the
+untranslated versions of the two bodies.  See *Note TERM::.  For
+example, redundancy is not recognized if the old body is (list a b) and
+the new body is (cons a (cons b nil)).  We use the untranslated bodies
+because of the difficulty of translating the new body in the presence
+of the old syntactic information, given the possibility that the
+redefinition might attempt to change the signature of the function,
+i.e., the number of formals, the number of results, or the position of
+single-threaded objects in either.
+
+The third important point is that a "redefinition" that preserves the
+formals, guard, types, stobjs, and body but changes the mode from
+:program to :logic is permitted even when ld-redefinition-action is
+nil.  That is what verify-termination does.
+
+This note addresses the temptation to allow redefinition of :program
+functions in situations other than the three described above.
+Therefore, suppose ld-redefinition-action is nil and consider the cases.
+
+Case 1.  Suppose the new definition attempts to change the formals or
+more generally the signature of the function.  Accepting such a
+redefinition would render ill-formed other :program functions which
+call the redefined function.  Subsequent attempts to evaluate those
+callers could arbitrarily damage the Common Lisp image.  Thus,
+redefinition of :program functions under these circumstances requires
+the user's active approval, as would be sought with
+ld-redefinition-action '(:query . :overwrite).
+
+Case 2.  Suppose the new definition attempts to change the body (even
+though it preserves the signature).  At one time we believed this was
+acceptable and ACL2 supported the quiet redefinition of :program mode
+functions in this circumstance.  However, because such functions can be
+used in macros and redundancy checking is based on untranslated bodies,
+this turns out to be unsound!  (Aside: Perhaps this is not an issue if
+the function takes state or a user-defined stobj argument; but we do
+not further consider this distinction.)  Such redefinition is therefore
+now prohibited.  We illustrate such an unsoundness below.  Let
+foo-thm1.lisp be a book with the following contents.
+
+     (in-package "ACL2")
+     (defun p1 (x) (declare (xargs :mode :program)) (list 'if x 't 'nil))
+     (defmacro p (x) (p1 x))
+     (defun foo (x) (p x))
+     (defthm foo-thm1 (iff (foo x) x) :rule-classes nil)
+
+Note that the macro form (p x) translates to (if x t nil).  The
+:program function p1 is used to generate this translation.  The
+function foo is defined so that (foo x) is (p x) and a theorem about
+foo is proved, namely, that (foo x) is true iff x is true.
+
+Now let foo-thm2.lisp be a book with the following contents.
+
+     (in-package "ACL2")
+     (defun p1 (x) (declare (xargs :mode :program)) (list 'if x 'nil 't))
+     (defmacro p (x) (p1 x))
+     (defun foo (x) (p x))
+     (defthm foo-thm2 (iff (foo x) (not x)) :rule-classes nil)
+
+In this book, the :program function p1 is defined so that (p x) means
+just the negation of what it meant in the first book, namely, (if x nil
+t).  The function foo is defined identically -- more precisely, the
+untranslated body of foo is identical in the two books, but because of
+the difference between the two versions of the :program function p1 the
+axioms defining the two foos are different.  In the second book we prove
+the theorem that (foo x) is true iff x is nil.
+
+Now consider what would happen if the signature-preserving redefinition
+of :program functions were permitted and these two books were included.
+When the second book is included the redefinition of p1 would be
+permitted since the signature is preserved and p1 is just a :program.
+But then when the redefinition of foo is processed it would be
+considered redundant and thus be permitted.  The result would be a
+logic in which it was possible to prove that (foo x) is equivalent to
+both x and (not x).  In particular, the following sequence leads to a
+proof of nil:
+
+     (include-book "foo-thm1")
+     (include-book "foo-thm2")
+     (thm nil :hints (("Goal" :use (foo-thm1 foo-thm2))))
+
+It might be possible to loosen the restrictions on the redefinition of
+:program functions by allowing signature-preserving redefinition of
+:program functions not involved in macro definitions.  Alternatively,
+we could implement definition redundancy checking based on the
+translated bodies of functions (though that is quite problematic).
+Barring those two changes, we believe it is necessary simply to impose
+the same restrictions on the redefinition of :program mode functions as
+we do on :logic mode functions.
+
+
+File: acl2-doc-emacs.info,  Node: REM,  Next: REMOVE,  Prev: REDEFINING-PROGRAMS,  Up: PROGRAMMING
+
+REM    remainder using truncate
+
+     ACL2 !>(rem 14 3)
+     2
+     ACL2 !>(rem -14 3)
+     -2
+     ACL2 !>(rem 14 -3)
+     2
+     ACL2 !>(rem -14 -3)
+     -2
+     ACL2 !>(rem -15 -3)
+     0
+     ACL2 !>
+
+(Rem i j) is that number k for which (* j (truncate i j)) added to k
+equals i.
+
+The guard for (rem i j) requires that i and j are rational (real, in
+ACL2(r)) numbers and j is non-zero.
+
+Rem is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE,  Next: REMOVE-DUPLICATES,  Prev: REM,  Up: PROGRAMMING
+
+REMOVE    remove all occurrences, testing using eql
+
+(remove x l) is l if x is not a member of l, else is the result of
+removing all occurrences of x from l.
+
+The guard for (remove x l) requires l to be a true list and moreover,
+either x is eqlablep or all elements of l are eqlablep.
+
+Remove is a Common Lisp function.  See any Common Lisp documentation
+for more information.  Note that we do not allow keyword arguments
+(such as test) in ACL2 functions, in particular, in remove.
+
+Also see *note REMOVE1::, see *note REMOVE-EQUAL::, and see *note
+REMOVE-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-DUPLICATES,  Next: REMOVE-DUPLICATES-EQUAL,  Prev: REMOVE,  Up: PROGRAMMING
+
+REMOVE-DUPLICATES    remove duplicates from a string or (using eql) a list
+
+Remove-duplicates returns the result of deleting duplicate elements
+from the beginning of the given string or true list, i.e., leaving the
+last element in place.  For example,
+
+     (remove-duplicates '(1 2 3 2 4))
+
+is equal to '(1 3 2 4).
+
+The guard for Remove-duplicates requires that its argument is a string
+or a true-list of eqlablep objects.  It uses the function eql to test
+for equality between elements of its argument.
+
+Remove-duplicates is a Common Lisp function.  See any Common Lisp
+documentation for more information.  Note that we do not allow keyword
+arguments (such as test) in ACL2 functions, in particular, in
+remove-duplicates.  But see *note REMOVE-DUPLICATES-EQUAL::, which is
+similar but uses the function equal to test for duplicate elements.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-DUPLICATES-EQUAL,  Next: REMOVE-EQ,  Prev: REMOVE-DUPLICATES,  Up: PROGRAMMING
+
+REMOVE-DUPLICATES-EQUAL    remove duplicates from a list
+
+Remove-duplicates-equal is the same as remove-duplicates, except that
+its argument must be a true list (not a string), and equal is used to
+check membership rather than eql.  See *Note REMOVE-DUPLICATES::.
+
+The guard for Remove-duplicates-equal requires that its argument is a
+true list.  Note that unlike remove-duplicates, it does not allow
+string arguments.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-EQ,  Next: REMOVE-EQUAL,  Prev: REMOVE-DUPLICATES-EQUAL,  Up: PROGRAMMING
+
+REMOVE-EQ    remove all occurrences, testing using eq
+
+(remove-eq x l) is l if x is not a member of l as tested with
+member-eq, else is the result of removing all occurrences of x from l.
+
+The guard for (remove-eq x l) requires l to be a true list and
+moreover, either x is a symbolp or all elements of l are symbols (i.e.,
+l is a symbol-listp).
+
+Also see *note REMOVE1-EQ::, see *note REMOVE::, and see *note
+REMOVE-EQUAL::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE-EQUAL,  Next: REMOVE1,  Prev: REMOVE-EQ,  Up: PROGRAMMING
+
+REMOVE-EQUAL    remove all occurrences, testing using equal
+
+(remove-equal x l) is l if x is not a member of l as tested with
+member-equal, else is the result of removing all occurrences of x from
+l.
+
+The guard for (remove-equal x l) requires l to be a true list.
+
+Also see *note REMOVE1-EQUAL::, see *note REMOVE::, and see *note
+REMOVE-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE1,  Next: REMOVE1-EQ,  Prev: REMOVE-EQUAL,  Up: PROGRAMMING
+
+REMOVE1    remove first occurrences, testing using eql
+
+(remove1 x l) is l if x is not a member of l, else is the result of
+removing the first occurrence of x from l.
+
+The guard for (remove1 x l) requires l to be a true list and moreover,
+either x is eqlablep or all elements of l are eqlablep.
+
+Also see *note REMOVE::, see *note REMOVE1-EQUAL::, and see *note
+REMOVE1-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE1-EQ,  Next: REMOVE1-EQUAL,  Prev: REMOVE1,  Up: PROGRAMMING
+
+REMOVE1-EQ    remove first occurrences, testing using eq
+
+(remove1-eq x l) is l if x is not a member of l as tested with
+member-eq, else is the result of removing all occurrences of x from l.
+
+The guard for (remove1-eq x l) requires l to be a true list and
+moreover, either x is a symbolp or all elements of l are symbols (i.e.,
+l is a symbol-listp).
+
+Also see *note REMOVE-EQ::, see *note REMOVE1::, and see *note
+REMOVE1-EQUAL::.
+
+
+File: acl2-doc-emacs.info,  Node: REMOVE1-EQUAL,  Next: REST,  Prev: REMOVE1-EQ,  Up: PROGRAMMING
+
+REMOVE1-EQUAL    remove first occurrences, testing using equal
+
+(remove1-equal x l) is l if x is not a member of l as tested with
+member-equal, else is the result of removing all occurrences of x from
+l.
+
+The guard for (remove1-equal x l) requires l to be a true list.
+
+Also see *note REMOVE-EQUAL::, see *note REMOVE1::, and see *note
+REMOVE1-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: REST,  Next: REVAPPEND,  Prev: REMOVE1-EQUAL,  Up: PROGRAMMING
+
+REST    rest (cdr) of the list
+
+In the logic, rest is just a macro for cdr.
+
+Rest is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: REVAPPEND,  Next: REVERSE,  Prev: REST,  Up: PROGRAMMING
+
+REVAPPEND    concatentate the reverse of one list to another
+
+(Revappend x y) concatenates the reverse of the list x to y, which is
+also typically a list.
+
+The following theorem characterizes this English description.
+
+     (equal (revappend x y)
+            (append (reverse x) y))
+
+Hint:  This lemma follows immediately from the definition of reverse
+and the following lemma.
+
+     (defthm revappend-append
+       (equal (append (revappend x y) z)
+              (revappend x (append y z))))
+
+The guard for (revappend x y) requires that x is a true list.
+
+Revappend is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: REVERSE,  Next: RFIX,  Prev: REVAPPEND,  Up: PROGRAMMING
+
+REVERSE    reverse a list or string
+
+(Reverse x) is the result of reversing the order of the elements of the
+list or string x.
+
+The guard for reverse requires that its argument is a true list or a
+string.
+
+Reverse is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: RFIX,  Next: ROUND,  Prev: REVERSE,  Up: PROGRAMMING
+
+RFIX    coerce to a rational number
+
+Rfix simply returns any rational number argument unchanged, returning 0
+on a non-rational argument.  Also see *note NFIX::, see *note IFIX::,
+see *note REALFIX::, and see *note FIX:: for analogous functions that
+coerce to a natural number, an integer, a real, and a number,
+respectively.
+
+Rfix has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: ROUND,  Next: SECOND,  Prev: RFIX,  Up: PROGRAMMING
+
+ROUND    division returning an integer by rounding off
+
+     Example Forms:
+     ACL2 !>(round 14 3)
+     5
+     ACL2 !>(round -14 3)
+     -5
+     ACL2 !>(round 14 -3)
+     -5
+     ACL2 !>(round -14 -3)
+     5
+     ACL2 !>(round 13 3)
+     4
+     ACL2 !>(round -13 3)
+     -4
+     ACL2 !>(round 13 -3)
+     -4
+     ACL2 !>(round -13 -3)
+     4
+     ACL2 !>(round -15 -3)
+     5
+     ACL2 !>(round 15 -2)
+     -8
+
+(Round i j) is the result of taking the quotient of i and j and
+rounding off to the nearest integer.  When the quotient is exactly
+halfway between consecutive integers, it rounds to the even one.
+
+The guard for (round i j) requires that i and j are rational (real, in
+ACL2(r)) numbers and j is non-zero.
+
+Round is a Common Lisp function.  See any Common Lisp documentation for
+more information.  However, note that unlike Common Lisp, the ACL2 round
+function returns only a single value,
+
+
+File: acl2-doc-emacs.info,  Node: SECOND,  Next: SET-DIFFERENCE-EQ,  Prev: ROUND,  Up: PROGRAMMING
+
+SECOND    second member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: SET-DIFFERENCE-EQ,  Next: SET-DIFFERENCE-EQUAL,  Prev: SECOND,  Up: PROGRAMMING
+
+SET-DIFFERENCE-EQ    elements of one list that are not elements of another
+
+(Set-difference-eq x y) is logically equivalent to
+set-difference-equal, except that the guard requires not only that the
+two arguments are true-listps but also that at least one is a
+symbol-listp.  Also see *note SET-DIFFERENCE-EQUAL::.
+
+
+File: acl2-doc-emacs.info,  Node: SET-DIFFERENCE-EQUAL,  Next: SETENV$,  Prev: SET-DIFFERENCE-EQ,  Up: PROGRAMMING
+
+SET-DIFFERENCE-EQUAL    elements of one list that are not elements of another
+
+(Set-difference-equal x y) equals a list whose members (see *note
+MEMBER-EQUAL::) contains the members of x that are not members of y.
+More precisely, the resulting list is the same as one gets by deleting
+the members of y from x, leaving the remaining elements in the same
+order as they had in x.
+
+The guard for set-difference-equal requires both arguments to be true
+lists.  Essentially, set-difference-equal has the same functionality as
+the Common Lisp function set-difference, except that it uses the equal
+function to test membership rather than eql.  However, we do not
+include the function set-difference in ACL2, because the Common Lisp
+language does not specify the order of the elements in the list that it
+returns.
+
+Also see *note SET-DIFFERENCE-EQ:: for a semantically equivalent
+function that executes more efficiently on lists of symbols.
+
+
+File: acl2-doc-emacs.info,  Node: SETENV$,  Next: SEVENTH,  Prev: SET-DIFFERENCE-EQUAL,  Up: PROGRAMMING
+
+SETENV$    set an environment variable
+
+(Setenv$ str val), where str and val are strings, sets the environment
+variable str to have value val, for subsequent read by getenv$ (see
+*note GETENV$::), and returns nil.  Or, if this operation is not
+implemented for the host Common Lisp, an error will occur.
+
+     Example:
+     (setenv$ "FOO" "BAR")
+
+
+File: acl2-doc-emacs.info,  Node: SEVENTH,  Next: SIGNUM,  Prev: SETENV$,  Up: PROGRAMMING
+
+SEVENTH    seventh member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: SIGNUM,  Next: SIXTH,  Prev: SEVENTH,  Up: PROGRAMMING
+
+SIGNUM    indicator for positive, negative, or zero
+
+(Signum x) is 0 if x is 0, -1 if x is negative, and is 1 otherwise.
+
+The guard for signum requires its argument to be rational (real, in
+ACL2(r)) number.
+
+Signum is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+From "Common Lisp the Language" page 206, we see a definition of signum
+in terms of abs.  As explained elsewhere (see *note ABS::), the guard
+for abs requires its argument to be a rational (real, in ACL2(r))
+number; hence, we make the same restriction for signum.
+
+
+File: acl2-doc-emacs.info,  Node: SIXTH,  Next: STANDARD-CHAR-LISTP,  Prev: SIGNUM,  Up: PROGRAMMING
+
+SIXTH    sixth member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: STANDARD-CHAR-LISTP,  Next: STANDARD-CHAR-P,  Prev: SIXTH,  Up: PROGRAMMING
+
+STANDARD-CHAR-LISTP    recognizer for a true list of standard characters
+
+(standard-char-listp x) is true if and only if x is a null-terminated
+list all of whose members are standard characters.  See *Note
+STANDARD-CHAR-P::.
+
+Standard-char-listp has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: STANDARD-CHAR-P,  Next: STANDARD-CO,  Prev: STANDARD-CHAR-LISTP,  Up: PROGRAMMING
+
+STANDARD-CHAR-P    recognizer for standard characters
+
+(Standard-char-p x) is true if and only if x is a "standard" character,
+i.e., a member of the list *standard-chars*.  This list includes
+#Newline and #Space characters, as well as the usual punctuation and
+alphanumeric characters.
+
+Standard-char-p has a guard requiring its argument to be a character.
+
+Standard-char-p is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: STANDARD-CO,  Next: STANDARD-OI,  Prev: STANDARD-CHAR-P,  Up: PROGRAMMING
+
+STANDARD-CO    the character output channel to which ld prints
+
+Standard-co is an ld special (see *note LD::).  The accessor is
+(standard-co state) and the updater is (set-standard-co val state).
+Standard-co must be an open character output channel.  It is to this
+channel that ld prints the prompt, the form to be evaluated, and the
+results.  The event commands such as defun, defthm, etc., which print
+extensive commentary do not print to standard-co but rather to a
+different channel, proofs-co, so that you may redirect this commentary
+while still interacting via standard-co.  See *Note PROOFS-CO::.
+
+"Standard-co" stands for "standard character output." The initial value
+of standard-co is the same as the value of *standard-co* (see *note
+*STANDARD-CO*::).
+
+
+File: acl2-doc-emacs.info,  Node: STANDARD-OI,  Next: STANDARD-STRING-ALISTP,  Prev: STANDARD-CO,  Up: PROGRAMMING
+
+STANDARD-OI    the standard object input ``channel''
+
+Standard-oi is an ld special (see *note LD::).  The accessor is
+(standard-oi state) and the updater is (set-standard-oi val state).
+Standard-oi must be an open object input channel, a true list of
+objects, or a list of objects whose last cdr is an open object input
+channel.  It is from this source that ld takes the input forms to
+process.  When ld is called, if the value specified for standard-oi is
+a string or a list of objects whose last cdr is a string, then ld
+treats the string as a file name and opens an object input channel from
+that file, where the connected book directory (see *note CBD::) is used
+to resolve relative pathnames.  The channel opened by ld is closed by
+ld upon termination.
+
+"Standard-oi" stands for "standard object input." The read-eval-print
+loop in ld reads the objects in standard-oi and treats them as forms to
+be evaluated.  The initial value of standard-oi is the same as the
+value of *standard-oi* (see *note *STANDARD-OI*::).
+
+
+File: acl2-doc-emacs.info,  Node: STANDARD-STRING-ALISTP,  Next: STRING,  Prev: STANDARD-OI,  Up: PROGRAMMING
+
+STANDARD-STRING-ALISTP    recognizer for association lists with standard strings as keys
+
+(Standard-string-alistp x) is true if and only if x is a list of pairs
+of the form (cons key val) where key is a string all of whose
+characters are standard (see *note STANDARD-CHAR-P::).
+
+Standard-string-alistp has a guard of t.
+

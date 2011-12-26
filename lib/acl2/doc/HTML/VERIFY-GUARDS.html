@@ -1,0 +1,229 @@
+<html>
+<head><title>VERIFY-GUARDS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>VERIFY-GUARDS</h2>verify the <a href="GUARD.html">guard</a>s of a function
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(verify-guards flatten)
+(verify-guards flatten
+               :hints (("Goal" :use (:instance assoc-of-app)))
+               :otf-flg t
+               :doc "string")
+<p>
+General Form:
+(verify-guards name
+        :hints        hints
+        :otf-flg      otf-flg
+        :doc          doc-string)
+</pre>
+
+See <a href="GUARD.html">guard</a> for a general discussion of guards.  In the General
+Form above, <code>name</code> is the name of a <code>:</code><code><a href="LOGIC.html">logic</a></code> function 
+(see <a href="DEFUN-MODE.html">defun-mode</a>) or of a theorem or axiom.  In the most common
+case <code>name</code> is the name of a function that has not yet had its
+<a href="GUARD.html">guard</a>s verified, each
+subroutine of which has had its <a href="GUARD.html">guard</a>s verified. <code><a href="HINTS.html">hints</a></code> and
+<code><a href="OTF-FLG.html">otf-flg</a></code> are as described in the corresponding <code>:</code><code><a href="DOC.html">doc</a></code> entries;
+and <code><a href="DOC-STRING.html">doc-string</a></code>, if supplied, is a string <strong>not</strong> beginning with
+``<code>:Doc-Section</code>''.  The three keyword arguments above are all
+optional.  <code>Verify-guards</code> will attempt to prove that the <a href="GUARD.html">guard</a> on
+the named function implies the <a href="GUARD.html">guard</a>s of all of the subroutines
+called in the body of the function, and that the guards are satisfied for
+all function calls in the guard itself (under an implicit guard of <code>t</code>).
+If successful, <code>name</code> is considered to have had its <a href="GUARD.html">guard</a>s verified.<p>
+
+If <code>name</code> is one of several functions in a mutually recursive clique,
+<code>verify-guards</code> will attempt to verify the <a href="GUARD.html">guard</a>s of all of the
+functions.<p>
+
+If <code>name</code> is a theorem or axiom name, <code>verify-guards</code> verifies the
+guards of the associated formula.  When a theorem has had its guards
+verified then you know that the theorem will evaluate to non-<code>nil</code>
+in all Common Lisps, without causing a runtime error (other than possibly
+a resource error).  In particular, you know that the theorem's validity
+does not depend upon ACL2's arbitrary completion of the domains of partial
+Common Lisp functions.<p>
+
+For example, if <code>app</code> is defined as
+
+<pre>
+(defun app (x y)
+  (declare (xargs :guard (true-listp x)))
+  (if (endp x)
+      y
+      (cons (car x) (app (cdr x) y))))
+</pre>
+
+then we can verify the guards of <code>app</code> and we can prove the theorem:
+
+<pre>
+(defthm assoc-of-app
+  (equal (app (app a b) c) (app a (app b c))))
+</pre>
+
+However, if you go into almost any Common Lisp in which <code>app</code> is defined
+as shown and evaluate
+
+<pre>
+(equal (app (app 1 2) 3) (app 1 (app 2 3)))
+</pre>
+
+we get an error or, perhaps, something worse like <code>nil</code>!  How can
+this happen since the formula is an instance of a theorem?  It is supposed
+to be true!<p>
+
+It happens because the theorem exploits the fact that ACL2 has completed
+the domains of the partially defined Common Lisp functions like <code><a href="CAR.html">car</a></code>
+and <code><a href="CDR.html">cdr</a></code>, defining them to be <code>nil</code> on all non-conses.  The formula
+above violates the guards on <code>app</code>.  It is therefore ``unreasonable''
+to expect it to be valid in Common Lisp.<p>
+
+But the following formula is valid in Common Lisp:
+
+<pre>
+(if (and (true-listp a)
+         (true-listp b))
+    (equal (app (app a b) c) (app a (app b c)))
+    t)
+</pre>
+
+That is, no matter what the values of <code>a</code>, <code>b</code> and <code>c</code> the formula
+above evaluates to <code>t</code> in all Common Lisps (unless the Lisp engine runs out
+of memory or stack computing it).  Furthermore the above formula is a theorem:
+ 
+
+<pre>
+(defthm guarded-assoc-of-app
+  (if (and (true-listp a)
+           (true-listp b))
+      (equal (app (app a b) c) (app a (app b c)))
+      t))
+</pre>
+
+This formula, <code>guarded-assoc-of-app</code>, is very easy to prove from 
+<code>assoc-of-app</code>.  So why prove it?  The interesting thing about
+<code>guarded-assoc-of-app</code> is that we can verify the guards of the
+formula.  That is, <code>(verify-guards guarded-assoc-of-app)</code> succeeds.
+Note that it has to prove that if <code>a</code> and <code>b</code> are true lists then
+so is <code>(app a b)</code> to establish that the guard on the outermost <code>app</code>
+on the left is satisfied.  By verifying the guards of the theorem we
+know it will evaluate to true in all Common Lisps.  Put another way,
+we know that the validity of the formula does not depend on ACL2's
+completion of the partial functions or that the formula is ``well-typed.''<p>
+
+One last complication:  The careful reader might have thought we could
+state <code>guarded-assoc-of-app</code> as
+
+<pre>
+(implies (and (true-listp a)
+              (true-listp b))
+         (equal (app (app a b) c)
+                (app a (app b c))))
+</pre>
+
+rather than using the <code>if</code> form of the theorem.  We cannot!  The
+reason is technical:  <code><a href="IMPLIES.html">implies</a></code> is defined as a function in ACL2.
+When it is called, both arguments are evaluated and then the obvious truth
+table is checked.  That is, <code>implies</code> is not ``lazy.''  Hence, when
+we write the guarded theorem in the <code>implies</code> form we have to prove
+the guards on the conclusion without knowing that the hypothesis is true.
+It would have been better had we defined <code>implies</code> as a macro that
+expanded to the <code>if</code> form, making it lazy.  But we did not and after
+we introduced guards we did not want to make such a basic change.<p>
+
+Recall however that <code>verify-guards</code> is almost always used to verify
+the guards on a function definition rather than a theorem.  We now
+return to that discussion.<p>
+
+Because <code>name</code> is not uniquely associated with the <code>verify-guards</code> event
+(it necessarily names a previously defined function) the
+<a href="DOCUMENTATION.html">documentation</a> string, <code><a href="DOC-STRING.html">doc-string</a></code>, is not stored in the
+<a href="DOCUMENTATION.html">documentation</a> data base.  Thus, we actually prohibit <code><a href="DOC-STRING.html">doc-string</a></code>
+from having the form of an ACL2 <a href="DOCUMENTATION.html">documentation</a> string;
+see <a href="DOC-STRING.html">doc-string</a>.<p>
+
+If the guard on a function is not <code>t</code>, then guard verification
+requires not only consideration of the body under the assumption
+that the guard is true, but also consideration of the guard itself.
+Thus, for example, guard verification fails in the following
+example, even though there are no proof obligations arising from the
+body, because the guard itself can cause a guard violation when
+evaluated for an arbitrary value of <code>x</code>:
+
+<pre>
+(defun foo (x)
+  (declare (xargs :guard (car x)))
+  x)
+</pre>
+<p>
+
+<code>Verify-guards</code> must often be used when the value of a recursive call
+of a defined function is given as an argument to a subroutine that
+is <a href="GUARD.html">guard</a>ed.  An example of such a situation is given below.  Suppose
+<code>app</code> (read ``append'') has a <a href="GUARD.html">guard</a> requiring its first argument to be
+a <code><a href="TRUE-LISTP.html">true-listp</a></code>.  Consider
+
+<pre>
+(defun rev (x)
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) nil)
+        (t (app (rev (cdr x)) (list (car x))))))
+</pre>
+
+Observe that the value of a recursive call of <code>rev</code> is being passed
+into a <a href="GUARD.html">guard</a>ed subroutine, <code>app</code>.  In order to verify the <a href="GUARD.html">guard</a>s of
+this definition we must show that <code>(rev (cdr x))</code> produces a
+<code><a href="TRUE-LISTP.html">true-listp</a></code>, since that is what the <a href="GUARD.html">guard</a> of <code>app</code> requires.  How do we
+know that <code>(rev (cdr x))</code> is a <code><a href="TRUE-LISTP.html">true-listp</a></code>?  The most elegant argument
+is a two-step one, appealing to the following two lemmas: (1) When <code>x</code>
+is a <code><a href="TRUE-LISTP.html">true-listp</a></code>, <code>(cdr x)</code> is a <code><a href="TRUE-LISTP.html">true-listp</a></code>.  (2) When <code>z</code> is a
+<code><a href="TRUE-LISTP.html">true-listp</a></code>, <code>(rev z)</code> is a <code><a href="TRUE-LISTP.html">true-listp</a></code>.  But the second lemma is a
+generalized property of <code>rev</code>, the function we are defining.  This
+property could not be stated before <code>rev</code> is defined and so is not
+known to the theorem prover when <code>rev</code> is defined.<p>
+
+Therefore, we might break the admission of <code>rev</code> into three steps:
+define <code>rev</code> without addressing its <a href="GUARD.html">guard</a> verification, prove some
+general properties about <code>rev</code>, and then verify the <a href="GUARD.html">guard</a>s.  This can
+be done as follows:
+
+<pre>
+(defun rev (x)
+  (declare (xargs :guard (true-listp x)
+                  :verify-guards nil))    ; Note this additional xarg.
+  (cond ((endp x) nil)
+        (t (app (rev (cdr x)) (list (car x))))))<p>
+
+(defthm true-listp-rev
+  (implies (true-listp x2)
+           (true-listp (rev x2))))<p>
+
+(verify-guards rev)
+</pre>
+
+The ACL2 system can actually admit the original definition of
+<code>rev</code>, verifying the <a href="GUARD.html">guard</a>s as part of the <code><a href="DEFUN.html">defun</a></code> event.  The
+reason is that, in this particular case, the system's heuristics
+just happen to hit upon the lemma <code>true-listp-rev</code>.  But in many
+more complicated functions it is necessary for the user to formulate
+the inductively provable properties before <a href="GUARD.html">guard</a> verification is
+attempted.<p>
+
+<strong>Note on computation of guard conjectures and evaluation</strong>.  When ACL2
+computes the <a href="GUARD.html">guard</a> conjecture for the body of a function, it
+evaluates any ground subexpressions (those with no free variables), for
+calls of functions whose <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> <a href="RUNE.html">rune</a>s are
+<code><a href="ENABLE.html">enable</a></code>d.  Note that here, ``enabled'' refers to the current global
+<a href="THEORY.html">theory</a>, not to any <code>:</code><code><a href="HINTS.html">hints</a></code> given to the guard verification
+process; after all, the guard conjecture is computed even before its initial
+goal is produced.  Also note that this evaluation is done in an environment
+as though <code>:set-guard-checking :all</code> had been executed, so that we can
+trust that this evaluation takes place without guard violations;
+see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

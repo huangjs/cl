@@ -1,0 +1,106 @@
+<html>
+<head><title>LEMMA-INSTANCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LEMMA-INSTANCE</h2>an object denoting an instance of a theorem
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Lemma instances are the objects one provides via <code>:use</code> and <code>:by</code> <a href="HINTS.html">hints</a>
+(see <a href="HINTS.html">hints</a>) to bring to the theorem prover's attention some previously
+proved or easily provable fact.  A typical use of the <code>:use</code> hint is given
+below.  The value specified is a list of five lemma instances.
+
+<pre>
+:use (reverse-reverse
+      (:type-prescription app)
+      (:instance assoc-of-app
+                 (x a) (y b) (z c))
+      (:functional-instance p-f
+                            (p consp) (f flatten))
+      (:instance (:theorem (equal x x))
+                 (x (flatten a))))
+</pre>
+
+Observe that an event name can be a lemma instance.  The <code>:use</code> hint allows
+a single lemma instance to be provided in lieu of a list, as in:
+
+<pre>
+:use reverse-reverse
+</pre>
+
+or
+
+<pre>
+:use (:instance assoc-of-app (x a) (y b) (z c))
+</pre>
+
+<p>
+A lemma instance denotes a formula which is either known to be a theorem or
+which must be proved to be a theorem before it can be used.  To use a lemma
+instance in a particular subgoal, the theorem prover adds the formula as a
+hypothesis to the subgoal before the normal theorem proving heuristics are
+applied.<p>
+
+A lemma instance, or <code>lmi</code>, is of one of the following five forms:<p>
+
+(1) <code>name</code>, where <code>name</code> names a previously proved theorem, axiom, or
+definition and denotes the formula (theorem) of that name.<p>
+
+(2) <code>rune</code>, where <code>rune</code> is a <a href="RUNE.html">rune</a> (see <a href="RUNE.html">rune</a>) denoting the
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> justifying the rule named by the <a href="RUNE.html">rune</a>.<p>
+
+(3) <code>(:theorem term)</code>, where <code>term</code> is any term alleged to be a theorem.
+Such a lemma instance denotes the formula <code>term</code>.  But before using such a
+lemma instance the system will undertake to prove <code>term</code>.<p>
+
+(4) <code>(:instance lmi (v1 t1) ... (vn tn))</code>, where <code>lmi</code> is recursively a
+lemma instance, the <code>vi</code>'s are distinct variables and the <code>ti</code>'s are
+terms.  Such a lemma instance denotes the formula obtained by instantiating
+the formula denoted by <code>lmi</code>, replacing each <code>vi</code> by <code>ti</code>.<p>
+
+(5) <code>(:functional-instance lmi (f1 g1) ... (fn gn))</code>, where <code>lmi</code> is
+recursively a lemma instance and each <code>fi</code> is an ``instantiable'' function
+symbol of arity <code>ni</code> and <code>gi</code> is a function symbol or a pseudo-lambda
+expression of arity <code>ni</code>.  An instantiable function symbol is any defined
+or constrained function symbol except the primitives <code><a href="NOT.html">not</a></code>, <code><a href="MEMBER.html">member</a></code>,
+<code><a href="IMPLIES.html">implies</a></code>, and <code><a href="O_lt_.html">o&lt;</a></code>, and a few others, as listed by the constant
+<code>*non-instantiable-primitives*</code>.  These are built-in in such a way that we
+cannot recover the <a href="CONSTRAINT.html">constraint</a>s on them.  A pseudo-lambda expression is
+an expression of the form <code>(lambda (v1 ... vn) body)</code> where the <code>vi</code> are
+distinct variable symbols and <code>body</code> is any term.  No <i>a priori</i> relation
+is imposed between the <code>vi</code> and the variables of <code>body</code>, i.e., <code>body</code>
+may ignore some <code>vi</code>'s and may contain ``free'' variables.  However, we do
+not permit <code>v</code> to occur freely in <code>body</code> if the functional substitution
+is to be applied to any formula (<code>lmi</code> or the <a href="CONSTRAINT.html">constraint</a>s to be
+satisfied) in a way that inserts <code>v</code> into the scope of a binding of <code>v</code>
+by <code><a href="LET.html">let</a></code> or <code><a href="MV-LET.html">mv-let</a></code> (or, <code><a href="LAMBDA.html">lambda</a></code>).  If you happen to violate
+this restriction, an informative error message will be printed.  That message
+will list for you the potentially illegal choices for <code>v</code> in the context in
+which the functional substitution is offered.  A <code>:functional-instance</code>
+lemma instance denotes the formula obtained by functionally instantiating the
+formula denoted by <code>lmi</code>, replacing <code>fi</code> by <code>gi</code>.  However, before such
+a lemma instance can be used, the system will generate proof obligations
+arising from the replacement of the <code>fi</code>'s by the <code>gi</code>'s in constraints
+that ``support'' the lemma to be functionally instantiated; see <a href="CONSTRAINT.html">constraint</a>.
+One might expect that if the same instantiated constraint were generated on
+behalf of several events, then each of those instances would have to be
+proved.  However, for the sake of efficiency, ACL2 stores the fact that such
+an instantiated constraint has been proved and avoids it in future events.<p>
+
+Obscure case for <a href="DEFINITION.html">definition</a>s.  If the lemma instance refers to a
+<code>:definition</code> <a href="RUNE.html">rune</a>, then it refers to the <code><a href="COROLLARY.html">corollary</a></code> formula of
+that rune, which can be a simplified (``normalized'') form of the original
+formula.  However, if the hint is a <code>:by</code> hint and the lemma instance is
+based on a name (i.e., a symbol), rather than a rune, then the formula is the
+original formula of the event, as shown by <code>:</code><code><a href="PE.html">pe</a></code>, rather than the
+normalized version, as shown by <code>:</code><code><a href="PF.html">pf</a></code>.  This is as one would expect:
+If you supply the name of an event, you expect it to refer to the original
+event.  For <code>:use</code> hints we use the simplified (normalized) form instead,
+which is reasonable since one would expect simplification during the proof
+that re-traces the normalization done at the time the rule was created.<p>
+
+See <a href="FUNCTIONAL-INSTANTIATION-EXAMPLE.html">functional-instantiation-example</a> for an example of the use
+of <code>:functional-instance</code> (so-called ``functional instantiation).''
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

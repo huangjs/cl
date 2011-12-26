@@ -1,0 +1,869 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: EXECUTABLE-COUNTERPART-THEORY,  Next: FUNCTION-THEORY,  Prev: ENABLE,  Up: THEORIES
+
+EXECUTABLE-COUNTERPART-THEORY    executable counterpart rules as of logical name
+
+     Examples:
+     (executable-counterpart-theory :here)
+     (executable-counterpart-theory 'lemma3)
+
+See *Note LOGICAL-NAME::.
+
+     General Form:
+     (executable-counterpart-theory logical-name)
+
+Returns the theory containing all the :executable-counterpart runes,
+whether enabled or not, that existed immediately after logical-name was
+introduced.  See the documentation for theories, logical-name,
+executable-counterpart and function-theory.
+
+You may experience a fencepost problem in deciding which logical name
+to use.  Deflabel can always be used to mark unambiguously for future
+reference a particular point in the development of your theory.  The
+order of events in the vicinity of an encapsulate is confusing.  See
+*Note ENCAPSULATE::.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: FUNCTION-THEORY,  Next: GROUND-ZERO,  Prev: EXECUTABLE-COUNTERPART-THEORY,  Up: THEORIES
+
+FUNCTION-THEORY    function symbol rules as of logical name
+
+     Examples:
+     (function-theory :here)
+     (function-theory 'lemma3)
+
+See *Note LOGICAL-NAME::.
+
+     General Form:
+     (function-theory logical-name)
+
+Returns the theory containing all the :definition runes, whether
+enabled or not, that existed immediately after logical-name was
+introduced.  See the documentation for theories, logical-name and
+executable-counterpart-theory.
+
+You may experience a fencepost problem in deciding which logical name
+to use.  Deflabel can always be used to mark unambiguously for future
+reference a particular point in the development of your theory.  The
+order of events in the vicinity of an encapsulate is confusing.  See
+*Note ENCAPSULATE::.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: GROUND-ZERO,  Next: INCOMPATIBLE,  Prev: FUNCTION-THEORY,  Up: THEORIES
+
+GROUND-ZERO    enabled rules in the startup theory
+
+ACL2 concludes its initialization (boot-strapping) procedure by
+defining the theory ground-zero; see *note THEORIES::.  In fact, this
+theory is just the theory defined by (current-theory :here) at the
+conclusion of initialization; see *note CURRENT-THEORY::.
+
+Note that by executing the event
+
+     (in-theory (current-theory 'ground-zero))
+
+you can restore the current theory to its value at the time you started
+up ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: INCOMPATIBLE,  Next: INTERSECTION-THEORIES,  Prev: GROUND-ZERO,  Up: THEORIES
+
+INCOMPATIBLE    declaring that two rules should not both be enabled
+
+     Example:
+     (theory-invariant (incompatible (:rewrite left-to-right)
+                                     (:rewrite right-to-left)))
+     
+     General Form:
+     (incompatible rune1 rune2)
+
+where rune1 and rune2 are two specific runes.  The arguments are not
+evaluated.  Invariant is just a macro that expands into a term that
+checks that not both runes are enabled.  See *Note THEORY-INVARIANT::.
+
+
+File: acl2-doc-emacs.info,  Node: INTERSECTION-THEORIES,  Next: MINIMAL-THEORY,  Prev: INCOMPATIBLE,  Up: THEORIES
+
+INTERSECTION-THEORIES    intersect two theories
+
+     Example:
+     (intersection-theories (current-theory :here)
+                            (theory 'arith-patch))
+     
+     General Form:
+     (intersection-theories th1 th2)
+
+where th1 and th2 are theories (see *note THEORIES::).  To each of the
+arguments there corresponds a runic theory.  This function returns the
+intersection of those two runic theories, represented as a list and
+ordered chronologically.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: MINIMAL-THEORY,  Next: RULE-NAMES,  Prev: INTERSECTION-THEORIES,  Up: THEORIES
+
+MINIMAL-THEORY    a minimal theory to enable
+
+This theory (see *note THEORIES::) enables only a few built-in
+functions and executable counterparts.  It can be useful when you want
+to formulate lemmas that rather immediately imply the theorem to be
+proved, by way of a :use hint (see *note HINTS::), for example as
+follows.
+
+     :use (lemma-1 lemma-2 lemma-3)
+     :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
+
+In this example, we expect the current goal to follow from lemmas
+lemma-1, lemma-2, and lemma-3 together with rules f1 and f2 and some
+obvious facts about built-in functions (such as the definition of
+implies and the :executable-counterpart of car).  The :in-theory hint
+above is intended to speed up the proof by turning off all inessential
+rules.
+
+
+File: acl2-doc-emacs.info,  Node: RULE-NAMES,  Next: RUNE,  Prev: MINIMAL-THEORY,  Up: THEORIES
+
+RULE-NAMES    How rules are named.
+
+     Examples:
+     (:rewrite assoc-of-app)
+     (:linear delta-aref . 2)
+     (:definition length)
+     (:executable-counterpart length)
+
+See *Note RUNE::.
+
+
+File: acl2-doc-emacs.info,  Node: RUNE,  Next: SET-DIFFERENCE-THEORIES,  Prev: RULE-NAMES,  Up: THEORIES
+
+RUNE    a rule name
+
+     Examples:
+     (:rewrite assoc-of-app)
+     (:linear delta-aref . 2)
+     (:definition length)
+     (:executable-counterpart length)
+
+Background: The theorem prover is driven from a data base of rules.
+The most common rules are :rewrite rules, which cause the simplifier to
+replace one term with another.  Events introduce rules into the data
+base.  For example, a defun event may introduce runes for symbolically
+replacing a function call by its instantiated body, for evaluating the
+function on constants, for determining the type of a call of the
+function, and for the induction scheme introduced upon defining the
+function.  Defthm may introduce several rules, one for each of the
+:rule-classes specified (where one rule class is specified if
+:rule-classes is omitted, namely, :rewrite).
+
+Every rule in the system has a name.  Each name is a structured object
+called a "rune," which is short for "rule name".  Runes are always of
+the form (:token symbol . x), where :token is some keyword symbol
+indicating what kind of rule is named, symbol is the event name that
+created the rule (and is called the "base symbol" of the rune), and x
+is either nil or a natural number that makes the rule name distinct
+from that of rules generated by other events or by other :rule-classes
+within the same event.
+
+For example, an event of the form
+
+     (defthm name thm
+       :rule-classes ((:REWRITE :COROLLARY term1)
+                      (:REWRITE :COROLLARY term2)
+                      (:ELIM    :COROLLARY term3)))
+
+typically creates three rules, each with a unique rune.  The runes are
+
+     (:REWRITE name . 1), (:REWRITE name . 2), and (:ELIM name).
+
+However, a given formula may create more than one rule, and all rules
+generated by the same :corollary formula will share the same rune.
+Consider the following example.
+
+     (defthm my-thm
+       (and (equal (foo (bar x)) x)
+            (equal (bar (foo x)) x)))
+
+This is treated identically to the following.
+
+     (defthm my-thm
+       (and (equal (foo (bar x)) x)
+            (equal (bar (foo x)) x))
+       :rule-classes ((:rewrite
+                       :corollary
+                       (and (equal (foo (bar x)) x)
+                            (equal (bar (foo x)) x)))))
+
+In either case, two rules are created: one rewriting (foo (bar x)) to
+x, and one rewriting (bar (foo x)) to x.  However, only a single rune
+is created, (:REWRITE MY-THM), because there is only one rule class.
+But now consider the following example.
+
+     (defthm my-thm2
+       (and (equal (foo (bar x)) x)
+            (equal (bar (foo x)) x))
+       :rule-classes ((:rewrite
+                       :corollary
+                       (and (equal (foo (bar x)) x)
+                            (equal (bar (foo x)) x)))
+                      (:rewrite
+                       :corollary
+                       (and (equal (foo (bar (foo x))) (foo x))
+                            (equal (bar (foo (bar x))) (bar x))))))
+
+This time there are four rules created.  The first two rules are as
+before, and are assigned the rune (:REWRITE MY-THM . 1).  The other two
+rules are similarly generated for the second :corollary, and are
+assigned the rune (:REWRITE MY-THM . 2).
+
+The function corollary will return the corollary term associated with a
+given rune in a given world.  Example:
+
+     (corollary '(:TYPE-PRESCRIPTION DIGIT-TO-CHAR) (w state))
+
+However, the preferred way to see the corollary term associated with a
+rune or a name is to use :pf; see *note PF::.
+
+The defun event creates as many as four rules.  (:definition fn) is the
+rune given to the equality axiom defining the function, fn.
+(:executable-counterpart fn) is the rune given to the rule for computing
+fn on known arguments.  A type prescription rule may be created under
+the name (:type-prescription fn), and an induction rule may be created
+under the name (:induction fn).
+
+Runes may be individually enabled and disabled, according to whether
+they are included in the current theory.  See *Note THEORIES::.  Thus,
+it is permitted to disable (:elim name), say, while enabling the other
+rules derived from name.  Similarly, (:definition fn) may be disabled
+while (:executable-counterpart fn) and the type prescriptions for fn
+are enabled.
+
+Associated with most runes is the formula justifying the rule named.
+This is called the "corollary formula" of the rune and may be obtained
+via the function corollary, which takes as its argument a rune and a
+property list world.  Also see *note PF::.  The corollary formula for
+(:rewrite name . 1) after the defthm event above is term1.  The
+corollary formulas for (:definition fn) and (:executable-counterpart
+fn) are always identical: the defining axiom.  Some runes, e.g.,
+(:definition car), do not have corollary formulas.  Corollary returns
+nil on such runes.  In any case, the corollary formula of a rune, when
+it is non-nil, is a theorem and may be used in the :use and :by hints.
+
+Note: The system has many built in rules that, for regularity, ought to
+have names but don't because they can never be disabled.  One such rule
+is that implemented by the linear arithmetic package.  Because many of
+our subroutines are required by their calling conventions to return the
+justifying rune, we have invented the notion of "fake runes." Fake
+runes always have the base symbol nil, use a keyword token that
+includes the phrase "fake-rune", and are always enabled.  For example,
+(:fake-rune-for-linear nil) is a fake rune.  Occasionally the system
+will print a fake rune where a rune is expected.  For example, when the
+linear arithmetic fake rune is reported among the rules used in a
+proof, it is an indication that the linear arithmetic package was used.
+However, fake runes are not allowed in theories, they cannot be
+enabled or disabled, and they do not have associated corollary
+formulas.  In short, despite the fact that the user may sometimes see
+fake runes printed, they should never be typed.
+
+
+File: acl2-doc-emacs.info,  Node: SET-DIFFERENCE-THEORIES,  Next: THEORY,  Prev: RUNE,  Up: THEORIES
+
+SET-DIFFERENCE-THEORIES    difference of two theories
+
+     Example:
+     (set-difference-theories (current-theory :here)
+                              '(fact (fact)))
+     
+     General Form:
+     (set-difference-theories th1 th2)
+
+where th1 and th2 are theories (see *note THEORIES::).  To each of the
+arguments there corresponds a runic theory.  This function returns the
+set-difference of those two runic theories, represented as a list and
+ordered chronologically.  That is, a rune is in the result iff it is in
+the first runic theory but not in the second.
+
+The standard way to "disable" a theory, lst, is: (in-theory
+(set-difference-theories (current-theory :here) lst)).
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: THEORY,  Next: THEORY-FUNCTIONS,  Prev: SET-DIFFERENCE-THEORIES,  Up: THEORIES
+
+THEORY    retrieve named theory
+
+     Example:
+     (theory 'ground-zero)
+
+In the example above, the theory returned is the one in force when ACL2
+is started up (see *note GROUND-ZERO::).
+
+     General Form:
+     (theory name)
+
+where name is the name of a previously executed deftheory event.
+Returns the named theory.  See *Note THEORIES::.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: THEORY-FUNCTIONS,  Next: UNION-THEORIES,  Prev: THEORY,  Up: THEORIES
+
+THEORY-FUNCTIONS    functions for obtaining or producing theories
+
+     Example Calls of Theory Functions:
+     (universal-theory :here)
+     (union-theories th1 th2)
+     (set-difference-theories th1 th2)
+
+The theory functions are documented individually:
+
+* Menu:
+
+
+Related topics other than immediate subtopics:
+* CURRENT-THEORY:: currently enabled rules as of logical name
+
+* DISABLE:: deletes names from current theory
+
+* E/D:: enable/disable rules
+
+* ENABLE:: adds names to current theory
+
+* EXECUTABLE-COUNTERPART-THEORY:: executable counterpart rules as of logical name
+
+* FUNCTION-THEORY:: function symbol rules as of logical name
+
+* GROUND-ZERO:: enabled rules in the startup theory
+
+* INTERSECTION-THEORIES:: intersect two theories
+
+* MINIMAL-THEORY:: a minimal theory to enable
+
+* SET-DIFFERENCE-THEORIES:: difference of two theories
+
+* THEORY:: retrieve named theory
+
+* UNION-THEORIES:: union two theories
+
+* UNIVERSAL-THEORY:: all rules as of logical name
+
+The functions (actually, macros) mentioned above are convenient ways to
+produce theories.  (See *Note THEORIES::.) Some, like universal-theory,
+take a logical name (see *note LOGICAL-NAME::) as an argument and
+return the relevant theory as of the time that name was introduced.
+Others, like union-theories, take two theories and produce a new one.
+See *Note REDUNDANT-EVENTS:: for a caution about the use of logical
+names in theory expressions.
+
+Theory expressions are generally composed of applications of theory
+functions.  Formally, theory expressions are expressions that involve,
+at most, the free variable world and that when evaluated with world
+bound to the current ACL2 world (see *note WORLD::) return theories.
+The "theory functions" are actually macros that expand into forms that
+involve the free variable world.  Thus, for example (universal-theory
+:here) actually expands to (universal-theory-fn :here world) and when
+that form is evaluated with world bound to the current ACL2 world,
+universal-theory-fn scans the ACL2 property lists and computes the
+current universal theory.  Because the theory functions all implicitly
+use world, the variable does not generally appear in anything the user
+types.
+
+
+File: acl2-doc-emacs.info,  Node: UNION-THEORIES,  Next: UNIVERSAL-THEORY,  Prev: THEORY-FUNCTIONS,  Up: THEORIES
+
+UNION-THEORIES    union two theories
+
+     Example:
+     (union-theories (current-theory 'lemma3)
+                     (theory 'arith-patch))
+     
+     General Form:
+     (union-theories th1 th2)
+
+where th1 and th2 are theories (see *note THEORIES::).  To each of the
+arguments there corresponds a runic theory.  This function returns the
+union of those two runic theories, represented as a list and ordered
+chronologically.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: UNIVERSAL-THEORY,  Prev: UNION-THEORIES,  Up: THEORIES
+
+UNIVERSAL-THEORY    all rules as of logical name
+
+     Examples:
+     (universal-theory :here)
+     (universal-theory 'lemma3)
+
+See *Note LOGICAL-NAME::.
+
+     General Form:
+     (universal-theory logical-name)
+
+Returns the theory consisting of all the runes that existed immediately
+after logical-name was introduced.  See *Note THEORIES:: and see *note
+LOGICAL-NAME::.  The theory includes logical-name itself (if there is a
+rule by that name).  (Note that since some events do not introduce
+rules (e.g., defmacro, defconst or defthm with :rule-classes nil), the
+universal-theory does not necessarily include a rune for every event
+name.)  The universal-theory is very long and you will probably regret
+printing it.
+
+You may experience a fencepost problem in deciding which logical-name
+to use.  Deflabel can always be used to mark unambiguously for future
+reference a particular point in the development of your theory.  This
+is convenient because deflabel does not introduce any rules and hence
+it doesn't matter if you count it as being in the interval or not.  The
+order of events in the vicinity of an encapsulate is confusing.  See
+*Note ENCAPSULATE::.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+Also see *note CURRENT-THEORY::.  Current-theory is much more commonly
+used than universal-theory.  The former includes only the enabled runes
+as of the given logical-name, which is probably what you want, while
+the latter includes disabled ones as well.
+
+
+File: acl2-doc-emacs.info,  Node: TRACE,  Prev: THEORIES,  Up: Top
+
+TRACE    tracing functions in ACL2
+
+ACL2 provides utilities that rely on the underlying Lisp image to trace
+functions.  There are two interfaces to the underlying lisp trace:
+
+     o Macros trace$ and untrace$ call the underlying Lisp's trace and
+     untrace, respectively.  See *Note TRACE$:: and see *note
+     UNTRACE$::.
+
+     o Macro with-error-trace, or wet for short, provides a backtrace
+     showing function calls that lead to an error.  See *Note WET::.
+
+NOTES:
+
+1. Wet turns off all tracing (i.e., executes Lisp (untrace)) other than
+temporarily doing some tracing under-the-hood in the evaluation of the
+form supplied to it.
+
+2. The underlying Lisp trace and untrace utilities have been modified
+for GCL and Allegro CL to trace the executable counterparts.  Other
+Lisps may give unsatisfying results.  For GCL and Allegro CL, you can
+invoke the original trace and untrace by exiting the ACL2 loop and
+invoking old-trace and old-untrace, respectively..
+
+3. Trace output for trace$ and untrace$ can be redirected to a file.
+See *Note OPEN-TRACE-FILE:: and see *note CLOSE-TRACE-FILE::.  However,
+the backtrace printed by wet always goes to standard-co.
+
+* Menu:
+
+* BREAK-ON-ERROR:: break when encountering a hard or soft error caused by ACL2.
+
+* CLOSE-TRACE-FILE:: stop redirecting trace output to a file
+
+* OPEN-TRACE-FILE:: redirect trace output to a file
+
+* TRACE$:: trace the indicated functions
+
+* UNTRACE$:: untrace functions
+
+* WET:: evaluate a form and print subsequent error trace
+
+* WITH-ERROR-TRACE:: evaluate a form and print subsequent error trace
+
+
+File: acl2-doc-emacs.info,  Node: BREAK-ON-ERROR,  Next: CLOSE-TRACE-FILE,  Prev: TRACE,  Up: TRACE
+
+BREAK-ON-ERROR    break when encountering a hard or soft error caused by ACL2.
+
+     General forms:
+     (break-on-error t)   ; installs a trace causing a continuable error (break)
+                          ;   whenever a hard or soft error is invoked by ACL2.
+     (break-on-error)     ; same as above
+     (break-on-error nil) ; uninstall the above trace
+
+(Break-on-error) is actually a macro that expands as follows.
+
+     (trace$ (illegal :entry (break))
+             (error1  :entry (break)))
+
+This trace should cause entry to the Lisp debugger (at least in most
+Lisps) whenever ACL2 calls its error routines.
+
+Also see *note TRACE$::.
+
+
+File: acl2-doc-emacs.info,  Node: CLOSE-TRACE-FILE,  Next: OPEN-TRACE-FILE,  Prev: BREAK-ON-ERROR,  Up: TRACE
+
+CLOSE-TRACE-FILE    stop redirecting trace output to a file
+
+     General Form:
+     (close-trace-file) ; trace output is no longer redirected to a file
+
+Output from trace$ normally goes to the screen, or more precisely,
+standard-co.  It can be redirected to a file; see *note
+OPEN-TRACE-FILE::.  Use close-trace-file to redirect trace output to
+standard-co.
+
+
+File: acl2-doc-emacs.info,  Node: OPEN-TRACE-FILE,  Next: TRACE$,  Prev: CLOSE-TRACE-FILE,  Up: TRACE
+
+OPEN-TRACE-FILE    redirect trace output to a file
+
+     Example:
+     (open-trace-file "foo") ; trace output will go to file foo
+     
+     General Form:
+     (open-trace-file filename) ; trace output will go to file filename
+
+Output from trace$ normally goes to the screen, i.e., standard-co.  But
+it can be redirected to a file as shown above.  See *Note
+CLOSE-TRACE-FILE:: for how to send trace output back to the screen.
+
+Note that the backtrace printed by wet always goes to standard-co, even
+after the use of open-trace-file.
+
+
+File: acl2-doc-emacs.info,  Node: TRACE$,  Next: UNTRACE$,  Prev: OPEN-TRACE-FILE,  Up: TRACE
+
+TRACE$    trace the indicated functions
+
+     Example:
+     (trace$ foo bar)
+     
+     General Form:
+     (trace$ fn1 fn2 ... fnk)
+
+where the fni are defined or even constrained functions.
+
+see *note UNTRACE$:: for how to undo the effect of trace$.
+
+Basically, trace$ calls on the underlying Lisp to trace the specified
+functions as well as their executable-counterparts.  However, for GCL,
+Allegro CL, and OpenMCL, the underlying Lisp trace routines are modified
+before an image is saved in order to hide the ACL2 world and other
+large data structures and provide slightly prettier output.
+
+Recursive calls of functions whose guards have not been verified will
+not generally be traced.  If you want to see traces for corresponding
+evaluations in raw Lisp, which will generally show recursive calls
+(except, in some Lisp implementations, for compiled tail recursive
+functions), then you can quit into raw Lisp (:q) and execute your form
+there.  Alternatively, you can avoid executable-counterpart functions
+by using :set-raw-mode to enter a raw Lisp version of the ACL2 loop;
+see *note SET-RAW-MODE:: and see *note SET-RAW-MODE-ON!::.
+
+Output from trace$ normally goes to the screen, i.e., standard-co.  But
+it can be redirected to a file; see *note OPEN-TRACE-FILE::.
+
+Also see *note WET:: ("with-error-trace") for a different way that ACL2
+takes advantage of the underlying Lisp, namely to provide a backtrace
+when there is an error.
+
+Note that from a logical perspective all trace printing is a fiction.
+For a related fiction, see *note CW::.  Trace$ returns nil.
+
+The following example will give an idea of the options available other
+than just (trace$ fn1 fn2 ... fnk).  It works about as shown in Allegro
+CL and GCL, but in OpenMCL the recursive calls are omitted unless you
+escape into raw Lisp and redefine fact with (declare (notinline fact)).
+
+     ACL2 !>(defun fact (n)
+              (declare (xargs :guard (natp n) :mode :program))
+              (if (zp n)
+                  1
+                (* n (fact (1- n)))))
+     
+     Summary
+     Form:  ( DEFUN FACT ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT
+     ACL2 !>(trace$ (fact :entry (car arglist) :exit values))
+     NIL
+     ACL2 !>(fact 5)
+     1> (ACL2_*1*_ACL2::FACT . 5)
+       2> (FACT . 5)
+         3> (FACT . 4)
+           4> (FACT . 3)
+             5> (FACT . 2)
+               6> (FACT . 1)
+                 7> (FACT . 0)
+                 <7 (FACT 1)
+               <6 (FACT 1)
+             <5 (FACT 2)
+           <4 (FACT 6)
+         <3 (FACT 24)
+       <2 (FACT 120)
+     <1 (ACL2_*1*_ACL2::FACT 120)
+     120
+     ACL2 !>
+
+Here is another example.
+
+     ACL2 !>(defun fact2 (n acc)
+              (declare (xargs :guard (and (natp n) (natp acc))))
+              (if (zp n)
+                  (mv acc (* 2 acc))
+                (fact2 (1- n) (* n acc))))
+     
+     The admission of FACT2 is trivial, using the relation O< (which is
+     known to be well-founded on the domain recognized by O-P) and the measure
+     (ACL2-COUNT N).  We observe that the type of FACT2 is described by
+     the theorem (AND (CONSP (FACT2 N ACC)) (TRUE-LISTP (FACT2 N ACC))).
+     We used primitive type reasoning.
+     
+     (FACT2 * *) => (MV * *).
+     
+     The guard conjecture for FACT2 is trivial to prove.  FACT2 is compliant
+     with Common Lisp.
+     
+     Summary
+     Form:  ( DEFUN FACT2 ...)
+     Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+             (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL))
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FACT2
+     ACL2 !>(trace$ (fact2 :entry (list 'my-entry (car arglist))
+                           :exit (list 'my-second-value (cadr values))))
+     NIL
+     ACL2 !>(fact2 6 1)
+     
+       1> (ACL2_*1*_ACL2::FACT2 MY-ENTRY 6)>
+         2> (FACT2 MY-ENTRY 6)>
+           3> (FACT2 MY-ENTRY 5)>
+             4> (FACT2 MY-ENTRY 4)>
+               5> (FACT2 MY-ENTRY 3)>
+                 6> (FACT2 MY-ENTRY 2)>
+                   7> (FACT2 MY-ENTRY 1)>
+                     8> (FACT2 MY-ENTRY 0)>
+                     <8 (FACT2 MY-SECOND-VALUE 1440)>
+                   <7 (FACT2 MY-SECOND-VALUE 1440)>
+                 <6 (FACT2 MY-SECOND-VALUE 1440)>
+               <5 (FACT2 MY-SECOND-VALUE 1440)>
+             <4 (FACT2 MY-SECOND-VALUE 1440)>
+           <3 (FACT2 MY-SECOND-VALUE 1440)>
+         <2 (FACT2 MY-SECOND-VALUE 1440)>
+       <1 (ACL2_*1*_ACL2::FACT2 MY-SECOND-VALUE 1440)>
+     (720 1440)
+     ACL2 !>(trace$ (fact2 :entry (list 'my-args-reversed
+                                        (list (cadr arglist) (car arglist)))
+                           :exit (list 'values-reversed
+                                       (cadr values) (car values))))
+     NIL
+     ACL2 !>(fact2 6 1)
+     
+       1> (ACL2_*1*_ACL2::FACT2 MY-ARGS-REVERSED (1 6))>
+         2> (FACT2 MY-ARGS-REVERSED (1 6))>
+           3> (FACT2 MY-ARGS-REVERSED (6 5))>
+             4> (FACT2 MY-ARGS-REVERSED (30 4))>
+               5> (FACT2 MY-ARGS-REVERSED (120 3))>
+                 6> (FACT2 MY-ARGS-REVERSED (360 2))>
+                   7> (FACT2 MY-ARGS-REVERSED (720 1))>
+                     8> (FACT2 MY-ARGS-REVERSED (720 0))>
+                     <8 (FACT2 VALUES-REVERSED 1440 720)>
+                   <7 (FACT2 VALUES-REVERSED 1440 720)>
+                 <6 (FACT2 VALUES-REVERSED 1440 720)>
+               <5 (FACT2 VALUES-REVERSED 1440 720)>
+             <4 (FACT2 VALUES-REVERSED 1440 720)>
+           <3 (FACT2 VALUES-REVERSED 1440 720)>
+         <2 (FACT2 VALUES-REVERSED 1440 720)>
+       <1 (ACL2_*1*_ACL2::FACT2 VALUES-REVERSED 1440 720)>
+     (720 1440)
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: UNTRACE$,  Next: WET,  Prev: TRACE$,  Up: TRACE
+
+UNTRACE$    untrace functions
+
+     Examples:
+     (untrace$)         ; untrace all traced functions
+     (untrace$ foo bar) ; untrace foo and bar
+     
+     General Forms:
+     (untrace$)                 ; untrace all traced functions
+     (untrace$ fn1 fn2 ... fnk) ; untrace the indicated functions
+
+where the fni are defined or even constrained functions.
+
+Untrace$ undoes the effect of trace$.  See *Note TRACE$::.  Untrace
+returns nil
+
+
+File: acl2-doc-emacs.info,  Node: WET,  Next: WITH-ERROR-TRACE,  Prev: UNTRACE$,  Up: TRACE
+
+WET    evaluate a form and print subsequent error trace
+
+NOTE:  This feature is onlyh available if you are using GCL, Allegro
+CL, or CLISP.
+
+     Examples:
+     (wet (bar 3))            ; evaluate (bar 3) and print backtrace upon error
+     (wet (bar 3) nil)        ; as above, but avoid hiding the structure of bar
+     (wet (bar 3) (evisc-tuple 3 5 nil nil))
+                              ; as above, but hiding the structure of bar up to
+                              ; level 3 and length 5
+     (wet (bar 3) :fns (f g)) ; as above but only include calls of f, g
+     
+     General Forms (all but the first argument may be omitted):
+     (wet form
+          evisc-tuple ; optional, and evaluated
+          :fns  (f1 f2 ... fk)
+          :omit (g1 g2 ... gk))
+
+where form is an arbitrary ACL2 form and the fi are function symbols
+whose calls are to appear in the backtrace if the evaluation of form
+aborts.  Generally, wet will hide parts of large structures that it
+prints out, but this can be avoided by supplying a value of nil for
+evisc-tuple.
+
+More generally, the evisc-tuple argument, which is evaluated, can be
+supplied to specify the print-level and print-length for the resulting
+backtrace; see *note LD-EVISC-TUPLE::.
+
+If the value of :fns is nil or not supplied, then calls of all
+functions appear in the backtrace, with the exception of built-in
+functions that are either in the main Lisp package or are in :program
+mode.  (In particular, all user-defined functions appear.)  The above
+description is modified if :omit is supplied, in which case calls of
+the specified function symbols are removed from the backtrace.
+
+The following example illustrates the use of wet, which stands for
+"with-error-trace".  We omit uninteresting output from this example.
+
+     ACL2 !>(defun foo (x) (car x))
+      ...
+      FOO
+     ACL2 !>(defun bar (x) (foo x))
+      ...
+      BAR
+     ACL2 !>(bar 3)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (CAR 3).  To see a trace of calls leading up to this violation,
+     execute (wet <form>) where <form> is the form you submitted to the
+     ACL2 loop.  See :DOC wet for how to get an error backtrace.
+     
+     ACL2 !>(wet (bar 3))
+     
+     
+     ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+     CAR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+     in the call (CAR 3).  (Backtrace is below.)
+     
+     1> (ACL2_*1*_ACL2::BAR 3)
+       2> (ACL2_*1*_ACL2::FOO 3)
+     
+     ACL2 !>(wet (bar 3) :fns (foo))
+     
+     
+     
+     ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+     CAR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+     in the call (CAR 3).  (Backtrace is below.)
+     
+     1> (ACL2_*1*_ACL2::FOO 3)
+     
+     ACL2 !>
+
+Notice that because guards were not verified, the so-called
+executable-counterpart functions are evaluated for foo and bar.  These
+can be identified with package names beginning with the string
+"ACL2_*1*_".
+
+See *Note TRACE$:: for a general tracing utility.
+
+NOTES:
+
+1. Recursive calls of executable-counterpart functions will not
+generally be traced.
+
+2. In the (probably rare) event of a hard Lisp error, you will have to
+exit the Lisp break before seeing the backtrace.
+
+3. Wet always untraces all functions before it installs the traces it
+needs, and it leaves all functions untraced when it completes.  If
+existing functions were traced then you will need to re-execute trace$
+in order to re-install tracing on those functions after wet is called
+on any form.
+
+4. Wet returns an error triple (mv error-p value state), where value is
+a print representation of the value returned by the form given to wet.
+Presumably value is not particularly important anyhow, as the intended
+use of wet is for the case that an error occurred in evaluation of a
+form.
+
+5. As mentioned above, functions in the main Lisp package (i.e., those
+built into Common Lisp) will not be traced by wet.
+
+
+File: acl2-doc-emacs.info,  Node: WITH-ERROR-TRACE,  Prev: WET,  Up: TRACE
+
+WITH-ERROR-TRACE    evaluate a form and print subsequent error trace
+
+With-error-trace is the same as wet; see *note WET::.
+

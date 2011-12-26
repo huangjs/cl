@@ -1,0 +1,143 @@
+<html>
+<head><title>MUTUAL-RECURSION-PROOF-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>MUTUAL-RECURSION-PROOF-EXAMPLE</h4>a small proof about mutually recursive functions
+<pre>Major Section:  <a href="TUTORIAL5-MISCELLANEOUS-EXAMPLES.html">TUTORIAL5-MISCELLANEOUS-EXAMPLES</a>
+</pre><p>
+
+Sometimes one wants to reason about mutually recursive functions.
+Although this is possible in ACL2, it can be a bit awkward.  This
+example is intended to give some ideas about how one can go about
+such proofs.<p>
+
+For an introduction to mutual recursion in ACL2,
+see <a href="MUTUAL-RECURSION.html">mutual-recursion</a>.
+<p>
+We begin by defining two mutually recursive functions:  one that
+collects the variables from a <a href="TERM.html">term</a>, the other that collects the
+variables from a list of <a href="TERM.html">term</a>s.  We actually imagine the <a href="TERM.html">term</a>
+argument to be a <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code>; see <a href="PSEUDO-TERMP.html">pseudo-termp</a>.
+
+<pre>
+(mutual-recursion<p>
+
+(defun free-vars1 (term ans)
+  (cond ((atom term)
+         (add-to-set-eq term ans))
+        ((fquotep term) ans)
+        (t (free-vars1-lst (fargs term) ans))))<p>
+
+(defun free-vars1-lst (lst ans)
+  (cond ((atom lst) ans)
+        (t (free-vars1-lst (cdr lst)
+                           (free-vars1 (car lst) ans)))))<p>
+
+)
+</pre>
+
+The idea of the following function is that it suggests a proof by
+induction in two cases, according to the top-level <code><a href="IF.html">if</a></code> structure of
+the body.  In one case, <code>(atom x)</code> is true, and the theorem to be
+proved should be proved under no additional hypotheses except for
+<code>(atom x)</code>.  In the other case, <code>(not (atom x))</code> is assumed together
+with three instances of the theorem to be proved, one for each
+recursive call in this case.  So, one instance substitutes <code>(car x)</code>
+for <code>x</code>; one substitutes <code>(cdr x)</code> for <code>x</code>; and the third substitutes
+<code>(cdr x)</code> for <code>x</code> and <code>(free-vars1 (car x) ans)</code> for <code>ans</code>.  If you think
+about how you would go about a hand proof of the theorem to follow,
+you'll come up with a similar scheme.
+
+<pre>
+(defun symbol-listp-free-vars1-induction (x ans)
+  (if (atom x)
+; then we just make sure x and ans aren't considered irrelevant
+      (list x ans)
+    (list (symbol-listp-free-vars1-induction (car x) ans)
+          (symbol-listp-free-vars1-induction (cdr x) ans)
+          (symbol-listp-free-vars1-induction
+           (cdr x)
+           (free-vars1 (car x) ans)))))
+</pre>
+
+We now prove the two theorems together as a conjunction, because the
+inductive hypotheses for one are sometimes needed in the proof of
+the other (even when you do this proof on paper!).
+
+<pre>
+(defthm symbol-listp-free-vars1
+  (and (implies (and (pseudo-termp x)
+                     (symbol-listp ans))
+                (symbol-listp (free-vars1 x ans)))
+       (implies (and (pseudo-term-listp x)
+                     (symbol-listp ans))
+                (symbol-listp (free-vars1-lst x ans))))
+  :hints
+  (("Goal" :induct (symbol-listp-free-vars1-induction x ans))))
+</pre>
+
+The above works, but let's try for a more efficient proof, which
+avoids cluttering the proof with irrelevant (false) inductive
+hypotheses.
+
+<pre>
+(ubt 'symbol-listp-free-vars1-induction)<p>
+
+(defun symbol-listp-free-vars1-induction (flg x ans)<p>
+
+; Flg is non-nil (or t) if we are ``thinking'' of a single term.<p>
+
+  (if (atom x)
+      (list x ans)
+    (if flg
+        (symbol-listp-free-vars1-induction nil (cdr x) ans)
+      (list (symbol-listp-free-vars1-induction t (car x) ans)
+            (symbol-listp-free-vars1-induction
+             nil
+             (cdr x)
+             (free-vars1 (car x) ans))))))
+</pre>
+
+We now state the theorem as a conditional, so that it can be proved
+nicely using the <a href="INDUCTION.html">induction</a> scheme that we have just coded.  The
+prover will not store an <code><a href="IF.html">if</a></code> <a href="TERM.html">term</a> as a <a href="REWRITE.html">rewrite</a> rule, but that's OK
+(as long as we tell it not to try), because we're going to derive
+the corollaries of interest later and make <strong>them</strong> into <a href="REWRITE.html">rewrite</a>
+rules.
+
+<pre>
+(defthm symbol-listp-free-vars1-flg
+  (if flg
+      (implies (and (pseudo-termp x)
+                    (symbol-listp ans))
+               (symbol-listp (free-vars1 x ans)))
+    (implies (and (pseudo-term-listp x)
+                  (symbol-listp ans))
+             (symbol-listp (free-vars1-lst x ans))))
+  :hints
+  (("Goal" :induct (symbol-listp-free-vars1-induction flg x ans)))
+  :rule-classes nil)
+</pre>
+
+And finally, we may derive the theorems we are interested in as
+immediate corollaries.
+
+<pre>
+(defthm symbol-listp-free-vars1
+  (implies (and (pseudo-termp x)
+                (symbol-listp ans))
+           (symbol-listp (free-vars1 x ans)))
+  :hints (("Goal" :by (:instance symbol-listp-free-vars1-flg
+                                 (flg t)))))<p>
+
+(defthm symbol-listp-free-vars1-lst
+  (implies (and (pseudo-term-listp x)
+                (symbol-listp ans))
+           (symbol-listp (free-vars1-lst x ans)))
+  :hints (("Goal" :by (:instance symbol-listp-free-vars1-flg
+                                 (flg nil)))))
+  </pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

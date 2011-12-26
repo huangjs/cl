@@ -1,0 +1,182 @@
+<html>
+<head><title>MONITOR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MONITOR</h2>to monitor the attempted application of a rule name
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+
+<pre>
+Example:
+(monitor '(:rewrite assoc-of-app) 't)
+:monitor (:rewrite assoc-of-app) t
+:monitor (:definition app) (equal (brr@ :target) '(app c d))
+<p>
+General Form:
+(monitor rune term)
+</pre>
+
+where <code>rune</code> is a <a href="RUNE.html">rune</a> and <code>term</code> is a term, called the ``break
+condition.'' <code>Rune</code> must be either a <code>:rewrite</code> <a href="RUNE.html">rune</a> or a
+<code>:definition</code> <a href="RUNE.html">rune</a>.<p>
+
+When a <a href="RUNE.html">rune</a> is <a href="MONITOR.html">monitor</a>ed any attempt to apply it may result in an
+interactive break in an ACL2 ``<a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a>.'' There you will get
+a chance to see how the application proceeds.
+See <a href="BREAK-REWRITE.html">break-rewrite</a> for a description of the interactive loop
+entered.  Whether an interactive break occurs depends on the value
+of the break condition expression associated with the <a href="MONITOR.html">monitor</a>ed
+<a href="RUNE.html">rune</a>.<p>
+
+NOTE: Some <code>:rewrite</code> rules are considered ``simple abbreviations'';
+see <a href="SIMPLE.html">simple</a>.  These can be be monitored, but only at certain times during the
+proof.  Monitoring is carried out by code inside the rewriter but
+abbreviation rules may be applied by a special purpose simplifier inside the
+so-called <em>preprocess</em> phase of a proof.  If you desire to monitor an
+abbreviation rule, a warning will be printing suggesting that you may want to
+supply the hint <code>:DO-NOT '(PREPROCESS)</code>; see <a href="HINTS.html">hints</a>.  Without such a hint,
+an abbreviation rule can be applied during the preprocess phase of a proof,
+and no such application will cause an interactive break.<p>
+
+To remove a <a href="RUNE.html">rune</a> from the list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s, use <code>unmonitor</code>.
+To see which <a href="RUNE.html">rune</a>s are <a href="MONITOR.html">monitor</a>ed and what their break conditions
+are, evaluate <code>(monitored-runes)</code>.<p>
+
+<code>Monitor</code>, <code>unmonitor</code> and <code>monitored-runes</code> are macros that expand into
+expressions involving <code>state</code>.  While these macros appear to return
+the list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s this is an illusion.  They all print
+<a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a> information to the comment window and then return
+error triples instructing <code>ld</code> to print nothing.  It is impossible to
+return the list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s because it exists only in the
+<a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a> with which you interact when a break occurs.  This
+allows you to change the <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s and their conditions during
+the course of a proof attempt without changing the <a href="STATE.html">state</a> in which
+the the proof is being constructed.<p>
+
+Unconditional break points are obtained by using the break condition
+<code>t</code>.  We now discuss conditional break points.  The break condition,
+<code>expr</code>, must be a term that contains no free variables other than
+<code>state</code> and that returns a single non-<code>state</code> result.  In fact, the
+result should be <code>nil</code>, <code>t</code>, or a true list of commands to be fed to the
+resulting interactive break.  Whenever the system attempts to use
+the associated rule, <code>expr</code> is evaluated in the <a href="WORMHOLE.html">wormhole</a> interaction
+<a href="STATE.html">state</a>.  A break occurs only if the result of evaluating <code>expr</code> is
+non-<code>nil</code>.  If the result is a true list, that list is appended to the
+front of <code>standard-oi</code> and hence is taken as the initial user commands
+issued to the interactive break.<p>
+
+In order to develop effective break conditions it must be possible
+to access context sensitive information, i.e., information about the
+context in which the <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a> is being tried.  The <code>brr@</code> macro
+may be used in break conditions to access such information as the
+term being rewritten and the current governing assumptions.  This
+information is not stored in the proof <a href="STATE.html">state</a> but is transferred into
+the <a href="WORMHOLE.html">wormhole</a> <a href="STATE.html">state</a> when breaks occur.  The macro form is <code>(brr@ :sym)</code>
+where <code>:sym</code> is one of several keyword symbols, including <code>:target</code> (the
+term being rewritten), <code>:unify-subst</code> (the substitution that
+instantiates the left-hand side of the conclusion of the rule so
+that it is the target term), and <code>:type-alist</code> (the governing
+assumptions).  See <a href="BRR_at_.html">brr@</a>.<p>
+
+For example,
+
+<pre>
+ACL2 !&gt;:monitor (:rewrite assoc-of-app) 
+                (equal (brr@ :target) '(app a (app b c)))
+</pre>
+
+will monitor <code>(:rewrite assoc-of-app)</code> but will cause an interactive
+break only when the target term, the term being rewritten, is
+<code>(app a (app b c))</code>.<p>
+
+Because break conditions are evaluated in the interaction
+environment, the user developing a break condition for a given <a href="RUNE.html">rune</a>
+can test candidate break conditions before installing them.  For
+example, suppose an unconditional break has been installed on a
+<a href="RUNE.html">rune</a>, that an interactive break has occurred and that the user has
+determined both that this particular application is uninteresting
+and that many more such applications will likely occur.  An
+appropriate response would be to develop an expression that
+recognizes such applications and returns <code>nil</code>.  Of course, the hard
+task is figuring out what makes the current application
+uninteresting.  But once a candidate expression is developed, the
+user can evaluate it in the current context simply to confirm that
+it returns <code>nil</code>.<p>
+
+Recall that when a break condition returns a non-<code>nil</code> true list that
+list is appended to the front of <code>standard-oi</code>.  For example,
+
+<pre>
+ACL2 !&gt;:monitor (:rewrite assoc-of-app) '(:go)
+</pre>
+
+will cause <code>(:rewrite assoc-of-app)</code> to be <a href="MONITOR.html">monitor</a>ed and will make
+the break condition be <code>'(:go)</code>.  This break condition always
+evaluates the non-<code>nil</code> true list <code>(:go)</code>.  Thus, an interactive break
+will occur every time <code>(:rewrite assoc-of-app)</code> is tried.  The break
+is fed the command <code>:go</code>.  Now the command <code>:go</code> causes <code>break-rewrite</code> to
+(a) evaluate the attempt to apply the lemma, (b) print the result of
+that attempt, and (c) exit from the interactive break and let the
+proof attempt continue.  Thus, in effect, the above <code>:monitor</code> merely
+``traces'' the attempted applications of the <a href="RUNE.html">rune</a> but never causes
+an interactive break requiring input from the user.<p>
+
+It is possible to use this feature to cause a conditional break
+where the effective break condition is tested <strong>after</strong> the lemma has
+been tried.  For example:
+
+<pre>
+ACL2 !&gt;:monitor (:rewrite lemma12) 
+                '(:unify-subst
+                  :eval$ nil
+                  :ok-if (or (not (brr@ :wonp))
+                             (not (equal (brr@ :rewritten-rhs) '(foo a))))
+                  :rewritten-rhs)
+</pre>
+
+causes the following behavior when <code>(:rewrite lemma12)</code> is tried.  A
+break always occurs, but it is fed the commands above.  The first,
+<code>:unify-subst</code>, causes <code>break-rewrite</code> to print out the unifying
+substitution.  Then in response to <code>:eval$</code> <code>nil</code> the lemma is tried but
+with all <a href="RUNE.html">rune</a>s temporarily <a href="UNMONITOR.html">unmonitor</a>ed.  Thus no breaks will occur
+during the rewriting of the hypotheses of the lemma.  When the
+attempt has been made, control returns to <code>break-rewrite</code> (which will
+print the results of the attempt, i.e., whether the lemma was
+applied, if so what the result is, if not why it failed).  The next
+command, the <code>:ok-if</code> with its following expression, is a conditional
+exit command.  It means exit <code>break-rewrite</code> if either the attempt was
+unsuccessful, <code>(not (brr@ :wonp))</code>, or if the result of the rewrite is
+any term other than <code>(foo a)</code>.  If this condition is met, the break is
+exited and the remaining break commands are irrelevant.  If this
+condition is not met then the next command, <code>:rewritten-rhs</code>, prints
+the result of the application (which in this contrived example is
+known to be <code>(foo a)</code>).  Finally, the list of supplied commands is
+exhausted but <code>break-rewrite</code> expects more input.  Therefore, it
+begins prompting the user for input.  The end result, then, of the
+above <code>:monitor</code> command is that the <a href="RUNE.html">rune</a> in question is elaborately
+traced and interactive breaks occur whenever it rewrites its target
+to <code>(foo a)</code>.<p>
+
+We recognize that the above break condition is fairly arcane.  We
+suspect that with experience we will develop some useful idioms.
+For example, it is straightforward now to define macros that monitor
+<a href="RUNE.html">rune</a>s in the ways suggested by the following names:  <code>trace-rune</code>,
+<code>break-if-target-is</code>, and <code>break-if-result-is</code>.  For example, the last
+could be defined as
+
+<pre>
+(defmacro break-if-result-is (rune term)
+  `(monitor ',rune
+            '(quote (:eval :ok-if
+                           (not (equal (brr@ :rewritten-rhs) ',term))))))
+</pre>
+
+(Note however that the submitted term must be in translated form.)<p>
+
+Since we don't have any experience with this kind of control on
+lemmas we thought it best to provide a general (if arcane) mechanism
+and hope that the ACL2 community will develop the special cases that
+we find most convenient.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

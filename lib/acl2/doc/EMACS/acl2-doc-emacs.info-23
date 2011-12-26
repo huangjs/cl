@@ -1,0 +1,1066 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: LD-SKIP-PROOFSP,  Next: LD-VERBOSE,  Prev: LD-REDEFINITION-ACTION,  Up: MISCELLANEOUS
+
+LD-SKIP-PROOFSP    how carefully ACL2 processes your commands
+
+     Examples:
+     ACL2 !>(set-ld-skip-proofsp t state)
+      T
+     ACL2 !s>(set-ld-skip-proofsp nil state)
+      NIL
+     ACL2 !>(set-ld-skip-proofsp 'include-book state)
+      INCLUDE-BOOK
+     ACL2 !s>
+
+A global variable in the ACL2 state, called 'ld-skip-proofsp,
+determines the thoroughness with which ACL2 processes your commands.
+This variable may take on one of three values: t, nil or 'include-book.
+When ld-skip-proofsp is non-nil, the system assumes that which ought
+to be proved and is thus unsound.  The form (set-ld-skip-proofsp flg
+state) is the general-purpose way of setting ld-skip-proofsp.  This
+global variable is an "ld special," which is to say, you may call ld in
+such a way as to "bind" this variable for the dynamic extent of the ld.
+
+When ld-skip-proofsp is non-nil, the default prompt displays the
+character s.  Thus, the prompt
+
+     ACL2 !s>
+
+means that the default defun-mode is :logic (otherwise the character p,
+for :program, would also be printed; see *note DEFAULT-PRINT-PROMPT::)
+but "proofs are being skipped."
+
+Observe that there are two legal non-nil values, t and 'include-book.
+When ld-skip-proofsp is t, ACL2 skips all proof obligations but
+otherwise performs all other required analysis of input events.  When
+ld-skip-proofsp is 'include-book, ACL2 skips not only proof obligations
+but all analysis except that required to compute the effect of
+successfully executed events.  To explain the distinction, let us
+consider one particular event, say a defun.  Very roughly speaking, a
+defun event normally involves a check of the syntactic well-formedness
+of the submitted definition, the generation and proof of the
+termination conditions, and the computation and storage of various
+rules such as a :definition rule and some :type-prescription rules.  By
+"normally" above we mean when ld-skip-proofsp is nil.  How does a defun
+behave when ld-skip-proofsp is non-nil?
+
+If ld-skip-proofsp is t, then defun performs the syntactic
+well-formedness checks and computes and stores the various rules, but
+it does not actually carry out the termination proofs.  If
+ld-skip-proofsp is 'include-book, defun does not do the syntactic
+well-formedness check nor does it carry out the termination proof.
+Instead, it merely computes and stores the rules under the assumption
+that the checks and proofs would all succeed.  Observe that a setting
+of 'include-book is "stronger" than a setting of t in the sense that
+'include-book causes defun to assume even more about the admissibility
+of the event than t does.
+
+As one might infer from the choice of name, the include-book event sets
+ld-skip-proofsp to 'include-book when processing the events in a book
+being loaded.  Thus, include-book does the miminal work necessary to
+carry out the effects of every event in the book.  The syntactic checks
+and proof obligations were, presumably, successfully carried out when
+the book was certified.
+
+A non-nil value for ld-skip-proofsp also affects the system's output
+messages.  Event summaries (the paragraphs that begin "Summary" and
+display the event forms, rules used, etc.) are not printed when
+ld-skip-proofsp is non-nil.  Warnings and observations are printed when
+ld-skip-proofsp is t but are not printed when it is 'include-book.
+
+Intuitively, ld-skip-proofsp t means skip just the proofs and otherwise
+do all the work normally required for an event; while ld-skip-proofsp
+'include-book is "stronger" and means do as little as possible to
+process events.  In accordance with this intuition, local events are
+processed when ld-skip-proofsp is t but are skipped when
+ld-skip-proofsp is 'include-book.
+
+The ACL2 system itself uses only two settings, nil and 'include-book,
+the latter being used only when executing the events inside of a book
+being included.  The ld-skip-proofsp setting of t is provided as a
+convenience to the user.  For example, suppose one has a file of
+events.  By loading it with ld with ld-skip-proofsp set to t, the
+events can all be checked for syntactic correctness and assumed without
+proof.  This is a convenient way to recover a state lost by a system
+crash or to experiment with a modification of an events file.
+
+The foregoing discussion is actually based on a lie.  ld-skip-proofsp
+is allowed two other values, 'initialize-acl2 and
+'include-book-with-locals.  The first causes behavior similar to t but
+skips local events and avoids some error checks that would otherwise
+prevent ACL2 from properly booting.  The second is identical to
+'include-book but also executes local events.  These additional values
+are not intended for use by the user, but no barriers to their use have
+been erected.
+
+We close by reminding the user that ACL2 is potentially unsound if
+ld-skip-proofsp is ever set by the user.  We provide access to it
+simply to allow experimentation and rapid reconstruction of lost or
+modified logical worlds.
+
+
+File: acl2-doc-emacs.info,  Node: LD-VERBOSE,  Next: LEMMA-INSTANCE,  Prev: LD-SKIP-PROOFSP,  Up: MISCELLANEOUS
+
+LD-VERBOSE    determines whether ld prints ``ACL2 Loading ...''
+
+Ld-verbose is an ld special (see *note LD::).  The accessor is
+(ld-verbose state) and the updater is (set-ld-verbose val state).
+Ld-verbose must be t, nil or a string or consp suitable for fmt
+printing via the ~@ command.  The initial value of ld-verbose is a fmt
+message that prints the ACL2 version number, ld level and connected
+book directory.
+
+Before processing the forms in standard-oi, ld may print a header.  The
+printing of this header is controlled by ld-verbose.  If ld-verbose is
+nil, no header is printed.  If it is t, ld prints the message
+
+        ACL2 loading <file>
+
+where <file> is the input channel supplied to ld.  A similar message is
+printed when ld completes.  If ld-verbose is neither t nor nil then it
+is presumably a header and is printed with the ~@ fmt directive before
+ld begins to read and process forms.  In this case the ~@ fmt directive
+is interpreted in an environment in which #\v is the ACL2 version
+string, #\l is the level of the current recursion in ld and/or
+wormhole, and #\c is the connected book directory (cbd).
+
+
+File: acl2-doc-emacs.info,  Node: LEMMA-INSTANCE,  Next: LINEAR-ARITHMETIC,  Prev: LD-VERBOSE,  Up: MISCELLANEOUS
+
+LEMMA-INSTANCE    an object denoting an instance of a theorem
+
+Lemma instances are the objects one provides via :use and :by hints
+(see *note HINTS::) to bring to the theorem prover's attention some
+previously proved or easily provable fact.  A typical use of the :use
+hint is given below.  The value specified is a list of five lemma
+instances.
+
+     :use (reverse-reverse
+           (:type-prescription app)
+           (:instance assoc-of-app
+                      (x a) (y b) (z c))
+           (:functional-instance p-f
+                                 (p consp) (f flatten))
+           (:instance (:theorem (equal x x))
+                      (x (flatten a))))
+
+Observe that an event name can be a lemma instance.  The :use hint
+allows a single lemma instance to be provided in lieu of a list, as in:
+
+     :use reverse-reverse
+
+or
+
+     :use (:instance assoc-of-app (x a) (y b) (z c))
+
+A lemma instance denotes a formula which is either known to be a
+theorem or which must be proved to be a theorem before it can be used.
+To use a lemma instance in a particular subgoal, the theorem prover
+adds the formula as a hypothesis to the subgoal before the normal
+theorem proving heuristics are applied.
+
+A lemma instance, or lmi, is of one of the following five forms:
+
+(1) name, where name names a previously proved theorem, axiom, or
+definition and denotes the formula (theorem) of that name.
+
+(2) rune, where rune is a rune (see *note RUNE::) denoting the
+:corollary justifying the rule named by the rune.
+
+(3) (:theorem term), where term is any term alleged to be a theorem.
+Such a lemma instance denotes the formula term.  But before using such a
+lemma instance the system will undertake to prove term.
+
+(4) (:instance lmi (v1 t1) ... (vn tn)), where lmi is recursively a
+lemma instance, the vi's are distinct variables and the ti's are terms.
+Such a lemma instance denotes the formula obtained by instantiating
+the formula denoted by lmi, replacing each vi by ti.
+
+(5) (:functional-instance lmi (f1 g1) ... (fn gn)), where lmi is
+recursively a lemma instance and each fi is an "instantiable" function
+symbol of arity ni and gi is a function symbol or a pseudo-lambda
+expression of arity ni.  An instantiable function symbol is any defined
+or constrained function symbol except the primitives not, member,
+implies, and o<, and a few others, as listed by the constant
+*non-instantiable-primitives*.  These are built-in in such a way that we
+cannot recover the constraints on them.  A pseudo-lambda expression is
+an expression of the form (lambda (v1 ... vn) body) where the vi are
+distinct variable symbols and body is any term.  No a priori relation
+is imposed between the vi and the variables of body, i.e., body may
+ignore some vi's and may contain "free" variables.  However, we do not
+permit v to occur freely in body if the functional substitution is to
+be applied to any formula (lmi or the constraints to be satisfied) in a
+way that inserts v into the scope of a binding of v by let or mv-let
+(or, lambda).  If you happen to violate this restriction, an
+informative error message will be printed.  That message will list for
+you the potentially illegal choices for v in the context in which the
+functional substitution is offered.  A :functional-instance lemma
+instance denotes the formula obtained by functionally instantiating the
+formula denoted by lmi, replacing fi by gi.  However, before such a
+lemma instance can be used, the system will generate proof obligations
+arising from the replacement of the fi's by the gi's in constraints
+that "support" the lemma to be functionally instantiated; see *note
+CONSTRAINT::.  One might expect that if the same instantiated
+constraint were generated on behalf of several events, then each of
+those instances would have to be proved.  However, for the sake of
+efficiency, ACL2 stores the fact that such an instantiated constraint
+has been proved and avoids it in future events.
+
+Obscure case for definitions.  If the lemma instance refers to a
+:definition rune, then it refers to the corollary formula of that rune,
+which can be a simplified ("normalized") form of the original formula.
+However, if the hint is a :by hint and the lemma instance is based on a
+name (i.e., a symbol), rather than a rune, then the formula is the
+original formula of the event, as shown by :pe, rather than the
+normalized version, as shown by :pf.  This is as one would expect: If
+you supply the name of an event, you expect it to refer to the original
+event.  For :use hints we use the simplified (normalized) form instead,
+which is reasonable since one would expect simplification during the
+proof that re-traces the normalization done at the time the rule was
+created.
+
+See *Note FUNCTIONAL-INSTANTIATION-EXAMPLE:: for an example of the use
+of :functional-instance (so-called "functional instantiation)."
+
+
+File: acl2-doc-emacs.info,  Node: LINEAR-ARITHMETIC,  Next: LOCAL-INCOMPATIBILITY,  Prev: LEMMA-INSTANCE,  Up: MISCELLANEOUS
+
+LINEAR-ARITHMETIC    A description of the linear arithmetic decision procedure
+
+We describe the procedure very roughly here.  Fundamental to the
+procedure is the notion of a linear polynomial inequality.  A "linear
+polynomial" is a sum of terms, each of which is the product of a
+rational constant and an "unknown."  The "unknown" is permitted to be 1
+simply to allow a term in the sum to be constant.  Thus, an example
+linear polynomial is 3*x + 7*a + 2; here x and a are the (interesting)
+unknowns.  However, the unknowns need not be variable symbols.  For
+example, (length x) might be used as an unknown in a linear polynomial.
+Thus, another linear polynomial is 3*(length x) + 7*a.  A "linear
+polynomial inequality" is an inequality (either < or <=) relation
+between two linear polynomials.  Note that an equality may be
+considered as a pair of inequalities; e.q., 3*x + 7*a + 2 = 0 is the
+same as the conjunction of 3*x + 7*a + 2 <= 0 and 0 <= 3*x + 7*a + 2.
+
+Certain linear polynomial inequalities can be combined by
+cross-multiplication and addition to permit the deduction of a third
+inequality with fewer unknowns.  If this deduced inequality is
+manifestly false, a contradiction has been deduced from the assumed
+inequalities.
+
+For example, suppose we have two assumptions
+
+     p1:       3*x + 7*a <  4
+     p2:               3 <  2*x
+
+and we wish to prove that, given p1 and p2, a < 0.  As suggested above,
+we proceed by assuming the negation of our goal
+
+     p3:               0 <= a.
+
+and looking for a contradiction.
+
+By cross-multiplying and adding the first two inequalities, (that is,
+multiplying p1 by 2, p2 by 3 and adding the respective sides), we
+deduce the intermediate result
+
+     p4:  6*x + 14*a + 9 < 8 + 6*x
+
+which, after cancellation, is:
+
+     p4:        14*a + 1 <  0.
+
+If we then cross-multiply and add p3 to p4, we get
+
+     p5:               1 <= 0,
+
+a contradiction.  Thus, we have proved that p1 and p2 imply the
+negation of p3.
+
+All of the unknowns of an inequality must be eliminated by cancellation
+in order to produce a constant inequality.  We can choose to eliminate
+the unknowns in any order, but we eliminate them in term-order, largest
+unknowns first.  (See *Note TERM-ORDER::.)  That is, two polys are
+cancelled against each other only when they have the same largest
+unknown.  For instance, in the above example we see that x is the
+largest unknown in each of p1 and p2, and a in p3 and p4.
+
+Now suppose that this procedure does not produce a contradiction but
+instead yields a set of nontrivial inequalities.  A contradiction might
+still be deduced if we could add to the set some additional
+inequalities allowing further cancellations.  That is where :linear
+lemmas come in.  When the set of inequalities has stabilized under
+cross-multiplication and addition and no contradiction is produced, we
+search the data base of :linear rules for rules about the unknowns that
+are candidates for cancellation (i.e., are the largest unknowns in
+their respective inequalities).  See *Note LINEAR:: for a description
+of how :linear rules are used.
+
+See also non-linear-arithmetic for a description of an extension to the
+linear-arithmetic procedure described here.
+
+
+File: acl2-doc-emacs.info,  Node: LOCAL-INCOMPATIBILITY,  Next: LOGICAL-NAME,  Prev: LINEAR-ARITHMETIC,  Up: MISCELLANEOUS
+
+LOCAL-INCOMPATIBILITY    when non-local events won't replay in isolation
+
+Sometimes a "local incompatibility" is reported while attempting to
+embed some events, as in an encapsulate or include-book.  This is
+generally due to the use of a locally defined name in a non-local event
+or the failure to make a witnessing definition local.
+
+local incompatibilities may be detected while trying to execute the
+strictly non-local events of an embedding.  For example, encapsulate
+operates by first executing all the events (local and non-local) with
+ld-skip-proofsp nil, to confirm that they are all admissible.  Then it
+attempts merely to assume the non-local ones to create the desired
+theory, by executing the events with ld-skip-proofsp set to
+'include-book.  Similarly, include-book assumes the non-local ones,
+with the understanding that a previously successful certify-book has
+performed the admissiblity check.
+
+How can a sequence of events admitted with ld-skip-proofsp nil fail
+when ld-skip-proofsp is 'include-book?  The key observation is that in
+the latter case only the non-local events are processed.  The local
+ones are skipped and so the non-local ones must not depend upon them.
+
+Two typical mistakes are suggested by the detection of a local
+incompatibility: (1) a locally defined function or macro was used in a
+non-local event (and, in the case of encapsulate, was not included
+among the signatures) and (2) the witnessing definition of a function
+that was included among the signatures of an encapsulate was not made
+local.
+
+An example of mistake (1) would be to include among your encapsulated
+events both (local (defun fn ...)) and (defthm lemma (implies (fn ...)
+...)).  Observe that fn is defined locally but a formula involving fn
+is defined non-locally.  In this case, either the defthm should be made
+local or the defun should be made non-local.
+
+An example of mistake (2) would be to include (fn (x) t) among your
+signatures and then to write (defun fn (x) ...) in your events, instead
+of (local (defun fn ...)).
+
+One subtle aspect of encapsulate is that if you constrain any member of
+a mutually recursive clique you must define the entire clique locally
+and then you must constrain those members of it you want axiomatized
+non-locally.
+
+Errors due to local incompatibility should never occur in the
+assumption of a fully certified book.  Certification ensures against
+it.  Therefore, if include-book reports an incompatibility, we assert
+that earlier in the processing of the include-book a warning was
+printed advising you that some book was uncertified.  If this is not
+the case -- if include-book reports an incompatibility and there has
+been no prior warning about lack of certification -- please report it
+to us.
+
+When a local incompatibility is detected, we roll-back to the world in
+which we started the encapsulate or include-book.  That is, we discard
+the intermediate world created by trying to process the events skipping
+proofs.  This is clean, but we realize it is very frustrating because
+the entire sequence of events must be processed from scratch.  Assuming
+that the embedded events were, once upon a time, processed as top-level
+commands (after all, at some point you managed to create this sequence
+of commands so that the local and non-local ones together could survive
+a pass in which proofs were done), it stands to reason that we could
+define a predicate that would determine then, before you attempted to
+embed them, if local incompatibilities exist.  We hope to do that,
+eventually.
+
+We conclude with a subtle example of local incompatibility.  The problem
+is that in order for foo-type-prescription to be admitted using the
+specified :typed-term (foo x), the conclusion (my-natp (foo x)) depends
+on my-natp being a compound-recognizer.  This is fine on the first pass
+of the encapsulate, during which lemma my-natp-cr is admitted.  But
+my-natp-cr is skipped on the second pass because it is marked local,
+and this causes foo-type-prescription to fail on the second pass.
+
+     (defun my-natp (x)
+       (declare (xargs :guard t))
+       (and (integerp x)
+            (<= 0 x)))
+     
+     (defun foo (x)
+       (nfix x))
+     
+     (encapsulate
+      ()
+      (local (defthm my-natp-cr
+               (equal (my-natp x)
+                      (and (integerp x)
+                           (<= 0 x)))
+               :rule-classes :compound-recognizer))
+      (defthm foo-type-prescription
+        (my-natp (foo x))
+        :hints (("Goal" :in-theory (enable foo)))
+        :rule-classes ((:type-prescription :typed-term (foo x)))))
+
+
+File: acl2-doc-emacs.info,  Node: LOGICAL-NAME,  Next: LOOP-STOPPER,  Prev: LOCAL-INCOMPATIBILITY,  Up: MISCELLANEOUS
+
+LOGICAL-NAME    a name created by a logical event
+
+     Examples:
+     assoc
+     caddr
+     +
+     "ACL2-USER"
+     "arith"
+     "project/task-1/arith.lisp"
+     :here
+
+A logical name is either a name introduced by some event, such as
+defun, defthm, or include-book, or else is the keyword :here, which
+refers to the most recent such event.  See *Note EVENTS::.  Every
+logical name is either a symbol or a string.  For the syntactic rules
+on names, see *note NAME::.  The symbols name functions, macros,
+constants, axioms, theorems, labels, and theories.  The strings name
+packages or books.  We permit the keyword symbol :here to be used as a
+logical name denoting the most recently completed event.
+
+The logical name introduced by an include-book is the full book name
+string for the book (see *note FULL-BOOK-NAME::).  Thus, under the
+appropriate setting for the current book directory (see *note CBD::)
+the event (include-book "arith") may introduce the logical name
+
+     "/usr/home/smith/project/task-1/arith.lisp" .
+
+Under a different cbd setting, it may introduce a different logical
+name, perhaps
+
+     "/local/src/acl2/library/arith.lisp" .
+
+It is possible that identical include-book events forms in a session
+introduce two different logical names because of the current book
+directory.
+
+A logical name that is a string is either a package name or a book
+name.  If it is not a package name, we support various conventions to
+interpret it as a book name.  If it does not end with the string
+".lisp" we extend it appropriately.  Then, we search for any book name
+that has the given logical name as a terminal substring.  Suppose
+(include-book "arith") is the only include-book so far and that
+"/usr/home/smith/project/task-1/arith.lisp" is the source file it
+processed.  Then "arith", "arith.lisp" and "task-1/arith.lisp" are all
+logical names identifying that include-book event (unless they are
+package names).  Now suppose a second (include-book "arith") is
+executed and processes "/local/src/acl2/library/arith.lisp".  Then
+"arith" is no longer a logical name, because it is ambiguous.  However,
+"task-1/arith" is a logical name for the first include-book and
+"library/arith" is a logical name for the second.  Indeed, the first
+can be named by "1/arith" and the second by "y/arith".
+
+Logical names are used primarily in the theory manipulation functions,
+e.g., universal-theory and current-theory with which you may obtain
+some standard theories as of some point in the historical past.  The
+reference points are the introductions of logical names, i.e., the past
+is determined by the events it contains.  One might ask, "Why not
+discuss the past with the much more flexible language of command
+descriptors?" (See *Note COMMAND-DESCRIPTOR::.)  The reason is that
+inside of such events as encapsulate or macro commands that expand to
+progns of events, command descriptors provide too coarse a grain.
+
+When logical names are used as referents in theory expressions used in
+books, one must consider the possibility that the defining event within
+the book in question becomes redundant by the definition of the name
+prior to the assumption of the book.  See *Note REDUNDANT-EVENTS::.
+
+
+File: acl2-doc-emacs.info,  Node: LOOP-STOPPER,  Next: LP,  Prev: LOGICAL-NAME,  Up: MISCELLANEOUS
+
+LOOP-STOPPER    limit application of permutative rewrite rules
+
+See *Note RULE-CLASSES:: for a discussion of the syntax of the
+:loop-stopper field of :rewrite rule-classes.  Here we describe how
+that field is used, and also how that field is created when the user
+does not explicitly supply it.
+
+For example, the built-in :rewrite rule commutativity-of-+,
+
+     (implies (and (acl2-numberp x)
+                   (acl2-numberp y))
+              (equal (+ x y) (+ y x))),
+
+creates a rewrite rule with a loop-stopper of ((x y binary-+)).  This
+means, very roughly, that the term corresponding to y must be "smaller"
+than the term corresponding to x in order for this rule to apply.
+However, the presence of binary-+ in the list means that certain
+functions that are "invisible" with respect to binary-+ (by default,
+unary- is the only such function) are more or less ignored when making
+this "smaller" test.  We are much more precise below.
+
+Our explanation of loop-stopping is in four parts.  First we discuss
+ACL2's notion of "term order."  Next, we bring in the notion of
+"invisibility", and use it together with term order to define orderings
+on terms that are used in the loop-stopping algorithm.  Third, we
+describe that algorithm.  These topics all assume that we have in hand
+the :loop-stopper field of a given rewrite rule; the fourth and final
+topic describes how that field is calculated when it is not supplied by
+the user.
+
+ACL2 must sometimes decide which of two terms is syntactically simpler.
+It uses a total ordering on terms, called the "term order."  Under
+this ordering constants such as '(a b c) are simpler than terms
+containing variables such as x and (+ 1 x).  Terms containing variables
+are ordered according to how many occurrences of variables there are.
+Thus x and (+ 1 x) are both simpler than (cons x x) and (+ x y).  If
+variable counts do not decide the order, then the number of function
+applications are tried.  Thus (cons x x) is simpler than (+ x (+ 1 y))
+because the latter has one more function application.  Finally, if the
+number of function applications do not decide the order, a
+lexicographic ordering on Lisp objects is used.  See *Note TERM-ORDER::
+for details.
+
+When the loop-stopping algorithm is controlling the use of permutative
+:rewrite rules it allows term1 to be moved leftward over term2 only if
+term1 is smaller, in a suitable sense.  Note: The sense used in
+loop-stopping is *not* the above explained term order but a more
+complicated ordering described below.  The use of a total ordering
+stops rules like commutativity from looping indefinitely because it
+allows (+ b a) to be permuted to (+ a b) but not vice versa, assuming a
+is smaller than b in the ordering.  Given a set of permutative rules
+that allows arbitrary permutations of the tips of a tree of function
+calls, this will normalize the tree so that the smallest argument is
+leftmost and the arguments ascend in the order toward the right.  Thus,
+for example, if the same argument appears twice in the tree, as x does
+in the binary-+ tree denoted by the term (+ a x b x), then when the
+allowed permutations are done, all occurrences of the duplicated
+argument in the tree will be adjacent, e.g., the tree above will be
+normalized to (+ a b x x).
+
+Suppose the loop-stopping algorithm used term order, as noted above,
+and consider the binary-+ tree denoted by (+ x y (- x)).  The arguments
+here are in ascending term order already.  Thus, no permutative rules
+are applied.  But because we are inside a +-expression it is very
+convenient if x and (- x) could be given virtually the same position in
+the ordering so that y is not allowed to separate them.  This would
+allow such rules as (+ i (- i) j) = j to be applied.  In support of
+this, the ordering used in the control of permutative rules allows
+certain unary functions, e.g., the unary minus function above, to be
+"invisible" with respect to certain "surrounding" functions, e.g., +
+function above.
+
+Briefly, a unary function symbol fn1 is invisible with respect to a
+function symbol fn2 if fn2 belongs to the value of fn1 in
+invisible-fns-table; also see *note SET-INVISIBLE-FNS-TABLE::, which
+explains its format and how it can be set by the user.  Roughly
+speaking, "invisible" function symbols are ignored for the purposes of
+the term-order test.
+
+Consider the example above, (+ x y (- x)).  The translated version of
+this term is (binary-+ x (binary-+ y (unary- x))).  The initial
+invisible-fns-table makes unary- invisible with repect to binary-+.
+The commutativity rule for binary-+ will attempt to swap y and (unary-
+x) and the loop-stopping algorithm is called to approve or disapprove.
+If term order is used, the swap will be disapproved.  But term order is
+not used.  While the loop-stopping algorithm is permuting arguments
+inside a binary-+ expression, unary- is invisible.  Thus, insted of
+comparing y with (unary- x), the loop-stopping algorithm compares y
+with x, approving the swap because x comes before y.
+
+Here is a more precise specification of the total order used for
+loop-stopping with respect to a list, fns, of functions that are to be
+considered invisible.  Let x and y be distinct terms; we specify when
+"x is smaller than y with respect to fns."  If x is the application of
+a unary function symbol that belongs to fns, replace x by its argument.
+Repeat this process until the result is not the application of such a
+function; let us call the result x-guts.  Similarly obtain y-guts from
+y.  Now if x-guts is the same term as y-guts, then x is smaller than y
+in this order iff x is smaller than y in the standard term order.  On
+the other hand, if x-guts is different than y-guts, then x is smaller
+than y in this order iff x-guts is smaller than y-guts in the standard
+term order.
+
+Now we may describe the loop-stopping algorithm.  Consider a rewrite
+rule with conclusion (equiv lhs rhs) that applies to a term x in a
+given context; see *note REWRITE::.  Suppose that this rewrite rule has
+a loop-stopper field (technically, the :heuristic-info field) of ((x1
+y1 . fns-1) ... (xn yn . fns-n)).  (Note that this field can be
+observed by using the command :pr with the name of the rule; see *note
+PR::.)  We describe when rewriting is permitted.  The simplest case is
+when the loop-stopper list is nil (i.e., n is 0); in that case,
+rewriting is permitted.  Otherwise, for each i from 1 to n let xi' be
+the actual term corresponding to the variable xi when lhs is matched
+against the term to be rewritten, and similarly correspond yi' with y.
+If xi' and yi' are the same term for all i, then rewriting is not
+permitted.  Otherwise, let k be the least i such that xi' and yi' are
+distinct.  Let fns be the list of all functions that are invisible with
+respect to every function in fns-k, if fns-k is non-empty; otherwise,
+let fns be nil.  Then rewriting is permitted if and only if yi' is
+smaller than xi' with respect to fns, in the sense defined in the
+preceding paragraph.
+
+It remains only to describe how the loop-stopper field is calculated
+for a rewrite rule when this field is not supplied by the user.  (On
+the other hand, to see how the user may specify the :loop-stopper, see
+*note RULE-CLASSES::.)  Suppose the conclusion of the rule is of the
+form (equiv lhs rhs).  First of all, if rhs is not an instance of the
+left hand side by a substitution whose range is a list of distinct
+variables, then the loop-stopper field is nil.  Otherwise, consider all
+pairs (u . v) from this substitution with the property that the first
+occurrence of v appears in front of the first occurrence of u in the
+print representation of rhs.  For each such u and v, form a list fns of
+all functions fn in lhs with the property that u or v (or both) appears
+as a top-level argument of a subterm of lhs with function symbol fn.
+Then the loop-stopper for this rewrite rule is a list of all lists (u v
+. fns).
+
+
+File: acl2-doc-emacs.info,  Node: LP,  Next: MACRO-ARGS,  Prev: LOOP-STOPPER,  Up: MISCELLANEOUS
+
+LP    the Common Lisp entry to ACL2
+
+To enter the ACL2 command loop from Common Lisp, call the Common Lisp
+program lp (which stands for "loop," as in "read-eval-print loop" or
+"command loop.")  The ACL2 command loop is actually coded in ACL2 as
+the function ld (which stands for "load").  The command loop is just
+what you get by loading from the standard object input channel,
+*standard-oi*.  Calling ld directly from Common Lisp is possible but
+fragile because hard lisp errors or aborts throw you out of ld and back
+to the top-level of Common Lisp.  Lp calls ld in such a way as to
+prevent this and is thus the standard way to get into the ACL2 command
+loop.  Also see *note ACL2-CUSTOMIZATION:: for information on the
+loading of an initialization file.
+
+All of the visible functionality of lp is in fact provided by ld, which
+is written in ACL2 itself.  Therefore, you should see *note LD:: for
+detailed documentation of the ACL2 command loop.  We sketch it below,
+for novice users.
+
+Every expression typed to the ACL2 top-level must be an ACL2 expression.
+
+Any ACL2 expression may be submitted for evaluation.  Well-formedness
+is checked.  Some well-formed expressions cannot be evaluated because
+they involve (at some level) undefined constrained functions (see *note
+ENCAPSULATE::).  In addition, ACL2 does not allow "global variables" in
+expressions to be evaluated.  Thus, (car '(a b c)) is legal and
+evaluates to A, but (car x) is not, because there is no "global
+context" or binding environment that gives meaning to the variable
+symbol x.
+
+There is an exception to the global variable rule outlined above:
+single-threaded objects (see *note STOBJ::) may be used as global
+variables in top-level expressions.  The most commonly used such object
+is the ACL2 "current state," which is the value of the variable symbol
+state.  This variable may occur in the top-level form to be evaluated,
+but must be passed only to ACL2 functions "expecting" state as
+described in the documentation for state and for stobjs in general.  If
+the form returns a new state object as one of its values, then that is
+considered the new "current" state for the evaluation of the subsequent
+form.  See *Note STATE::.
+
+ACL2 provides some support for the functionality usually provided by
+global variables in a read-eval-print loop, namely the saving of the
+result of a computation for subsequent re-use in another expression.
+See *Note ASSIGN:: and see *note @: atsign..
+
+If the form read is a single keyword, e.g., :pe or :ubt, then special
+procedures are followed.  See *Note KEYWORD-COMMANDS::.
+
+The command loop keeps track of the commands you have typed and allows
+you to review them, display them, and roll the logical state back to
+that created by any command.  See *Note HISTORY::.
+
+ACL2 makes the convention that if a top-level form returns three
+values, the last of which is an ACL2 state, then the first is treated
+as a flag that means "an error occurred," the second is the value to be
+printed if no error occurred, and the third is (of course) the new
+state.  When "an error occurs" no value is printed.  Thus, if you
+execute a top-level form that happens to return three such values, only
+the second will be printed (and that will only happen if the first is
+nil!).  See *Note LD:: for details.
+
+
+File: acl2-doc-emacs.info,  Node: MACRO-ARGS,  Next: MEASURE,  Prev: LP,  Up: MISCELLANEOUS
+
+MACRO-ARGS    the formals list of a macro definition
+
+     Examples:
+     (x y z)
+     (x y z &optional max (base '10 basep))
+     (x y &rest rst)
+     (x y &key max base)
+     (&whole sexpr x y)
+
+The "lambda-list" of a macro definition may include simple formal
+parameter names as well as appropriate uses of the following
+lambda-list keywords from CLTL (pp. 60 and 145), respecting the order
+shown:
+
+       &whole,
+       &optional,
+       &rest,
+       &body,
+       &key, and
+       &allow-other-keys.
+
+ACL2 does not support &aux and &environment.  In addition, we make the
+following restrictions:
+
+     (1) initialization forms in &optional and &key specifiers must be
+     quoted values;
+
+     (2) &allow-other-keys may only be used once, as the last
+     specifier; and
+
+     (3) destructuring is not allowed.
+
+You are encouraged to experiment with the macro facility.  One way to
+do so is to define a macro that does nothing but return the quotation
+of its arguments, e.g.,
+
+     (defmacro demo (x y &optional opt &key key1 key2)
+       (list 'quote (list x y opt key1 key2)))
+
+You may then execute the macro on some sample forms, e.g.,
+
+       term                         value
+     (demo 1 2)                (1 2 NIL NIL NIL)
+     (demo 1 2 3)              (1 2 3 NIL NIL)
+     (demo 1 2 :key1 3)        error:  non-even key/value arglist
+                               (because :key1 is used as opt)
+     (demo 1 2 3 :key2 5)      (1 2 3 NIL 5)
+
+In particular, Common Lisp specifies that if you use both &rest and
+&key, then both will be bound using the same list of arguments.  The
+following example should serve to illustrate how this works.
+
+     ACL2 !>(defmacro foo (&rest args &key k1 k2 k3)
+              (list 'quote (list args k1 k2 k3)))
+     
+     Summary
+     Form:  ( DEFMACRO FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FOO
+     ACL2 !>(foo :k1 3 :k2 4 :k3 5)
+     ((:K1 3 :K2 4 :K3 5) 3 4 5)
+     ACL2 !>(foo :k1 3 :k2 4)
+     ((:K1 3 :K2 4) 3 4 NIL)
+     ACL2 !>
+
+Also see *note TRANS::.
+
+
+File: acl2-doc-emacs.info,  Node: MEASURE,  Next: MODE,  Prev: MACRO-ARGS,  Up: MISCELLANEOUS
+
+MEASURE    xargs keyword :MEASURE
+
+See *Note XARGS::.
+
+
+File: acl2-doc-emacs.info,  Node: MODE,  Next: NAME,  Prev: MEASURE,  Up: MISCELLANEOUS
+
+MODE    xargs keyword :MODE
+
+See *Note XARGS::.
+
+
+File: acl2-doc-emacs.info,  Node: NAME,  Next: NON-EXECUTABLE,  Prev: MODE,  Up: MISCELLANEOUS
+
+NAME    syntactic rules on logical names
+
+     Examples                 Counter-Examples
+     
+     PRIMEP               91         (not a symbolp)
+     F-AC-23              :CHK-LIST  (in KEYWORD package)
+     1AX                  *PACKAGE*  (in the Lisp Package)
+     |Prime Number|       1E3        (not a symbolp)
+
+Many different ACL2 entities have names, e.g., functions, macros,
+variables, constants, packages, theorems, theories, etc.  Package names
+are strings.  All other names are symbols and may not be in the
+"KEYWORD" package.  Moreover, names of functions, macros, constrained
+functions, and constants, other than those that are predefined, must
+not be in the "main Lisp package" (which is ("LISP" or "COMMON-LISP",
+according to whether we are following CLTL1 or CLTL2).  An analogous
+restriction on variables is given below.
+
+T, nil, and all names above except those that begin with ampersand (&)
+are names of variables or constants.  T, nil, and those names beginning
+and ending with star (*) are constants.  All other such names are
+variables.
+
+Note that names that start with ampersand, such as &rest, may be lambda
+list keywords and are reserved for such use whether or not they are in
+the CLTL constant lambda-list-keywords.  (See pg 82 of CLTL2.)  That
+is, these may not be used as variables.  Unlike constants, variables
+may be in the main Lisp package as long as they are in the original
+list of imports from that package to ACL2, the list
+*common-lisp-symbols-from-main-lisp-package*, and do not belong to a
+list of symbols that are potentially "global."  This latter list is the
+value of *common-lisp-specials-and-constants*.
+
+Our restrictions pertaining to the main Lisp package take into account
+that some symbols, e.g., lambda-list-keywords and boole-c2, are
+"special."  Permitting them to be bound could have harmful effects.  In
+addition, the Common Lisp language does not allow certain manipulations
+with many symbols of that package.  So, we stay away from them, except
+for allowing certain variables as indicated above.
+
+
+File: acl2-doc-emacs.info,  Node: NON-EXECUTABLE,  Next: NON-LINEAR-ARITHMETIC,  Prev: NAME,  Up: MISCELLANEOUS
+
+NON-EXECUTABLE    xargs keyword :NON-EXECUTABLE
+
+See *Note XARGS::.
+
+
+File: acl2-doc-emacs.info,  Node: NON-LINEAR-ARITHMETIC,  Next: NONLINEARP,  Prev: NON-EXECUTABLE,  Up: MISCELLANEOUS
+
+NON-LINEAR-ARITHMETIC    Non-linear Arithmetic
+
+This documentation topic is divided into two parts.  We first discuss
+the practical aspect of how to use the non-linear arithmetic extension
+to ACL2, and then the theory behind it.  We assume that the reader is
+familiar with the material in linear-arithmetic and that on :linear
+rules.
+
+We begin our discussion of how to use non-linear arithmetic with a
+simple example.  Assume that we wish to prove:
+
+     (thm
+      (implies (and (rationalp x)
+                    (rationalp y)
+                    (rationalp z)
+                    (< 0 y)
+                    (< x (* y z)))
+               (< (floor x y) z)))
+
+Note that (floor x y) <= (/ x y).  Note also that if we divide both
+sides of x < (* y z) by y, since 0 < y, we obtain (/ x y) < z.  By
+chaining these two inequalities together, we get the inequality we
+desired to prove.
+
+We now proceed with our example session:
+
+     (skip-proofs
+      (progn
+     
+     ; Since the truth of this theorem depends on the linear properties
+     ; of floor, we will need the linear lemma:
+     
+        (defthm floor-bounds-1
+            (implies (and (rationalp x)
+                          (rationalp y))
+                     (and (< (+ (/ x y) -1)
+                             (floor x y))
+                          (<= (floor x y)
+                              (/ x y))))
+            :rule-classes ((:linear :trigger-terms ((floor x y)))))
+     
+     ; We now disable floor, so that the linear lemma will be used.
+     
+        (in-theory (disable floor))
+     
+     ; We create five rewrite rules which we will use during non-linear
+     ; arithmetic.  The necessity for these is due to one of the differences in
+     ; ACL2's behaviour when non-linear arithmetic is turned on.  Although
+     ; the conclusions of linear lemmas have always been rewritten before
+     ; they are used, now, when non-linear arithmetic is turned on, the
+     ; conclusions are rewritten under a different theory than under ``normal''
+     ; rewriting.  This theory is also used in other, similar, circumstances
+     ; described below.
+     
+        (defthm |arith (* -1 x)|
+            (equal (* -1 x)
+                   (- x)))
+     
+        (defthm |arith (* 1 x)|
+            (equal (* 1 x)
+                   (fix x)))
+     
+        (defthm |arith (* x (/ x) y)|
+            (equal (* x (/ x) y)
+                   (if (equal (fix x) 0)
+                       0
+                       (fix y))))
+     
+        (defthm |arith (* y x)|
+            (equal (* y x)
+                   (* x y)))
+     
+        (defthm |arith (fix x)|
+            (implies (acl2-numberp x)
+                     (equal (fix x)
+                            x))))
+      )  ; End skip-proofs.
+     
+     ; We disable the above rewrite rules from normal use.
+     
+     (in-theory (disable |arith (* -1 x)|
+                         |arith (* 1 x)|
+                         |arith (* x (/ x) y)|
+                         |arith (* y x)|
+                         |arith (fix x)|))
+     
+     ; We create an arithmetic-theory.  Note that we must give a quoted
+     ; constant for the theory --- none of the normal theory-functions
+     ; are applicable to in-arithmetic-theory.
+     
+     (in-arithmetic-theory '(|arith (* -1 x)|
+                             |arith (* 1 x)|
+                             |arith (* x (/ x) y)|
+                             |arith (* y x)|
+                             |arith (fix x)|))
+     
+     ; We turn non-linear arithmetic on.
+     
+     (set-non-linearp t)
+     
+     ; We can now go ahead and prove our theorem.
+     
+     (thm
+      (implies (and (rationalp x)
+                    (rationalp y)
+                    (rationalp z)
+                    (< 0 y)
+                    (< x (* y z)))
+               (< (floor x y) z)))
+
+The above example illustrates the two practical requirements for using
+non-linear arithmetic in ACL2.  First, one must set up an
+arithmetic-theory.  Usually, one would not set up an arithmetic-theory
+on one's own but would instead load a library book or books which do
+so.  Second, one must turn the non-linear arithmetic extension on.
+This one must do explicitly -- no book can do this for you.
+
+For a brief discussion of why this is so, even though (set-non-linearp
+t) is an embeddable event, see *note ACL2-DEFAULTS-TABLE:: (in
+particular, the final paragraph).  (Note that (set-non-linearp t)
+modifies the acl2-defaults-table.)  Also see *note SET-NON-LINEARP::,
+see *note EMBEDDED-EVENT-FORM::, and see *note EVENTS::.
+
+You can also enable non-linear arithmetic with the hint :nonlinearp t.
+See *Note HINTS::.  We, in fact, recommend the use of a hint which will
+enable nonlinear arithmetic only when the goal has stabilized under
+rewriting.  Using default-hints can make this easier.
+
+     (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
+       (cond (stable-under-simplificationp
+              (if (not (access rewrite-constant
+                               (access prove-spec-var pspv :rewrite-constant)
+                               :nonlinearp))
+                  '(:computed-hint-replacement t :nonlinearp t)
+                nil))
+             ((access rewrite-constant
+                      (access prove-spec-var pspv :rewrite-constant)
+                      :nonlinearp)
+              (if (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE))
+                  '(:computed-hint-replacement t :nonlinearp nil)
+                nil))
+             (t nil)))
+     
+     (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
+                                                   hist pspv)))
+
+This has proven to be a helpful strategy which allows faster proof
+times.
+
+We now proceed to briefly describe the theory behind the non-linear
+extension to ACL2.  In linear-arithmetic it was stated that, "[L]inear
+polynomial inequalities can be combined by cross-multiplication and
+addition to permit the deduction of a third inequality...."  That is, if
+
+     0 < poly1,
+     0 < poly2,
+
+and c and d are rational constants, then
+
+     0 < c*poly1 + d*poly2.
+
+Similarly, given the above,
+
+     0 < poly1*poly2.
+
+In the linear arithmetic case, we are taking advantage of the facts that
+multiplication by a positive rational constant does not change the sign
+of a polynomial and that the sum of two positive polynomials is itself
+positive.  In the non-linear arithmetic case, we are using the fact
+that the product of two positive polynomials is itself positive.
+
+For example, suppose we have the three assumptions:
+
+     p1:  3*x*y + 7*a < 4
+     p2:            3 < 2*x  or p2': 0 < -3 + 2*x
+     p3:            1 < y    or p3': 0 < -1 + y,
+
+and we wish to prove that a < 0.  As described elsewhere (see *note
+LINEAR-ARITHMETIC::), we proceed by assuming the negation of our goal:
+
+     p4:            0 <= a,
+
+and looking for a contradiction.
+
+There are no cancellations which can be performed by linear arithmetic
+in the above situation.  (Recall that two polynomials are cancelled
+against each other only when they have the same largest unknown.)
+However, p1 has a product as its largest unknown, and for each of the
+factors of that product there is a poly that has that factor as a
+largest unknown.  When non-linear arithmetic is enabled, ACL2 will
+therefore multiply p1' and p2' obtaining
+
+     p5:            0 < 3 + -2*x + -3*y + 2*x*y.
+
+The addition of this polynomial will allow cancelation to continue and,
+in this case, we will prove our goal.  Thus, just as ACL2 adds two
+polynomials together when they have the same largest unknown of
+opposite signs in order to create a new "smaller" polynomial; so ACL2
+multiplies polynomials together when the product of their largest
+unknowns is itself the largest unknown of another polynomial.  As the
+use of :linear lemmas to further seed the arithmetic data base may
+allow cancellation to proceed, so may the use of non-linear arithmetic.
+
+This multiplication of polynomials is the other situation in which
+terms are rewritten under the arithemtic-theory rather than the normal
+one.  Because this may be done so often, and because the individual
+factors have presumably already been rewritten, it is important that
+this be done in an efficient way.  The use of a small, specialized,
+theory helps avoid the repeated application of rewrite rules to already
+stabilized terms.
+
+
+File: acl2-doc-emacs.info,  Node: NONLINEARP,  Next: NORMALIZE,  Prev: NON-LINEAR-ARITHMETIC,  Up: MISCELLANEOUS
+
+NONLINEARP    hints keyword :NONLINEARP
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: NORMALIZE,  Next: NU-REWRITER,  Prev: NONLINEARP,  Up: MISCELLANEOUS
+
+NORMALIZE    xargs keyword :NORMALIZE
+
+See *Note XARGS::.
+

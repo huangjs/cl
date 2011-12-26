@@ -1,0 +1,39 @@
+<html>
+<head><title>DEFUND.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFUND</h2>define a function symbol and then disable it
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+<p>
+Use <code>defund</code> instead of <code><a href="DEFUN.html">defun</a></code> when you want to disable a function
+immediately after its definition.  This macro has been provided for users who
+prefer working in a mode where functions are only enabled when explicitly
+directed by <code>:</code><code><a href="IN-THEORY.html">in-theory</a></code>.  Specifically, the form
+
+<pre>
+(defund NAME FORMALS ...)
+</pre>
+
+expands to:
+
+<pre>
+(progn
+  (defun NAME FORMALS ...)
+  (with-output
+   :off summary
+   (in-theory (disable NAME)))
+  (value NAME)).
+</pre>
+
+Only the <code>:</code><code><a href="DEFINITION.html">definition</a></code> rule (and, for recursively defined functions,
+the <code>:</code><code><a href="INDUCTION.html">induction</a></code> rule) for the function are disabled, and the summary
+for the <code><a href="IN-THEORY.html">in-theory</a></code> event is suppressed.<p>
+
+Note that <code>defund</code> commands are never redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>).
+If the function has already been defined, then the <code><a href="IN-THEORY.html">in-theory</a></code> event
+will still be executed.<p>
+
+See <a href="DEFUN.html">defun</a> for documentation of <code>defun</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<html>
+<head><title>BDD-ALGORITHM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BDD-ALGORITHM</h2>summary of the BDD algorithm in ACL2
+<pre>Major Section:  <a href="BDD.html">BDD</a>
+</pre><p>
+
+The BDD algorithm in ACL2 uses a combination of manipulation of
+<code>IF</code> terms and unconditional rewriting.  In this discussion we
+begin with some relevant mathematical theory.  This is followed by a
+description of how ACL2 does BDDs, including concluding discussions
+of soundness, completeness, and efficiency.<p>
+
+We recommend that you read the other documentation about BDDs in
+ACL2 before reading the rather technical material that follows.
+See <a href="BDD.html">BDD</a>.
+<p>
+Here is an outline of our presentation.  Readers who want a user
+perspective, without undue mathematical theory, may wish to skip to
+Part (B), referring to Part (A) only on occasion if necessary.<p>
+
+(A) <strong>Mathematical Considerations</strong>
+
+<blockquote><p>
+
+(A1) BDD term order<p>
+
+(A2) BDD-constructors and BDD terms, and their connection with
+aborting the BDD algorithm<p>
+
+(A3) Canonical BDD terms<p>
+
+(A4) A theorem stating the equivalence of provable and syntactic
+equality for canonical BDD terms<p>
+
+</blockquote>
+
+(B) <strong>Algorithmic Considerations</strong>
+
+<blockquote><p>
+
+(B1) BDD rules (rules used by the rewriting portion of the ACL2 BDD
+algorithm)<p>
+
+(B2) Terms ``known to be Boolean''<p>
+
+(B3) An ``IF-lifting'' operation used by the algorithm, as well as an
+iterative version of that operation<p>
+
+(B4) The ACL2 BDD algorithm<p>
+
+(B5) Soundness and Completeness of the ACL2 BDD algorithm<p>
+
+(B6) Efficiency considerations
+</blockquote>
+<p>
+
+(A) <strong>Mathematical Considerations</strong><p>
+
+(A1) <em>BDD term order</em><p>
+
+Our BDD algorithm creates a total ``BDD term order'' on ACL2 terms,
+on the fly.  We use this order in our discussions below of
+IF-lifting and of canonical BDD terms, and in the algorithm's use of
+commutativity.  The particular order is unimportant, except that we
+guarantee (for purposes of commutative functions) that constants are
+smaller in this order than non-constants.<p>
+
+(A2) <em>BDD-constructors</em> (assumed to be <code>'(cons)</code>) and <em>BDD terms</em><p>
+
+We take as given a list of function symbols that we call the
+``BDD-constructors.''  By default, the only BDD-constructor is
+<code><a href="CONS.html">cons</a></code>, although it is legal to specify any list of function
+symbols as the BDD-constructors, either by using the
+<a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a> (see <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>) or by
+supplying a <code>:BDD-CONSTRUCTORS</code> hint (see <a href="HINTS.html">hints</a>).  Warning:
+this capability is largely untested and may produce undesirable
+results.  Henceforth, except when explicitly stated to the contrary,
+we assume that BDD-constructors is <code>'(cons)</code>.<p>
+
+Roughly speaking, a <a href="BDD.html">BDD</a> term is the sort of <a href="TERM.html">term</a> produced
+by our BDD algorithm, namely a tree with all <code><a href="CONS.html">cons</a></code> nodes lying
+above all non-<code>CONS</code> nodes.  More formally, a <a href="TERM.html">term</a> is said to
+be a <a href="BDD.html">BDD</a> term if it contains <strong>no</strong> subterm of either of the
+following forms, where <code>f</code> is not <code>CONS</code>.
+
+<pre>
+(f ... (CONS ...) ...)<p>
+
+(f ... 'x ...)  ; where (consp x) = t
+</pre>
+<p>
+
+We will see that whenever the BDD algorithm attempts to create a
+<a href="TERM.html">term</a> that is not a <a href="BDD.html">BDD</a> term, it aborts instead.  Thus,
+whenever the algorithm completes without aborting, it creates a
+<a href="BDD.html">BDD</a> term.<p>
+
+(A3) <em>Canonical BDD terms</em><p>
+
+We can strengthen the notion of ``BDD term'' to a notion of
+``canonical BDD term'' by imposing the following additional
+requirements, for every subterm of the form <code>(IF x y z)</code>:
+
+<blockquote>
+(a) <code>x</code> is a variable, and it precedes (in the BDD term order)
+every variable occurring in <code>y</code> or <code>z</code>;<p>
+
+(b) <code>y</code> and <code>z</code> are syntactically distinct; and,<p>
+
+(c) it is not the case that <code>y</code> is <code>t</code> and <code>z</code> is <code>nil</code>.
+</blockquote>
+
+We claim that it follows easily from our description of the BDD
+algorithm that every term it creates is a canonical BDD term,
+assuming that the variables occurring in all such terms are treated
+by the algorithm as being Boolean (see (B2) below) and that the
+terms contain no function symbols other than <code>IF</code> and <code>CONS</code>.
+Thus, under those assumptions the following theorem shows that the
+BDD algorithm never creates distinct terms that are provably equal,
+a property that is useful for completeness and efficiency (as we
+explain in (B5) and (B6) below).<p>
+
+(A4) <em>Provably equal canonical BDD terms are identical</em><p>
+
+We believe that the following theorem and proof are routine
+extensions of a standard result and proof to terms that allow calls
+of <code>CONS</code>.<p>
+
+<strong>Theorem</strong>.  Suppose that <code>t1</code> and <code>t2</code> are canonical BDD terms
+that contain no function symbols other than <code>IF</code> and <code>CONS</code>.  Also
+suppose that <code>(EQUAL t1 t2)</code> is a theorem.  Then <code>t1</code> and <code>t2</code>
+are syntactically identical.<p>
+
+Proof of theorem:  By induction on the total number of symbols
+occurring in these two terms.  First suppose that at least one term
+is a variable; without loss of generality let it be <code>t1</code>.  We must
+prove that <code>t2</code> is syntactically the same as <code>t1</code>.  Now it is
+clearly consistent that <code>(EQUAL t1 t2)</code> is false if <code>t2</code> is a call
+of <code>CONS</code> (to see this, simply let <code>t1</code> be an value that is not a
+<code>CONSP</code>).  Similarly, <code>t2</code> cannot be a constant or a variable
+other than <code>t1</code>.  The remaining possibility to rule out is that
+<code>t2</code> is of the form <code>(IF t3 t4 t5)</code>, since by assumption its
+function symbol must be <code>IF</code> or <code>CONS</code> and we have already handled
+the latter case.  Since <code>t2</code> is canonical, we know that <code>t3</code> is a
+variable.  Since <code>(EQUAL t1 t2)</code> is provable, i.e.,
+
+<pre>
+(EQUAL t1 (if t3 t4 t5))
+</pre>
+
+is provable, it follows that we may substitute either <code>t</code> or <code>nil</code>
+for <code>t3</code> into this equality to obtain two new provable equalities.
+First, suppose that <code>t1</code> and <code>t3</code> are distinct variables.  Then
+these substitutions show that <code>t1</code> is provably equal to both <code>t4</code>
+and <code>t5</code> (since <code>t3</code> does not occur in <code>t4</code> or <code>t5</code> by property
+(a) above, as <code>t2</code> is canonical), and hence <code>t4</code> and <code>t5</code> are
+provably equal to each other, which implies by the inductive
+hypothesis that they are the same term -- and this contradicts the
+assumption that <code>t2</code> is canonical (property (b)).  Therefore <code>t1</code>
+and <code>t3</code> are the same variable, i.e., the equality displayed above
+is actually <code>(EQUAL t1 (if t1 t4 t5))</code>.  Substituting <code>t</code> and then
+<code>nil</code> for <code>t1</code> into this provable equality lets us prove <code>(EQUAL t t4)</code>
+and <code>(EQUAL nil t5)</code>, which by the inductive hypothesis implies
+that <code>t4</code> is (syntactically) the term <code>t</code> and <code>t5</code> is <code>nil</code>.
+That is, <code>t2</code> is <code>(IF t1 t nil)</code>, which contradicts the assumption
+that <code>t2</code> is canonical (property (c)).<p>
+
+Next, suppose that at least one term is a call of <code>IF</code>.  Our first
+observation is that the other term is also a call of <code>IF</code>.  For if
+the other is a call of <code>CONS</code>, then they cannot be provably equal,
+because the former has no function symbols other than <code>IF</code> and
+hence is Boolean when all its variables are assigned Boolean values.
+Also, if the other is a constant, then both branches of the <code>IF</code>
+term are provably equal to that constant and hence these branches
+are syntactically identical by the inductive hypothesis,
+contradicting property (b).  Hence, we may assume for this case that
+both terms are calls of <code>IF</code>; let us write them as follows.
+
+<pre>
+t0:  (IF t1 t2 t3)
+u0:  (IF u1 u2 u3)
+</pre>
+
+Note that <code>t1</code> and <code>u1</code> are variables, by property (a) of
+canonical BDD terms.  First we claim that <code>t1</code> does not strictly
+precede <code>u1</code> in the BDD term order.  For suppose <code>t1</code> does
+strictly precede <code>u1</code>.  Then property (a) of canonical BDD terms
+guarantees that <code>t1</code> does not occur in <code>u0</code>.  Hence, an argument
+much like one used above shows that <code>u0</code> is provably equal to both
+<code>t2</code> (substituting <code>t</code> for <code>t1</code>) and <code>t3</code> (substituting <code>nil</code>
+for <code>t1</code>), and hence <code>t2</code> and <code>t3</code> are provably equal.  That
+implies that they are identical terms, by the inductive hypothesis,
+which then contradicts property (b) for <code>t0</code>.  Similarly, <code>u1</code>
+does not strictly precede <code>t1</code> in the BDD term order.  Therefore,
+<code>t1</code> and <code>u1</code> are the same variable.  By substituting <code>t</code> for
+this variable we see that <code>t2</code> and <code>u2</code> are provably equal, and
+hence they are equal by the inductive hypothesis.  Similarly, by
+substituting <code>nil</code> for <code>t1</code> (and <code>u1</code>) we see that <code>t3</code> and
+<code>u3</code> are provably, hence syntactically, equal.<p>
+
+We have covered all cases in which at least one term is a variable
+or at least one term is a call of <code>IF</code>.  If both terms are
+constants, then provable and syntactic equality are clearly
+equivalent.  Finally, then, we may assume that one term is a call of
+<code>CONS</code> and the other is a constant or a call of <code>CONS</code>.  The
+constant case is similar to the <code>CONS</code> case if the constant is a
+<code>CONSP</code>, so we omit it; while if the constant is not a <code>CONSP</code>
+then it is not provably equal to a call of <code>CONS</code>; in fact it is
+provably <em>not</em> equal!<p>
+
+So, we are left with a final case, in which canonical BDD terms
+<code>(CONS t1 t2)</code> and <code>(CONS u1 u2)</code> are provably equal, and we want
+to show that <code>t1</code> and <code>u1</code> are syntactically equal as are <code>t2</code>
+and <code>u2</code>.  These conclusions are easy consequences of the inductive
+hypothesis, since the ACL2 axiom <code>CONS-EQUAL</code> (which you can
+inspect using <code>:</code><code><a href="PE.html">PE</a></code>) shows that equality of the given terms is
+equivalent to the conjunction of <code>(EQUAL t1 t2)</code> and <code>(EQUAL u1 u2)</code>.
+Q.E.D.<p>
+
+(B) <strong>Algorithmic Considerations</strong><p>
+
+(B1) <em>BDD rules</em><p>
+
+A rule of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> (see <a href="RULE-CLASSES.html">rule-classes</a>) is said to be
+a ``<a href="BDD.html">BDD</a> rewrite rule'' if and only if it satisfies the
+following criteria.  (1) The rule is <a href="ENABLE.html">enable</a>d.  (2) Its
+<a href="EQUIVALENCE.html">equivalence</a> relation is <code><a href="EQUAL.html">equal</a></code>.  (3) It has no hypotheses.
+(4) Its <code>:</code><code><a href="LOOP-STOPPER.html">loop-stopper</a></code> field is <code>nil</code>, i.e., it is not a
+permutative rule.  (5) All variables occurring in the rule occur in
+its left-hand side (i.e., there are no ``free variables'';
+see <a href="REWRITE.html">rewrite</a>).  A rule of class <code>:</code><code><a href="DEFINITION.html">definition</a></code>
+(see <a href="RULE-CLASSES.html">rule-classes</a>) is said to be a ``<a href="BDD.html">BDD</a> definition rule''
+if it satisfies all the criteria above (except (4), which does not
+apply), and moreover the top function symbol of the left-hand side
+was not recursively (or mutually recursively) defined.  Technical
+point:  Note that this additional criterion is independent of
+whether or not the indicated function symbol actually occurs in the
+right-hand side of the rule.<p>
+
+Both BDD rewrite rules and BDD definition rules are said to be ``BDD
+rules.''<p>
+
+(B2) <em>Terms ''known to be Boolean''</em><p>
+
+We apply the BDD algorithm in the context of a top-level goal to
+prove, namely, the goal at which the <code>:BDD</code> hint is attached.  As
+we run the BDD algorithm, we allow ourselves to say that a set of
+<a href="TERM.html">term</a>s is ``known to be Boolean'' if we can verify that the goal
+is provable from the assumption that at least one of the terms is
+not Boolean.  Equivalently, we allow ourselves to say that a set of
+terms is ``known to be Boolean'' if we can verify that the original
+goal is provably equivalent to the assertion that if all terms in
+the set are Boolean, then the goal holds.  The notion ``known to be
+Boolean'' is conservative in the sense that there are generally sets
+of terms for which the above equivalent criteria hold and yet the
+sets of terms are not noted as as being ``known to be Boolean.''
+However, ACL2 uses a number of tricks, including <a href="TYPE-SET.html">type-set</a>
+reasoning and analysis of the structure of the top-level goal, to
+attempt to establish that a sufficiently inclusive set of terms is
+known to be Boolean.<p>
+
+From a practical standpoint, the algorithm determines a set of terms
+known to be Boolean; we allow ourselves to say that each term in
+this set is ``known to be Boolean.''  The algorithm assumes that
+these terms are indeed Boolean, and can make use of that assumption.
+For example, if <code>t1</code> is known to be Boolean then the algorithm
+simplifies <code>(IF t1 t nil)</code> to <code>t1</code>; see (iv) in the discussion
+immediately below.<p>
+
+(B3) <em>IF-lifting</em> and the <em>IF-lifting-for-IF loop</em><p>
+
+Suppose that one has a <a href="TERM.html">term</a> of the form <code>(f ... (IF test x y) ...)</code>,
+where <code>f</code> is a function symbol other than <code>CONS</code>.  Then we say
+that ``IF-lifting'' <code>test</code> ``from'' this term produces the
+following term, which is provably equal to the given term.
+
+<pre>
+(if test
+    (f ... x ...)  ; resulting true branch
+    (f ... y ...)) ; resulting false branch
+</pre>
+
+Here, we replace each argument of <code>f</code> of the form <code>(IF test .. ..)</code>,
+for the same <code>test</code>, in the same way.  In this case we say that
+``IF-lifting applies to'' the given term, ``yielding the test''
+<code>test</code> and with the ``resulting two branches'' displayed above.
+Whenever we apply IF-lifting, we do so for the available <code>test</code>
+that is least in the BDD term order (see (A1) above).<p>
+
+We consider arguments <code>v</code> of <code>f</code> that are ``known to be Boolean''
+(see above) to be replaced by <code>(IF v t nil)</code> for the purposes of
+IF-lifting, i.e., before IF-lifting is applied.<p>
+
+There is one special case, however, for IF-lifting.  Suppose that
+the given term is of the form <code>(IF v y z)</code> where <code>v</code> is a variable
+and is the test to be lifted out (i.e., it is least in the BDD term
+order among the potential tests).  Moroever, suppose that neither
+<code>y</code> nor <code>z</code> is of the form <code>(IF v W1 W2)</code> for that same <code>v</code>.
+Then IF-lifting does not apply to the given term.<p>
+
+We may now describe the IF-lifting-for-IF loop, which applies to
+terms of the form <code>(IF test tbr fbr)</code> where the algorithm has
+already produced <code>test</code>, <code>tbr</code>, and <code>fbr</code>.  First, if <code>test</code> is
+<code>nil</code> then we return <code>fbr</code>, while if <code>test</code> is a non-<code>nil</code>
+constant or a call of <code>CONS</code> then we return <code>tbr</code>.  Otherwise, we
+see if IF-lifting applies.  If IF-lifting does not apply, then we
+return <code>(IF test tbr fbr)</code>.  Otherwise, we apply IF-lifting to
+obtain a term of the form <code>(IF x y z)</code>, by lifting out the
+appropriate test.  Now we recursively apply the IF-lifting-for-IF
+loop to the term <code>(IF x y z)</code>, unless any of the following special
+cases apply.
+
+<blockquote>
+(i) If <code>y</code> and <code>z</code> are the same term, then return <code>y</code>.<p>
+
+(ii) Otherwise, if <code>x</code> and <code>z</code> are the same term, then replace
+<code>z</code> by <code>nil</code> before recursively applying IF-lifting-for-IF.<p>
+
+(iii) Otherwise, if <code>x</code> and <code>y</code> are the same term and <code>y</code> is
+known to be Boolean, then replace <code>y</code> by <code>t</code> before recursively
+applying IF-lifting-for-IF.<p>
+
+(iv) If <code>z</code> is <code>nil</code> and either <code>x</code> and <code>y</code> are the same term or
+<code>x</code> is ``known to be Boolean'' and <code>y</code> is <code>t</code>, then return <code>x</code>.
+</blockquote>
+<p>
+
+NOTE:  When a variable <code>x</code> is known to be Boolean, it is easy to
+see that the form <code>(IF x t nil)</code> is always reduced to <code>x</code> by this
+algorithm.<p>
+
+(B4) <em>The ACL2 BDD algorithm</em><p>
+
+We are now ready to present the BDD algorithm for ACL2.  It is given
+an ACL2 <a href="TERM.html">term</a>, <code>x</code>, as well as an association list <code>va</code> that
+maps variables to terms, including all variables occurring in <code>x</code>.
+We maintain the invariant that whenever a variable is mapped by
+<code>va</code> to a term, that term has already been constructed by the
+algorithm, except:  initially <code>va</code> maps every variable occurring in
+the top-level term to itself.  The algorithm proceeds as follows.
+We implicitly ordain that whenever the BDD algorithm attempts to
+create a <a href="TERM.html">term</a> that is not a <a href="BDD.html">BDD</a> term (as defined above in
+(A2)), it aborts instead.  Thus, whenever the algorithm completes
+without aborting, it creates a <a href="BDD.html">BDD</a> term.
+
+<blockquote><p>
+
+If <code>x</code> is a variable, return the result of looking it up in <code>va</code>.<p>
+
+If <code>x</code> is a constant, return <code>x</code>.<p>
+
+If <code>x</code> is of the form <code>(IF test tbr fbr)</code>, then first run the
+algorithm on <code>test</code> with the given <code>va</code> to obtain <code>test'</code>.  If
+<code>test'</code> is <code>nil</code>, then return the result <code>fbr'</code> of running the
+algorithm on <code>fbr</code> with the given <code>va</code>.  If <code>test'</code> is a constant
+other than <code>nil</code>, or is a call of <code>CONS</code>, then return the result
+<code>tbr'</code> of running the algorithm on <code>tbr</code> with the given <code>va</code>.  If
+<code>tbr</code> is identical to <code>fbr</code>, return <code>tbr</code>.  Otherwise, return the
+result of applying the IF-lifting-for-IF loop (described above) to
+the term <code>(IF test' tbr' fbr')</code>.<p>
+
+If <code>x</code> is of the form <code>(IF* test tbr fbr)</code>, then compute the
+result exactly as though <code><a href="IF.html">IF</a></code> were used rather than <code><a href="IF_star_.html">IF*</a></code>, except
+that if <code>test'</code> is not a constant or a call of <code>CONS</code> (see
+paragraph above), then abort the BDD computation.  Informally, the
+tests of <code><a href="IF_star_.html">IF*</a></code> terms are expected to ``resolve.''  NOTE:  This
+description shows how <code><a href="IF_star_.html">IF*</a></code> can be used to implement conditional
+rewriting in the BDD algorithm.<p>
+
+If <code>x</code> is a <code>LAMBDA</code> expression <code>((LAMBDA vars body) . args)</code>
+(which often corresponds to a <code><a href="LET.html">LET</a></code> term; see <a href="LET.html">let</a>), then first
+form an alist <code>va'</code> by binding each <code>v</code> in <code>vars</code> to the result
+of running the algorithm on the corresponding member of <code>args</code>,
+with the current alist <code>va</code>.  Then, return the result of the
+algorithm on <code>body</code> in the alist <code>va'</code>.<p>
+
+Otherwise, <code>x</code> is of the form <code>(f x1 x2 ... xn)</code>, where <code>f</code> is a
+function symbol other than <code><a href="IF.html">IF</a></code> or <code><a href="IF_star_.html">IF*</a></code>.  In that case, let
+<code>xi'</code> be the result of running the algorithm on <code>xi</code>, for <code>i</code>
+from 1 to <code>n</code>, using the given alist <code>va</code>.  First there are a few
+special cases.  If <code>f</code> is <code><a href="EQUAL.html">EQUAL</a></code> then we return <code>t</code> if <code>x1'</code> is
+syntactically identical to <code>x2'</code> (where this test is very fast; see
+(B6) below); we return <code>x1'</code> if it is known to be Boolean and
+<code>x2'</code> is <code>t</code>; and similarly, we return <code>x2'</code> if it is known to be
+Boolean and <code>x1'</code> is <code>t</code>.  Next, if each <code>xi'</code> is a constant and
+the <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of <code>f</code> is enabled, then the
+result is obtained by computation.  Next, if <code>f</code> is <code><a href="BOOLEANP.html">BOOLEANP</a></code> and
+<code>x1'</code> is known to be Boolean, <code>t</code> is returned.  Otherwise, we
+proceed as follows, first possibly swapping the arguments if they
+are out of (the BDD term) order and if <code>f</code> is known to be
+commutative (see below).  If a BDD rewrite rule (as defined above)
+matches the term <code>(f x1'... xn')</code>, then the most recently stored
+such rule is applied.  If there is no such match and <code>f</code> is a
+BDD-constructor, then we return <code>(f x1'... xn')</code>.  Otherwise, if a
+BDD definition rule matches this term, then the most recently stored
+such rule (which will usually be the original definition for most
+users) is applied.  If none of the above applies and neither does
+IF-lifting, then we return <code>(f x1'... xn')</code>.  Otherwise we apply
+IF-lifting to <code>(f x1'... xn')</code> to obtain a term <code>(IF test tbr fbr)</code>;
+but we aren't done yet.  Rather, we run the BDD algorithm (using the
+same alist) on <code>tbr</code> and <code>fbr</code> to obtain terms <code>tbr'</code> and
+<code>fbr'</code>, and we return <code>(IF test tbr' fbr')</code> unless <code>tbr'</code> is
+syntactically identical to <code>fbr'</code>, in which case we return <code>tbr'</code>.
+</blockquote>
+<p>
+
+When is it the case that, as said above, ``<code>f</code> is known to be
+commutative''?  This happens when an enabled rewrite rule is of the
+form <code>(EQUAL (f X Y) (f Y X))</code>.  Regarding swapping the arguments
+in that case:  recall that we may assume very little about the BDD
+term order, essentially only that we swap the two arguments when the
+second is a constant and the first is not, for example, in <code>(+ x 1)</code>.
+Other than that situation, one cannot expect to predict accurately
+when the arguments of commutative operators will be swapped.<p>
+
+(B5) Soundness and Completeness of the ACL2 BDD algorithm<p>
+
+Roughly speaking, ``soundness'' means that the BDD algorithm should
+give correct answers, and ``completeness'' means that it should be
+powerful enough to prove all true facts.  Let us make the soundness
+claim a little more precise, and then we'll address completeness
+under suitable hypotheses.<p>
+
+<strong>Claim</strong> (Soundness).  If the ACL2 BDD algorithm runs to
+completion on an input term <code>t0</code>, then it produces a result that is
+provably equal to <code>t0</code>.<p>
+
+We leave the proof of this claim to the reader.  The basic idea is
+simply to check that each step of the algorithm preserves the
+meaning of the term under the bindings in the given alist.<p>
+
+Let us start our discussion of completeness by recalling the theorem
+proved above in (A4).<p>
+
+<strong>Theorem</strong>.  Suppose that <code>t1</code> and <code>t2</code> are canonical BDD terms
+that contain no function symbols other than <code>IF</code> and <code>CONS</code>.  Also
+suppose that <code>(EQUAL t1 t2)</code> is a theorem.  Then <code>t1</code> and <code>t2</code>
+are syntactically identical.<p>
+
+Below we show how this theorem implies the following completeness
+property of the ACL2 BDD algorithm.  We continue to assume that
+<code>CONS</code> is the only BDD-constructor.<p>
+
+<strong>Claim</strong> (Completeness).  Suppose that <code>t1</code> and <code>t2</code> are
+provably equal terms, under the assumption that all their variables
+are known to be Boolean.  Assume further that under this same
+assumption, top-level runs of the ACL2 BDD algorithm on these terms
+return terms that contain only the function symbols <code>IF</code> and
+<code>CONS</code>.  Then the algorithm returns the same term for both <code>t1</code>
+and <code>t2</code>, and the algorithm reduces <code>(EQUAL t1 t2)</code> to <code>t</code>.<p>
+
+Why is this claim true?  First, notice that the second part of the
+conclusion follows immediately from the first, by definition of the
+algorithm.  Next, notice that the terms <code>u1</code> and <code>u2</code> obtained by
+running the algorithm on <code>t1</code> and <code>t2</code>, respectively, are provably
+equal to <code>t1</code> and <code>t2</code>, respectively, by the Soundness Claim.  It
+follows that <code>u1</code> and <code>u2</code> are provably equal to each other.
+Since these terms contain no function symbols other than <code>IF</code> or
+<code>CONS</code>, by hypothesis, the Claim now follows from the Theorem above
+together with the following lemma.<p>
+
+<strong>Lemma</strong>.  Suppose that the result of running the ACL2 BDD
+algorithm on a top-level term <code>t0</code> is a term <code>u0</code> that contains
+only the function symbols <code>IF</code> and <code>CONS</code>, where all variables of
+<code>t0</code> are known to be Boolean.  Then <code>u0</code> is a canonical BDD term.<p>
+
+Proof:  left to the reader.  Simply follow the definition of the
+algorithm, with a separate argument for the IF-lifting-for-IF loop.<p>
+
+Finally, let us remark on the assumptions of the Completeness Claim
+above.  The assumption that all variables are known to be Boolean is
+often true; in fact, the system uses the forward-chaining rule
+<code>boolean-listp-forward</code> (you can see it using <code>:</code><code><a href="PE.html">pe</a></code>) to try to
+establish this assumption, if your theorem has a form such as the
+following.
+
+<pre>
+(let ((x (list x0 x1 ...))
+      (y (list y0 y1 ...)))
+  (implies (and (boolean-listp x)
+                (boolean-listp y))
+           ...))
+</pre>
+
+Moreover, the <code>:BDD</code> hint can be used to force the prover to abort
+if it cannot check that the indicated variables are known to be
+Boolean; see <a href="HINTS.html">hints</a>.<p>
+
+Finally, consider the effect in practice of the assumption that the
+terms resulting from application of the algorithm contain calls of
+<code>IF</code> and <code>CONS</code> only.  Typical use of BDDs in ACL2 takes place in
+a theory (see <a href="THEORIES.html">theories</a>) in which all relevant non-recursive
+function symbols are enabled and all recursive function symbols
+possess enabled BDD rewrite rules that tell them how open up.  For
+example, such a rule may say how to expand on a given function
+call's argument that has the form <code>(CONS a x)</code>, while another may
+say how to expand when that argument is <code>nil</code>).  (See for example
+the rules <code>append-cons</code> and <code>append-nil</code> in the documentation for
+<code><a href="IF_star_.html">IF*</a></code>.)  We leave it to future work to formulate a theorem that
+guarantees that the BDD algorithm produces terms containing calls
+only of <code>IF</code> and <code>CONS</code> assuming a suitably ``complete''
+collection of rewrite rules.<p>
+
+(B6) <em>Efficiency considerations</em><p>
+
+Following Bryant's algorithm, we use a graph representation of
+<a href="TERM.html">term</a>s created by the BDD algorithm's computation.  This
+representation enjoys some important properties.
+
+<blockquote><p>
+
+(Time efficiency) The test for syntactic equality of BDD terms is
+very fast.<p>
+
+(Space efficiency) Equal BDD data structures are stored identically
+in memory.
+</blockquote>
+<p>
+
+<em>Implementation note.</em>  The representation actually uses a sort
+of hash table for BDD terms that is implemented as an ACL2
+1-dimensional array.  See <a href="ARRAYS.html">arrays</a>.  In addition, we use a second
+such hash table to avoid recomputing the result of applying a
+function symbol to the result of running the algorithm on its
+arguments.  We believe that these uses of hash tables are standard.
+They are also discussed in Moore's paper on BDDs; see <a href="BDD.html">bdd</a> for
+the reference.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

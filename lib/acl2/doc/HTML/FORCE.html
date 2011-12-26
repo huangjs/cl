@@ -1,0 +1,113 @@
+<html>
+<head><title>FORCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>FORCE</h2>identity function used to force a hypothesis
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+When a hypothesis of a conditional rule has the form <code>(force hyp)</code> it
+is logically equivalent to <code>hyp</code> but has a pragmatic effect.  In
+particular, when the rule is considered, the needed instance of the
+hypothesis, <code>hyp'</code>, is assumed and a special case is generated,
+requiring the system to prove that <code>hyp'</code> is true in the current
+context.  The proofs of all such ``forced assumptions'' are delayed
+until the successful completion of the main goal.
+See <a href="FORCING-ROUND.html">forcing-round</a>.<p>
+
+Forcing should only be used on hypotheses that are always expected
+to be true, such as the <a href="GUARD.html">guard</a>s of functions.  All the power of the
+theorem prover is brought to bear on a forced hypothesis and no
+backtracking is possible.  If the <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of the
+function <code>force</code> is <a href="DISABLE.html">disable</a>d, then no hypothesis is forced.
+See <a href="ENABLE-FORCING.html">enable-forcing</a> and see <a href="DISABLE-FORCING.html">disable-forcing</a>.  Forced goals can be
+attacked immediately (see <a href="IMMEDIATE-FORCE-MODEP.html">immediate-force-modep</a>) or in a subsequent
+forcing round (see <a href="FORCING-ROUND.html">forcing-round</a>).  Also see <a href="CASE-SPLIT.html">case-split</a>.
+<p>
+It sometimes happens that a conditional rule is not applied because
+some hypothesis, <code>hyp</code>, could not be relieved, even though the
+required instance of <code>hyp</code>, <code>hyp'</code>, can be shown true in the context.
+This happens when insufficient resources are brought to bear on <code>hyp'</code>
+at the time we try to relieve it.  A sometimes desirable alternative
+behavior is for the system to assume <code>hyp'</code>, apply the rule, and to
+generate explicitly a special case to show that <code>hyp'</code> is true in the
+context.  This is called ``forcing'' <code>hyp</code>.  It can be arranged by
+restating the rule so that the offending hypothesis, <code>hyp</code>, is
+embedded in a call of <code>force</code>, as in <code>(force hyp)</code>.  By using the
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> field of the <code><a href="RULE-CLASSES.html">rule-classes</a></code> entry, a hypothesis
+can be forced without changing the statement of the theorem from
+which the rule is derived.<p>
+
+Technically, <code>force</code> is just a function of one argument that returns
+that argument.  It is generally <a href="ENABLE.html">enable</a>d and hence evaporates during
+simplification.  But its presence among the hypotheses of a
+conditional rule causes case splitting to occur if the hypothesis
+cannot be conventionally relieved.<p>
+
+Since a forced hypothesis must be provable whenever the rule is
+otherwise applicable, forcing should be used only on hypotheses that
+are expected always to be true.<p>
+
+A particularly common situation in which some hypotheses should be
+forced is in ``most general'' <a href="TYPE-PRESCRIPTION.html">type-prescription</a> lemmas.  If a single
+lemma describes the ``expected'' type of a function, for all
+``expected'' arguments, then it is probably a good idea to force the
+hypotheses of the lemma.  Thus, every time a term involving the
+function arises, the term will be given the expected type and its
+arguments will be required to be of the expected type.  In applying
+this advice it might be wise to avoid forcing those hypotheses that
+are in fact just type predicates on the arguments, since the routine
+that applies <a href="TYPE-PRESCRIPTION.html">type-prescription</a> lemmas has fairly thorough knowledge
+of the types of all terms.<p>
+
+<code>Force</code> can have the additional benefit of causing the ACL2 typing
+mechanism to interact with the ACL2 rewriter to establish the
+hypotheses of <a href="TYPE-PRESCRIPTION.html">type-prescription</a> rules.  To understand this remark,
+think of the ACL2 type reasoning system as a rather primitive
+rule-based theorem prover for questions about Common Lisp types,
+e.g., ``does this expression produce a <code><a href="CONSP.html">consp</a></code>?''  ``does this
+expression produce some kind of ACL2 number, e.g., an <code><a href="INTEGERP.html">integerp</a></code>, a
+<code><a href="RATIONALP.html">rationalp</a></code>, or a <code><a href="COMPLEX-RATIONALP.html">complex-rationalp</a></code>?'' etc.  It is driven by
+<a href="TYPE-PRESCRIPTION.html">type-prescription</a> rules.  To relieve the hypotheses of such rules,
+the type system recursively invokes itself.  This can be done for
+any hypothesis, whether it is ``type-like'' or not, since any
+proposition, <code>p</code>, can be phrased as the type-like question ``does <code>p</code>
+produce an object of type <code>nil</code>?''  However, as you might expect, the
+type system is not very good at establishing hypotheses that are not
+type-like, unless they happen to be assumed explicitly in the
+context in which the question is posed, e.g., ``If <code>p</code> produces a
+<code><a href="CONSP.html">consp</a></code> then does <code>p</code> produce <code>nil</code>?''  If type reasoning alone is
+insufficient to prove some instance of a hypothesis, then the
+instance will not be proved by the type system and a
+<a href="TYPE-PRESCRIPTION.html">type-prescription</a> rule with that hypothesis will be inapplicable in
+that case.  But by embedding such hypotheses in <code>force</code> expressions
+you can effectively cause the type system to ``punt'' them to the
+rest of the theorem prover.  Of course, as already noted, this
+should only be done on hypotheses that are ``always true.''  In
+particular, if rewriting is required to establish some hypothesis of
+a <a href="TYPE-PRESCRIPTION.html">type-prescription</a> rule, then the rule will be found inapplicable
+because the hypothesis will not be established by type reasoning
+alone.<p>
+
+The ACL2 rewriter uses the type reasoning system as a subsystem.  It
+is therefore possible that the type system will force a hypothesis
+that the rewriter could establish.  Before a forced hypothesis is
+reported out of the rewriter, we try to establish it by rewriting.<p>
+
+This makes the following surprising behavior possible: A
+<a href="TYPE-PRESCRIPTION.html">type-prescription</a> rule fails to apply because some true hypothesis
+is not being relieved.  The user changes the rule so as to <strong>force</strong> the
+hypothesis.  The system then applies the rule but reports no
+forcing.  How can this happen?  The type system ``punted'' the
+forced hypothesis to the rewriter, which established it.<p>
+
+Finally, we should mention that the rewriter is never willing to force when
+there is an <code><a href="IF.html">if</a></code> term present in the goal being simplified.  Since
+<code><a href="AND.html">and</a></code> terms and <code><a href="OR.html">or</a></code> terms are merely abbreviations for <code><a href="IF.html">if</a></code>
+terms, they also prevent forcing.  Note that <code><a href="IF.html">if</a></code> terms are ultimately
+eliminated using the ordinary flow of the proof (but
+see <a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a>), allowing <code>force</code> ultimately to function
+as intended.  Moreover, forcing can be disabled, as described above; also
+see <a href="DISABLE-FORCING.html">disable-forcing</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

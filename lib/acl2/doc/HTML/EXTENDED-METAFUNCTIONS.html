@@ -1,0 +1,331 @@
+<html>
+<head><title>EXTENDED-METAFUNCTIONS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>EXTENDED-METAFUNCTIONS</h2>state and context sensitive metafunctions
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+General Form of an Extended :Meta theorem:
+(implies (and (pseudo-termp x)              ; this hyp is optional
+              (alistp a)                    ; this hyp is optional
+              (ev (hyp-fn x mfc state) a))  ; this hyp is optional
+         (equiv (ev x a)
+                (ev (fn x mfc state) a)))
+</pre>
+
+where the restrictions are as described in the <a href="DOCUMENTATION.html">documentation</a> for
+<code><a href="META.html">meta</a></code> and, in addition, <code>mfc</code> and <code>state</code> are distinct variable
+symbols (different also from <code>x</code> and <code>a</code>) and <code>state</code> is literally the
+symbol <code>STATE</code>.  A <code>:meta</code> theorem of the above form installs <code>fn</code> as a
+metatheoretic simplifier with hypothesis function <code>hyp-fn</code>, exactly as for
+vanilla metafunctions.  The only difference is that when the metafunctions
+are applied, some contextual information is passed in via the <code>mfc</code>
+argument and the ACL2 <code><a href="STATE.html">state</a></code> is made available.<p>
+
+See <a href="META.html">meta</a> for a discussion of vanilla flavored metafunctions.  This
+documentation assumes you are familiar with the simpler situation, in
+particular, how to define a vanilla flavored metafunction, <code>fn</code>, and its
+associated hypothesis metafunction, <code>hyp-fn</code>, and how to state and prove
+metatheorems installing such functions.  Defining extended metafunctions
+requires that you also be familiar with many ACL2 implementation details.
+This documentation is sketchy on these details; see the ACL2 source code or
+email the <a href="ACL2-HELP.html">acl2-help</a> list if you need more help.
+<p>
+The metafunction context, <code>mfc</code>, is a list containing many different data
+structures used by various internal ACL2 functions.  We do not document the
+form of <code>mfc</code>.  Your extended metafunction should just take <code>mfc</code> as its
+second formal and pass it into the functions mentioned below.  The ACL2
+<code>state</code> is well-documented (see <a href="STATE.html">state</a>).  The following expressions may be
+useful in defining extended metafunctions.<p>
+
+<code>(mfc-clause mfc)</code>: returns the current goal, in clausal form.  A clause is
+a list of ACL2 terms, implicitly denoting the disjunction of the listed
+terms.  The clause returned by <code>mfc-clause</code> is the clausal form of the
+translation (see <a href="TRANS.html">trans</a>) of the goal or subgoal on which the rewriter is
+working.  When a metafunction calls <code>mfc-clause</code>, the term being rewritten
+by the metafunction either occurs somewhere in this clause or, perhaps more
+commonly, is being rewritten on behalf of some lemma to which the rewriter
+has backchained while trying to rewrite a term in the clause.<p>
+
+<code>(mfc-ancestors mfc)</code>: returns the current list of the negations of the
+backchaining hypotheses being pursued.  In particular,
+<code>(null (mfc-ancestors mfc))</code> will be true if and only if the term being
+rewritten is part of the current goal; otherwise, that term is part of a
+hypothesis from a rule currently being considered for use.  Exception: An
+ancestor of the form <code>(:binding-hyp hyp unify-subst)</code> indicates that
+<code>hyp</code> has been encountered as a hypothesis of the form <code>(equal var term)</code>
+or <code>(equiv var (double-rewrite-term))</code> that binds variable <code>var</code> to the
+result of rewriting <code>term</code> under <code>unify-subst</code>.<p>
+
+<code>(mfc-type-alist mfc)</code>: returns the type-alist governing the occurrence of
+the term, <code>x</code>, being rewritten by the metafunction.  A type-alist is an
+association list, each element of which is of the form <code>(term ts . ttree)</code>.
+Such an element means that the term <code>term</code> has the <a href="TYPE-SET.html">type-set</a> <code>ts</code>.
+The <code>ttree</code> component is probably irrelevant here.  All the terms in the
+type-alist are in translated form (see <a href="TRANS.html">trans</a>).  The <code>ts</code> are numbers
+denoting finite Boolean combinations of ACL2's primitive types
+(see <a href="TYPE-SET.html">type-set</a>).  The type-alist includes not only information gleaned from the
+conditions governing the term being rewritten but also that gleaned from
+forward chaining from the (negations of the) other literals in the clause
+returned by <code>mfc-clause</code>.<p>
+
+<code>(w state)</code>: returns the ACL2 logical <code><a href="WORLD.html">world</a></code>.<p>
+
+<code>(mfc-ts term mfc state)</code>: returns the <code>type-set</code> of <code>term</code> in
+the current context; see <a href="TYPE-SET.html">type-set</a>.<p>
+
+<code>(mfc-rw term obj equiv-info mfc state)</code>: returns the result of rewriting
+<code>term</code> in the current context, <code>mfc</code>, with objective <code>obj</code> and the
+equivalence relation described by <code>equiv-info</code>.  <code>Obj</code> should be <code>t</code>,
+<code>nil</code>, or <code>?</code>, and describes your objective: try to show that <code>term</code> is
+true, false, or anything.  <code>Equiv-info</code> is either <code>nil</code>, <code>t</code>, a
+function symbol <code>fn</code> naming a known equivalence relation, or a list of
+congruence rules.  <code>Nil</code> means return a term that is <code>equal</code> to <code>term</code>.
+<code>T</code> means return a term that is propositionally equivalent (i.e., in the
+<code>iff</code> sense) to <code>term</code>, while <code>fn</code> means return a term
+<code>fn</code>-equivalent to <code>term</code>.  The final case, which is intended only for
+advanced users, allows the specification of generated equivalence relations,
+as supplied to the <code>geneqv</code> argument of <code>rewrite</code>.  Generally, if you
+wish to establish that <code>term</code> is true in the current context, use the idiom
+
+<pre>
+(equal (mfc-rw term t t mfc state) *t*)
+</pre>
+
+The constant <code>*t*</code> is set to the internal form of the constant term <code>t</code>,
+i.e., <code>'t</code>.<p>
+
+<code>(mfc-rw+ term alist obj equiv-info mfc state)</code>: if <code>alist</code> is <code>nil</code>
+then this is equivalent to <code>(mfc-rw term obj equiv-info mfc state)</code>.
+However, the former takes an argument, <code>alist</code>, that binds variables to
+terms, and returns the result of rewriting <code>term</code> under that <code>alist</code>,
+where this rewriting is as described for <code>mfc-rw</code> above.  The function
+<code>mfc-rw+</code> can be more efficient than <code>mfc-rw|</code>, because the terms in the
+binding alist have generally already been rewritten, and it can be
+inefficient to rewrite them again.  For example, consider a rewrite rule of
+the following form.
+
+<pre>
+(implies (and ...
+              (syntaxp (... (mfc-rw `(bar ,x) ...) ...))
+              ...)
+         (equal (... x ...) ...))
+</pre>
+
+Here, <code>x</code> is bound in the conclusion to the result of rewriting some term,
+say, <code>tm</code>.  Then the above call of <code>mfc-rw</code> will rewrite <code>tm</code>, which is
+probably unnecessary.  So a preferable form of the rule above may be as
+follows, so that <code>tm</code> is not further rewritten by <code>mfc-rw+</code>.
+
+<pre>
+(implies (and ...
+              (syntaxp (... (mfc-rw+ '(bar v) `((v . ,x)) ...) ...))
+              ...)
+         (equal (... x ...) ...))
+</pre>
+
+However, you may find that the additional rewriting done by <code>mfc-rw</code> is
+useful in some cases.<p>
+
+<code>(mfc-ap term mfc state)</code>: returns <code>t</code> or <code>nil</code> according to whether
+linear arithmetic can determine that <code>term</code> is false.  To the cognoscenti:
+returns the contradiction flag produced by linearizing <code>term</code> and adding it
+to the <code>linear-pot-lst</code>.<p>
+
+During the execution of a metafunction by the theorem prover, the expressions
+above compute the results specified.  However, there are no axioms about the
+<code>mfc-</code> function symbols: they are uninterpreted function symbols.  Thus, in
+the proof of the correctness of a metafunction, no information is available
+about the results of these functions.  Thus,
+<em>these functions can be used for heuristic purposes only.</em><p>
+
+For example, your metafunction may use these functions to decide whether to
+perform a given transformation, but the transformation must be sound
+regardless of the value that your metafunction returns.  We illustrate this
+below.  It is sometimes possible to use the hypothesis metafunction,
+<code>hyp-fn</code>, to generate a sufficient hypothesis to justify the
+transformation.  The generated hypothesis might have already been ``proved''
+internally by your use of <code>mfc-ts</code> or <code>mfc-rw</code>, but the system will have
+to prove it ``officially'' by relieving it.  We illustrate this below also.<p>
+
+We conclude with a script that defines, verifies, and uses several extended
+metafunctions.  This script is based on one provided by Robert Krug, who was
+instrumental in the development of this style of metafunction and whose help
+we gratefully acknowledge.<p>
+
+
+<pre><p>
+
+; Here is an example.  I will define (foo i j) simply to be (+ i j).
+; But I will keep its definition disabled so the theorem prover
+; doesn't know that.  Then I will define an extended metafunction
+; that reduces (foo i (- i)) to 0 provided i has integer type and the
+; expression (&lt; 10 i) occurs as a hypothesis in the clause.<p>
+
+; Note that (foo i (- i)) is 0 in any case.<p>
+
+(defun foo (i j) (+ i j))<p>
+
+(defevaluator eva eva-lst ((foo i j)
+                           (unary-- i)
+
+; I won't need these two cases until the last example below, but I
+; include them now.
+
+                           (if x y z)
+                           (integerp x)))<p>
+
+(set-state-ok t)<p>
+
+(defun metafn (x mfc state)
+  (cond
+   ((and (consp x)
+         (equal (car x) 'foo)
+         (equal (caddr x) (list 'unary-- (cadr x))))<p>
+
+; So x is of the form (foo i (- i)).  Now I want to check some other
+; conditions.<p>
+
+    (cond ((and (ts-subsetp (mfc-ts (cadr x) mfc state)
+                            *ts-integer*)
+                (member-equal `(NOT (&lt; '10 ,(cadr x))) 
+                              (mfc-clause mfc)))
+           (quote (quote 0)))
+          (t x)))
+   (t x)))<p>
+
+(defthm metafn-correct
+  (equal (eva x a) (eva (metafn x mfc state) a))
+  :rule-classes ((:meta :trigger-fns (foo))))<p>
+
+(in-theory (disable foo))<p>
+
+; The following will fail because the metafunction won't fire.
+; We don't know enough about i.<p>
+
+(thm (equal (foo i (- i)) 0))<p>
+
+; Same here.<p>
+
+(thm (implies (and (integerp i) (&lt; 0 i)) (equal (foo i (- i)) 0)))<p>
+
+; But this will work.<p>
+
+(thm (implies (and (integerp i) (&lt; 10 i))
+              (equal (foo i (- i)) 0)))<p>
+
+; This won't, because the metafunction looks for (&lt; 10 i) literally,
+; not just something that implies it.
+
+(thm (implies (and (integerp i) (&lt; 11 i))
+              (equal (foo i (- i)) 0)))<p>
+
+; Now I will undo the defun of metafn and repeat the exercise, but
+; this time check the weaker condition that (&lt; 10 i) is provable
+; (by rewriting it) rather than explicitly present.  <p>
+
+(ubt 'metafn)
+
+(defun metafn (x mfc state)
+  (cond
+   ((and (consp x)
+         (equal (car x) 'foo)
+         (equal (caddr x) (list 'unary-- (cadr x))))
+    (cond ((and (ts-subsetp (mfc-ts (cadr x) mfc state)
+                            *ts-integer*)
+                (equal (mfc-rw `(&lt; '10 ,(cadr x)) t t mfc state)
+                       *t*))
+
+; The mfc-rw above rewrites (&lt; 10 i) with objective t and iffp t.  The
+; objective means the theorem prover will try to establish it.  The
+; iffp means the theorem prover can rewrite maintaining propositional
+; equivalence instead of strict equality.<p>
+
+           (quote (quote 0)))
+          (t x)))
+   (t x)))<p>
+
+(defthm metafn-correct
+  (equal (eva x a) (eva (metafn x mfc state) a))
+  :rule-classes ((:meta :trigger-fns (foo))))<p>
+
+(in-theory (disable foo))<p>
+
+; Now it will prove both:<p>
+
+(thm (implies (and (integerp i) (&lt; 10 i))
+              (equal (foo i (- i)) 0)))<p>
+
+(thm (implies (and (integerp i) (&lt; 11 i))
+              (equal (foo i (- i)) 0)))<p>
+
+; Now I undo the defun of metafn and change the problem entirely.
+; This time I will rewrite (integerp (foo i j)) to t.  Note that
+; this is true if i and j are integers.  I can check this
+; internally, but have to generate a hyp-fn to make it official.<p>
+
+(ubt 'metafn)
+
+(defun metafn (x mfc state)
+  (cond
+   ((and (consp x)
+         (equal (car x) 'integerp)
+         (consp (cadr x))
+         (equal (car (cadr x)) 'foo))
+
+; So x is (integerp (foo i j)).  Now check that i and j are
+; ``probably'' integers.<p>
+
+    (cond ((and (ts-subsetp (mfc-ts (cadr (cadr x)) mfc state)
+                            *ts-integer*)
+                (ts-subsetp (mfc-ts (caddr (cadr x)) mfc state)
+                            *ts-integer*))
+           *t*)
+          (t x)))
+   (t x)))<p>
+
+; To justify this transformation, I generate the appropriate hyps.<p>
+
+(defun hyp-fn (x mfc state)<p>
+
+  (declare (ignore mfc state))<p>
+
+; The hyp-fn is run only if the metafn produces an answer different
+; from its input.  Thus, we know at execution time that x is of the
+; form (integerp (foo i j)) and we know that metafn rewrote
+; (integerp i) and (integerp j) both to t.  So we just produce their
+; conjunction.  Note that we must produce a translated term; we
+; cannot use the macro AND and must quote constants!  Sometimes you
+; must do tests in the hyp-fn to figure out which case the metafn
+; produced, but not in this example.
+
+           `(if (integerp ,(cadr (cadr x)))
+                (integerp ,(caddr (cadr x)))
+                'nil))
+  
+(defthm metafn-correct
+  (implies (eva (hyp-fn x mfc state) a)
+           (equal (eva x a) (eva (metafn x mfc state) a)))
+  :rule-classes ((:meta :trigger-fns (integerp))))<p>
+
+(in-theory (disable foo))<p>
+
+; This will not be proved.<p>
+
+(thm (implies (and (rationalp x) (integerp i)) (integerp (foo i j))))<p>
+
+; But this will be.<p>
+
+(thm (implies (and (rationalp x)
+                   (integerp i)
+                   (integerp j))
+              (integerp (foo i j))))<p>
+
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

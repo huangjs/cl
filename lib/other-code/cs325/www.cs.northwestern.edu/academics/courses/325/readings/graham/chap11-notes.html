@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+<HEAD>
+   <TITLE>Chapter 11 Notes</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 11 Notes</DIV>
+
+<H3>Page 180</H3>
+
+<H4><TT>:initform</TT></H4>
+
+<P>There are actually two ways to initialize slots in CLOS,
+<U>initforms</U> and <U>default initargs</U>. The latter are more
+commonly used. </P>
+
+<P>Here's how default initargs are used when defining
+<CODE>circle</CODE>:</P>
+
+<PRE>(defclass circle ()
+  ((radius :accessor circle-radius :initarg :radius)
+   (center :accessor circle-center :initarg :center))
+  (:default-initargs
+    :radius 1
+    :center (cons 0 0)))</PRE>
+
+<P>What's the difference between default initarg's and initforms? A
+default initarg is a default value for an initarg. An initform is a
+default value for a slot. </P>
+
+<P>So what difference does that make? Here's how it works. When you
+say</P>
+
+<PRE>(make-instance 'circle ...)</PRE>
+
+<P><CODE>make-instance</CODE> (in conjunction with
+<CODE>initialize-instance</CODE>) creates an instance of a circle as
+follows:</P>
+
+<UL>
+   <LI><CODE>make-instance</CODE> creates an empty instance. 
+   
+   <LI><CODE>make-instance</CODE> passes the instance and the other
+   arguments to <CODE>initialize-instance</CODE>. 
+   
+   <LI><CODE>initialize-instance</CODE> first uses any explicit
+   initargs that you gave to <CODE>make-instance</CODE>.
+   
+   <LI>For slots still unitialized, it then uses any default initargs
+   that have been defined.
+   
+   <LI>Finally, for slots still unitialized, it uses any default
+   initforms that have been defined.
+</UL>
+
+<P>So one difference is that default initargs take priority over
+initforms.</P>
+
+<P>Here's another difference. Suppose we add an area slot to circle:
+</P>
+
+<PRE>(defclass circle ()
+  ((radius :accessor circle-radius :initarg :radius)
+   (center :accessor circle-center :initarg :center)
+   (area :accessor circle-area))
+  (:default-initargs
+    :radius 1
+    :center (cons 0 0)))</PRE>
+
+<P>Note that there is neither an initform nor an initarg for
+<CODE>area</CODE>. Instead, we are going to calculate the area from
+the radius when the instance is created. Suppose we do this by
+defining an after method on <CODE>initialize-instance</CODE>:</P>
+
+<PRE>(defmethod initialize-instance :after 
+           ((c circle) &amp;key radius &amp;allow-other-keys)
+  (setf (circle-area c) (* pi radius radius)))</PRE>
+
+<P>Now suppose we make the following call:</P>
+
+<PRE>(make-instance 'circle)</PRE>
+
+<P>This works fine with our definition of <CODE>circle</CODE>. But if
+we replaced the default initargs with initforms, it would cause an
+error, because <CODE>radius</CODE> would be <CODE>nil</CODE>. No
+<CODE>:radius</CODE> argument was given and there was no default
+value for that argument.</P>
+
+<P>Note that we could define the after method on
+<CODE>initialize-instance</CODE> to work with either class definition
+as follows:</P>
+
+<PRE>(defmethod initialize-instance :after 
+           ((c circle) &amp;rest args)
+  (setf (circle-area c) 
+        (* pi (circle-radius c) (circle-radius c))))</PRE>
+
+<P>This definition has two disadvantages:</P>
+
+<UL>
+   <LI>It's slightly more costly to access a slot than a keyword
+   value.
+   
+   <LI>It doesn't generalize to before methods, where the slots
+   haven't been created yet.
+</UL>
+
+<P>For this reason, many programmers use default initargs in their
+class definitions, rather than initforms.</P>
+
+<H3>Page 190</H3>
+
+<H4><TT>(defclass suit (jacket trousers) ())</TT></H4>
+
+<P><strong>Wrong, wrong, wrong!</strong> A suit is not a subtype of jacket or
+trousers. A suit consists of a jacket and trousers. </P>
+
+<P>Don't use "is a" when you mean "has a." This is a classic mistake
+made by people in all object oriented programming environments.</P>
+
+<P>One reasonable way to do this example is:</P>
+
+<PRE>(defclass suit ()
+  ((jacket :accessor suit-jacket :initarg :jacket)
+   (trousers :accessor suit-trousers :initarg :trousers)))
+&nbsp;
+(defmethod price ((jk jacket)) 350)
+(defmethod price ((tr trousers)) 200)
+&nbsp;
+(defmethod price ((s suit)) 
+  (+ (price (suit-jacket s)) (price (suit-trousers s))))</PRE>
+
+<P>So, what is a good example requiring non-standard method
+combinations? Good question. I've not needed them so
+far.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

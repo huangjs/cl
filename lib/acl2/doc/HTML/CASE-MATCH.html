@@ -1,0 +1,92 @@
+<html>
+<head><title>CASE-MATCH.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CASE-MATCH</h2>pattern matching or destructuring
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+General Form:
+(case-match x
+  (pat1 dcl1 body1)
+  ...
+  (patk dclk bodyk))
+</pre>
+
+where <code>x</code> is a variable symbol, the <code>pati</code> are structural patterns
+as described below, the <code>dcli</code> are optional <code><a href="DECLARE.html">declare</a></code> forms and
+the <code>bodyi</code> are terms.  Return the value(s) of the <code>bodyi</code>
+corresponding to the first <code>pati</code> matching <code>x</code>, or <code>nil</code> if none
+matches.<p>
+
+Pattern Language:<br>
+
+With the few special exceptions described below, matching requires
+that the <code><a href="CONS.html">cons</a></code> structure of <code>x</code> be isomorphic to that of the
+pattern, down to the <a href="ATOM.html">atom</a>s in the pattern.  Non-symbol <a href="ATOM.html">atom</a>s in the
+pattern match only themselves.  Symbols in the pattern denote
+variables which match anything and which are bound by a successful
+match to the corresponding substructure of <code>x</code>.  Variables that
+occur more than once must match the same (<code><a href="EQUAL.html">EQUAL</a></code>) structure in
+every occurrence.
+
+<pre>
+Exceptions:
+&amp;               Matches anything and is not bound.  Repeated
+                  occurrences of &amp; in a pattern may match different
+                  structures.
+nil, t, *sym*   These symbols cannot be bound and match only their
+                  global values.
+!sym            where sym is a symbol that is already bound in the
+                  context of the case-match, matches only the
+                  current binding of sym.
+'obj            Matches only itself.
+</pre>
+
+Some examples are shown below.
+<p>
+Below we show some sample patterns and examples of things they match
+and do not match.
+
+<pre>  
+pattern       matches         non-matches
+(x y y)       (ABC 3 3)       (ABC 3 4)    ; 3 is not 4
+(fn x . rst)  (P (A I) B C)   (ABC)        ; NIL is not (x . rst)
+              (J (A I))                    ; rst matches nil
+('fn (g x) 3) (FN (H 4) 3)    (GN (G X) 3) ; 'fn matches only itself
+(&amp; t &amp; !x)    ((A) T (B) (C))              ; provided x is '(C)
+</pre>
+                                
+Consider the two binary trees that contain three leaves.  They might
+be described as <code>(x . (y . z))</code> and <code>((x . y) . z)</code>, where <code>x</code>,
+<code>y</code>, and <code>z</code> are atomic.  Suppose we wished to recognize those
+trees.  The following <code>case-match</code> would do:
+
+<pre>
+(case-match tree
+  ((x . (y . z))
+   (and (atom x) (atom y) (atom z)))
+  (((x . y) . z)
+   (and (atom x) (atom y) (atom z))))
+</pre>
+
+Suppose we wished to recognize such trees where all three tips are
+identical.  Suppose further we wish to return the tip if the tree is
+one of those recognized ones and to return the number <code>7</code> otherwise.
+
+<pre>
+(case-match tree
+  ((x . (x . x))
+   (if (atom x) x 7))
+  (((x . x) . x)
+   (if (atom x) x 7))
+  (&amp; 7))
+</pre>
+
+Note that <code>case-match</code> returns <code>nil</code> if no <code>pati</code> matches.  Thus if we
+must return <code>7</code> in that case, we have to add as the final pattern the
+<code>&amp;</code>, which always matches anything.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

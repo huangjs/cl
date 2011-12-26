@@ -1,0 +1,90 @@
+<html>
+<head><title>SYS-CALL.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SYS-CALL</h2>make a system call to the host operating system
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(sys-call "cp" '("foo.lisp" "foo-copied.lisp"))
+(prog2$ (sys-call "cp" '("foo.lisp" "foo-copied.lisp"))
+        (sys-call-status state))
+</pre>
+
+The first argument of <code>sys-call</code> is a command for the host operating
+system, and the second argument is a list of strings that are the
+arguments for that command.  In GCL and perhaps other lisps, you can put the
+arguments with the command; but this is not the case, for example, in Allegro
+CL running on Linux.<p>
+
+The use of <code><a href="PROG2$.html">prog2$</a></code> above is optional, but illustrates a typical sort
+of use when one wishes to get the return status.  See <a href="SYS-CALL-STATUS.html">sys-call-status</a>.
+<p>
+
+<pre>
+General Form:
+(sys-call cmd args)
+</pre>
+
+This function logically returns <code>nil</code>.  However, it makes the
+indicated call to the host operating system, as described above,
+using a function supplied ``under the hood'' by the underlying Lisp
+system.  On occasions where one wishes to obtain the numeric status
+returned by the host operating system (or more precisely, by the
+Lisp function under the hood that passes the system call to the host
+operating system), one may do so;  see <a href="SYS-CALL-STATUS.html">sys-call-status</a>.  The
+status value is the value returned by that Lisp function, which may
+well be the same numeric value returned by the host operating system
+for the underlying system call.<p>
+
+Note that <code>sys-call</code> does not touch the ACL2 <code><a href="STATE.html">state</a></code>; however,
+<code><a href="SYS-CALL-STATUS.html">sys-call-status</a></code> updates the <code>file-clock</code> field of the <code>state</code>.  One may
+view that update as modifying the <code>fileclock</code> to be at least as
+recent as the time of the most recent <code>sys-call</code>.<p>
+
+Be careful if you use <code>sys-call</code>!  It can be used for example to overwrite
+files, or worse!  The following example from Bob Boyer shows how to use
+<code>sys-call</code> to execute, in effect, arbitrary Lisp forms.  ACL2 provides a
+``trust tag'' mechanism that requires execution of a <code><a href="DEFTTAG.html">defttag</a></code> form
+before you can use <code>sys-call</code>; see <a href="DEFTTAG.html">defttag</a>.  (Note: The setting of the raw
+Lisp variable <code>*features*</code> below is just to illustrate that any such
+mischief is possible.  Normally <code>*features*</code> is a list with more than a few
+elements.)
+
+<pre>
+% cat foo
+print *0x85d2064=0x838E920
+detach
+q
+% acl2
+... boilerplate deleted
+ACL2 !&gt;(sys-call "gdb -p $PPID -w &lt; foo &gt;&amp; /dev/null " nil)
+NIL
+ACL2 !&gt;:q<p>
+
+Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+ACL2&gt;*features*<p>
+
+(:AKCL-SET-MV)<p>
+
+ACL2&gt;
+</pre>
+<p>
+
+Finally, we make a comment about output redirection, which also applies to
+other related features that one may expect of a shell.  <code>Sys-call</code> does not
+directly support output redirection.  If you want to run a program, <code>P</code>,
+and redirect its output, we suggest that you create a wrapper script, <code>W</code>
+to call instead.  Thus <code>W</code> might be a shell script containing the line:
+
+<pre>
+P $* &gt;&amp; foo.out
+</pre>
+
+If this sort of solution proves inadequate, please contact the ACL2
+implementors and perhaps we can come up with a solution.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

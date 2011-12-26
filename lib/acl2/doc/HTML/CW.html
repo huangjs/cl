@@ -1,0 +1,69 @@
+<html>
+<head><title>CW.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CW</h2>print to the comment window
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+Example:
+
+<pre>
+(cw "The goal is ~p0 and the alist is ~x1.~%"
+    (untranslate term t nil)
+    unify-subst)
+</pre>
+
+Logically, this expression is equivalent to <code>nil</code>.  However, it has
+the effect of first printing to the so-called ``comment window'' the
+<code><a href="FMT.html">fmt</a></code> string as indicated.  Thus, <code>cw</code> is like <code>fmt</code> (see <a href="FMT.html">fmt</a>) except
+in three important ways.  First, it is a <code>:</code><code><a href="LOGIC.html">logic</a></code> mode function.
+Second, it neither takes nor returns the ACL2 <code><a href="STATE.html">state</a></code>;  logically <code>cw</code>
+simply returns <code>nil</code>, although it prints to a <em>comment window</em> that just
+happens to share the terminal screen with the standard character
+output <code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code>.  Third, its <code>fmt</code> args are positional
+references, so that for example
+
+<pre>
+(cw "Answers: ~p0 and ~p1" ans1 ans2)
+</pre>
+
+prints in the same manner as:
+
+<pre>
+(fmt "Answers: ~p0 and ~p1" 
+     (list (cons #\0 ans1) (cons #\1 ans2))
+     *standard-co* state nil)
+</pre>
+
+Typically, calls of <code>cw</code> are embedded in <code><a href="PROG2$.html">prog2$</a></code> forms, e.g.,
+
+<pre>
+(prog2$ (cw ...)
+        (mv a b c))
+</pre>
+
+which has the side-effect of printing to the comment window and
+logically returning <code>(mv a b c)</code>.
+<p>
+
+<pre>
+General Form:
+(cw fmt-string arg1 arg2 ... argn)
+</pre>
+
+where n is between 0 and 9 (inclusive).
+The macro uses <code><a href="FMT-TO-COMMENT-WINDOW.html">fmt-to-comment-window</a></code>, passing it the column <code>0</code> and
+evisc-tuple <code>nil</code>, after assembling the appropriate alist binding the
+<code><a href="FMT.html">fmt</a></code> vars #\0 through #\9; see <a href="FMT.html">fmt</a>.  If you want
+
+<pre>
+(a) more than 10 vars,
+(b) vars other than the digit chars,
+(c) a different column, or
+(d) a different evisc-tuple,
+</pre>
+
+then call <code><a href="FMT-TO-COMMENT-WINDOW.html">fmt-to-comment-window</a></code> instead.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

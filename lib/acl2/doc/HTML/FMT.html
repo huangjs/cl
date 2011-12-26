@@ -1,0 +1,449 @@
+<html>
+<head><title>FMT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>FMT</h2>formatted printing
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+ACL2 provides the functions <code>fmt</code>, <code><a href="FMT1.html">fmt1</a></code>, and <code><a href="FMS.html">fms</a></code> as substitutes for Common
+Lisp's <code>format</code> function.  Also see <a href="FMT_bang_.html">fmt!</a>, see <a href="FMT1_bang_.html">fmt1!</a>, and see <a href="FMS_bang_.html">fms!</a> for
+versions of these functions that write forms to files in a manner that allows
+them to be read, by avoiding using backslash (<code>\</code>) to break long lines.<p>
+
+All three print a given string under an alist pairing character
+objects with values, interpreting certain ``tilde-directives'' in
+the string.  <code>Channel</code> must be a character output channel (e.g.,
+<code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code>).
+
+<pre>
+General Forms:                                            result
+(fms string alist channel state evisc-tuple)         ; state
+(fmt string alist channel state evisc-tuple)         ; (mv col state)
+(fmt1 string alist column channel state evisc-tuple) ; (mv col state)
+</pre>
+
+<code><a href="FMS.html">Fms</a></code> and <code>fmt</code> print an initial newline to put <code>channel</code> in column <code>0</code>;
+<code><a href="FMT1.html">Fmt1</a></code> requires the current column as input.  Columns are numbered
+from <code>0</code>.  The current column is the column into which the next
+character will be printed.  (Thus, the current column number is also
+the number of <a href="CHARACTERS.html">characters</a> printed since the last newline.)  The <code>col</code>
+returned by <code>fmt</code> and <code><a href="FMT1.html">fmt1</a></code> is the current column at the conclusion of
+the formatting.  <code>Evisc-tuple</code> must be either <code>nil</code> (meaning no
+abbreviations are used when objects are printed) or an
+``evisceration tuple'' such as that returned by
+<code>(default-evisc-tuple state)</code>.<p>
+
+We list the tilde-directives below.  The notation is explained after
+the chart.
+
+<pre>
+~xx  pretty print vx (maybe after printing a newline)
+~yx  pretty print vx starting in current column; end with newline
+~Xxy like ~xx but use vy as the evisceration tuple
+~Yxy like ~yx but use vy as the evisceration tuple
+~px  pretty print term (maybe with infix) vx
+     (maybe after printing a newline)
+~qx  pretty print term (maybe with infix) vx
+     starting in current column; end with newline
+~Pxy like ~px but use vy as the evisceration tuple
+~Qxy like ~qx but use vy as the evisceration tuple
+~@x  if vx is a string, "str",  recursively format "str"
+     if vx is ("str" . a), recursively format "str" under a+
+~#x~[...~/...~/ ... ~/...~] cases on vx
+     ^    ^     ...   ^  if 0&lt;=vx&lt;=k, choose vxth alternative
+     0    1     ...   k  if vx is a list of length 1, case 0; else 1
+~*x  iterator: vx must be of the form
+     ("str0" "str1" "str2" "str3" lst . a);
+     if lst is initially empty, format "str0" under a+; otherwise,
+     bind #\* successively to the elements of lst and then
+     recursively format "stri" under a+, where i=1 if there is one
+     element left to process, i=2 if there are two left, and i=3
+     otherwise.
+~&amp;x  print elements of vx with ~x, separated by commas and a
+     final ``and''
+~vx  print elements of vx with ~x, separated by commas and a
+     final ``or''
+~nx  if vx is a small positive integer, print it as a word, e.g.,
+     seven;
+     if vx is a singleton containing a small positive integer, print
+       the corresponding ordinal as a word, e.g., seventh
+~Nx  like ~nx but the word is capitalized, e.g., Seven or Seventh
+~tx  tab out to column vx; newline first if at or past column vx
+~cx  vx is (n . w), print integer n right justified in field of
+     width w
+~fx  print object vx flat over as many lines as necessary
+~Fx  same as ~f, except that subsequent lines are indented to
+     start one character to the right of the first character printed
+~sx  if vx is a symbol, print vx, breaking on hyphens; if vx is a
+     string, print the characters in it, breaking on hyphens
+~    tilde space: print a space
+~_x  print vx spaces
+~
+     tilde newline: skip following whitespace
+~%   output a newline
+~|   output a newline unless already on left margin
+~~   print a tilde
+~-   if close to rightmargin, output a hyphen and newline; else
+     skip this char
+</pre>
+
+If <code>x</code> is a character, then <code>vx</code> is the value of <code>#\x</code> under the
+current alist.  When we say ``format <code>str</code> under <code>a+</code>'' we mean
+recursively process the given string under an alist obtained by
+appending <code>a</code> to the current alist.
+<p>
+ACL2's formatting functions print to the indicated channel, keeping
+track of which column they are in.  <code><a href="FMT1.html">Fmt1</a></code> can be used if the caller
+knows which column the channel is in (i.e., how many <a href="CHARACTERS.html">characters</a> have
+been printed since the last newline).  Otherwise, <code>fmt</code> or <code><a href="FMS.html">fms</a></code> must be
+used, both of which output a newline so as to establish the column
+position at <code>0</code>.  Unlike Common Lisp's <code>format</code> routine, <code>fmt</code> and its
+relatives break the output into lines so as to try to avoid printing
+past column <code>77</code>.  That number is built-into the definitions of ACL2's
+formatting functions.  Line breaks are automatically inserted as
+necessary in place of spaces and after hyphens in the text being
+printed.<p>
+
+The formatting functions scan the string from left to right,
+printing each successive character unless it is a tilde <code>(~)</code>.  Upon
+encountering tildes the formatters take action determined by the
+character or <a href="CHARACTERS.html">characters</a> immediately following the tilde.  The
+typical tilde-directive is a group of three successive <a href="CHARACTERS.html">characters</a>
+from the string being printed.  For example, <code>~x0</code> is a 3 character
+<code>tilde-directive</code>.  The first character in a tilde-directive is always
+the tilde character itself.  The next character is called the
+``command'' character.  The character after that is usually taken as
+the name of a ``format variable'' that is bound in the alist under
+which the string is being printed.  Format variables are, by
+necessity, <a href="CHARACTERS.html">characters</a>.  The objects actually printed by a
+tilde-directive are the objects obtained by looking up the command's
+format variables in the alist.  Typical format variable names are <code>0</code>,
+<code>1</code>, <code>2</code>, ..., <code>9</code>, <code>a</code>, <code>b</code>, <code>c</code>, etc., and if a tilde-directive uses the
+format variable <code>0</code>, as in <code>~x0</code>, then the character <code>#\0</code> must be bound
+in the alist.  Some tilde commands take no arguments and others take
+more than one, so some directives are of length two and others are
+longer.<p>
+
+It should be noted that this use of <a href="CHARACTERS.html">characters</a> in the string to
+denote arguments is another break from Common Lisp's <code>format</code> routine.
+In Common Lisp, the directives refer implicitly to the ``next item
+to be printed.''  But in ACL2 the directives name each item
+explicitly with our format variables.<p>
+
+The following text contains examples that can be evaluated.  To make
+this process easier, we use a macro which is defined as part of ACL2
+just for this <a href="DOCUMENTATION.html">documentation</a>.  The macro is named <code>fmx</code> and it takes up
+to eleven arguments, the first of which is a format string, <code>str</code>, and
+the others of which are taken as the values of format variables.
+The variables used are <code>#\0</code> through <code>#\9</code>.  The macro constructs an
+appropriate alist, <code>a</code>, and then evaluates
+<code>(fmt str a *standard-co* state nil)</code>.<p>
+
+Thus,
+
+<pre>
+(fmx "Here is v0, ~x0, and here is v1, ~x1."
+     (cons 'value 0)
+     (cons 'value 1))
+</pre>
+
+is just an abbreviation for
+
+<pre>
+(fmt "Here is v0, ~x0, and here is v1, ~x1."
+     (list (cons #\0 (cons 'value 0))
+           (cons #\1 (cons 'value 1)))
+     *standard-co*
+     state
+     nil)
+</pre>
+
+which returns <code>(mv 53 state)</code> after printing the line
+
+<pre>
+   Here is v0, (VALUE . 0), and here is v1, (VALUE . 1).
+</pre>
+
+We now devote special attention to three of the tilde-directives
+whose use is non-obvious.<p>
+
+<em>The Case Statement</em><p>
+
+<code>~#x</code> is essentially a ``case statement'' in the language of <code>fmt</code>.
+The proper form of the statement is
+
+<pre>
+~#x~[case-0~/case-1~/ ... ~/case-k~],
+</pre>
+
+where each of the <code>case-i</code> is a format string.  In the most common
+use, the variable <code>x</code> has an integer value, <code>vx</code>, between <code>0</code> and <code>k</code>,
+inclusive.  The effect of formatting the directive is to format
+<code>case-vx</code>.<p>
+
+For example
+
+<pre>
+(fmx "Go ~#0~[North~/East~/South~/West~].~%" 1)
+</pre>
+
+will print ``Go East.'' followed by a newline and will return<p>
+
+<code>(mv 0 state)</code>, while if you change the <code>1</code> above to <code>3</code> (the
+maximum legal value), it will print ``Go West.''<p>
+
+In order to make it easier to print such phrases as ``there are
+seven cases'' requiring agreement between subject and verb based on
+the number of elements of a list, the case statement allows its
+variable to take a list as its value and selects <code>case-0</code> if the list
+has length <code>1</code> and <code>case-1</code> otherwise.
+
+<pre>
+(let ((cases '(a b c)))
+  (fmx "There ~#0~[is ~n1 case~/are ~n1 cases~]."
+       cases
+       (length cases)))
+</pre>
+
+will print ``There are three cases.'' but if you change the<p>
+
+<code>'(a b c)</code> above simply to <code>'(a)</code> it will print ``There is one
+case.'' and if you change it to <code>nil</code> it will print ``There are
+zero cases.''<p>
+
+<em>Indirection</em><p>
+
+Roughly speaking, <code>~@</code> will act as though the value of its argument
+is a format string and splice it into the current string at the
+current position.  It is often used when the phrase to be printed
+must be computed.  For example,
+
+<pre>
+(let ((ev 'DEFUN))
+ (fmx "~x0 is an event~@1."
+      'foo
+      (if (member-eq ev '(defun defstub encapsulate))
+          " that may introduce a function symbol"
+          "")))
+</pre>
+
+will print ``<code>foo</code> is an event that may introduce a function
+symbol,'' but if the value of <code>ev</code> is changed from <code>'</code><code><a href="DEFUN.html">defun</a></code> to <code>'</code><code><a href="DEFTHM.html">defthm</a></code>,
+it prints ``<code>foo</code> is an event.''  The <code>~@</code> directive ``splices'' in the
+computed phrase (which might be empty).  Of course, this particular
+example could be done with the case statement
+
+<pre>
+~#1~[~/ that may introduce a function symbol~]
+</pre>
+
+where the value of <code>#\1</code> is appropriately computed to be <code>0</code> or <code>1</code>.<p>
+
+If the argument to <code>~@</code> is a pair, it is taken to be a format string
+<code><a href="CONS.html">cons</a></code>ed onto an alist, i.e., <code>("str" . a)</code>, and the alist, <code>a</code>, is used
+to extend the current one before <code>"str"</code> is recursively processed.
+This feature of <code>fmt</code> can be used to pass around ``phrases'' that
+contain computed contextual information in <code>a</code>.  The most typical use
+is as ``error messages.''  For example, suppose you are writing a
+function which does not have access to <code><a href="STATE.html">state</a></code> and so cannot print an
+error message.  It may nevertheless be necessary for it to signal an
+error to its caller, say by returning two results, the first of
+which is interpreted as an error message if non-<code>nil</code>.  Our convention
+is to use a <code>~@</code> pair to represent such messages.  For example, the
+error value might be produced by the code:
+
+<pre>
+(cons
+  "Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+  (list (cons #\0 (current-instruction st))
+        (cons #\1 (i-stack st))))
+</pre>
+
+If the <code>current-instruction</code> and <code>i-stack</code> (whatever they are) are
+<code>'(popi 3)</code> and <code>'(a b)</code> when the <code><a href="CONS.html">cons</a></code> above is evaluated, then it
+produces
+
+<pre>
+'("Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+  (#\0 POPI 3)
+  (#\1 A B))
+</pre>
+
+and if this pair is made the value of the <code>fmt</code> variable <code>0</code>, then
+<code>~@0</code> will print
+
+<pre>
+   Error:  The instruction (POPI 3) is illegal when the stack is (A B).
+</pre>
+
+For example, evaluate
+
+<pre>
+(let
+ ((pair
+  '("Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+    (#\0 POPI 3)
+    (#\1 A B))))
+ (fmx "~@0" pair)).
+</pre>
+
+Thus, even though the function that produced the ``error'' could
+not print it, it could specify exactly what error message and data
+are to be printed.<p>
+
+This example raises another issue.  Sometimes it is desirable to
+break lines in your format strings so as to make your source code
+more attractive.  That is the purpose of the <code>tilde-newline</code>
+directive.  The following code produces exactly the same output as
+described above.
+
+<pre>
+(let ((pair '("Error:  The instruction ~x0 ~
+              is illegal when the stack is ~
+              ~x1.~%"
+              (#\0 POPI 3)
+              (#\1 A B))))
+ (fmx "~@0" pair)).
+</pre>
+ 
+Finally, observe that when <code>~@0</code> extends the current alist, <code>alist</code>,
+with the one, <code>a</code>, in its argument, the bindings from <code>a</code> are added to
+the front of <code>alist</code>, overriding the current values of any shared
+variables.  This ensures that the variable values seen by the
+recursively processed string, <code>"str"</code>, are those from <code>a</code>, but if
+<code>"str"</code> uses variables not bound in <code>a</code>, their values are as specified
+in the original alist.  Intuitively, variables bound in <code>a</code> are local
+to the processing of <code>("str" . a)</code> but <code>"str"</code> may use ``global
+variables.''  The example above illustrates this because when the
+<code>~@0</code> is processed, <code>#\0</code> is bound to the error message pair.  But
+when the <code>~x0</code> in the error string is processed, <code>#\0</code> is bound to the
+illegal instruction.<p>
+
+<em>Iteration</em><p>
+
+The <code>~*</code> directive is used to process each element of a list.  For
+example,
+
+<pre>
+(let ((lst '(a b c d e f g h))) ; a true-list whose elements we exhibit
+ (fmx "~*0"
+      `("Whoa!"          ; what to print if there's nothing to print
+        "~x*!"           ; how to print the last element
+        "~x* and "       ; how to print the 2nd to last element
+        "~x*, "          ; how to print all other elements
+        ,lst)))          ; the list of elements to print
+</pre>
+ 
+will print ``<code>A, B, C, D, E, F, G and H!</code>''.  Try this example with
+other true list values of <code>lst</code>, such as <code>'(a b)</code>, <code>'(a)</code>, and <code>nil</code>.  The
+tilde-directives <code>~&amp;0</code> and <code>~v0</code>, which take a true list argument and
+display its elements separated by commas and a final ``and'' or
+``or,'' are implemented in terms of the more general <code>~*</code>.<p>
+
+The <code>~*</code> directive allows the 5-tuple to specify in its final <code><a href="CDR.html">cdr</a></code> an
+alist with which to extend the current one before processing the
+individual elements.<p>
+
+We often use <code>~*</code> to print a series of phrases, separated by suitable
+punctuation, whitespace and noise words.  In such use, the <code>~*</code>
+handles the separation of the phrases and each phrase is generally
+printed by <code>~@</code>.<p>
+
+Here is a complex example.  In the <code><a href="LET_star_.html">let*</a></code>, below, we bind phrases to a
+list of <code>~@</code> pairs and then we create a <code>~*</code> 5-tuple to print out the
+conjunction of the phrases with a parenthetical ``finally!'' if the
+series is longer than 3.
+
+<pre>
+(let* ((phrases
+        (list (list "simplifying with the replacement rules ~&amp;0"
+                    (cons #\0 '(rewrite-rule1 
+                                rewrite-rule2
+                                rewrite-rule3)))
+              (list "destructor elimination using ~x0"
+                    (cons #\0 'elim-rule))
+              (list "generalizing the terms ~&amp;0"
+                    (cons #\0 '((rev x) (app u v))))
+              (list "inducting on ~x0"
+                    (cons #\0 'I))))
+       (5-tuple
+        (list
+         "magic"                            ; no phrases
+         "~@*"                              ; last phrase
+         "~@*, and~#f~[~/ (finally!)~] "    ; second to last phrase
+         "~@*, "                            ; other phrases
+         phrases                            ; the phrases themselves
+         (cons #\f 
+               (if (&gt;(length phrases) 3) 1 0))))) ;print ``finally''?
+  (fmx "We did it by ~*0." 5-tuple))
+</pre>
+
+This <code><a href="LET_star_.html">let*</a></code> prints
+
+<pre>
+   We did it by simplifying with the replacement rules REWRITE-RULE1,
+   REWRITE-RULE2 and REWRITE-RULE3, destructor elimination using ELIM-
+   RULE, generalizing the terms (REV X) and (APP U V), and (finally!)
+   inducting on I.
+</pre>
+
+You might wish to try evaluating the <code><a href="LET_star_.html">let*</a></code> after removing elements
+of phrases.<p>
+
+Most of the output produced by ACL2 is produced via <code>fmt</code> statements.
+Thus, inspection of the source code will yield many examples.  A
+complicated example is the code that explains the simplifier's work.
+See <code>:</code><code><a href="PC.html">pc</a></code> <code>simplify-clause-msg1</code>.  An ad hoc example is provided by the
+function <code>fmt-doc-example</code>, which takes two arguments: an arbitrary
+true list and <code><a href="STATE.html">state</a></code>.  To see how <code>fmt-doc-example</code> works, <code>:</code><code><a href="PE.html">pe</a></code>
+<code>fmt-doc-example</code>.
+
+<pre>
+(fmt-doc-example '(a b c d e f g h i j k l m n o p) state)
+</pre>
+
+will produce the output
+
+<pre>
+   Here is a true list:  (A B C D E F G H I J K L M N O P).  It has 16
+   elements, the third of which is C.<p>
+
+   We could print each element in square brackets:
+   ([A], [B], [C], [D], [E], [F], [G], [H], [I], [J], [K], [L], [M], [N],
+   [almost there: O], [the end: P]).  And if we wished to itemize them
+   into column 15 we could do it like this
+   0123456789012345
+       0 (zeroth) A
+       1 (first)  B
+       2 (second) C
+       3 (third)  D
+       4 (fourth) E
+       5 (fifth)  F
+       6 (sixth)  G
+       7 (seventh)
+                  H
+       8 (eighth) I
+       9 (ninth)  J
+      10 (tenth)  K
+      11 (eleventh)
+                  L
+      12 (twelfth)
+                  M
+      13 (thirteenth)
+                  N
+      14 (14th)   O
+      15 (15th)   P
+   End of example.
+</pre>
+
+and return <code>(mv 15 state)</code>.<p>
+
+Finally, we should remind the reader that <code>fmt</code> and its subfunctions,
+most importantly <code>fmt0</code>, are written entirely in ACL2.  We make this
+comment for two reasons.  First, it illustrates the fact that quite
+low level code can be efficiently written in the language.  Second,
+it means that as a last resort for documentation purposes you can
+read the source code without changing languages.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

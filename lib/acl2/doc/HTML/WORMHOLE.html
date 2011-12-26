@@ -1,0 +1,299 @@
+<html>
+<head><title>WORMHOLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WORMHOLE</h2><code><a href="LD.html">ld</a></code> without <code><a href="STATE.html">state</a></code> -- a short-cut to a parallel universe
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(wormhole t 'interactive-break nil '(value 'hi!))
+                             ; Enters a recursive read-eval-print loop
+                             ; on a copy of the ``current <code><a href="STATE.html">state</a></code>'' and
+                             ; returns nil!
+<p>
+General Form:
+(wormhole pseudo-flg name input form
+  :current-package    ...  ; known package name
+  :ld-skip-proofsp    ...  ; t, nil or 'include-book
+  :ld-redefinition-action  ; nil or '(:a . :b)
+  :ld-prompt          ...  ; nil, t, or some prompt printer fn
+  :ld-keyword-aliases ...  ; an alist pairing keywords to parse info
+  :ld-pre-eval-filter ...  ; :all, :query, or some new name
+  :ld-pre-eval-print  ...  ; nil, t, or :never
+  :ld-post-eval-print ...  ; nil, t, or :command-conventions
+  :ld-evisc-tuple     ...  ; nil or '(alist level length hiding-cars)
+  :ld-error-triples   ...  ; nil or t
+  :ld-error-action    ...  ; :continue, :return, or :error
+  :ld-query-control-alist  ; alist supplying default responses
+  :ld-verbose         ...) ; nil or t
+</pre>
+
+The keyword arguments above are exactly those of <code><a href="LD.html">ld</a></code> (see <a href="LD.html">ld</a>)
+except that three of <code><a href="LD.html">ld</a></code>'s keyword arguments are missing: the three
+that specify the channels <code><a href="STANDARD-OI.html">standard-oi</a></code>, <code><a href="STANDARD-CO.html">standard-co</a></code> and <code><a href="PROOFS-CO.html">proofs-co</a></code>.
+Essentially <code>wormhole</code> is just a call of <code><a href="LD.html">ld</a></code> on the current <code><a href="STATE.html">state</a></code> with
+the given keyword arguments.  <code>Wormhole</code> always returns <code>nil</code>.  The
+<strong>amazing</strong> thing about <code>wormhole</code> is that it calls <code><a href="LD.html">ld</a></code> and interacts with
+the user even though <code><a href="STATE.html">state</a></code> is not available as an argument!<p>
+
+<code>Wormhole</code> does this by manufacturing a ``wormhole <a href="STATE.html">state</a>,'' a copy of
+the ``current <a href="STATE.html">state</a>'' (whatever that is) modified so as to contain
+some of the wormhole arguments.  <code><a href="LD.html">Ld</a></code> is called on that wormhole <a href="STATE.html">state</a>
+with the three <code><a href="LD.html">ld</a></code> channels directed to ACL2's ``comment window.'' At
+the moment, the comment window is overlaid on the terminal and you
+cannot tell when output is going to <code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code> and when it is
+going to the comment window.  But we imagine that eventually a
+different window will pop up on your screen.  In any case, the
+interaction provided by this call of <code><a href="LD.html">ld</a></code> does not modify the <code><a href="STATE.html">state</a></code>
+``from which'' wormhole was called, it modifies the copied <code><a href="STATE.html">state</a></code>.
+When <code><a href="LD.html">ld</a></code> exits (e.g., in response to <code>:</code><code><a href="Q.html">q</a></code> being typed in the comment
+window) the wormhole <a href="STATE.html">state</a> evaporates and <code>wormhole</code> returns <code>nil</code>.
+Logically and actually (from the perspective of the ongoing
+computation) nothing has happened except that a ``no-op'' function was
+called and returned <code>nil</code>.<p>
+
+The name <code>wormhole</code> is meant to suggest the idea that the function
+provides easy access to <code><a href="STATE.html">state</a></code> in situations where it is apparently
+impossible to get <code><a href="STATE.html">state</a></code>.  Thus, for example, if you define the
+<code>factorial</code> function, say, except that you sprinkled into its body
+appropriate calls of <code>wormhole</code>, then the execution of <code>(factorial 6)</code>
+would cause interactive breaks in the comment window.  During those
+breaks you would apparently be able to inspect the ``current <a href="STATE.html">state</a>''
+even though <code>factorial</code> does not take <code><a href="STATE.html">state</a></code> as an argument.  The whole
+notion of there being a ``current <a href="STATE.html">state</a>'' during the evaluation of
+<code>(factorial 6)</code> is logically ill-defined.  And yet, we know from
+practical experience with the sequential computing machines upon
+which ACL2 is implemented that there is a ``current <a href="STATE.html">state</a>'' (to
+which the <code>factorial</code> function is entirely insensitive) and that is
+the <a href="STATE.html">state</a> to which <code>wormhole</code> ``tunnels.'' A call of <code>wormhole</code> from
+within <code>factorial</code> can pass <code>factorial</code>-specific information that is
+embedded in the wormhole <a href="STATE.html">state</a> and made available for inspection by
+the user in an interactive setting.  But no information ever flows
+out of a wormhole <a href="STATE.html">state</a>: <code>wormhole</code> always returns <code>nil</code>.<p>
+
+There are some restrictions about what can be done inside a wormhole.  As you
+may imagine, we really do not ``copy the current state'' but rather just keep
+track of how we modified it and undo those modifications upon exit.  An error is
+signalled if you try to modify <code>state</code> in an unsupported way.  For this same
+reason, wormholes do not allow updating of any user-defined single-threaded
+objects.  See <a href="STOBJ.html">stobj</a>.<p>
+
+There are four arguments to <code>wormhole</code> that need further explanation:
+<code>pseudo-flg</code>, <code>name</code>, <code>input</code>, and <code>form</code>.  Roughly speaking, the value of
+<code>pseudo-flg</code> should be <code>t</code> or <code>nil</code> and indicates whether we are actually
+to enter a wormhole or just return <code>nil</code> immediately.  The actual
+handling of <code>pseudo-flg</code> is more sophisticated and is explained in
+detail at the end of this <a href="DOCUMENTATION.html">documentation</a>.<p>
+
+<code>Name</code> and <code>input</code> are used as follows.  Recall that <code>wormhole</code> copies the
+``current <a href="STATE.html">state</a>'' and then modifies it slightly to obtain the <code><a href="STATE.html">state</a></code>
+upon which <code><a href="LD.html">ld</a></code> is called.  We now describe the modifications.  First,
+the <code><a href="STATE.html">state</a></code> global variable <code>'wormhole-name</code> is set to <code>name</code>, which may
+be any non-<code>nil</code> ACL2 object but is usually a symbol.  Then,
+<code>'wormhole-input</code> is set to <code>input</code>, which may be any ACL2 object.
+Finally, and inexplicably, <code>'wormhole-output</code> is set to the value of
+<code>'wormhole-output</code> the last time a wormhole named <code>name</code> was exited (or
+<code>nil</code> if this is the first time a wormhole named <code>name</code> was entered).
+This last aspect of wormholes, namely the preservation of
+<code>'wormhole-output</code>, allows all the wormholes of a given name to
+communicate with each other.<p>
+
+We can now explain how <code>form</code> is used.  The modified <code><a href="STATE.html">state</a></code> described
+above is the <code><a href="STATE.html">state</a></code> on which <code><a href="LD.html">ld</a></code> is called.  However, <code><a href="STANDARD-OI.html">standard-oi</a></code> --
+the input channel from which <code><a href="LD.html">ld</a></code> reads <a href="COMMAND.html">command</a>s -- is set so that the
+first <a href="COMMAND.html">command</a> that <code><a href="LD.html">ld</a></code> reads and evaluates is <code>form</code>.  If <code>form</code> returns
+an error triple with value <code>:</code><code><a href="Q.html">q</a></code>, i.e., <code>form</code> returns via <code>(value :q)</code>,
+then no further <a href="COMMAND.html">command</a>s are read, <code><a href="LD.html">ld</a></code> exits, and the wormhole exits
+and returns <code>nil</code>.  But if <code>form</code> returns any other value (or is not an
+error triple), then subsequent <a href="COMMAND.html">command</a>s are read from the comment
+window.<p>
+
+As usual, the <code><a href="LD.html">ld</a></code>-specials affect whether a herald is printed upon
+entry, whether <code>form</code> is printed before evaluation, whether a <a href="PROMPT.html">prompt</a>
+is printed, how errors are handled, etc.  The <code><a href="LD.html">ld</a></code>-specials can be
+specified with the corresponding arguments to <code>wormhole</code>.  It is
+standard practice to call <code>wormhole</code> so that the entry to <code><a href="LD.html">ld</a></code> and the
+evaluation of <code>form</code> are totally silent.  Then, tests in <code>form</code> can
+inspect the <code><a href="STATE.html">state</a></code> and decide whether user interaction is desired.
+If so, <code>form</code> can appropriately set <code><a href="LD-PROMPT.html">ld-prompt</a></code>, <code><a href="LD-ERROR-ACTION.html">ld-error-action</a></code>, etc.,
+print a herald, and then return <code>(value :invisible)</code>.  Recall
+(see <a href="LD.html">ld</a>) that <code>(value :invisible)</code> causes <code><a href="LD.html">ld</a></code> not to print a value
+for the just executed form.  The result of this arrangement is that
+whether interaction occurs can be based on tests that are performed
+on the wormhole <a href="STATE.html">state</a> after <code>(@ wormhole-input)</code> and the last
+<code>(@ wormhole-output)</code> are available for inspection.  This is
+important because outside the wormhole you can access
+<code>wormhole-input</code> (you are passing it into the wormhole) but you may
+not be able to access the current <code><a href="STATE.html">state</a></code> (because you might be in
+<code>factorial</code>) and you definitely cannot access the <code>wormhole-output</code> of
+the last wormhole because it is not part of the ACL2 <code><a href="STATE.html">state</a></code>.  Thus,
+if the condition under which you wish to interact depends upon the
+<code><a href="STATE.html">state</a></code> or that part of it preserved from the last wormhole
+interaction, that condition can only be tested from within the
+wormhole, via <code>form</code>.<p>
+
+It is via this mechanism that <code><a href="BREAK-REWRITE.html">break-rewrite</a></code> (see <a href="BREAK-REWRITE.html">break-rewrite</a>)
+is implemented.  To be more precise, the list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s is
+maintained as part of the preserved <code>wormhole-output</code> of the
+<code><a href="BREAK-REWRITE.html">break-rewrite</a></code> wormhole.  Because it is not part of the normal <code><a href="STATE.html">state</a></code>,
+it may be changed by the user during proofs.  That is what allows
+you to install new <a href="MONITOR.html">monitor</a>s while debugging proofs.  But that means
+that the list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s cannot be inspected from outside
+the wormhole.  Therefore, to decide whether a break is to occur when
+a given rule is applied, the rewriter must enter the <code><a href="BREAK-REWRITE.html">break-rewrite</a></code>
+wormhole, supplying a form that causes interaction if the given
+rule's break condition is satisfied.  The user perceives this as
+though the wormhole was conditionally entered -- a perception that
+is happily at odds with the informed user's knowledge that the list
+of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s is not part of the <code><a href="STATE.html">state</a></code>.  In fact, the wormhole
+was unconditionally entered and the condition was checked from
+within the wormhole, that being the only <a href="STATE.html">state</a> in which the
+condition is known.<p>
+
+Another illustrative example is available in the implemention of the
+<code><a href="MONITOR.html">monitor</a></code> command.  How can we add a new <a href="RUNE.html">rune</a> to the list of <a href="MONITOR.html">monitor</a>ed
+<a href="RUNE.html">rune</a>s while in the normal ACL2 <code><a href="STATE.html">state</a></code> (i.e., while not in a
+wormhole)?  The answer is: by getting into a wormhole.  In
+particular, when you type <code>(monitor rune expr)</code> at the top-level of
+ACL2, <code><a href="MONITOR.html">monitor</a></code> enters the <code><a href="BREAK-REWRITE.html">break-rewrite</a></code> wormhole with a cleverly
+designed first <code>form</code>.  That form adds <a href="RUNE.html">rune</a> and <code>expr</code> to the list of
+<a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s -- said list only being available in <code><a href="BREAK-REWRITE.html">break-rewrite</a></code>
+wormhole <a href="STATE.html">state</a>s.  Then the first form returns <code>(value :q)</code>, which
+causes us to exit the wormhole.  By using <code><a href="LD.html">ld</a></code>-specials that
+completely suppress all output during the process, it does not
+appear to the user that a wormhole was entered.  The moral here is
+rather subtle: the first form supplied to <code>wormhole</code> may be the entire
+computation you want to perform in the wormhole; it need not just be
+a predicate that decides if interaction is to occur.  Using
+wormholes of different names you can maintain a variety of
+``hidden'' data structures that are always accessible (whether
+passed in or not).  This appears to violate completely the
+applicative semantics of ACL2, but it does not: because these data
+structures are only accessible via <code>wormhole</code>s, it is impossible for
+them to affect any ACL2 computation (except in the comment window).<p>
+
+As one might imagine, there is some overhead associated with
+entering a wormhole because of the need to copy the current <code><a href="STATE.html">state</a></code>.
+This brings us back to <code>pseudo-flg</code>.  Ostensibly, <code>wormhole</code> is a
+function and hence all of its argument expressions are evaluated
+outside the function (and hence, outside the wormhole it creates)
+and then their values are passed into the function where an
+appropriate wormhole is created.  In fact, <code>wormhole</code> is a macro that
+permits the <code>pseudo-flg</code> expression to peer dimly into the wormhole
+that will be created before it is created.  In particular,
+<code>pseudo-flg</code> allows the user to access the <code>wormhole-output</code> that will
+be used to create the wormhole <a href="STATE.html">state</a>.<p>
+
+This is done by allowing the user to mention the (apparently
+unbound) variable <code>wormhole-output</code> in the first argument to <code>wormhole</code>.
+Logically, <code>wormhole</code> is a macro that wraps
+
+<pre>
+(let ((wormhole-output nil)) ...)
+</pre>
+
+around the expression supplied as its first argument.  So logically,
+<code>wormhole-output</code> is always <code>nil</code> when the expression is
+evaluated.  However, actually, <code>wormhole-output</code> is bound to the
+value of <code>(@ wormhole-output)</code> on the last exit from a wormhole of
+the given name (or <code>nil</code> if this is the first entrance).  Thus, the
+<code>pseudo-flg</code> expression, while having to handle the possibility
+that <code>wormhole-output</code> is <code>nil</code>, will sometimes see non-<code>nil</code>
+values.  The next question is, of course, ``But how can you get away
+with saying that logically <code>wormhole-output</code> is always <code>nil</code> but
+actually it is not?  That doesn't appear to be sound.'' But it is
+sound because whether <code>pseudo-flg</code> evaluates to <code>nil</code> or
+non-<code>nil</code> doesn't matter, since in either case <code>wormhole</code> returns
+<code>nil</code>.  To make that point slightly more formal, imagine that
+<code>wormhole</code> did not take <code>pseudo-flg</code> as an argument.  Then it
+could be implemented by writing
+
+<pre>
+(if pseudo-flg (wormhole name input form ...) nil).
+</pre>
+
+Now since wormhole always returns <code>nil</code>, this expression is
+equivalent to <code>(if pseudo-flg nil nil)</code> and we see that the value
+of <code>pseudo-flg</code> is irrelevant.  So we could in fact allow the user
+to access arbitrary information to decide which branch of this if to
+take.  We allow access to <code>wormhole-output</code> because it is often all
+that is needed.  We don't allow access to <code><a href="STATE.html">state</a></code> (unless <code><a href="STATE.html">state</a></code> is
+available at the level of the wormhole call) for technical reasons
+having to do with the difficulty of overcoming <code>translate</code>'s
+prohibition of the sudden appearance of the variable <code><a href="STATE.html">state</a></code>.<p>
+
+We conclude with an example of the use of <code>pseudo-flg</code>.  This example
+is a simplification of our implementation of <code><a href="BREAK-REWRITE.html">break-rewrite</a></code>.  To
+enter <code><a href="BREAK-REWRITE.html">break-rewrite</a></code> at the beginning of the attempted application of
+a rule, <code>rule</code>, we use
+
+<pre>
+(wormhole
+ (and (f-get-global 'brr-mode state)
+      (member-equal (access rewrite-rule rule :rune)
+                    (cdr (assoc-eq 'monitored-runes wormhole-output))))
+ 'break-rewrite
+ ...)
+</pre>
+
+The function in which this call of <code>wormhole</code> occurs has <code><a href="STATE.html">state</a></code> as a
+formal.  The <code>pseudo-flg</code> expression can therefore refer to <code><a href="STATE.html">state</a></code> to
+determine whether <code>'brr-mode</code> is set.  But the <code>pseudo-flg</code> expression
+above mentions the variable <code>wormhole-output</code>; this variable is not
+bound in the context of the call of <code>wormhole</code>; if <code>wormhole</code> were a
+simple function symbol, this expression would be illegal because it
+mentions a free variable.<p>
+
+However, it is useful to think of <code>wormhole</code> as a simple function that
+evaluates all of its arguments but to also imagine that somehow
+<code>wormhole-output</code> is magically bound around the first argument so that
+<code>wormhole-output</code> is the output of the last <code><a href="BREAK-REWRITE.html">break-rewrite</a></code> wormhole.
+If we so imagine, then the <code>pseudo-flg</code> expression above evaluates
+either to <code>nil</code> or non-<code>nil</code> and we will enter the wormhole named
+<code><a href="BREAK-REWRITE.html">break-rewrite</a></code> in the latter case.<p>
+
+Now what does the <code>pseudo-flg</code> expression above actually test?  We
+know the format of our own <code>wormhole-output</code> because we are
+responsible for maintaining it.  In particular, we know that the
+list of <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s can be obtained via
+
+<pre>
+(cdr (assoc-eq 'monitored-runes wormhole-output)).
+</pre>
+
+Using that knowledge we can design a <code>pseudo-flg</code> expression which
+tests whether (a) we are in <code>brr-mode</code> and (b) the <a href="RUNE.html">rune</a> of the
+current rule is a member of the <a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s.  Question (a) is
+answered by looking into the current <code><a href="STATE.html">state</a></code>.  Question (b) is
+answered by looking into that part of the about-to-be-created
+wormhole <a href="STATE.html">state</a> that will differ from the current <code><a href="STATE.html">state</a></code>.  To
+reiterate the reason we can make <code>wormhole-output</code> available here
+even though it is not in the current <code><a href="STATE.html">state</a></code>: logically speaking the
+value of <code>wormhole-output</code> is irrelevant because it is only used to
+choose between two identical alternatives.  This example also makes
+it clear that <code>pseudo-flg</code> provides no additional functionality.
+The test made in the <code>pseudo-flg</code> expression could be moved into
+the first form evaluated by the wormhole -- changing the free
+variable <code>wormhole-output</code> to <code>(@ wormhole-output)</code> and arranging
+for the first form to return <code>(value :q)</code> when the <code>pseudo-flg</code>
+expression returns <code>nil</code>.  The only reason we provide the
+<code>pseudo-flg</code> feature is because it allows the test to be carried
+out without the overhead of entering the wormhole.<p>
+
+Wormholes can be used not only in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode definitions but also
+in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode definitions.  Thus, it is possible (though somewhat
+cumbersome without investing in macro support) to annotate logical
+functions with output facilities that do not require <code>state</code>.  These
+facilities do not complicate proof obligations.  Suppose then that
+one doctored a simple function, e.g., APP, so as to do some printing
+and then proved that APP is associative.  The proof may generate
+extraneous output due to the doctoring.  Furthermore, contrary to
+the theorem proved, execution of the function appears to affect
+*standard-co*.  To see what the function ``really'' does when
+evaluated, enter raw lisp and set the global variable
+*inhibit-wormhole-activityp* to t.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<html>
+<head><title>ACL2-PC_colon__colon_COMM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::COMM</h3>(macro)
+<code>   </code>display instructions from the current interactive session
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+comm
+(comm 10)
+<p>
+General Form:
+(comm &amp;optional n)
+</pre>
+
+Prints out instructions in reverse order.  This is actually the same
+as <code>(commands n t)</code> -- or, <code>(commands nil t)</code> if <code>n</code> is not supplied.  As
+explained in the documentation for <code>commands</code>, the final argument of <code>t</code>
+causes suppression of instructions occurring between so-called
+``matching bookends,'' which we now explain.<p>
+
+A ``begin bookend'' is an instruction of the form
+
+<pre>
+(COMMENT :BEGIN x . y).
+</pre>
+
+Similarly, an ``end bookend'' is an instruction of the form
+
+<pre>
+(COMMENT :END x' . y').
+</pre>
+
+The ``name'' of the first bookend is <code>x</code> and the ``name'' of the
+second bookend is <code>x'</code>.  When such a pair of instructions occurs in
+the current state-stack, we call them ``matching bookends'' provided
+that they have the same name (i.e. <code>x</code> equals <code>x'</code>) and if no other
+begin or end bookend with name <code>x</code> occurs between them.  The idea now
+is that <code>comm</code> hides matching bookends together with the instructions
+they enclose.  Here is a more precise explanation of this
+``hiding''; probably there is no value in reading on!<p>
+
+A <code>comm</code> instruction hides bookends in the following manner.  (So does
+a <code>comment</code> instruction when its second optional argument is supplied
+and non-<code>nil</code>.)  First, if the first argument <code>n</code> is supplied and not
+<code>nil</code>, then we consider only the last <code>n</code> instructions from the
+state-stack; otherwise, we consider them all.  Now the resulting
+list of instructions is replaced by the result of applying the
+following process to each pair of matching bookends:  the pair is
+removed, together with everything in between the begin and end
+bookend of the pair, and all this is replaced by the ``instruction''
+
+<pre>
+("***HIDING***" :COMMENT :BEGIN name ...)
+</pre>
+
+where <code>(comment begin name ...)</code> is the begin bookend of the pair.
+Finally, after applying this process to each pair of matching
+bookends, each begin bookend of the form <code>(comment begin name ...)</code>
+that remains is replaced by
+
+<pre>
+("***UNFINISHED***" :COMMENT :BEGIN name ...) .
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

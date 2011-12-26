@@ -1,0 +1,43 @@
+<html>
+<head><title>ASET2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ASET2</h3>set the elements of a 2-dimensional array
+<pre>Major Section:  <a href="ARRAYS.html">ARRAYS</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(aset2 'delta1 a i j 27)
+<p>
+General Form:
+(aset2 name alist i j val)
+</pre>
+
+where <code>name</code> is a symbol, <code>alist</code> is a 2-dimensional array named <code>name</code>,
+<code>i</code> and <code>j</code> are legal indices into <code>alist</code>, and <code>val</code> is an arbitrary
+object.  See <a href="ARRAYS.html">arrays</a> for details.  Roughly speaking this
+function ``modifies'' <code>alist</code> so that the value associated with
+<code>(i . j)</code> is <code>val</code>.  More precisely, it returns a new array,
+<code>alist'</code>, of the same name and dimension as <code>alist</code> that, under
+<code><a href="AREF2.html">aref2</a></code>, is everywhere equal to <code>alist</code> except at <code>(i . j)</code> where
+the result is <code>val</code>.  That is, <code>(aref2 name alist' x y)</code> is
+<code>(aref2 name alist x y)</code> for all legal indices <code>x</code> <code>y</code> except
+<code>i</code> and <code>j</code> where <code>(aref2 name alist' i j)</code> is <code>val</code>.<p>
+
+In order to ``modify'' <code>alist</code>, <code>aset2</code> <code><a href="CONS.html">cons</a></code>es a new pair onto the
+front.  If the length of the resulting <code>alist</code> exceeds the
+<code>:</code><code><a href="MAXIMUM-LENGTH.html">maximum-length</a></code> entry in the array <a href="HEADER.html">header</a>, <code>aset2</code> compresses the
+array as with <code><a href="COMPRESS2.html">compress2</a></code>.<p>
+
+It is generally expected that the ``semantic value'' of <code>name</code> will be
+<code>alist</code> (see <a href="ARRAYS.html">arrays</a>).  This function operates in virtually
+constant time whether this condition is true or not (unless the
+<code><a href="COMPRESS2.html">compress2</a></code> operation is required).  But the value returned by this
+function cannot be used efficiently by subsequent <code>aset2</code> operations
+unless <code>alist</code> is the semantic value of <code>name</code> when <code>aset2</code> is executed.
+Thus, if the condition is not true, <code>aset2</code> prints a <strong>slow array</strong>
+warning to the comment window.  See <a href="SLOW-ARRAY-WARNING.html">slow-array-warning</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

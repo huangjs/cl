@@ -1,0 +1,156 @@
+<html>
+<head><title>INCLUDE-BOOK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INCLUDE-BOOK</h2>load the <a href="EVENTS.html">events</a> in a file
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(include-book "my-arith")
+(include-book "/home/smith/my-arith")
+(include-book "/../../my-arith")<p>
+
+General Form:
+(include-book file :load-compiled-file action  ; [default :warn]
+                   :uncertified-okp t/nil      ; [default t]
+                   :defaxioms-okp t/nil        ; [default t]
+                   :skip-proofs-okp t/nil      ; [default t]
+                   :ttags ttags                ; [default nil]
+                   :dir directory
+                   :doc doc-string)
+</pre>
+
+where <code>file</code> is a book name.  See <a href="BOOKS.html">books</a> for general information,
+see <a href="BOOK-NAME.html">book-name</a> for information about book names, and see <a href="PATHNAME.html">pathname</a> for
+information about file names.  <code>Action</code> is one of <code>t</code>, <code>nil</code>, <code>:warn</code>
+(the default), <code>:try</code>, <code>:comp</code>, or <code>:comp!</code>; these values are explained
+below.  The three <code>-okp</code> keyword arguments, which default to <code>t</code>,
+determine whether errors or warnings are generated under certain conditions
+explained below; when the argument is <code>t</code>, warnings are generated.  The
+<code>dir</code> argument, if supplied, is a keyword that represents an absolute
+pathname for a directory (see <a href="PATHNAME.html">pathname</a>), to be used instead of the current
+book directory (see <a href="CBD.html">cbd</a>) for resolving the given <code>file</code> argument to an
+absolute pathname.  In particular, <code>:dir :system</code> resolves <code>file</code> using
+the distributed <code>books/</code> directory of your ACL2 installation, unless your
+ACL2 executable was built somewhere other than where it currently resides;
+please see the ``Distributed Books Directory'' below.  To define other
+keywords that can be used for <code>dir</code>, see <a href="ADD-INCLUDE-BOOK-DIR.html">add-include-book-dir</a>.
+<code>Doc-string</code> is an optional <a href="DOCUMENTATION.html">documentation</a> string; see <a href="DOC-STRING.html">doc-string</a>.  If
+the book has no <code><a href="CERTIFICATE.html">certificate</a></code>, if its <code><a href="CERTIFICATE.html">certificate</a></code> is invalid or if
+the certificate was produced by a different <a href="VERSION.html">version</a> of ACL2, a warning
+is printed and the book is included anyway; see <a href="CERTIFICATE.html">certificate</a>.  This can lead
+to serious errors; see <a href="UNCERTIFIED-BOOKS.html">uncertified-books</a>.  If the portcullis of the
+<a href="CERTIFICATE.html">certificate</a> (see <a href="PORTCULLIS.html">portcullis</a>) cannot be raised in the host logical
+<a href="WORLD.html">world</a>, an error is caused and no change occurs to the logic.  Otherwise,
+the non-<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> in file are assumed.  Then the <a href="KEEP.html">keep</a> of
+the <a href="CERTIFICATE.html">certificate</a> is checked to ensure that the correct files were read;
+see <a href="KEEP.html">keep</a>.  A warning is printed if uncertified <a href="BOOKS.html">books</a> were included.
+Even if no warning is printed, <code>include-book</code> places a burden on you;
+see <a href="CERTIFICATE.html">certificate</a>.<p>
+
+If there is a compiled file for the book that was created more recently than
+the book itself and the value <code>action</code> of the <code>:load-compiled-file</code>
+argument is not <code>nil</code>, or is omitted, then the compiled file is
+automatically loaded; otherwise it is not loaded.  If <code>action</code> is <code>t</code>
+then the compiled file must be loaded or an error will occur; if <code>action</code>
+is <code>:warn</code> (the default) then a warning will be printed; if <code>action</code> is
+<code>:try</code> then no warning will be printed; and if <code>action</code> is <code>:comp</code> then
+the file will be immediately compiled (if the compiled file does not already
+exist) and loaded.  The <code>action</code> <code>:comp!</code> is handled just like <code>:comp</code>,
+with two exceptions: compilation always takes place because the old compiled
+file is first deleted, and executable counterparts are also compiled (in
+analogy to value <code>:all</code> for the <code>compile-flg</code> argument of
+<code>certify-book</code>; see <a href="CERTIFY-BOOK.html">certify-book</a>).  <code><a href="CERTIFY-BOOK.html">Certify-book</a></code> can also be used to
+compile a book; thus, <code>:comp</code> and <code>:comp!</code> do the same sort of
+compilation as <code><a href="CERTIFY-BOOK.html">certify-book</a></code> when the latter is given a <code>compile-flg</code>
+of <code>t</code> or <code>:all</code>, respectively.  An effect of <a href="COMPILATION.html">compilation</a> is to
+speed up the execution of the functions defined within the book when those
+functions are applied to specific values.  Compilation can also remove tail
+recursion, thus avoiding stack overflows.  The presence of compiled code for
+the functions in the book should not otherwise affect the performance of
+ACL2.  See <a href="GUARD.html">guard</a> for a discussion.  NOTE: the <code>:load-compiled-file</code>
+argument is not recursive; that is, calls of <code>include-book</code> that are inside
+the book supplied to <code>include-book</code> will use their own
+<code>:load-compiled-file</code> arguments (default <code>:warn</code>), not the
+<code>:load-compiled-file</code> argument for the enclosing book.<p>
+
+The three <code>-okp</code> arguments, <code>:uncertified-okp</code>, <code>defaxioms-okp</code>,
+and <code>skip-proofs-okp</code>, determine the system's behavior when
+the book or any subbook is found to be uncertified, when the book
+or any subbook is found to contain <code><a href="DEFAXIOM.html">defaxiom</a></code> events, and when
+the book or any subbook is found to contain <code><a href="SKIP-PROOFS.html">skip-proofs</a></code> events,
+respectively.  All three default to <code>t</code>, which means it is ``ok''
+for the condition to arise.  In this case, a warning is printed but
+the processing to load the book is allowed to proceed.  When one of
+these arguments is <code>nil</code> and the corresponding condition arises,
+an error is signaled and processing is aborted.  <strong>Exception</strong>:
+<code>:uncertified-okp</code> is ignored if the <code>include-book</code> is being
+performed on behalf of a <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.<p>
+
+The keyword argument <code>:ttags</code> may normally be omitted.  A few constructs,
+used for example if you are building your own system based on ACL2, may
+require it.  See <a href="DEFTTAG.html">defttag</a> for an explanation of this argument.<p>
+
+<code>Include-book</code> is similar in spirit to <code><a href="ENCAPSULATE.html">encapsulate</a></code> in that it is
+a single event that ``contains'' other <a href="EVENTS.html">events</a>, in this case the
+<a href="EVENTS.html">events</a> listed in the file named.  <code>Include-book</code> processes the
+non-<code><a href="LOCAL.html">local</a></code> event forms in the file, assuming that each is
+admissible.  <code><a href="LOCAL.html">Local</a></code> <a href="EVENTS.html">events</a> in the file are ignored.  You may
+use <code>include-book</code> to load several <a href="BOOKS.html">books</a>, creating the logical
+<a href="WORLD.html">world</a> that contains the definitions and theorems of all of
+them.<p>
+
+If any non-<code><a href="LOCAL.html">local</a></code> event of the book attempts to define a <a href="NAME.html">name</a>
+that has already been defined -- and the book's definition is not
+syntactically identical to the existing definition -- the attempt to
+include the book fails, an error message is printed, and no change
+to the logical <a href="WORLD.html">world</a> occurs.  See <a href="REDUNDANT-EVENTS.html">redundant-events</a> for the
+details.<p>
+
+When a book is included, the default <a href="DEFUN-MODE.html">defun-mode</a>
+(see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>) for the first event is always
+<code>:</code><code><a href="LOGIC.html">logic</a></code>.  That is, the default <a href="DEFUN-MODE.html">defun-mode</a> ``outside'' the book --
+in the environment in which <code>include-book</code> was called -- is
+irrelevant to the book.  <a href="EVENTS.html">Events</a> that change the <a href="DEFUN-MODE.html">defun-mode</a> are
+permitted within a book (provided they are not in <code><a href="LOCAL.html">local</a></code> forms).
+However, such changes within a book are not exported, i.e., at the
+conclusion of an <code>include-book</code>, the ``outside'' default <a href="DEFUN-MODE.html">defun-mode</a>
+is always the same as it was before the <code>include-book</code>.<p>
+
+Unlike every other event in ACL2, <code>include-book</code> puts a burden on
+you.  Used improperly, <code>include-book</code> can be unsound in the sense
+that it can create an inconsistent extension of a consistent logical
+<a href="WORLD.html">world</a>.  A certification mechanism is available to help you
+carry this burden -- but it must be understood up front that even
+certification is no guarantee against inconsistency here.  The
+fundamental problem is one of file system security.
+See <a href="CERTIFICATE.html">certificate</a> for a discussion of the security issues.<p>
+
+After execution of an <code>include-book</code> form, the value of
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> is restored to what it was immediately before
+that <code>include-book</code> form was executed.
+See <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.<p>
+
+<b>Distributed Books Directory.</B>  We refer to the ``books directory'' of an
+executable image as the full pathname string of the books directory
+associated with <code>:dir :system</code> for that image.  This is where the
+distributed books directory should reside.  By default, it is the <code>books/</code>
+subdirectory of the directory where the sources reside and the executable
+image is thus built.  If those books reside elsewhere, the environment
+variable ACL2_SYSTEM_BOOKS can be set to the <code>books/</code> directory under which
+they reside (a Unix-style pathname, typically ending in <code>books/</code> or
+<code>books</code>, is permissible).  In most cases, your ACL2 executable is a small
+script in which you can set this environment variable just above the line on
+which the actual ACL2 image is invoked.<p>
+
+This concludes the guided tour through <a href="BOOKS.html">books</a>.
+See <a href="SET-COMPILE-FNS.html">set-compile-fns</a> for a subtle point about the interaction
+between <code>include-book</code> and on-the-fly <a href="COMPILATION.html">compilation</a>.
+See <a href="CERTIFY-BOOK.html">certify-book</a> for a discussion of how to certify a book.
+<p>
+:cited-by Programming
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

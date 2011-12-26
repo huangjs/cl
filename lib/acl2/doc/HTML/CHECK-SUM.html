@@ -1,0 +1,43 @@
+<html>
+<head><title>CHECK-SUM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CHECK-SUM</h2>assigning ``often unique'' integers to files and objects
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+A ``check sum'' is an integer in some fixed range computed from the
+printed representation of an object, e.g., the sum, modulo <code>2**32</code>, of
+the ascii codes of all the <a href="CHARACTERS.html">characters</a> in the printed
+representation.
+<p>
+Ideally, you would like the check sum of an object to be uniquely
+associated with that object, like a fingerprint.  It could then be
+used as a convenient way to recognize the object in the future: you
+could remember the check sum (which is relatively small) and when an
+object is presented to you and alleged to be the special one you
+could compute its check sum and see if indeed it was.  Alas, there
+are many more objects than check sums (after all, each check sum is
+an object, and then there's <code>t</code>).  So you try to design a check sum
+algorithm that maps similar looking objects far apart, in the hopes
+that corruptions and counterfeits -- which appear to be similar to
+the object -- have different check sums.  Nevertheless, the best you
+can do is a many-to-one map.  If an object with a different check
+sum is presented, you can be positive it is not the special object.
+But if an object with the same check sum is presented, you have no
+grounds for positive identification.<p>
+
+The basic check sum algorithm in ACL2 is called <code>check-sum-obj</code>, which
+computes the check sum of an ACL2 object.  Roughly speaking, we scan
+the print representation of the object and, for each character
+encountered, we multiply the ascii code of the character times its
+position in the stream (modulo a certain prime) and then add (modulo
+a certain prime) that into the running sum.  This is inaccurate in
+many senses (for example, we don't always use the ascii code and we
+see numbers as though they were printed in base 127) but indicates
+the basic idea.<p>
+
+ACL2 uses check sums to increase security in the <a href="BOOKS.html">books</a>
+mechanism; see <a href="CERTIFICATE.html">certificate</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

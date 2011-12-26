@@ -1,0 +1,339 @@
+<html>
+<head><title>NOTE-3-0-2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-3-0-2</h2>ACL2 Version  3.0.2 (December, 2006) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+NOTE!  New users can ignore these release notes, because the documentation
+has been updated to reflect all changes that are recorded here.<p>
+
+Fixed soundness bugs in the handling of primitive function <code><a href="PKG-WITNESS.html">pkg-witness</a></code>,
+and improved its documentation.  (The executable counterpart returned an
+incorrect default value, and the axiom
+<code>symbol-package-name-pkg-witness-name</code> needed <code>pkg-name</code> to be other than
+<code>""</code> in order to avoid the default value of "ACL2".)  As fallout, a new
+built-in <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rule,
+<code>symbol-package-name-of-symbol-is-not-empty-string</code>, now asserts that the
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> of a symbol is never <code>""</code>.  Thanks to Mike
+Gordon for bringing these soundness bugs to our attention by attempting to
+prove translations of ACL2 axioms in HOL4.<p>
+
+Fixed a soundness bug in linear arithmetic, due to incomplete tracking of
+forced assumptions while deriving inequalities.  Thanks to Robert Krug for
+providing a fix and a proof of <code>nil</code> before the fix.<p>
+
+Fixed a soundness bug in the redundancy criterion for <code><a href="DEFUN.html">defun</a></code> events,
+which has been modified; see <a href="REDUNDANT-EVENTS.html">redundant-events</a>.  This bug is illustrated
+below.  Thanks to Peter Dillinger and Jared Davis for contributions to an
+email thread that led us to discover this bug.  The solution is that for a
+definition to be redundant with an earlier definition, ACL2 no longer ignores
+<code>:</code><code><a href="MEASURE.html">measure</a></code> <code><a href="XARGS.html">xargs</a></code> except when skipping proofs (e.g., during
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>).  However, a new ``measure'', <code>(:? v1 ... vk)</code>, is
+supported, for specifying a measured subset of the set of formals, i.e., a
+set of formals that serves as the set of parameters for some valid measure.
+
+<pre>
+(encapsulate
+ ()<p>
+
+ (local (defun foo (x y)
+          (declare (xargs :measure (acl2-count y)))
+          (if (and (consp x) (consp y))
+              (foo (cons x x) (cdr y))
+            y)))<p>
+
+; So the following is redundant -- but it guesses a measure
+; of (acl2-count x), which isn't right!
+ (defun foo (x y)
+   (if (and (consp x) (consp y))
+       (foo (cons x x) (cdr y))
+     y)))<p>
+
+; end of encapsulate<p>
+
+; Now we prove a non-theorem by exploiting the bug above,
+; erroneously replacing formal y by a constant in the induction
+; scheme hinted below.  (This should not be allowed, as y should be
+; labeled as a measured formal.)<p>
+
+(defthm bad
+  (atom x)
+  :rule-classes nil
+  :hints (("Goal" :induct (foo x '(3)))))<p>
+
+; It's easy to get a contradiction by instantiating the
+; non-theorem just above.
+(defthm contradiction
+  nil
+  :rule-classes nil
+  :hints (("Goal" :use ((:instance bad (x '(7)))))))
+</pre>
+<p>
+
+Fixed a bug in <code>:</code><code><a href="PL.html">pl</a></code> and the <a href="PROOF-CHECKER.html">proof-checker</a>'s <code>show-rewrites</code>
+(<code>sr</code>) command that was causing a Lisp break.  For <code>:</code><code><a href="PL.html">pl</a></code>, also
+improved the display of unifying substitutions, modified output to take
+binding hypotheses <code>(equal var term)</code> into account properly, and arranged
+for inclusion of <a href="META.html">meta</a> rules that modify the given term.  Thanks to Eric
+Smith for bringing these issues to our attention.<p>
+
+Introduced new utilities for undoing <a href="COMMAND.html">command</a>s, <code>:</code><code><a href="UBU.html">ubu</a></code> and
+<code>:</code><code><a href="UBU_bang_.html">ubu!</a></code>, which are analogous to <code>:</code><code><a href="UBT.html">ubt</a></code> and <code>:</code><code><a href="UBT_bang_.html">ubt!</a></code>
+(respectively) except that they only undo back up to, but not including, the
+indicated command.<p>
+
+Fixed a performance bug, pointed out by Eric Smith, that was negating efforts
+made for the preceding release to avoid computation for disabled warnings.<p>
+
+Added <code><a href="TIME$.html">time$</a></code> and <code>value-triple</code> to <code>*acl2-exports*</code>.  Thanks to Bob
+Boyer and Erik Reeber (respectively) for bringing these issues to our
+attention.<p>
+
+Improved the automatic proclaiming of function types for GCL and OpenMCL,
+specifically to use an output format consistent with the Common Lisp spec.
+Thanks to Bob Boyer for bringing this issue to our attention.<p>
+
+Added <code>books/misc/transfinite.lisp</code>, which deals with transfinite induction
+in ACL2.  Thanks to Eric Smith for contributing this book.<p>
+
+Added <code>books/misc/process-book-readme.lisp</code> to the distribution.  Thanks to
+Sandip Ray for pointing out its omission.<p>
+
+Added contributions <code>books/concurrent-programs/bakery/</code> and
+<code>books/concurrent-programs/german-protocol/</code>.  These contributions can be
+used as tutorials, especially by new ACL2 users, for learning how to model
+concurrent protocols in ACL2 and the steps involved in reasoning about their
+correctness.  Thanks to Sandip Ray for these contributions.  See the
+<code>Readme.lsp</code> files in these directories.<p>
+
+Theory invariants may now involve the variable <code>ENS</code> instead of the
+variable <code>THEORY</code>.  The practical effect of this change is that any
+expression of the form <code>(MEMBER-EQUAL rune THEORY)</code> occurring in a
+<code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> expression should be replaced by
+<code>(ACTIVE-RUNEP rune)</code>.  See <a href="THEORY-INVARIANT.html">theory-invariant</a>.  Thanks to Eric Smith and
+Dave Greve for pointing out an inefficiency in the handling of theory
+invariants that led to this change, which can speed up their handling by
+orders of magnitude on large examples, and to Eric for testing this change
+and pointing out problems with an early implementation of it.<p>
+
+Theory invariants (see <a href="THEORY-INVARIANT.html">theory-invariant</a>) are no longer checked on theories
+defined by <code><a href="DEFTHEORY.html">deftheory</a></code> <a href="EVENTS.html">events</a>.  After all, one can define a theory
+with <code>deftheory</code> that is not intended to be used as the current theory, but
+rather is intended to be combined with other <a href="THEORIES.html">theories</a>
+(see <a href="THEORY-FUNCTIONS.html">theory-functions</a>).  Thanks to Eric Smith for bringing this issue to our
+attention.<p>
+
+<code><a href="THEORY-INVARIANT.html">Theory-invariant</a></code> errors had been reported with very little detail when
+warnings were inhibited.  This problem has been fixed; thanks to Eric Smith
+for bringing it to our attention and providing an example.  We have also
+improved the handling of redundancy for <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> <a href="EVENTS.html">events</a>.<p>
+
+The macro <code><a href="DEFUN-SK.html">defun-sk</a></code> now has a new optional keyword, <code>rewrite</code>, that
+can be used to change the form of the <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule generated when
+the quantifier is <code><a href="FORALL.html">forall</a></code>.  Thanks to Eric Smith and Sandip Ray for
+useful discussions on this topic.  We have also slightly modified the
+<a href="HINTS.html">hints</a> for the <code><a href="DEFTHM.html">defthm</a></code> event underneath a <code>defun-sk</code> in order to
+make the proof more reliably efficient.<p>
+
+A new event, <code><a href="RESET-PREHISTORY.html">reset-prehistory</a></code>, allows setting of a barrier before which
+undoing is illegal.  An argument to this macro allows the barrier to be made
+permanent; otherwise, it can be removed with <code>:</code><code><a href="UBT-PREHISTORY.html">ubt-prehistory</a></code>.
+Thanks to Peter Dillinger for useful conversations leading to the addition of
+<code><a href="RESET-PREHISTORY.html">reset-prehistory</a></code>.<p>
+
+A new query, <code>(</code><code><a href="WORMHOLE-P.html">wormhole-p</a></code><code> </code><code><a href="STATE.html">state</a></code><code>)</code>, allows users to
+determine whether or not they are in a <code><a href="WORMHOLE.html">wormhole</a></code>.  Thanks to Peter
+Dillinger for providing this utility.<p>
+
+<code>Value-triple</code> no longer evaluates its form during <code><a href="INCLUDE-BOOK.html">include-book</a></code>, and
+in raw Lisp its calls trivially macroexpand to <code>nil</code>, without any
+consideration of its argument.  This change avoids errors and warnings when
+<a href="STOBJ.html">stobj</a> names occur in the argument.<p>
+
+We fixed what could be considered a soundness hole that could occur by
+exploiting redefinition in a particular way.  Thanks to Peter Dillinger for
+raising a question that led to discovery of this hole.<p>
+
+A bug has been fixed in handling of illegal <a href="THEORY.html">theory</a> expressions.  Thanks
+to Eric Smith, who reported this problem and provided the example
+<code>(in-theory '((:definition natp) (:rewrite doesntexist)))</code>
+to show how a hard error could occur.<p>
+
+Improved error reporting by <code><a href="CERTIFY-BOOK.html">certify-book</a></code> when the certification
+<a href="WORLD.html">world</a> contains inadmissible forms.<p>
+
+Modified <code><a href="DEFCHOOSE.html">defchoose</a></code> to add two new keyword arguments.  There is now a
+<code>:doc</code> keyword argument; previously, an optional documentation string
+(see <a href="DOC-STRING.html">doc-string</a>) was to be placed just before the body, without a keyword.
+There is also a <code>:strengthen</code> argument that strengthens the axiom added,
+which allows for the definition of ``fixing'' functions for equivalence
+relations that choose canonical representatives of equivalence classes.
+See <a href="DEFCHOOSE.html">defchoose</a>.  Thanks for Dave Greve for useful discussions that led us to
+this <code>:strengthen</code> enhancement.<p>
+
+Added <code>books/misc/bash.lisp</code>, which provides utilities for simplifying a
+goal into a list of subgoals (as documented at the top of that file).  Thanks
+to Dave Greve for requesting this utility and suggesting refinements to its
+functionality, which have been incorporated.<p>
+
+(For Emacs users only) The command <code>meta-x new-shell</code> provided by file
+<code>emacs/emacs-acl2.el</code> now puts you in shell-mode, which for example
+supports directory tracking.  Thanks to Jared Davis for suggesting this
+change.<p>
+
+Fixed some mishandling of <a href="STOBJ.html">stobj</a>s by <code><a href="MAKE-EVENT.html">make-event</a></code> expansion.<p>
+
+Introduced a new event, <code><a href="DEFTTAG.html">defttag</a></code>, that introduces a ``trust tag''
+(``ttag'') allowing for extensions of ACL2 and for the use of generally
+unsafe ACL2 constructs.  Thanks to Peter Dillinger, Sandip Ray, and Erik
+Reeber for useful discussions on <code>defttag</code> and the following related
+items.
+
+<blockquote><p>
+
+A new event, <code><a href="REMOVE-UNTOUCHABLE.html">remove-untouchable</a></code>, can be used to give users access to
+system functions and data structures.  We also fixed a bug in
+<code><a href="PUSH-UNTOUCHABLE.html">push-untouchable</a></code>; and, it no longer is a no-op in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode.  Thanks to Peter Dillinger for proposing <code><a href="REMOVE-UNTOUCHABLE.html">remove-untouchable</a></code> and
+suggesting that it and <code><a href="PUSH-UNTOUCHABLE.html">push-untouchable</a></code> be functional in
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode.<p>
+
+Raw-mode (see <a href="SET-RAW-MODE.html">set-raw-mode</a>) no longer disables <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.  However,
+<code><a href="SET-RAW-MODE.html">set-raw-mode</a></code> is now disallowed unless there is an active ttag
+(see <a href="DEFTTAG.html">defttag</a>).  If you want to execute <code>(</code><code><a href="SET-RAW-MODE.html">set-raw-mode</a></code><code> t)</code> and
+there is no active ttag, consider executing <code>(</code><code><a href="SET-RAW-MODE-ON_bang_.html">set-raw-mode-on!</a></code><code>)</code>
+instead.<p>
+
+Redefinition of system functions is disallowed unless there is an active
+ttag.  However, <code><a href="REDEF_bang_.html">redef!</a></code> now introduces <code>(defttag :redef!)</code> in order to
+allow redefinition of system functions.<p>
+
+A new event, <code><a href="PROGN_bang_.html">progn!</a></code>, is a legal embedded event form that can go in
+<a href="BOOKS.html">books</a> and both <code><a href="ENCAPSULATE.html">encapsulate</a></code> and <code><a href="PROGN.html">progn</a></code> forms
+(see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>), and is similar to <code><a href="PROGN.html">progn</a></code> except that it
+allows arbitrary forms.  Thus, a <code><a href="PROGN_bang_.html">progn!</a></code> form is potentially dangerous
+and can only be evaluated if there is an active ttag.<p>
+
+See <a href="TTAGS-SEEN.html">ttags-seen</a> for information about how to find the ttags known in the
+current ACL2 <a href="WORLD.html">world</a>, and for related caveats.<p>
+
+A new book created with Peter Dillinger, <code>books/misc/hacker.lisp</code>, uses
+<code><a href="PROGN_bang_.html">progn!</a></code> to define utiliities <code>with-raw-mode</code> and
+<code>with-redef-allowed</code>, which respectively allow raw Lisp evaluation and
+redefinition to take place within a certifiable book (!).</blockquote>
+<p>
+
+Macro <code><a href="WITH-OUTPUT.html">with-output</a></code> is no longer allowed in function bodies because it
+does not have (and has never had) any effect in raw Lisp.  See <a href="WITH-OUTPUT.html">with-output</a>
+for a workaround.<p>
+
+Fixed a bug in redundancy of <code><a href="DEFSTOBJ.html">defstobj</a></code> in raw Lisp, which caused an
+error when certifying a book with a redundant <code><a href="DEFSTOBJ.html">defstobj</a></code> event whose
+<code><a href="STOBJ.html">stobj</a></code> had already been modified.  Here is an example:
+
+<pre>
+(defstobj st fld)
+(update-fld 3 st)
+(certify-book "foo" 1) ; where foo.lisp contains (defstobj st fld)
+</pre>
+<p>
+
+New books illustrating <code><a href="MAKE-EVENT.html">make-event</a></code> have been contributed in directory
+<code>books/make-event/</code>: <code>dotimes.lisp</code> (David Rager), <code>stobj-test.lisp</code>,
+and <code>logical-tangent.lisp</code> (Peter Dillinger).<p>
+
+Modified <code>print-object$</code> (see <a href="IO.html">io</a>) so that it no longer prints an extra
+space at the end.<p>
+
+Replaced the ``draconian restriction to avoid capture'' that had prevented
+some <code>:functional-instance</code> <a href="HINTS.html">hints</a> from being legal.  The corresponding
+check now only requires that no variable free in the functional substitution
+is captured by a <code><a href="LET.html">let</a></code> or <code><a href="MV-LET.html">mv-let</a></code> (or <code><a href="LAMBDA.html">lambda</a></code>) binding.
+See <a href="LEMMA-INSTANCE.html">lemma-instance</a>.<p>
+
+Added new extended metafunction, <code>mfc-rw+</code>, which is equivalent to
+<code>mfc-rw</code> except that it takes an alist argument, which may be useful for
+efficiency.  See <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.  Thanks to Robert Krug for
+suggesting this more efficient variant of <code>mfc-rw</code>.<p>
+
+Added support for the <code>ignorable</code> <code><a href="DECLARE.html">declare</a></code> form.<p>
+
+We now cause an error on a call of <code>open-input-channel</code> (see <a href="IO.html">io</a>) with an
+argument string whose first character is the <code>|</code> character.  Thanks to Bob
+Boyer for providing an example (several months ago) showing the danger of
+such calls, namely that the following command would log you out and kill all
+of your processes when running on top of GCL in Linux:<br>
+
+<code>(open-input-channel "|kill -9 -1" :object state)</code><p>
+
+Restricted the use of <code><a href="MAKE-EVENT.html">make-event</a></code> to contexts in which it can be tracked
+properly, under legal <a href="EVENTS.html">events</a> (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).  Thanks to
+Peter Dillinger for bringing an example to our attention that led to this
+fix.<p>
+
+Fixed a bug that was avoiding <a href="GUARD.html">guard</a>-checking for the functions
+<code><a href="COMPRESS1.html">compress1</a></code> and <code><a href="COMPRESS2.html">compress2</a></code>.  Thanks to David Rager for bringing this
+bug to our attention.<p>
+
+Added an error message when a <code><a href="DEFUN.html">defun</a></code> or <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> event
+fails, to clarify whether failure is for the <a href="MEASURE.html">measure</a> conjecture or for
+the <a href="GUARD.html">guard</a> conjecture.  Thanks to David Rager for requesting
+clarification for such failures.<p>
+
+Fixed a bug in reporting of <a href="GUARD.html">guard</a> violations (hard Lisp error) when certain
+macros (for example, <code><a href="COND.html">cond</a></code>) are used in the <a href="GUARD.html">guard</a>.  Thanks to Jared
+Davis for bringing this problem to our attention and providing assistance
+with the solution, in particular by providing a helpful example.<p>
+
+Grant Passmore has contributed a resolution/paramodulation prover written in
+ACL2, in directory <code>books/deduction/passmore/</code>.  Thanks, Grant.<p>
+
+Improved the error message when illegal theories are encountered.<p>
+
+Improved the suppression of output for <code>inhibit-output</code> arguments of
+routines in the book <code>books/misc/expander.lisp</code>.  Thanks to Qiang Zhang for
+pointing out the possibility for improvement here.<p>
+
+Added a new directory <code>books/arithmetic-3/extra/</code> that extends
+<code>books/arithmetic-3</code> with additional rules, contributed by Alex
+Spiridonov with guidance from Robert Krug.  WARNING: This directory is under
+development.  It may undergo large changes in future releases, so please
+consider it experimental and subject to change.  Feedback is welcomed.<p>
+
+As part of the work mentioned just above, Robert Krug and Alex Spiridonov
+contributed improvements to <code>books/arithmetic-3/</code>:
+
+<blockquote><p>
+
+o A new rule <code>|(* (/ x) (/ (expt x n)))|</code> in <code>bind-free/collect.lisp</code>,
+which is important for reducing <code>collect-*</code> expressions though it slowed
+down one proof (see comment above this rule in <code>bind-free/collect.lisp</code>).<p>
+
+o Slight improvements of rules <code>integerp-mod</code> and <code>rationalp-mod</code> in
+<code>floor-mod/floor-mod.lisp</code>.<p>
+
+o To avoid conflict with <code>books/rtl/rel6/arithmetic/</code>, renamed rule
+<code>mod-minus</code> to <code>mod-neg</code> in <code>floor-mod/floor-mod.lisp</code>, and renamed
+<code>integerp-+-reduce-leading-constant</code> to
+<code>integerp-+-reduce-leading-rational-constant</code> in
+<code>bind-free/integerp.lisp</code>.</blockquote>
+<p>
+
+(GCL on Windows only) Made a low-level change to avoid multiplying stacks for
+GCL on Windows, since GCL 2.6.6 broke while doing this.<p>
+
+Fixed bugs in linear arithmetic (rarely evidenced, it seems) involving using
+<code>&lt;</code> to compare complex rational constants.  Thanks to Robert Krug for
+helping with the fixes.<p>
+
+Added a new event, <code><a href="ASSERT-EVENT.html">assert-event</a></code>, for checking that forms evaluate to
+non-<code>nil</code> values.  Thanks to Peter Dillinger for suggesting and
+collaborating on this addition.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

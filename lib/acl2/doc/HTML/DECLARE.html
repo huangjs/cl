@@ -1,0 +1,59 @@
+<html>
+<head><title>DECLARE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DECLARE</h2>declarations
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(declare (ignore x y z))
+(declare (ignorable x y z)
+         (type integer i j k)
+         (type (satisfies integerp) m1 m2))
+(declare (xargs :guard (and (integerp i)
+                            (&lt;= 0 i))
+                :guard-hints (("Goal" :use (:instance lemma3
+                                              (x (+ i j)))))))
+<p>
+General Form:
+(declare d1 ... dn)
+where, in ACL2, each di is of one of the following forms:<p>
+
+  (ignore v1 ... vn) -- where each vi is a variable introduced in
+  the immediately superior lexical environment.  These variables must not
+  occur free in the scope of the declaration.<p>
+
+  (ignorable v1 ... vn) -- where each vi is a variable introduced in
+  the immediately superior lexical environment.  These variables need not
+  occur free in the scope of the declaration.  This declaration can be useful
+  for inhibiting compiler warnings.<p>
+
+  (type type-spec v1 ... vn) -- where each vi is a variable introduced in the
+  immediately superior lexical environment and type-spec is a type specifier
+  (as described in the documentation for <a href="TYPE-SPEC.html">type-spec</a>).<p>
+
+  (xargs :key1 val1 ... :keyn valn) -- where the legal values of the keyi's
+  and their respective vali's are described in the documentation for
+  <a href="XARGS.html">xargs</a>.
+</pre>
+
+Declarations in ACL2 may occur only where <code>dcl</code> occurs below:
+
+<pre>
+  (DEFUN name args doc-string dcl ... dcl body)
+  (DEFMACRO name args doc-string dcl ... dcl body)
+  (LET ((v1 t1) ...) dcl ... dcl body)
+  (MV-LET (v1 ...) term dcl ... dcl body)
+</pre>
+
+Of course, if a form macroexpands into one of these (as <code><a href="LET_star_.html">let*</a></code> expands
+into nested <code><a href="LET.html">let</a></code>s and our <code>er-let*</code> expands into nested <code><a href="MV-LET.html">mv-let</a></code>s)
+then declarations are permitted as handled by the macros involved.<p>
+
+<code>Declare</code> is defined in Common Lisp.  See any Common Lisp documentation for
+more information.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

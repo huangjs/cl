@@ -1,0 +1,85 @@
+<html>
+<head><title>LOGICAL-NAME.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LOGICAL-NAME</h2>a name created by a logical event
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+assoc
+caddr
++
+"ACL2-USER"
+"arith"
+"project/task-1/arith.lisp"
+:here
+</pre>
+
+<p>
+A logical name is either a name introduced by some event, such as
+<code><a href="DEFUN.html">defun</a></code>, <code><a href="DEFTHM.html">defthm</a></code>, or <code><a href="INCLUDE-BOOK.html">include-book</a></code>, or else is the keyword <code>:here</code>, which
+refers to the most recent such event.  See <a href="EVENTS.html">events</a>.  Every
+logical name is either a symbol or a string.  For the syntactic
+rules on names, see <a href="NAME.html">name</a>.  The symbols name functions, macros,
+constants, axioms, theorems, labels, and <a href="THEORIES.html">theories</a>.  The strings name
+packages or <a href="BOOKS.html">books</a>.  We permit the keyword symbol <code>:here</code> to be used as
+a logical name denoting the most recently completed event.<p>
+
+The logical name introduced by an <a href="INCLUDE-BOOK.html">include-book</a> is the full book name
+string for the book (see <a href="FULL-BOOK-NAME.html">full-book-name</a>).  Thus, under the
+appropriate setting for the current book directory (see <a href="CBD.html">cbd</a>)
+the event <code>(include-book "arith")</code> may introduce the logical name
+
+<pre>
+"/usr/home/smith/project/task-1/arith.lisp" .
+</pre>
+
+Under a different <code><a href="CBD.html">cbd</a></code> setting, it may introduce a different
+logical name, perhaps
+
+<pre>
+"/local/src/acl2/library/arith.lisp" .
+</pre>
+
+It is possible that identical <code><a href="INCLUDE-BOOK.html">include-book</a></code> events forms in a
+session introduce two different logical names because of the current
+book directory.<p>
+
+A logical name that is a string is either a package name or a book
+name.  If it is not a package name, we support various conventions
+to interpret it as a book name.  If it does not end with the string
+<code>".lisp"</code> we extend it appropriately.  Then, we search for any book
+name that has the given logical name as a terminal substring.
+Suppose <code>(include-book "arith")</code> is the only <a href="INCLUDE-BOOK.html">include-book</a> so far and
+that <code>"/usr/home/smith/project/task-1/arith.lisp"</code> is the source
+file it processed.  Then <code>"arith"</code>, <code>"arith.lisp"</code> and
+<code>"task-1/arith.lisp"</code> are all logical names identifying that
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> event (unless they are package names).  Now suppose a
+second <code>(include-book "arith")</code> is executed and processes
+<code>"/local/src/acl2/library/arith.lisp"</code>.  Then <code>"arith"</code> is no longer
+a logical name, because it is ambiguous.  However, <code>"task-1/arith"</code>
+is a logical name for the first <code><a href="INCLUDE-BOOK.html">include-book</a></code> and <code>"library/arith"</code>
+is a logical name for the second.  Indeed, the first can be named by
+<code>"1/arith"</code> and the second by <code>"y/arith"</code>.<p>
+
+Logical names are used primarily in the theory manipulation
+functions, e.g., <code><a href="UNIVERSAL-THEORY.html">universal-theory</a></code> and <code><a href="CURRENT-THEORY.html">current-theory</a></code> with which you
+may obtain some standard <a href="THEORIES.html">theories</a> as of some point in the historical
+past.  The reference points are the introductions of logical names,
+i.e., the past is determined by the <a href="EVENTS.html">events</a> it contains.  One might
+ask, ``Why not discuss the past with the much more flexible language
+of <a href="COMMAND.html">command</a> descriptors?'' (See <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>.)  The reason
+is that inside of such <a href="EVENTS.html">events</a> as <code><a href="ENCAPSULATE.html">encapsulate</a></code> or macro <a href="COMMAND.html">command</a>s that
+expand to <code><a href="PROGN.html">progn</a></code>s of <a href="EVENTS.html">events</a>, <a href="COMMAND.html">command</a> descriptors provide too coarse a
+grain.<p>
+
+When logical names are used as referents in theory expressions used
+in <a href="BOOKS.html">books</a>, one must consider the possibility that the defining event
+within the book in question becomes redundant by the definition of
+the name prior to the assumption of the book.
+See <a href="REDUNDANT-EVENTS.html">redundant-events</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

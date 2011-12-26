@@ -1,0 +1,110 @@
+<html>
+<head><title>WORLD.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WORLD</h2>ACL2 property lists and the ACL2 logical data base
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+A ``world'' is a list of triples, each of the form <code>(sym prop . val)</code>,
+implementing the ACL2 notion of property lists.  ACL2 permits the
+simultaneous existence of many property list worlds.  ``The world''
+is often used as a shorthand for ``the ACL2 logical world'' which is
+the particular property list world used within the ACL2 system to
+maintain the data base of rules.
+<p>
+Common Lisp provides the notion of ``property lists'' by which one
+can attach ``properties'' and their corresponding ``values'' to
+symbols.  For example, one can arrange for the <code>'color</code> property of
+the symbol <code>'box-14</code> to be <code>'purple</code> and the <code>'color</code> property of the
+symbol <code>'triangle-7</code> to be <code>'yellow</code>.  Access to property lists is given
+via the Common Lisp function <code>get</code>.  Thus, <code>(get 'box-14 'color)</code> might
+return <code>'purple</code>.  Property lists can be changed via the special form
+<code>setf</code>.  Thus, <code>(setf (get 'box-14 'color) 'blue)</code> changes the Common
+Lisp property list configuration so that <code>(get 'box-14 'color)</code>
+returns <code>'blue</code>.  It should be obvious that ACL2 cannot provide this
+facility, because Common Lisp's <code>get</code> ``function'' is not a function
+of its argument, but instead a function of some implicit state
+object representing the property list settings for all symbols.<p>
+
+ACL2 provides the functions <code>getprop</code> and <code>putprop</code> which allow one to
+mimic the Common Lisp property list facility.  However, ACL2's
+<code>getprop</code> takes as one of its arguments a list that is a direct
+encoding of what was above called the ``state object representing
+the property list settings for all symbols.''  Because ACL2 already
+has a notion of ``<a href="STATE.html">state</a>'' that is quite distinct from that used
+here, we call this property list object a ``world.''  A world is
+just a true list of triples.  Each triple is of the form
+<code>(sym prop . val)</code>.  This world can be thought of as a slightly
+elaborated form of association list and <code>getprop</code> is a slightly
+elaborated form of <code><a href="ASSOC.html">assoc</a></code> that takes two keys.  When <code>getprop</code> is
+called on a symbol, <code>s</code>, property <code>p</code>, and world, <code>w</code>, it
+scans <code>w</code> for the first triple whose <code>sym</code> is <code>s</code> and <code>prop</code> is
+<code>p</code> and returns the corresponding <code>val</code>. <code>Getprop</code> has two
+additional arguments, one of which that controls what it returns if
+no such <code>sym</code> and <code>prop</code> exist in <code>w</code>, and other other of which
+allows an extremely efficient implementation.  To set some
+property's value for some symbol, ACL2 provides <code>putprop</code>.
+<code>(putprop sym prop val w)</code> merely returns a new world, <code>w'</code>, in
+which <code>(sym prop . val)</code> has been <code><a href="CONS.html">cons</a></code>ed onto the front of <code>w</code>,
+thus ``overwriting'' the <code>prop</code> value of <code>sym</code> in <code>w</code> to <code>val</code>
+and leaving all other properties in <code>w</code> unchanged.<p>
+
+One aspect of ACL2's property list arrangment is that it is possible
+to have many different property list worlds.  For example, <code>'box-14</code>
+can have <code>'color</code> <code>'purple</code> in one world and can have <code>'color</code> <code>'yes</code> in
+another, and these two worlds can exist simultaneously because
+<code>getprop</code> is explicitly provided the world from which the property
+value is to be extracted.<p>
+
+The efficiency alluded to above stems from the fact that Common Lisp
+provides property lists.  Using Common Lisp's provisions behind the
+scenes, ACL2 can ``install'' the properties of a given world into
+the Common Lisp property list state so as to make retrieval via
+<code>getprop</code> very fast in the special case that the world provided to
+<code>getprop</code> has been installed.  To permit more than one installed world,
+each of which is permitted to be changed via <code>putprop</code>, ACL2 requires
+that worlds be named and these names are used to distinquish
+installed versions of the various worlds.  At the moment we do not
+further document <code>getprop</code> and <code>putprop</code>.<p>
+
+However, the ACL2 system uses a property list world, named
+<code>'current-acl2-world</code>, in which to store the succession of user
+<a href="COMMAND.html">command</a>s and their effects on the logic.  This world is often
+referred to in our <a href="DOCUMENTATION.html">documentation</a> as ``the world'' though it should
+be stressed that the user is permitted to have worlds and ACL2's is
+in no way distinguished except that the user is not permitted to
+modify it except via event <a href="COMMAND.html">command</a>s.  The ACL2 world is part of the
+ACL2 <a href="STATE.html">state</a> and may be obtained via <code>(w state)</code>.<p>
+
+<strong>Warning</strong>: The ACL2 world is very large.  Its length as of this
+writing (Version  2.5) is over <code>40,000</code> and it grows with each release.
+Furthermore, some of the values stored in it are pointers to old
+versions of itself.  Printing <code>(w state)</code> is something you should
+avoid because you likely will not have the patience to await its
+completion.  For these practical reasons, the only thing you should
+do with <code>(w state)</code> is provide it to <code>getprop</code>, as in the form
+
+<pre>
+  (getprop sym prop default 'current-acl2-world (w state))
+</pre>
+
+to inspect properties within it, or to pass it to ACL2 primitives,
+such as theory functions, where it is expected.<p>
+
+Some ACL2 <a href="COMMAND.html">command</a> forms, such as theory expressions
+(see <a href="THEORIES.html">theories</a>) and the values to be stored in tables
+(see <a href="TABLE.html">table</a>), are permitted to use the variable symbol <code>world</code>
+freely with the understanding that when these forms are evaluated
+that variable is bound to <code>(w state)</code>.  Theoretically, this gives
+those forms complete knowledge of the current logical configuration
+of ACL2.  However, at the moment, few world scanning functions have
+been documented for the ACL2 user.  Instead, supposedly convenient
+macro forms have been created and documented.  For example,
+<code>(current-theory :here)</code>, which is the theory expression which returns
+the currently <a href="ENABLE.html">enable</a>d theory, actually macroexpands to
+<code>(current-theory-fn :here world)</code>.  When evaluated with <code>world</code> bound to
+<code>(w state)</code>, <code>current-theory-fn</code> scans the current ACL2 world and
+computes the set of <a href="RUNE.html">rune</a>s currently <a href="ENABLE.html">enable</a>d in it.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

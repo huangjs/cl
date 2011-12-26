@@ -1,0 +1,101 @@
+<html>
+<head><title>NU-REWRITER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NU-REWRITER</h2>rewriting <code>NTH</code>/<code>UPDATE-NTH</code> expressions
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+The rewriter contains special provisions for rewriting expressions
+composed of <code>nth</code>, <code>update-nth</code>, <code>update-nth-array</code>, together
+with <code>let</code> expressions and other applications of non-recursive
+functions or <code>lambda</code> expressions.  For details see the paper
+``Rewriting for Symbolic Execution of State Machine Models'' by J
+Strother Moore.  Also see <a href="SET-NU-REWRITER-MODE.html">set-nu-rewriter-mode</a>.
+<p>
+The ``nu-rewriter'' is a recent addition to the main rewrite engine
+in ACL2.  Consider the expression
+
+<pre>
+ (let ((s (update-nth 1 (new-a x s) s)))
+   (let ((s (update-nth 2 (new-b x s) s)))
+     (let ((s (update-nth 3 (new-c x s) s)))
+       s)))
+</pre>
+
+If the <code>let</code>s in this expression are expanded, a very large
+expression results because of the duplicate occurrences of <code>s</code>:
+
+<pre>
+(update-nth 3
+            (new-c x
+                   (update-nth 2
+                               (new-b x
+                                      (update-nth 1
+                                                  (new-a x s)
+                                                  s))
+                               (update-nth 1
+                                           (new-a x s)
+                                           s)))
+            (update-nth 2
+                        (new-b x
+                               (update-nth 1
+                                           (new-a x s)
+                                           s))
+                        (update-nth 1
+                                    (new-a x s)
+                                    s))).
+</pre>
+
+This expansion of the <code>let</code> expression can be very expensive in space
+and time.  In particular, the <code>(new-a x s)</code> expression might be 
+rewritten many times.<p>
+
+Now imagine asking what 2nd component of the structure is.  That is,
+consider
+
+<pre>
+ (nth 2
+      (let ((s (update-nth 1 (new-a x s) s)))
+        (let ((s (update-nth 2 (new-b x s) s)))
+          (let ((s (update-nth 3 (new-c x s) s)))
+            s))))
+</pre>
+
+The normal ACL2 rewrite engine would answer this question by first
+rewriting the arguments to the <code>nth</code> expression; in particular, it would
+expand the nested <code>let</code> expression to the large nested <code>update-nth</code>
+expression and then, using rules such as
+
+<pre>
+(defthm nth-update-nth
+  (equal (nth m (update-nth n val l))
+         (if (equal (nfix m) (nfix n))
+             val (nth m l))))
+</pre>
+
+would reduce the expression to <code>(new-b x (update-nth 1 (new-a x s) s))</code>.
+
+The purpose of the nu-rewriter is to allow simplifications like this
+without first expanding the <code>let</code>s.  The ``nu'' in the name is an
+acronym for ``<code>nth/update-nth</code>''.  The nu-rewriter knows how to
+move an <code>nth</code> into a <code>let</code> without expanding the <code>let</code> and how
+to simplify it if it nestles up against an <code>update-nth</code>.<p>
+
+There are four characteristics of this problem: the presence of
+<code>nth</code>, the presence of <code>update-nth</code>, the use of <code>let</code> to
+provide ``sequential'' updates, and the use of constant indices.
+<code>Nth</code> and <code>update-nth</code> need not occur explicitly; they may be
+used inside of definitions of ``wrapper'' functions.  <p>
+
+Because the nu-rewriter changes the order in which things are rewritten,
+its routine use can make ACL2 unable to reproduce old proofs.  It is
+therefore switched off by default.  If your application exhibits the
+characteristics above, you might wish to switch the nu-rewriter on
+using <code><a href="SET-NU-REWRITER-MODE.html">set-nu-rewriter-mode</a></code>.<p>
+
+More will eventually be written about the nu-rewriter.  However, it
+is described in detail in the paper cited at the beginning of this
+documentation topic.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

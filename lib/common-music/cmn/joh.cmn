@@ -1,0 +1,444 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(defun ltext (&rest args)
+  (apply #'text
+	 (font-name "Times-Roman") (font-scaler .5) 
+	 (y #'(lambda (mark note score &optional justifying)
+		(- (staff-y0 note) 1.0)))
+	 (x #'(lambda (mark note score &optional justifying)
+		(+ (x0 note) (dx mark) (if (sign note) .2 0))))
+	 args))
+
+(defun ltext- (&rest args) 
+  (apply #'text-
+	 (font-name "Times-Roman") (font-scaler .5)
+	 (y #'(lambda (mark note score &optional justifying)
+		(- (staff-y0 note) 1.0)))
+	 (x #'(lambda (mark note score &optional justifying)
+		(+ (x0 note) (dx mark) (if (sign note) .2 0))))
+	 args))
+
+(defun -ltext- (&rest args) (apply #'-text- args))
+(defun -ltext (&rest args) (apply #'-text args))
+
+(defun staff-ltext- (&rest args)
+  (apply #'text- (connecting-pattern '(7 20))
+	 (font-name "Times-Italic") (font-scaler .4)
+	 (y #'(lambda (mark note score &optional justifying)
+		(+ (staff-y0 note) 1.0 (dy mark))))
+	 (x #'(lambda (mark note score &optional justifying)
+		(+ (x0 note) (dx mark) (if (sign note) .2 0))))
+	 args))
+
+(setf with-stem-down-too 
+    (make-self-acting
+	:action #'(lambda (note &rest rest)
+		    (declare (ignore rest))
+		    (add-to-marks 
+		     note 
+		     (list (make-instance 'sundry
+			       :name :with-stem-down-too
+			       :mark #'(lambda (mark note score &optional justifying)
+					 (when (not justifying)
+					   (moveto score (x0 note) (y0 note))
+					   (setf (line-width score) *stem-width*)
+					   (rlineto score 0 -.75)
+					   (draw score)
+					   (setf (line-width score) 0)))))))
+	:argument nil))
+
+(defun with-stem-down-too () with-stem-down-too)
+
+(defun whole-rests (num)
+  (engorge (loop for i from 1 to num collect whole-measure-rest collect bar)))
+
+(cmn (size 9) 
+     (automatic-line-breaks nil)
+     (automatic-beat-subdivision-numbers nil)
+     (note-head-size 1.125)
+     (regularize 2)
+     (system-separation 2.0)
+ (system bracket
+
+     (staff bar treble (key d-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 7)
+	    (g5 w (f (dx -.3)) (crescendo (duration 10)) (setf s1 (slur-)) (onset 42)) 
+	    (e5 w. (setf etie (begin-tie (tie-direction :down))) (onset 42))
+	    (a5 h (-slur s1) (setf atie (begin-tie)) stem-up (onset 46))
+	    bar
+	    (e5 w (end-tie etie) (onset 48) (setf s1 (slur- (slur-direction :down)))) (a5 (end-tie atie) (onset 48) w.)
+	    (g5 h (-slur s1) stem-down (onset 52))
+	    bar)
+     (staff bar treble (key d-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 6)
+	    half-rest half-rest (a4 q stem-up (setf s1 (slur- (slur-direction :up))) (onset 40))
+	    (f4 h stem-down (f (dx -.5)) (onset 40))
+	    (d5 q stem-up (-slur s1) (onset 41))
+	    bar
+	    (chord (notes g4 d5) w (onset 42) (crescendo (duration 10))) (chord (notes g4 d5) (onset 46) h begin-tie)
+	    bar
+	    (chord (notes g4 d5) (onset 48) h end-tie) (chord (notes c5 g4) h (onset 50) begin-slur)
+	    (chord (notes a4 e4) (onset 52) h end-slur)
+	    bar)
+     (staff bar treble (key f-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 6)
+	    half-rest half-rest (c5 q stem-up (setf s1 (slur- (slur-direction :up))) (onset 40))
+	    (a4 h stem-down (f (dx -.5)) (onset 40))
+	    (f5 q stem-up (-slur s1) (onset 41))
+	    bar
+	    (chord (notes b4 f5) w (onset 42) (crescendo (dy .1) (duration 10))) (chord (onset 46) (notes b4 f5) h begin-tie)
+	    bar
+	    (chord (notes b4 f5) (onset 48) h end-tie) (chord (notes e5 b4) (onset 50) w)
+	    bar)
+     (staff (dy -.25) bar tenor (key d-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 6)
+	    half-rest half-rest 
+	    (bass (scale .8 .8) (dx -.75)) 
+	    (a3 q stem-up (setf s1 (slur- (slur-direction :up))) (onset 40))
+	    (f3 h stem-down (f (dx -.5)) (onset 40))
+	    (d4 q stem-up (-slur s1) (onset 41))
+	    bar
+	    (chord (notes d4 a3) w (onset 42) (crescendo (duration 10))) (chord (onset 46) (notes a3 e4) h begin-tie)
+	    bar
+	    (chord (notes e4 a3) h (onset 48) end-tie) (chord (onset 50) (notes a3 a2) w)
+	    bar)
+     (staff (staff-size .9) brace bar bass (key d-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 9))
+
+     (staff bar treble (key c-major) (meter 3 2 (meter-size 0))
+	    half-rest half-rest (g4 h stem-down (p (dx -.5)) (setf s1 (slur- (slur-direction :down))))
+	    bar
+	    (chord (notes (c5 (-slur s1)) e5) w. begin-tie)
+	    bar
+	    (chord (notes c5 e5) w. end-tie)
+	    bar
+	    (chord (notes f5 d5) w begin-slur)
+	    (chord (notes d5 b4) h end-slur)
+	    bar
+	    (chord (notes (g5 (setf t1 (begin-tie))) (c5 (setf s1 (slur- (slur-direction :down))))) w
+		   (text "cresc." (font-name "Times-Italic") (font-scaler .4) (dy -1.0)))
+	    (chord (notes (g5 h (end-tie t1)) (e5 (-slur s1))) h begin-tie)
+	    bar
+	    (chord (notes g5 e5) w end-tie begin-tie)
+	    (chord (notes g5 e5) q end-tie begin-slur)
+	    (chord (notes f5 d5) q end-slur)
+	    bar
+	    (g4 q stem-up with-stem-down-too (onset 36)
+		(setf sup (slur- (slur-direction :up)))
+		(setf sdn (slur- (slur-direction :down)))
+		(crescendo (duration 5.5) (dy -.75)))
+	    (c5 q stem-up (-slur sup) (onset 37)) (e4 q stem-down (-slur sdn) (onset 37))
+	    (g4 q stem-down (onset 38) (setf sdn (slur- (slur-direction :down))))
+	    (d5 q stem-up (onset 38) (setf sup (slur- (slur-direction :up))))
+	    (c5 q stem-down (onset 39) (-slur sdn)) (e5 q (onset 39) stem-up (-slur sup))
+	    (d5 tq stem-up (onset 40) (setf sup (slur- (slur-direction :up))))
+	    (e4 q stem-down (onset 40) (setf sdn (slur- (slur-direction :up))))
+	    (c5 tq stem-up (onset (+ 40 2/3)) (-slur sup))
+	    (c4 q stem-down (onset 41) (-slur sdn))
+	    (e5 tq stem-up (onset (+ 41 1/3)))
+	    bar
+	    (chord (notes g5 g3) w. (onset 42) (f (dy -.25) (dx -.1)) (crescendo (onset 43) (duration 10)))
+	    bar
+	    (chord (notes g4 g3) w.)
+	    bar)
+
+     (staff (dy -.25) brace bar treble (key c-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 9))
+     (staff bar treble (key c-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 6)
+
+	    (g4 q stem-up with-stem-down-too (onset 36)
+		(setf sup (slur- (slur-direction :up)))
+		(setf sdn (slur- (slur-direction :down)))
+		(crescendo (duration 5.5) (dy -.75)))
+	    (c5 q stem-up (-slur sup) (onset 37)) (e4 q stem-down (-slur sdn) (onset 37))
+	    (g4 q stem-down (onset 38) (setf sdn (slur- (slur-direction :down))))
+	    (d5 q stem-up (onset 38) (setf sup (slur- (slur-direction :up))))
+	    (c5 q stem-down (onset 39) (-slur sdn)) (e5 q (onset 39) stem-up (-slur sup))
+	    (d5 tq stem-up (onset 40) (setf sup (slur- (slur-direction :up))))
+	    (e4 q stem-down (onset 40) (setf sdn (slur- (slur-direction :up))))
+	    (c5 tq stem-up (onset (+ 40 2/3)) (-slur sup))
+	    (c4 q stem-down (onset 41) (-slur sdn))
+	    (e5 tq stem-up (onset (+ 41 1/3)))
+	    
+	    bar
+	    (chord (notes g5 g3) w. (onset 42) (f (dy -.25) (dx -.1)) (crescendo (onset 43) (duration 10)))
+	    bar
+	    (chord (notes g4 g3) w.)
+	    bar)
+
+     (setf pos (staff (dy -.5) bar tenor (key d-major) (meter 3 2 (meter-size 0))
+		      half-rest (es3 h (p (dy 2)) (begin-slur (slur-direction :up)))
+		      (f3 h end-slur begin-tie)
+		      bar
+		      (f3 w. end-tie (begin-slur (slur-direction :up)))
+		      bar
+		      (a3 w. end-slur begin-tie)
+		      bar
+		      (a3 w. end-tie)
+		      bar
+		      (a3 w (begin-slur (slur-direction :up)))
+		      (cn4 h stem-up end-slur begin-tie)
+		      bar
+		      (c4 w end-tie begin-tie)
+		      (c4 q end-tie stem-up (begin-slur (slur-direction :up)))
+		      (b3 q end-slur stem-up)
+		      bar
+		      half-rest half-rest (a3 h stem-up with-stem-down-too f)
+		      bar
+		      (e4 w) (e4 h begin-tie stem-down)
+		      bar
+		      (e4 h stem-down end-tie) (e4 h stem-down begin-slur)
+		      (a3 h end-slur stem-up with-stem-down-too)
+		      bar))
+     (staff (tied-to pos) bar tenor (key d-major) (meter 3 2 (meter-size 0))
+	    (c3 (p (dy -.25)) h stem-down (begin-slur (slur-direction :down)))
+	    (d3 w (dx .25) end-slur begin-tie)
+	    bar
+	    (d3 w. end-tie begin-tie)
+	    bar
+	    (d3 h stem-down end-tie (begin-slur (slur-direction :down)))
+	    (f3 w end-slur)
+	    bar
+	    (e3 w (begin-slur (slur-direction :down)))
+	    (g3 h stem-down end-slur)
+	    bar
+	    (f3 w (begin-slur (slur-direction :down)) 
+		(text "cresc." (font-name "Times-Italic") (font-scaler .4) (dy -1.0)))
+	    (d3 h stem-down end-slur)
+	    bar
+	    (ds3 w begin-tie)
+	    (d3 q end-tie stem-down (begin-slur (slur-direction :down)))
+	    (e3 q stem-down end-slur)
+	    bar
+	    half-rest half-rest (half-rest (scale 0 0))
+	    bar
+	    (a3 w (crescendo (duration 6))) (a3 h stem-down begin-tie)
+	    bar
+	    (a3 h stem-down end-tie)
+	    (a3 h stem-down) (half-rest (scale 0 0))
+	    bar)
+     (staff bar brace bass (key c-major) (meter 3 2 (meter-size 0))
+	    (a2 w. begin-tie)
+	    bar
+	    (a2 w. end-tie begin-tie)
+	    bar
+	    (a2 w. end-tie)
+	    bar
+	    (a2 w. begin-tie (text "cresc." (font-name "Times-Italic") (font-scaler .4) (dy -.75)))
+	    bar
+	    (a2 w. end-tie)
+	    bar
+	    (a2 w. begin-tie)
+	    bar
+	    (a2 w. end-tie)
+	    bar
+	    (a2 w. begin-tie (f (dx -.1)) (crescendo (onset 43) (duration 6)))
+	    bar
+	    (a2 w. end-tie)
+	    bar)
+     (staff bar bass (key c-major) (meter 3 2 (meter-size 0))
+	    (whole-rests 7)
+	    (a2 w. (f (dx -.1)) (crescendo (duration 6) (onset 43)) (trill (wavy-line t) (wavy-time 53)))
+	    bar
+	    (a2 w.)
+	    interior-double-bar))
+
+  (system bracket		   
+   (staff bar treble (key d-major) (meter 3 2 (meter-size 0))
+	whole-rest
+	bar
+	(fs4 h (p (dy 2)) (ltext "Ich"))
+	(a4 w begin-tie begin-slur (setf t1 (ltext- "hof")))
+	bar
+	(a4 tq end-tie) b4 tq c5 tq (d5 tq (setf t2 (staff-ltext- "cresc. molto" (dy .85))))
+	e5 tq (f5 tq end-slur)
+	(e5 tq (-ltext- "fe" t1) begin-slur) (d5 tq end-slur)
+	(f5 tq (-ltext "auf" t1))
+	bar
+	(g5 w begin-tie (setf t3 (ltext- "dich,"))) (g5 q end-tie)
+	(e5 q (-ltext t3 "auf"))
+	bar
+	(a5 w begin-tie (setf t4 (ltext- "dich,")))
+	(a5 q end-tie) (a4 q (-ltext t4 "ich"))
+	bar
+	(f5 h begin-tie (setf t1 (ltext- "hof")) begin-slur (f (dy 2.5)) (-ltext t2 "")
+	    (text "sempre" (font-name "Times-Italic") (font-scaler .4) (dx .5) (dy .75)))
+	(f5 tq end-tie) (e5 tq) (ds5 tq end-slur) (d5 tq begin-slur (-ltext t1 "fe,"))
+	(e5 tq end-slur) (g5 tq (ltext "ich" (dx -.2)))
+	bar
+	(dn5 begin-slur tq (setf t1 (ltext- "hof"))) (c5 tq) (d5 tq end-slur)
+	(c5 begin-slur tq (-ltext- t1 "fe"))
+	(b4 tq end-slur)
+	(a4 tq (-ltext t1 "auf"))
+	(f5 q (ltext "dich,"))
+	(a5 q (ltext "ich"))
+	bar
+	(g5 h. begin-slur (crescendo (duration 10) (dy -1)) (setf t1 (ltext- "hof")))
+	(e5 q end-slur) (d5 h begin-tie (-ltext- t1 "fe"))
+	bar
+	(d5 h end-tie)
+	(c5 w (-ltext t1 "auf,"))
+	bar)
+   (staff (dy -1.0) bar treble (key d-major) (meter 3 2 (meter-size 0))
+	half-rest half-rest (a3 h (p (dy 2.125)) (ltext "Ich" (dx -.2)))
+	bar
+	(d4 w. begin-slur (setf t1 (ltext- "hof")))
+	bar
+	(f4 h end-slur) (a4 h (-ltext t1 "fe,") (setf t2 (staff-ltext- "cresc. molto" (dy .65))))
+	(f4 h (ltext "ich"))
+	bar
+	(e4 tq begin-slur (setf t1 (ltext- "hof")))
+	f4 tq g4 tq a4 tq b4 tq (c5 tq end-slur)
+	(b4 tq begin-slur (-ltext- "fe")) (a4 tq end-slur)
+	(c5 tq (-ltext "auf"))
+	bar
+	(d5 h begin-slur (setf t1 (ltext- "dich,")))
+	(cn5 w end-slur begin-tie)
+	bar
+	(c5 h end-tie (f (dy 2.25)) (-ltext t2 "")
+	    (text "sempre" (font-name "Times-Italic") (font-scaler .4) (dx .5) (dy .85)))
+	(cn5 h begin-tie begin-slur (-ltext- t1 "ich")) (c5 q end-tie) (b4 end-slur)
+	bar
+	(g4 q begin-slur (-ltext- t1 "hof")) (f4 q end-slur)
+	(g4 q begin-slur (-ltext- t1 "fe,")) (a4 q end-slur)
+	(a4 q begin-slur (-ltext- t1 "ich")) (d5 q end-slur)
+	bar
+	(d5 w (-ltext- t1 "hof") (crescendo (duration 10) (dy -1))) (g4 h begin-tie (-ltext- t1 "fe"))
+	bar
+	(g4 h end-tie) (g4 w (-ltext t1 "auf"))
+	bar)
+   (staff (dy -1.0) bar treble (key d-major) (meter 3 2 (meter-size 0))
+	half-rest (es4 h (p (dy 2.125)) (ltext "Ich")) (fs4 h begin-slur begin-tie (setf t1 (ltext- "hof")))
+	bar
+	(f4 w. end-tie begin-tie)
+	bar
+	(f4 q end-tie) (a4 h (setf t2 (staff-ltext- "cresc. molto" (dy .85))))
+	(d5 q end-slur) 
+	(f5 q (-ltext- t1 "fe"))
+	(d5 q (-ltext- t1 "auf"))
+	bar
+	(d5 h begin-slur (-ltext- t1 "dich,")) (c5 q end-slur (-ltext t1 "")) quarter-rest
+	(a4 h (ltext "ich"))
+	bar
+	(a4 tq (setf t1 (ltext- "hof")) begin-slur)
+	b4 tq c5 tq d5 tq e5 tq
+	(f5 tq end-slur)
+	(e5 tq begin-slur (-ltext- t1 "fe"))
+	(d5 tq end-slur)
+	(f5 tq (-ltext- t1 "auf"))
+	bar
+	(a5 h (f (dy 2.625)) (-ltext t2 "") begin-tie begin-slur
+	    (text "sempre" (font-name "Times-Italic") (font-scaler .4) (dx .5) (dy .625))
+	    (-ltext- t1 "dich,"))
+	(a5 tq end-tie) (g5 tq) (f5 tq end-slur)
+	(f5 q begin-slur (-ltext- t1 "ich")) (e5 q end-slur)
+	bar
+	(a4 q begin-slur (-ltext- t1 "hof")) (d5 q) (e5 q) (f5 q end-slur)
+	(e5 tq begin-slur (-ltext- t1 "fe")) (d5 tq end-slur) (f5 tq (-ltext- t1 "ich"))
+	bar
+	(a5 w (crescendo (duration 10) (dy -1)) (-ltext- t1 "hof"))
+	(e5 h begin-tie (-ltext- t1 "fe"))
+	bar
+	(e5 h end-tie) (e5 h begin-slur (-ltext- t1 "auf")) (a4 h end-slur (-ltext t1 ""))
+	bar)
+   (staff (dy -1.0) bar bass (key d-major) (meter 3 2 (meter-size 0))
+	(c3 h (ltext "Ich") (p (dy 2.125) (dx -.125)))
+	(d3 w begin-tie (setf t1 (ltext- "hof")))
+	bar
+	(d3 w. end-tie begin-tie)
+	bar
+	(d3 h end-tie)
+	(f3 h (-ltext- t1 "fe,") (setf t2 (staff-ltext- "cresc. molto" (dy 0.5))))
+	(a3 h (-ltext- t1 "ich"))
+	bar
+	(a2 q (-ltext- t1 "hof") begin-slur) (e3 h) (a3 q end-slur)
+	(a3 q (-ltext- t1 "fe")) (g3 q (-ltext- t1 "ich"))
+	bar
+	(f3 h begin-tie begin-slur (-ltext- t1 "hof"))
+	(f3 q end-tie) (a3 q end-slur)
+	(f3 q (-ltext- t1 "fe,")) (d3 q (-ltext- t1 "ich"))
+	bar 
+	(ds3 tq begin-slur (-ltext t2 "") (f (dy 2.125))
+	    (text "sempre" (font-name "Times-Italic") (font-scaler .4) (dx .5) (dy .875))
+	    (-ltext- t1 "hof"))
+	e3 tq f3 tq g3 tq a3 tq 
+	(b3 tq end-slur)
+	(a3 tq begin-slur (-ltext- t1 "fe"))
+	(g3 tq end-slur)
+	(b3 tq (-ltext- t1 "auf"))
+	bar
+	(e4 q begin-slur (-ltext- t1 "dich"))
+	(d4 q end-slur)
+	(a3 q begin-slur (-ltext- t1 "ich"))
+	(f3 q end-slur)
+	(a3 q (-ltext- t1 "hof"))
+	(d3 q (-ltext- t1 "fe,"))
+	bar
+	(a2 w (crescendo (duration 10) (dy -1)) (-ltext- t1 "hof"))
+	(a3 h begin-tie (-ltext- t1 "fe"))
+	bar
+	(a3 h end-tie)
+	(a2 w (-ltext t1 "auf"))
+	interior-double-bar))
+
+ (system bracket
+  (staff bar treble (key d-major) (meter 3 2 (meter-size 0)) (whole-rests 9))
+  (staff brace bar treble (key d-major) (meter 3 2 (meter-size 0)) (whole-rests 9))
+  (staff bar alto (key d-major) (meter 3 2 (meter-size 0)) (whole-rests 9))
+  (staff bar bass (key d-major) (meter 3 2 (meter-size 0))
+	 (a2 w. begin-tie) bar (a2 w. end-tie begin-tie) bar
+	 (a2 w. end-tie begin-tie (text "sempre cresc." (font-name "Times-Italic") (font-scaler .5) (dy -.75)))
+	 bar (a2 w. end-tie begin-tie) bar
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie) bar 
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie (crescendo (duration 10))) bar 
+	 (a2 w. end-tie) bar)
+  (staff bar bass (key d-major) (meter 3 2 (meter-size 0))
+	 (a2 w. begin-tie (text "(Einige Kontrabasse stimmen die E-Saite nach D um.)" 
+				(dy -1.25) (font-name "Times-Roman") (font-scaler .5)))
+	 bar (a2 w. end-tie begin-tie) bar
+	 (a2 w. end-tie begin-tie (text "sempre cresc." (font-name "Times-Italic") (font-scaler .5) (dy -.75)))
+	 bar (a2 w. end-tie begin-tie) bar
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie) bar 
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie (crescendo (duration 10))) bar 
+	 (a2 w. end-tie) interior-double-bar))
+
+ (system brace
+  (staff (staff-size .9) bar treble (key d-major) (meter 3 2 (meter-size 0))
+	 half-rest half-rest
+	 (a3 h (begin-slur (slur-direction :up))) bar
+	 (f4 h (onset 6)) (d4 w. (onset 6) (setf dtie (begin-tie)))
+	 (a4 w (onset 8) end-slur (setf atie (begin-tie (tie-direction :up))))
+	 (chord (notes (d4 (end-tie dtie)) (a4 (end-tie atie))) h (onset 12))
+	 half-rest half-rest bar (whole-rests 4)
+	 half-rest half-rest 
+	 (chord (notes e4 g4 d5) h begin-tie (text "cresc" (dy -.75) (font-name "Times-Italic") (font-scaler .4)))
+	 bar
+	 (chord (notes e4 g4 d5) h end-tie) 
+	 (chord (notes e4 g4 c4) w)
+	 bar)
+  (staff (staff-size .9) (dy -.5) bar bass (key d-major) (meter 3 2 (meter-size 0))
+	 (a2 w. (setf atie (begin-tie)) (onset 0))
+	 (c3 h (onset 0))
+	 (d3 w (setf dtie (begin-tie (tie-direction :down))) (onset 2)) 
+	 (es3 h stem-up (begin-slur (slur-direction :up)) (onset 2))
+	 (f3 h stem-up end-slur (onset 4) (setf ftie (begin-tie)))
+	 bar
+	 (chord (notes (a2 (end-tie atie) (setf atie (begin-tie))) 
+		       (d3 (end-tie dtie) (setf dtie (begin-tie (tie-direction :down)))) 
+		       (f3 (end-tie ftie) (setf ftie (begin-tie)))) w.(onset 6))
+	 bar 
+	 (chord (notes (d3 (end-tie dtie)) (f3 (end-tie ftie))) h stem-up (onset 12))
+	 (a2 w. (end-tie atie) (onset 12) (text "Ped." (font-name "Times-Roman") (font-scaler .5) (dy -.75)) begin-tie)
+	 bar	
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie) bar 
+	 (a2 w. end-tie begin-tie) bar (a2 w. end-tie begin-tie) bar
+	 (a2 w. (end-tie) (setf a4tie (begin-tie)) (onset 42) (text  "cresc" (dy -.75) (font-name "Times-Italic") (font-scaler .4)))
+	 (half-rest (onset 42) (dy .25)) (half-rest (onset 44) (dy .25))
+	 (a3 h stem-up (onset 46) (setf a3tie (begin-tie (tie-direction :up))))
+	 bar
+	 (a2 w. (onset 48) (end-tie a4tie))
+	 (a3 h (onset 48) stem-up (end-tie a3tie))
+	 (a3 w (onset 50))
+	 interior-double-bar))
+	) 

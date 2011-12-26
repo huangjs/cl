@@ -1,0 +1,1983 @@
+@c english version 1.71
+@menu
+* Comentarios::
+* Archivos::
+* Funciones y variables para lectura y escritura::
+@end menu
+
+@node Comentarios, Archivos, Lectura y escritura, Lectura y escritura
+@section Comentarios
+
+En Maxima, un comentario es cualquier texto encerrado entre las
+marcas @code{/*} y @code{*/}.
+
+El analizador sint@'actico de Maxima trata los comentarios como
+espacios en blanco a efectos de encontrar @i{tokens} en el flujo
+de entrada. Una entrada tal como @code{a/* foo */b} contiene dos
+@i{tokens}, @code{a} y @code{b}, no un @'unico @i{token} @code{ab}.
+En cualquier otro contexto, los comentarios son ignorados por Maxima;
+no se almacenan ni sus contenidos ni sus localizaciones.
+
+Los comentarios pueden anidarse hasta una profundidad arbitraria.
+Las marcas  @code{/*} y @code{*/} deben emparejarse y debe haber igual n@'umero
+de ambos.
+
+Ejemplos:
+
+@c ===beg===
+@c /* aa is a variable of interest */  aa : 1234;
+@c /* Value of bb depends on aa */  bb : aa^2;
+@c /* User-defined infix operator */  infix ("b");
+@c /* Parses same as a b c, not abc */  a/* foo */b/* bar */c;
+@c /* Comments /* can be nested /* to any depth */ */ */  1 + xyz;
+@c ===end===
+@example
+(%i1) /* aa is a variable of interest */  aa : 1234;
+(%o1)                         1234
+(%i2) /* Value of bb depends on aa */  bb : aa^2;
+(%o2)                        1522756
+(%i3) /* User-defined infix operator */  infix ("b");
+(%o3)                           b
+(%i4) /* Parses same as a b c, not abc */  a/* foo */b/* bar */c;
+(%o4)                         a b c
+(%i5) /* Comments /* can be nested /* to any depth */ */ */  1 + xyz;
+(%o5)                        xyz + 1
+@end example
+
+
+@node Archivos, Funciones y variables para lectura y escritura, Comentarios, Lectura y escritura
+@section Archivos
+
+Un archivo no es m@'as que una @'area de un cierto dispositivo de almacenamiento que contiene datos o texto.
+Los archivos se agrupan en los discos en "directorios", que son listas de archivos.
+Instrucciones que operan con archivos son:
+@code{save},
+@code{load},
+@code{loadfile},
+@code{stringout},
+@code{batch},
+@code{demo},
+@code{writefile},
+@code{closefile} y
+@code{appendfile}.
+
+@node Funciones y variables para lectura y escritura,  , Archivos, Lectura y escritura
+@section Funciones y variables para lectura y escritura
+
+@defvr {Variable del sistema} __
+@ifinfo
+@vrindex Expresi@'on actual de entrada
+@end ifinfo
+
+@code{__} es la expresi@'on de entrada que est@'a siendo actualmente evaluada.
+Esto es, mientras se est@'a evaluando una expresi@'on de entrada, 
+@code{__} es igual a @var{expr}.
+
+A @code{__} se le asigna la expresi@'on de entrada antes de que @'esta sea 
+simplificada o evaluada. Sin embargo, el valor de @code{__} es simplificado,
+pero no evaluado, cuando su valor es mostrado en el terminal.
+
+La variable @code{__} es reconocida por  @code{batch} y por @code{load}.
+Cuando un fichero es procesado por @code{batch}, la variable @code{__}
+tiene el mismo significado que en el modo interactivo.
+Cuando un fichero es procesado por @code{load}, a la variable @code{__}
+se le asigna la @'ultima expresi@'on introducida, bien desde el modo
+interactivo, bien en un fichero por lotes; en ning@'un caso se le asigna 
+a @code{__} una expresi@'on de entrada del fichero que est@'a siendo procesado.
+En particular, si @code{load (@var{filename})} es ejecutado desde el modo
+interactivo, entonces @code{__} almacena la expresi@'on @code{load (@var{filename})}
+mientras el fichero est@'a siendo procesado.
+
+V@'eanse tambi@'en @code{_} y @code{%}.
+
+Ejemplos:
+
+@c ===beg===
+@c print ("I was called as", __);
+@c foo (__);
+@c g (x) := (print ("Current input expression =", __), 0);
+@c [aa : 1, bb : 2, cc : 3];
+@c (aa + bb + cc)/(dd + ee + g(x));
+@c ===end===
+@example
+(%i1) print ("I was called as", __);
+I was called as print(I was called as, __) 
+(%o1)              print(I was called as, __)
+(%i2) foo (__);
+(%o2)                     foo(foo(__))
+(%i3) g (x) := (print ("Current input expression =", __), 0);
+(%o3) g(x) := (print("Current input expression =", __), 0)
+(%i4) [aa : 1, bb : 2, cc : 3];
+(%o4)                       [1, 2, 3]
+(%i5) (aa + bb + cc)/(dd + ee + g(x));
+                            cc + bb + aa
+Current input expression = -------------- 
+                           g(x) + ee + dd
+                                6
+(%o5)                        -------
+                             ee + dd
+@end example
+
+@end defvr
+
+
+@defvr {Variable del sistema} _
+@ifinfo
+@vrindex Entrada anterior
+@end ifinfo
+
+El s@'{@dotless{i}}mbolo @code{_} representa la @'ultima expresi@'on de entrada (esto es, @code{%i1}, @code{%i2}, @code{%i3}, ...).
+
+Al s@'{@dotless{i}}mbolo @code{_} se le asigna la expresi@'on de entrada antes de que @'esta sea simplificada o evaluada. Sin embargo, el valor de @code{_} se simplifica (pero no se eval@'ua) cuando se muestra en el terminal.
+
+La variable @code{_} es reconocida por  @code{batch} y por @code{load}.
+Cuando un fichero es procesado por @code{batch}, la variable @code{_}
+tiene el mismo significado que en el modo interactivo.
+Cuando un fichero es procesado por @code{load}, a la variable @code{_}
+se le asigna la @'ultima expresi@'on introducida, bien desde el modo
+interactivo, bien en un fichero por lotes; en ning@'un caso se le asigna 
+a @code{_} una expresi@'on de entrada del fichero que est@'a siendo procesado.
+
+V@'eanse tambi@'en @code{__} y @code{%}.
+
+Ejemplos:
+
+@c ===beg===
+@c 13 + 29;
+@c :lisp $_
+@c _;
+@c sin (%pi/2);
+@c :lisp $_
+@c _;
+@c a: 13$
+@c b: 29$
+@c a + b;
+@c :lisp $_
+@c _;
+@c a + b;
+@c ev (_);
+@c ===end===
+@example
+(%i1) 13 + 29;
+(%o1)                          42
+(%i2) :lisp $_
+((MPLUS) 13 29)
+(%i2) _;
+(%o2)                          42
+(%i3) sin (%pi/2);
+(%o3)                           1
+(%i4) :lisp $_
+((%SIN) ((MQUOTIENT) $%PI 2))
+(%i4) _;
+(%o4)                           1
+(%i5) a: 13$
+(%i6) b: 29$
+(%i7) a + b;
+(%o7)                          42
+(%i8) :lisp $_
+((MPLUS) $A $B)
+(%i8) _;
+(%o8)                         b + a
+(%i9) a + b;
+(%o9)                          42
+(%i10) ev (_);
+(%o10)                         42
+@end example
+
+@end defvr
+
+@defvr {Variable del sistema} %
+@ifinfo
+@vrindex Salida anterior
+@end ifinfo
+
+El s@'{@dotless{i}}mbolo @code{%} representa la expresi@'on de salida (esto es, @code{%o1}, @code{%o2}, @code{%o3}, ...)
+m@'as reciente calculada por Maxima, independientemente de que la haya mostrado o no.
+
+La variable @code{%} es reconocida por  @code{batch} y por @code{load}.
+Cuando un fichero es procesado por @code{batch}, la variable @code{%}
+tiene el mismo significado que en el modo interactivo.
+Cuando un fichero es procesado por @code{load}, a la variable @code{%}
+se le asigna la @'ultima expresi@'on introducida, bien desde el modo
+interactivo, bien en un fichero por lotes; en ning@'un caso se le asigna 
+a @code{%} una expresi@'on de entrada del fichero que est@'a siendo procesado.
+
+V@'eanse tambi@'en @code{_}, @code{%%} y @code{%th}.
+
+@end defvr
+
+@defvr {Variable del sistema} %%
+@ifinfo
+@vrindex Resultado anterior en una sentencia compuesta
+@end ifinfo
+
+En una sentencia compuesta, como @code{block}, @code{lambda} o @code{(@var{s_1}, ..., @var{s_n})}, @code{%%} es el valor de la sentencia previa.
+Por ejemplo,
+
+@example
+block (integrate (x^5, x), ev (%%, x=2) - ev (%%, x=1));
+block ([prev], prev: integrate (x^5, x),
+               ev (prev, x=2) - ev (prev, x=1));
+@end example
+
+devuelven el mismo resultado  @code{21/2}.
+
+Una sentencia compuesta puede contener otras sentencias compuestas.
+Independientemente de que una sentencia sea simple o compuesta, @code{%%} es el valor de la sentencia previa.
+Por ejemplo,
+
+@example
+block (block (a^n, %%*42), %%/6)
+@end example
+
+devuelve @code{7*a^n}.
+
+Dentro de una sentencia compuesta, el valor de @code{%%} puede inspeccionarse en un punto de interrupci@'on que se abra ejecutando la funci@'on @code{break}. Por ejemplo, en el punto de interrupci@'on abierto por
+
+@example
+block (a: 42, break ())$
+@end example
+
+introduciendo @code{%%;} se obtiene @code{42}.
+
+En la primera sentencia de una sentencia compuesta, o fuera de una sentencia compuesta, @code{%%} no est@'a definido.
+
+La variable @code{%%} es reconocida por  @code{batch} y por @code{load}.
+Cuando un fichero es procesado por @code{batch}, la variable @code{%%}
+tiene el mismo significado que en el modo interactivo.
+
+V@'ease tambi@'en @code{%}.
+
+@end defvr
+
+@defvr {Variable opcional} %edispflag
+Valor por defecto: @code{false}
+
+Si @code{%edispflag} vale @code{true}, Maxima muestra @code{%e} elevado a un exponente negativo como un cociente.
+Por ejemplo, @code{%e^-x} se muestra como @code{1/%e^x}.
+
+@end defvr
+
+@deffn {Funci@'on} %th (@var{i})
+@ifinfo
+@fnindex i-@'esima salida anterior
+@end ifinfo
+
+Es el valor de la expresi@'on de la @var{i}-@'esima salida anterior.
+Esto es, si la siguiente expresi@'on a calcular es la salida @var{n}-@'esima,
+@code{%th (@var{m})} es la salida  (@var{n} - @var{m})-@'esima.
+
+La funci@'on @code{%th} es @'util en archivos tipo @code{batch} o para hacer referencia a un grupo de expresiones de salida.
+Por ejemplo,
+
+@example
+block (s: 0, for i:1 thru 10 do s: s + %th (i))$
+@end example
+
+asigna a @code{s} la suma de las diez @'ultimas expresiones de salida.
+
+La variable @code{%th} es reconocida por  @code{batch} y por @code{load}.
+Cuando un fichero es procesado por @code{batch}, la variable @code{%th}
+tiene el mismo significado que en el modo interactivo.
+Cuando un fichero es procesado por @code{load}, a la variable @code{%th}
+se le asigna la @'ultima expresi@'on introducida, bien desde el modo
+interactivo, bien en un fichero por lotes; en ning@'un caso se le asigna 
+a @code{%th} una expresi@'on de entrada del fichero que est@'a siendo procesado.
+
+V@'ease tambi@'en @code{%}.
+
+@end deffn
+
+@deffn {S@'{@dotless{i}}mbolo especial} ?
+@ifinfo
+@fnindex Busca en la documentaci&oacute;n
+@end ifinfo
+
+Como prefijo de una funci@'on o nombre de variable, @code{?} significa que el nombre es de Lisp, no de Maxima.
+Por ejemplo, @code{?round} representa la funci@'on de Lisp @code{ROUND}.
+V@'ease @code{Lisp y Maxima} para m@'as informaci@'on.
+
+La notaci@'on @code{? word} (un s@'{@dotless{i}}mbolo de interrogaci@'on
+seguido de una palabra y separados por un espacio)
+equivale a @code{describe ("word")}.
+El s@'{@dotless{i}}mbolo de interrogaci@'on debe escribirse al
+comienzo de la l@'{@dotless{i}}nea de entrada; en caso contrario
+no se reconoce como una solicitud de documentaci@'on.
+
+@end deffn
+
+@deffn {S@'{@dotless{i}}mbolo especial} ??
+@ifinfo
+@fnindex Busca coincidencias inexactas en la documentaci&oacute;n
+@end ifinfo
+
+La notaci@'on @code{?? palabra} (@code{??} seguido de un espacio
+y una palabra) equivale a @code{describe("palabra", inexact)}.
+El s@'{@dotless{i}}mbolo de interrogaci@'on debe escribirse al
+comienzo de la l@'{@dotless{i}}nea de entrada; en caso contrario
+no se reconoce como una solicitud de documentaci@'on.
+
+@end deffn
+
+@defvr {Variable opcional} absboxchar
+Valor por defecto: @code{!}
+
+La variable @code{absboxchar} es el car@'acter utilizado para representar el valor absoluto de una expresi@'on que ocupa m@'as de una l@'{@dotless{i}}nea de altura.
+
+@end defvr
+
+@defvr {Variable opcional} file_output_append
+Valor por defecto: @code{false}
+
+La variable @code{file_output_append} controla si las funciones de escritura de ficheros a@~naden informaci@'on o sustituyen el fichero de salida. Cuando @code{file_output_append} toma el valor @code{true}, estas funciones ampl@'{@dotless{i}}an el contenido de sus ficheros de salida; en otro caso, sustituyen el fichero anterior de igual nombre por otro con el nuevo contenido.
+
+Las funciones @code{save}, @code{stringout} y @code{with_stdout} se ven afectadas por el valor que tome la variable @code{file_output_append}. Otras funciones que tambi@'en escriben en ficheros de salida no tienen en cuenta este valor; en concreto, las funciones para la representaci@'on de gr@'aficos y las de traducci@'on siempre sustituyen el fichero anterior por uno nuevo de igual nombre, mientras que las funciones @code{tex} y @code{appendfile} siempre a@~naden informaci@'on al fichero de salida sin eliminar la informaci@'on anterior.
+@c WHAT ABOUT WRITEFILE ??
+
+@end defvr
+
+@deffn {Funci@'on} appendfile (@var{filename})
+A@~nade informaci@'on de la consola a @var{filename}, de igual manera que lo hace @code{writefile}, pero con la salvedad de que si el archivo ya existe la informaci@'on queda a@~nadida al final de su contenido.
+
+La funci@'on @code{closefile} cierra los archivos abiertos por @code{appendfile} o @code{writefile}.
+
+@end deffn
+
+@deffn {Funci@'on} batch (@var{filename})
+Lee expresiones de Maxima desde @var{filename} y las eval@'ua. La funci@'on
+@code{batch} busca @var{filename} en la lista @code{file_search_maxima}.
+V@'ease @code{file_search}.
+
+El contenido de @var{filename} debe ser una secuencia de expresiones de Maxima,
+cada una de las cuales termina en @code{;} o @code{$}.
+La variable especial @code{%} y la funci@'on @code{%th}
+se refieren a resultados previos dentro del archivo.
+El archivo puede incluir construcciones del tipo @code{:lisp}.
+Espacios, tabulaciones y saltos de l@'{@dotless{i}}nea en el archivo se ignoran.
+Un archivo de entrada v@'alido puede crearse con un editor de texto o con la funci@'on @code{stringout}.
+
+La funci@'on @code{batch} lee las expresiones del archivo @var{filename}, muestra las entradas en la consola, realiza los c@'alculos solicitados y muestra las expresiones de los resultados.
+A las expresiones de entrada se les asignan etiquetas, as@'{@dotless{i}} como a las de salida. La funci@'on
+@code{batch} eval@'ua todas las expresiones de entrada del archivo a menos que se produzca un error.
+Si se le solicita informaci@'on al usuario (con @code{asksign} o @code{askinteger}, por ejemplo)
+@code{batch} se detiene para leer la nueva informaci@'on para luego continuar.
+
+Es posible detener  @code{batch} tecleando @code{control-C} desde la consola.
+El efecto de @code{control-C} depende del entorno Lisp instalado.
+
+La funci@'on @code{batch} tiene diversas aplicaciones, tales como servir de almac@'en de l@'{@dotless{i}}neas de instrucciones, suministrar demostraciones libres de errores o ayudar a organizar el trabajo del usuario en la resoluci@'on de problemas complejos.
+
+La funci@'on @code{batch} eval@'ua su argumento.
+
+V@'eanse tambi@'en  @code{load}, @code{batchload} y @code{demo}.
+
+@end deffn
+
+@deffn {Funci@'on} batchload (@var{filename})
+Lee expresiones de Maxima desde @var{filename} y las eval@'ua sin mostrar las entradas ni las salidas y sin asignarles etiquetas. Sin embargo, las salidas producidas por  @code{print} o @code{describe} s@'{@dotless{i}} se muestran.
+
+La variable especial @code{%} y la funci@'on @code{%th} se refieren a resultados previos del int@'erprete interactivo, no a los del propio archivo. El archivo no puede incluir construcciones del tipo @code{:lisp}.
+
+La funci@'on @code{batchload} devuelve la ruta de @var{filename} en formato de cadena.
+
+La funci@'on @code{batchload} eval@'ua sus argumentos.
+
+V@'eanse tambi@'en @code{batch} y @code{load}.
+@c batchload APPEARS TO HAVE THE SAME EFFECT AS load. WHY NOT GET RID OF batchload ???
+
+@end deffn
+
+@deffn {Funci@'on} closefile ()
+La funci@'on @code{closefile} cierra los archivos abiertos por @code{appendfile} o @code{writefile}.
+
+@end deffn
+
+@c FALTA DEFINICION DE collapse
+
+@deffn {Funci@'on} concat (@var{arg_1}, @var{arg_2}, ...)
+Concatena sus argumentos, que deben ser todos @'atomos.
+El valor devuelto es un s@'{@dotless{i}}mbolo si el primer argumento es a su vez un s@'{@dotless{i}}mbolo, o una cadena en caso contrario.
+
+La funci@'on @code{concat} eval@'ua sus argumentos.
+El ap@'atrofo  @code{'} evita la evaluaci@'on.
+
+@example
+(%i1) y: 7$
+(%i2) z: 88$
+(%i3) concat (y, z/2);
+(%o3)                          744
+(%i4) concat ('y, z/2);
+(%o4)                          y44
+@end example
+
+A un s@'{@dotless{i}}mbolo construido por @code{concat} se le puede asignar un valor y ser utilizado posteriormente en expresiones.
+La asignaci@'on con el operador @code{::} eval@'ua su expresi@'on izquierda.
+
+@example
+(%i5) a: concat ('y, z/2);
+(%o5)                          y44
+(%i6) a:: 123;
+(%o6)                          123
+(%i7) y44;
+(%o7)                          123
+(%i8) b^a;
+                               y44
+(%o8)                         b
+(%i9) %, numer;
+                               123
+(%o9)                         b
+@end example
+
+N@'otese que aunque @code{concat (1, 2)} parezca un n@'umero, se trata de una cadena.
+
+@example
+(%i10) concat (1, 2) + 3;
+(%o10)                       12 + 3
+@end example
+
+@end deffn
+
+@deffn {Funci@'on} sconcat (@var{arg_1}, @var{arg_2}, ...)
+
+Concatena sus argumentos para producir una cadena.
+Al contrario que @code{concat}, sus argumentos @i{no} necesitan ser @'atomos.
+
+El resultado es una cadena.
+
+@example
+(%i1) sconcat ("xx[", 3, "]:", expand ((x+y)^3));
+(%o1)               xx[3]:y^3+3*x*y^2+3*x^2*y+x^3
+@end example
+
+@end deffn
+
+@deffn {Funci@'on} disp (@var{expr_1}, @var{expr_2}, ...)
+Es como @code{display} pero s@'olo se muestran los valores de los argumentos, no las ecuaciones. Es @'util para argumentos complicados que no tienen nombre o en situaciones en las que solamente es de inter@'es el valor del argumento pero no su nombre.
+
+@end deffn
+
+@deffn {Funci@'on} dispcon (@var{tensor_1}, @var{tensor_2}, ...)
+@deffnx {Funci@'on} dispcon (all)
+Muestra las propiedades contractivas de sus argumentos tal como fueron asignadas por @code{defcon}. La llamada @code{dispcon (all)} muestra todas propiedades contractivas que fueron definidas.
+
+@end deffn
+
+@deffn {Funci@'on} display (@var{expr_1}, @var{expr_2}, ...)
+Muestra las ecuaciones cuyos miembros izquierdos son 
+@var{expr_i} sin evaluar y cuyos miembros derechos son los valores de las expresiones. Esta funci@'on es @'util en los bloques y en las sentencias @code{for} para mostrar resultados intermedios.  Los argumentos de @code{display} suelen ser @'atomos, variables subindicadas o llamadas a funciones. V@'ease tambi@'en @code{disp}.
+
+@example
+(%i1) display(B[1,2]);
+                                      2
+                         B     = X - X
+                          1, 2
+(%o1)                            done
+@end example
+
+@end deffn
+
+@defvr {Variable opcional} display2d
+Valor por defecto: @code{true}
+
+Si @code{display2d} vale @code{false}, la salida por consola es una cadena unidimensional, en lugar de una expresi@'on bidimensional.
+
+@end defvr
+
+@defvr {Variable opcional} display_format_internal
+Valor por defecto: @code{false}
+
+Si @code{display_format_internal} vale @code{true},
+las expresiones se muestran sin ser transformadas de manera que oculten su representaci@'on matem@'atica interna. Se representa lo que la funci@'on @code{inpart} devolver@'{@dotless{i}}a, en oposici@'on a @code{part}.
+
+Ejemplos:
+
+@example
+User     part       inpart
+a-b;      a - b     a + (- 1) b
+
+           a            - 1
+a/b;       -         a b
+           b
+                       1/2
+sqrt(x);   sqrt(x)    x
+
+          4 X        4
+X*4/3;    ---        - X
+           3         3
+@end example
+
+@end defvr
+
+@deffn {Funci@'on} dispterms (@var{expr})
+Muestra @var{expr} en partes, una debajo de la otra.
+Esto es, primero se muestra el operador de @var{expr}, luego cada t@'ermino si se trata de una suma, o cada factor si es un producto, o si no se muestra separadamente la parte de una expresi@'on m@'as general. Es @'util si @var{expr} es demasiado grande para representarla de otra forma.  Por ejemplo, si @code{P1}, @code{P2}, ...  son expresiones muy grandes, entonces el programa de representaci@'on puede superar el espacio de almacenamiento tratando de mostrar @code{P1 + P2 + ...} todo junto.  Sin embargo, @code{dispterms (P1 + P2 + ...)} muestra @code{P1}, debajo  @code{P2}, etc.  Cuando una expresi@'on exponencial es demasiado ancha para ser representada como @code{A^B}, si no se utiliza @code{dispterms}, entonces aparecer@'a como @code{expt (A, B)} (o como @code{ncexpt (A, B)}, en lugar de @code{A^^B}).
+
+@end deffn
+
+@defvr {Variable opcional} error_size
+Valor por defecto: 10
+
+La variable @code{error_size} modifica los mensajes de error de acuerdo con el tama@~no de las expresiones que aparecen en @'el. Si el tama@~no de una expresi@'on (tal como lo determina la funci@'on Lisp @code{ERROR-SIZE})
+es mayor que @code{error_size}, la expresi@'on se reemplaza en el mensaje por un s@'{@dotless{i}}mbolo, asign@'andole a @'este una expresi@'on. Los s@'{@dotless{i}}mbolos se toman de la lista @code{error_syms}.
+
+En caso contrario, si la expresi@'on es menor que @code{error_size}, la expresi@'on se muestra en el propio mensaje.
+
+V@'eanse tambi@'en @code{error} y @code{error_syms}.
+
+Ejemplo:
+@c OUTPUT GENERATED BY THE FOLLOWING
+@c U: (C^D^E + B + A)/(cos(X-1) + 1)$
+@c error_size: 20$
+@c error ("Example expression is", U);
+@c errexp1;
+@c error_size: 30$
+@c error ("Example expression is", U);
+
+El tama@~no de @code{U}, tal como lo determina @code{ERROR-SIZE}, es 24.
+
+@example
+(%i1) U: (C^D^E + B + A)/(cos(X-1) + 1)$
+
+(%i2) error_size: 20$
+
+(%i3) error ("Example expression is", U);
+
+Example expression is errexp1
+ -- an error.  Quitting.  To debug this try debugmode(true);
+(%i4) errexp1;
+                            E
+                           D
+                          C   + B + A
+(%o4)                    --------------
+                         cos(X - 1) + 1
+(%i5) error_size: 30$
+
+(%i6) error ("Example expression is", U);
+
+                         E
+                        D
+                       C   + B + A
+Example expression is --------------
+                      cos(X - 1) + 1
+ -- an error.  Quitting.  To debug this try debugmode(true);
+@end example
+
+@end defvr
+
+@defvr {Variable opcional} error_syms
+Valor por defecto: @code{[errexp1, errexp2, errexp3]}
+
+En los mensajes de error, las expresiones mayores que @code{error_size} son reemplazadas por s@'{@dotless{i}}mbolos a los cuales se les asignas estas expresiones.  Los s@'{@dotless{i}}mbolos se toman de la lista @code{error_syms}. La primera expresi@'on que resulte ser demasiado larga se reemplaza por @code{error_syms[1]}, la segunda por @code{error_syms[2]} y as@'{@dotless{i}} sucesivamente.
+
+Si hay m@'as expresiones largas que elementos en @code{error_syms}, los s@'{@dotless{i}}mbolos se construyen autom@'aticamente, siendo el @var{n}-@'esimo s@'{@dotless{i}}mbolo equivalente a @code{concat ('errexp, @var{n})}.
+
+V@'eanse tambi@'en @code{error} y @code{error_size}.
+
+@end defvr
+
+@deffn {Funci@'on} expt (@var{a}, @var{b})
+Si una expresi@'on exponencial es demasiado ancha para ser mostrada como @code{@var{a}^@var{b}} aparecer@'a como @code{expt (@var{a}, @var{b})} (o como @code{ncexpt (@var{a}, @var{b})} en lugar de @code{@var{a}^^@var{b}}).
+
+@c THIS SEEMS LIKE A BUG TO ME. expt, ncexpt SHOULD BE RECOGNIZED SINCE MAXIMA
+@c ITSELF PRINTS THEM SOMETIMES. THESE SHOULD JUST SIMPLIFY TO ^ AND ^^, RESPECTIVELY.
+Las funciones @code{expt} y @code{ncexpt} no se reconocen en una entrada.
+
+@end deffn
+
+@defvr {Variable opcional} exptdispflag
+Valor por defecto: @code{true}
+
+Si @code{exptdispflag} vale @code{true}, Maxima muestra las expresiones con exponentes negativos como cocientes; por ejemplo, @code{X^(-1)} se muestra como @code{1/X}.
+
+@end defvr
+
+@deffn {Funci@'on} filename_merge (@var{path}, @var{filename})
+Construye una ruta modificada a partir de @var{path} y @var{filename}.
+Si la componente final de @var{path} es de la forma @code{###.@var{something}},
+la componente se reemplaza con @code{@var{filename}.@var{something}}.
+En otro caso, la componente final se reemplaza simplemente por @var{filename}.
+
+El resultado es un objeto Lisp de tipo @i{pathname}.
+@end deffn
+
+@deffn {Funci@'on} file_search (@var{filename})
+@deffnx {Funci@'on} file_search (@var{filename}, @var{pathlist})
+
+La funci@'on @code{file_search} busca el archivo @var{filename} y devuelve su ruta como una cadena; si no lo encuentra,  @code{file_search} devuelve @code{false}. La llamada 
+@code{file_search (@var{filename})} busca en los directorios de b@'usqueda por defecto,
+que son los especificados por las variables @code{file_search_maxima}, @code{file_search_lisp} y @code{file_search_demo}.
+
+La funci@'on @code{file_search} analiza primero si el nombre del argumento existe antes de hacerlo coincidir con los comodines de los patrones de b@'usqueda de archivos.
+V@'ease @code{file_search_maxima} para m@'as informaci@'on sobre patrones de b@'usqueda de archivos.
+
+El argumento @var{filename} puede ser una ruta con nombre de archivo,
+o simplemente el nombre del archivo, o, si el directorio de b@'usqueda de archivo incluye un patr@'on de b@'usqueda, es suficiente con el nombre de archivo sin extensi@'on.
+Por ejemplo,
+
+@example
+file_search ("/home/wfs/special/zeta.mac");
+file_search ("zeta.mac");
+file_search ("zeta");
+@end example
+
+todos buscan el mismo archivo, dando por hecho que el archivo existe y que @code{/home/wfs/special/###.mac}
+est@'a en @code{file_search_maxima}.
+
+La llamada @code{file_search (@var{filename}, @var{pathlist})} busca solamente en los directorios especificados por @var{pathlist}, que es una lista de cadenas.
+El argumento @var{pathlist} ignora los directorios de b@'usqueda por defecto, de manera que si se da la lista de rutas, @code{file_search} busca solamente en ellas y no en los directorios por defecto.
+Incluso si hay un @'unico directorio en @var{pathlist}, debe ser suministrado como una lista de un @'unico elemento.
+
+El usuario puede modificar los directorios de b@'usqueda por defecto; v@'ease para ello See @code{file_search_maxima}.
+
+La funci@'on @code{file_search} es llamada por @code{load} con los directorios de b@'usqueda @code{file_search_maxima} y @code{file_search_lisp}.
+
+@end deffn
+
+@defvr {Variable opcional} file_search_maxima
+@defvrx {Variable opcional} file_search_lisp
+@defvrx {Variable opcional} file_search_demo
+Estas variables especifican listas de directorios en los que deben buscar la funciones  @code{load}, @code{demo} y algunas otras. Los valores por defecto de estas variables nombran directorios de la instalaci@'on de Maxima.
+
+El usuario puede modificar estas variables, bien reemplazando los valores por defecto, bien a@~nadiendo nuevos directorios.
+Por ejemplo,
+
+@example
+file_search_maxima: ["/usr/local/foo/###.mac",
+    "/usr/local/bar/###.mac"]$
+@end example
+
+reemplaza el valor por defecto de @code{file_search_maxima}, mintras que
+
+@example
+file_search_maxima: append (file_search_maxima,
+    ["/usr/local/foo/###.mac", "/usr/local/bar/###.mac"])$
+@end example
+
+a@~nade dos directorios m@'as. Puede ser conveniente colocar una expresi@'on como esta en el archivo @code{maxima-init.mac}, de manera que la ruta de b@'usqueda de ficheros se asigne autom@'aticamente cada vez que arranca Maxima.
+
+Se pueden especificar varias extensiones de archivos y rutas con comodines especiales.
+La cadena @code{###} representa el nombre del archivo buscado y una lista separada de comas y encerrada entre llaves,  @code{@{foo,bar,baz@}} representa m@'ultiples cadenas.
+Por ejemplo, suponiendo que se busca el nombre @code{neumann},
+
+@example
+"/home/@{wfs,gcj@}/###.@{lisp,mac@}"
+@end example
+
+se interpreta como @code{/home/wfs/neumann.lisp}, @code{/home/gcj/neumann.lisp}, @code{/home/wfs/neumann.mac} y @code{/home/gcj/neumann.mac}.
+
+@end defvr
+
+@deffn {Funci@'on} file_type (@var{filename})
+Devuelve una descripci@'on del contenido de @var{filename} basada en la extensi@'on, sin intentar abrir el archivo para inspeccionar su contenido.
+
+El valor que la funci@'on retorna puede ser cualquiera de los siguientes: @code{object}, @code{lisp} o @code{maxima}.
+Si la extensi@'on comienza por @code{m} o @code{d}, @code{file_type} devuelve @code{maxima}.
+Si la extensi@'on comienza por @code{l}, @code{file_type} devuelve @code{lisp}.
+En cualquier otro caso, @code{file_type} devuelve @code{object}.
+
+@end deffn
+
+
+@deffn {Funci@'on} grind (@var{expr})
+@deffnx {Variable opcional} grind
+La funci@'on @code{grind} imprime @var{expr}
+en la consola en un formato admisible como entrada para Maxima. La funci@'on 
+@code{grind} devuelve siempre @code{done}.
+
+Cuando @var{expr} es el nombre de una funci@'on o macro, @code{grind}
+muestra la definici@'on de la funci@'on o de la macro en lugar de s@'olo
+su nombre.
+
+V@'ease tambi@'en @code{string}, que devuelve una cadena en lugar de imprimir la salida. La funci@'on
+@code{grind} intenta imprimir la expresi@'on de forma que sea lago m@'as sencilla de leer que la salida de @code{string}.
+
+Cuando la variable @code{grind} vale @code{true},
+la salida de @code{string} y @code{stringout} tienen el mismo formato que la de @code{grind};
+en caso contrario no se formatea la salida de esas funciones.
+El valor por defecto de la variable @code{grind} es @code{false}.
+
+La variable @code{grind} tambi@'en se puede utilizar como  argumento en @code{playback}.
+Si @code{grind} est@'a presente,
+@code{playback} imprime las expresiones de entrada en el mismo formato que lo hace la funci@'on @code{grind};
+en caso contrario no se formatean la expresiones de entrada.
+
+La funci@'on @code{grind} eval@'ua sus argumentos.
+
+Ejemplos:
+
+@c ===beg===
+@c aa + 1729;
+@c grind (%);
+@c [aa, 1729, aa + 1729];
+@c grind (%);
+@c matrix ([aa, 17], [29, bb]);
+@c grind (%);
+@c set (aa, 17, 29, bb);
+@c grind (%);
+@c exp (aa / (bb + 17)^29);
+@c grind (%);
+@c expr: expand ((aa + bb)^10);
+@c grind (expr);
+@c string (expr);
+@c cholesky (A):= block ([n : length (A), L : copymatrix (A),
+@c   p : makelist (0, i, 1, length (A))], 
+@c   for i thru n do for j : i thru n do
+@c   (x : L[i, j], x : x - sum (L[j, k] * L[i, k], k, 1, i - 1), 
+@c   if i = j then @c   p[i] : 1 / sqrt(x) else L[j, i] : x * p[i]), 
+@c   for i thru n do L[i, i] : 1 / p[i],
+@c   for i thru n do for j : i + 1 thru n do L[i, j] : 0, L)$
+@c grind (cholesky);
+@c string (fundef (cholesky));
+@c ===end===
+@example
+(%i1) aa + 1729;
+(%o1)                       aa + 1729
+(%i2) grind (%);
+aa+1729$
+(%o2)                         done
+(%i3) [aa, 1729, aa + 1729];
+(%o3)                 [aa, 1729, aa + 1729]
+(%i4) grind (%);
+[aa,1729,aa+1729]$
+(%o4)                         done
+(%i5) matrix ([aa, 17], [29, bb]);
+                           [ aa  17 ]
+(%o5)                      [        ]
+                           [ 29  bb ]
+(%i6) grind (%);
+matrix([aa,17],[29,bb])$
+(%o6)                         done
+(%i7) set (aa, 17, 29, bb);
+(%o7)                   @{17, 29, aa, bb@}
+(%i8) grind (%);
+@{17,29,aa,bb@}$
+(%o8)                         done
+(%i9) exp (aa / (bb + 17)^29);
+                                aa
+                            -----------
+                                     29
+                            (bb + 17)
+(%o9)                     %e
+(%i10) grind (%);
+%e^(aa/(bb+17)^29)$
+(%o10)                        done
+(%i11) expr: expand ((aa + bb)^10);
+         10           9        2   8         3   7         4   6
+(%o11) bb   + 10 aa bb  + 45 aa  bb  + 120 aa  bb  + 210 aa  bb
+         5   5         6   4         7   3        8   2
+ + 252 aa  bb  + 210 aa  bb  + 120 aa  bb  + 45 aa  bb
+        9        10
+ + 10 aa  bb + aa
+(%i12) grind (expr);
+bb^10+10*aa*bb^9+45*aa^2*bb^8+120*aa^3*bb^7+210*aa^4*bb^6
+     +252*aa^5*bb^5+210*aa^6*bb^4+120*aa^7*bb^3+45*aa^8*bb^2
+     +10*aa^9*bb+aa^10$
+(%o12)                        done
+(%i13) string (expr);
+(%o13) bb^10+10*aa*bb^9+45*aa^2*bb^8+120*aa^3*bb^7+210*aa^4*bb^6\
++252*aa^5*bb^5+210*aa^6*bb^4+120*aa^7*bb^3+45*aa^8*bb^2+10*aa^9*\
+bb+aa^10
+(%i14) cholesky (A):= block ([n : length (A), L : copymatrix (A),
+  p : makelist (0, i, 1, length (A))], for i thru n do
+  for j : i thru n do
+  (x : L[i, j], x : x - sum (L[j, k] * L[i, k], k, 1, i - 1),
+  if i = j then p[i] : 1 / sqrt(x) else L[j, i] : x * p[i]),
+  for i thru n do L[i, i] : 1 / p[i],
+  for i thru n do for j : i + 1 thru n do L[i, j] : 0, L)$
+(%i15) grind (cholesky);
+cholesky(A):=block(
+         [n:length(A),L:copymatrix(A),
+          p:makelist(0,i,1,length(A))],
+         for i thru n do
+             (for j from i thru n do
+                  (x:L[i,j],x:x-sum(L[j,k]*L[i,k],k,1,i-1),
+                   if i = j then p[i]:1/sqrt(x)
+                       else L[j,i]:x*p[i])),
+         for i thru n do L[i,i]:1/p[i],
+         for i thru n do (for j from i+1 thru n do L[i,j]:0),L)$
+(%o15)                        done
+(%i16) string (fundef (cholesky));
+(%o16) cholesky(A):=block([n:length(A),L:copymatrix(A),p:makelis\
+t(0,i,1,length(A))],for i thru n do (for j from i thru n do (x:L\
+[i,j],x:x-sum(L[j,k]*L[i,k],k,1,i-1),if i = j then p[i]:1/sqrt(x\
+) else L[j,i]:x*p[i])),for i thru n do L[i,i]:1/p[i],for i thru \
+n do (for j from i+1 thru n do L[i,j]:0),L)
+@end example
+@end deffn
+
+
+@defvr {Variable opcional} ibase
+Valor por defecto: 10
+
+@code{ibase} es la base en la que Maxima lee valores enteros.
+
+A @code{ibase} se le puede asignar cualquier entero entre
+2 y 36 (base decimal), ambos inclusive.
+Si @code{ibase} es mayor que 10,
+las cifras a utilizar ser@'an los d@'{@dotless{i}}gitos de
+0 a 9, junto con las letras del alfabeto A, B, C, ..., 
+tantas como sean necesarias para completar la base @code{ibase}.
+Las letras se interpretar@'an como cifras s@'olo cuando el 
+primer d@'{@dotless{i}}gito sea un valor entre 9.
+Es indiferente hacer uso de letras may@'usculas o min@'usculas.
+Las cifras para la base 36, la mayor posible, son los 
+d@'{@dotless{i}}gitos num@'ericos de 0 a 9 y las letras desde
+la A hasta la Z.
+
+Cualquiera que sea el valor de @code{ibase}, si un entero termina
+con un punto decimal, se interpretar@'a en base 10.
+
+V@'ease tambi@'en @code{obase}.
+
+Ejemplos:
+
+@code{ibase} menor que 10.
+
+@c ===beg===
+@c ibase : 2 $
+@c obase;
+@c 1111111111111111;
+@c ===end===
+@example
+(%i1) ibase : 2 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1111111111111111;
+(%o3)                         65535
+@end example
+
+@code{ibase} mayor que 10.
+Las letras se interpretan como d@'{@dotless{i}}gitos s@'olo
+si el primer d@'{@dotless{i}}gito es una cifra entre 0 y 9.
+
+@c ===beg===
+@c ibase : 16 $
+@c obase;
+@c 1000;
+@c abcd;
+@c symbolp (abcd);
+@c 0abcd;
+@c symbolp (0abcd);
+@c ===end===
+@example
+(%i1) ibase : 16 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1000;
+(%o3)                         4096
+(%i4) abcd;
+(%o4)                         abcd
+(%i5) symbolp (abcd);
+(%o5)                         true
+(%i6) 0abcd;
+(%o6)                         43981
+(%i7) symbolp (0abcd);
+(%o7)                         false
+@end example
+
+Independientemente del valor de @code{ibase}, si el entero
+termina con un punto decimal, se interpretar@'a en base
+diez.
+
+@c ===beg===
+@c ibase : 36 $
+@c obase;
+@c 1234;
+@c 1234.;
+@c ===end===
+@example
+(%i1) ibase : 36 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1234;
+(%o3)                         49360
+(%i4) 1234.;
+(%o4)                         1234
+@end example
+@end defvr
+
+@defvr {Variable opcional} inchar
+Valor por defecto: @code{%i}
+
+La variable @code{inchar} es el prefijo de las etiquetas de las
+expresiones introducidas por el usuario. Maxima crea autom@'aticamente 
+una etiqueta para cada expresi@'on de entrada concatenando @code{inchar} 
+y @code{linenum}.
+
+A @code{inchar} se le puede asignar cualquier s@'{@dotless{i}}mbolo 
+o cadena, no necesariamente un carac@'acter sencillo. Puesto que
+internamente Maxima solo tiene en cuenta el primer car@'acter del
+prefijo, los prefijos @code{inchar}, @code{outchar} y @code{linechar}
+deben comenzar con caracteres diferentes; en caso contrario, sentencias
+como @code{kill(inlables)} pueden dar resultados inesperados.
+
+@c ===beg===
+@c inchar: "input";
+@c expand((a+b)^3);
+@c ===end===
+@example
+(%i1) inchar: "input";
+(%o1)                                input
+(input1) expand ((a+b)^3);
+                            3        2      2      3
+(%o1)                      b  + 3 a b  + 3 a  b + a
+(input2)
+@end example
+
+V@'ease tambi@'en @code{labels}.
+
+@end defvr
+
+@deffn {Funci@'on} ldisp (@var{expr_1}, ..., @var{expr_n})
+Muestra las expresiones @var{expr_1}, ..., @var{expr_n} en la consola con el formato de salida;
+@code{ldisp} asigna una etiqueta a cada argumento y devuelve la lista de etiquetas.
+
+V@'ease tambi@'en @code{disp}.
+
+@example
+(%i1) e: (a+b)^3;
+                                   3
+(%o1)                       (b + a)
+(%i2) f: expand (e);
+                     3        2      2      3
+(%o2)               b  + 3 a b  + 3 a  b + a
+(%i3) ldisp (e, f);
+                                   3
+(%t3)                       (b + a)
+
+                     3        2      2      3
+(%t4)               b  + 3 a b  + 3 a  b + a
+
+(%o4)                      [%t3, %t4]
+(%i4) %t3;
+                                   3
+(%o4)                       (b + a)
+(%i5) %t4;
+                     3        2      2      3
+(%o5)               b  + 3 a b  + 3 a  b + a
+@end example
+
+@end deffn
+
+@deffn {Funci@'on} ldisplay (@var{expr_1}, ..., @var{expr_n})
+Muestra las expresiones @var{expr_1}, ..., @var{expr_n} en la consola con el formato de salida.
+Cad expresi@'on se muestra como una ecuaci@'on de la forma @code{lhs = rhs}
+en la que @code{lhs} es uno de los argumentos de @code{ldisplay}
+y @code{rhs} su valor. Normalmente, cada argumento ser@'a el nombre de una variable. La funci@'on
+@code{ldisp} asigna una etiqueta a cada ecuaci@'on y devuelve la lista de etiquetas.
+
+V@'ease tambi@'en @code{display}.
+
+@example
+(%i1) e: (a+b)^3;
+                                   3
+(%o1)                       (b + a)
+(%i2) f: expand (e);
+                     3        2      2      3
+(%o2)               b  + 3 a b  + 3 a  b + a
+(%i3) ldisplay (e, f);
+                                     3
+(%t3)                     e = (b + a)
+
+                       3        2      2      3
+(%t4)             f = b  + 3 a b  + 3 a  b + a
+
+(%o4)                      [%t3, %t4]
+(%i4) %t3;
+                                     3
+(%o4)                     e = (b + a)
+(%i5) %t4;
+                       3        2      2      3
+(%o5)             f = b  + 3 a b  + 3 a  b + a
+@end example
+
+@end deffn
+
+@defvr {Variable opcional} linechar
+Valor por defecto: @code{%t}
+
+La variable @code{linechar} es el prefijo de las etiquetas que
+genera Maxima para expresiones intermedias. Cuando sea necesario,
+Maxima crear@'a una etiqueta para cada expresi@'on intermedia 
+concatenando @code{linechar} y @code{linenum}.
+
+A @code{linechar} se le puede asignar cualquier s@'{@dotless{i}}mbolo 
+o cadena, no necesariamente un carac@'acter sencillo. Puesto que
+internamente Maxima solo tiene en cuenta el primer car@'acter del
+prefijo, los prefijos @code{inchar}, @code{outchar} y @code{linechar}
+deben comenzar con caracteres diferentes; en caso contrario, sentencias
+como @code{kill(inlables)} pueden dar resultados inesperados.
+
+Las expresiones intermedias pueden ser mostradas o no.
+V@'eanse tambi@'en @code{programmode} y @code{labels}.
+
+@end defvr
+
+@defvr {Variable opcional} linel
+Valor por defecto: 79
+
+La variable @code{linel} es la anchura (medida en n@'umero de caracteres) de la consola que se le da a Maxima para que muestre las expresiones. A @code{linel} se le puede asignar cualquier valor, pero si @'este es muy peque@~no o grande resultar@'a de poca utilidad. El texto que impriman las funciones internas de Maxima, como los mensajes de error y las salidas de la funci@'on @code{describe}, no se ve afectado por el valor de @code{linel}.
+
+@end defvr
+
+@defvr {Variable opcional} lispdisp
+Valor por defecto: @code{false}
+
+Si @code{lispdisp} vale @code{true}, los s@'{@dotless{i}}mbolos de Lisp se muestran precedidos del car@'acter de interrogaci@'on @code{?}. En caso contrario, los s@'{@dotless{i}}mbolos de Lisp se muestran sin esta marca.
+
+Ejemplos:
+
+@c ===beg===
+@c lispdisp: false$
+@c ?foo + ?bar;
+@c lispdisp: true$
+@c ?foo + ?bar;
+@c ===end===
+@example
+(%i1) lispdisp: false$
+(%i2) ?foo + ?bar;
+(%o2)                       foo + bar
+(%i3) lispdisp: true$
+(%i4) ?foo + ?bar;
+(%o4)                      ?foo + ?bar
+@end example
+
+@end defvr
+
+@deffn {Funci@'on} load (@var{filename})
+Eval@'ua las expresiones del archivo @var{filename}, trayendo variables, funciones y otros objetos a Maxima.
+Una asignaci@'on hecha previamente a una variable en Maxima ser@'a destruida por otra asignaci@'on que se le haga en @var{filename}. Para encontrar el fichero, @code{load} llama a @code{file_search} con @code{file_search_maxima} y @code{file_search_lisp} como directorios de b@'usqueda. Si la llamada a @code{load} funciona correctamente, devuelve el nombre del fichero; en caso contrario, @code{load} muestra un mensaje de error.
+
+La funci@'on @code{load} trabaja indistintamente con c@'odigo Lisp y Maxima.
+Los ficheros creados con @code{save}, @code{translate_file} y @code{compile_file}, que crea c@'odigo Lisp,
+y @code{stringout}, que crea c@'odigo Maxima, todos ellos pueden ser procesados por @code{load}. La funci@'on
+@code{load} llama a @code{loadfile} para cargar archivos en Lisp y a  @code{batchload} para cargar archivos en Maxima.
+
+La funci@'on @code{load} no reconoce las construcciones de tipo @code{:lisp} en
+ficheros de Maxima. Adem@'as, mientras se est@'a procesando @var{filename},
+las variables globales @code{_}, @code{__}, @code{%} y @code{%th} mantienen los
+valores que ten@'{@dotless{i}}an cuando se realiz@'o la llamada a @code{load}.
+
+V@'eanse tambi@'en @code{loadfile}, @code{batch}, @code{batchload} y @code{demo};
+@code{loadfile} procesa archivos en Lisp; @code{batch}, @code{batchload} y @code{demo} procesan archivos en Maxima.
+
+V@'ease @code{file_search} para m@'as detalles sobre el mecanismo de b@'usqueda de archivos.
+
+La funci@'on @code{load} eval@'ua sus argumentos.
+
+@end deffn
+
+@deffn {Funci@'on} loadfile (@var{filename})
+Eval@'ua las expresiones Lisp del archivo @var{filename}. La funci@'on
+@code{loadfile} no llama a @code{file_search}, de manera que @code{filename} debe incluir la extensi@'on del archivo y su ruta completa.
+
+La funci@'on @code{loadfile} puede procesar ficheros creados por  @code{save}, @code{translate_file} y @code{compile_file}.
+Puede ser m@'as conveniente utilizar @code{load} en lugar de @code{loadfile}.
+
+@end deffn
+
+@defvr {Variable opcional} loadprint
+Valor por defecto: @code{true}
+
+La variable @code{loadprint} indica si mostrar un mensaje cuando se carga un archivo.
+
+@itemize @bullet
+@item
+Si @code{loadprint} vale @code{true}, se muestra siempre un mensaje.
+@item
+Si @code{loadprint} vale @code{'loadfile}, muestra un mensaje s@'olo si el archivo es cargado con la funci@'on @code{loadfile}.
+@item
+Si @code{loadprint} vale @code{'autoload}, muestra un mensaje s@'olo cuandi un archivo se carga autom@'aticamente. V@'ease  @code{setup_autoload}.
+@item
+Si @code{loadprint} vale @code{false}, nunca mostrar@'a mensajes.
+@end itemize
+
+@end defvr
+
+@defvr {Variable opcional} obase
+Valor por defecto: 10
+
+@code{obase} es la base en la que Maxima imprime los n@'umeros enteros.
+
+A @code{obase} se le puede asignar cualquier entero entre
+2 y 36 (base decimal), ambos inclusive.
+Si @code{obase} es mayor que 10,
+las cifras a utilizar ser@'an los d@'{@dotless{i}}gitos de
+0 a 9, junto con las letras del alfabeto A, B, C, ..., 
+tantas como sean necesarias para completar la base @code{obase}.
+Si el primer d@'{@dotless{i}}gito resulta ser una letra, se le
+a@~nadir@'a el cero como prefijo.
+Las cifras para la base 36, la mayor posible, son los 
+d@'{@dotless{i}}gitos num@'ericos de 0 a 9 y las letras desde
+la A hasta la Z.
+
+V@'ease tambi@'en @code{ibase}.
+
+Ejemplos:
+
+@c ===beg===
+@c obase : 2;
+@c 2^8 - 1;
+@c obase : 8;
+@c 8^8 - 1;
+@c obase : 16;
+@c 16^8 - 1;
+@c obase : 36;
+@c 36^8 - 1;
+@c ===end===
+@example
+(%i1) obase : 2;
+(%o1)                          10
+(%i2) 2^8 - 1;
+(%o10)                      11111111
+(%i3) obase : 8;
+(%o3)                          10
+(%i4) 8^8 - 1;
+(%o4)                       77777777
+(%i5) obase : 16;
+(%o5)                          10
+(%i6) 16^8 - 1;
+(%o6)                       0FFFFFFFF
+(%i7) obase : 36;
+(%o7)                          10
+(%i8) 36^8 - 1;
+(%o8)                       0ZZZZZZZZ
+@end example
+@end defvr
+
+
+@defvr {Variable opcional} outchar
+Valor por defecto: @code{%o}
+
+La variable @code{outchar} es el prefijo de las etiquetas de las 
+expresiones calculadas por Maxima. Maxima crea autom@'aticamente 
+una etiqueta para cada expresi@'on calculada concatenando @code{outchar}
+y @code{linenum}.
+
+A @code{outchar} se le puede asignar cualquier s@'{@dotless{i}}mbolo 
+o cadena, no necesariamente un carac@'acter sencillo. Puesto que
+internamente Maxima solo tiene en cuenta el primer car@'acter del
+prefijo, los prefijos @code{inchar}, @code{outchar} y @code{linechar}
+deben comenzar con caracteres diferentes; en caso contrario, sentencias
+como @code{kill(inlables)} pueden dar resultados inesperados.
+
+@c ===beg===
+@c outchar: "output";
+@c expand((a+b)^3);
+@c ===end===
+@example
+(%i1) outchar: "output";
+(output1)                           output
+(%i2) expand ((a+b)^3);
+                            3        2      2      3
+(output2)                  b  + 3 a b  + 3 a  b + a
+(%i3)
+@end example
+
+V@'ease tambi@'en @code{labels}.
+
+@end defvr
+
+@defvr {Variable opcional} packagefile
+Valor por defecto: @code{false}
+
+Los desarrolladores de paquetes que utilizan  @code{save}
+o @code{translate} para crear paquetes (ficheros) que van a ser utilizados por terceros pueden hacer @code{packagefile: true} para evitar que se a@~nada informaci@'on a la listas de informaci@'on de Maxima (por ejemplo, @code{values},
+@code{functions}) excepto all@'{@dotless{i}} donde sea necesario cuando el archivo sea cargado en memoria.
+@c FALTA COMPLETAR ESTE PARRAFO
+
+@end defvr
+
+@defvr {Variable opcional} pfeformat
+Valor por defecto: @code{false}
+
+Si @code{pfeformat} vale @code{true}, una fracci@'on de enteros ser@'a mostrada con el car@'acter de barra inclinada @code{/} entre ellos.
+
+
+@example
+(%i1) pfeformat: false$
+(%i2) 2^16/7^3;
+                              65536
+(%o2)                         -----
+                               343
+(%i3) (a+b)/8;
+                              b + a
+(%o3)                         -----
+                                8
+(%i4) pfeformat: true$ 
+(%i5) 2^16/7^3;
+(%o5)                       65536/343
+(%i6) (a+b)/8;
+(%o6)                      1/8 (b + a)
+@end example
+
+@end defvr
+
+@deffn {Funci@'on} print (@var{expr_1}, ..., @var{expr_n})
+Eval@'ua y muestra las expresiones  @var{expr_1}, ..., @var{expr_n} secuencialmente de izquierda a derecha, comenzando la impresi@'on por el borde izquierdo de la consola.
+
+El valor devuelto por @code{print} es el valor de su @'ultimo argumento. La funci@'on @code{print} no genera etiquetas para las expresiones intermedias.
+
+V@'eanse tambi@'en @code{display}, @code{disp}, @code{ldisplay} y @code{ldisp}, que muestran una expresi@'on por l@'{@dotless{i}}nea, mientras que @code{print} trata de mostrar dos o m@'as expresiones por l@'{@dotless{i}}nea.
+
+Para mostrar el contenido de un archivo v@'ease @code{printfile}.
+
+@example
+(%i1) r: print ("(a+b)^3 is", expand ((a+b)^3), "log (a^10/b) is",
+      radcan (log (a^10/b)))$
+            3        2      2      3
+(a+b)^3 is b  + 3 a b  + 3 a  b + a  log (a^10/b) is 
+
+                                              10 log(a) - log(b) 
+(%i2) r;
+(%o2)                  10 log(a) - log(b)
+(%i3) disp ("(a+b)^3 is", expand ((a+b)^3), "log (a^10/b) is",
+      radcan (log (a^10/b)))$
+                           (a+b)^3 is
+
+                     3        2      2      3
+                    b  + 3 a b  + 3 a  b + a
+
+                         log (a^10/b) is
+
+                       10 log(a) - log(b)
+@end example
+
+@end deffn
+
+
+
+@deffn {Funci@'on} printfile (@var{path})
+
+Env@'{@dotless{i}}a el fichero al que hace referncia la ruta @var{path}
+a la consola. @var{path} puede ser una cadena o un s@'{@dotless{i}}mbolo,
+en cuyo caso se convertir@'a en una cadena.
+
+Si @var{path} hace referencia a un fichero accesible desde el directorio
+actual de trabajo, entonces se enviar@'a a la consola; en caso contrario,
+@code{printfile} intentar@'a localizar el fichero a@~nadi@'endole @var{path}
+a cada uno de los elementos de @code{file_search_usage} a trav@'es de 
+@code{filename_merge}.
+
+@code{printfile} devuelve la ruta del fichero encontado.
+
+@end deffn
+
+
+@deffn {Funci@'on} read (@var{expr_1}, ..., @var{expr_n})
+Imprime @var{expr_1}, ..., @var{expr_n} y a continuaci@'on lee una expresi@'on desde la consola y devuelve la expresi@'on evaluada. La expresi@'on termina con un punto y coma @code{;} o con el s@'{@dotless{i}}mbolo de d@'olar @code{$}.
+
+V@'ease tambi@'en @code{readonly}.
+
+@example
+(%i1) foo: 42$ 
+(%i2) foo: read ("foo vale", foo, " -- nuevo valor.")$
+foo vale 42  -- nuevo valor. 
+(a+b)^3;
+(%i3) foo;
+                                     3
+(%o3)                         (b + a)
+@end example
+
+@end deffn
+
+@deffn {Funci@'on} readonly (@var{expr_1}, ..., @var{expr_n})
+Imprime @var{expr_1}, ..., @var{expr_n} y a continuaci@'on lee una expresi@'on desde la consola y devuelve la expresi@'on sin evaluar. La expresi@'on termina con un punto y coma @code{;} o con el s@'{@dotless{i}}mbolo de d@'olar @code{$}.
+
+@example
+(%i1) aa: 7$
+(%i2) foo: readonly ("Introducir expresion:");
+Introducir expresion: 
+2^aa;
+                                  aa
+(%o2)                            2
+(%i3) foo: read ("Introducir expresion:");
+Introducir expresion: 
+2^aa;
+(%o3)                            128
+@end example
+
+V@'ease tambi@'en @code{read}.
+
+@end deffn
+
+@deffn {Funci@'on} reveal (@var{expr}, @var{nivel})
+Reemplaza partes de @var{expr} al @var{nivel} especificado y las sutituye por descripciones cortas.
+
+@itemize @bullet
+@item
+Las sumas y restas se reemplazan por @code{Sum(@var{n})},
+siendo @var{n} el n@'umero de t@'erminos de la suma.
+@item
+Los productos se reemplazan por @code{Product(@var{n})},
+siendo @var{n} el n@'umero de factores del producto.
+@item
+Las potencias se reemplazan por @code{Expt}. 
+@item
+Los cocientes se reemplazan por @code{Quotient}.
+@item
+El s@'{@dotless{i}}mbolo negativo se reemplaza por @code{Negterm}.
+@end itemize
+
+Si el entero  @var{depth} es mayor o igual que la profundidad m@'axima de @var{expr},
+@code{reveal (@var{expr}, @var{depth})} devuelve @var{expr} sin modificar.
+
+La funci@'on @code{reveal} eval@'ua sus argumentos y devuelve la expresi@'on con las modificaciones solicitadas.
+
+Ejemplo:
+
+@example
+(%i1) e: expand ((a - b)^2)/expand ((exp(a) + exp(b))^2);
+                          2            2
+                         b  - 2 a b + a
+(%o1)               -------------------------
+                        b + a     2 b     2 a
+                    2 %e      + %e    + %e
+(%i2) reveal (e, 1);
+(%o2)                       Quotient
+(%i3) reveal (e, 2);
+                             Sum(3)
+(%o3)                        ------
+                             Sum(3)
+(%i4) reveal (e, 3);
+                     Expt + Negterm + Expt
+(%o4)               ------------------------
+                    Product(2) + Expt + Expt
+(%i5) reveal (e, 4);
+                       2                 2
+                      b  - Product(3) + a
+(%o5)         ------------------------------------
+                         Product(2)     Product(2)
+              2 Expt + %e           + %e
+(%i6) reveal (e, 5);
+                         2            2
+                        b  - 2 a b + a
+(%o6)              --------------------------
+                       Sum(2)     2 b     2 a
+                   2 %e       + %e    + %e
+(%i7) reveal (e, 6);
+                          2            2
+                         b  - 2 a b + a
+(%o7)               -------------------------
+                        b + a     2 b     2 a
+                    2 %e      + %e    + %e
+@end example
+
+@end deffn
+
+@defvr {Variable opcional} rmxchar
+Valor por defecto: @code{]}
+
+La variable @code{rmxchar} es el car@'acter que se dibuja al lado derecho de una matriz.
+
+V@'ease tambi@'en @code{lmxchar}.
+
+@end defvr
+
+@deffn {Funci@'on} save (@var{filename}, @var{name_1}, @var{name_2}, @var{name_3}, ...)
+@deffnx {Funci@'on} save (@var{filename}, values, functions, labels, ...)
+@deffnx {Funci@'on} save (@var{filename}, [@var{m}, @var{n}])
+@deffnx {Funci@'on} save (@var{filename}, @var{name_1}=@var{expr_1}, ...)
+@deffnx {Funci@'on} save (@var{filename}, all)
+@deffnx {Funci@'on} save (@var{filename}, @var{name_1}=@var{expr_1}, @var{name_2}=@var{expr_2}, ...)
+
+Alamacena los valores actuales de @var{name_1}, @var{name_2}, @var{name_3}, ..., en el archivo @var{filename}.
+Los argumentos son nombres de variables, funciones u otros objetos.
+Si un nombre no tiene un valor o una funci@'on asociado a @'el, entonces se ignora.
+
+La funci@'on @code{save} devuelve @var{filename}.
+
+La funci@'on @code{save} almacena datos en forma de expresiones Lisp.
+Los datos almacenados por @code{save} pueden recuperarse con @code{load (@var{filename})}.
+El resultado de ejecutar  @code{save} cuando @var{filename} ya existe depende del soporte Lisp implementado;
+el archivo puede ser sobreescrito o que @code{save} env@'{@dotless{i}}e un mesaje de error.
+
+La llamada @code{save (@var{filename}, values, functions, labels, ...)}
+almacena los elementos cuyos nombres son @code{values}, @code{functions}, @code{labels}, etc.
+Los nombres pueden ser cualesquiera de los especificados por la variable @code{infolists};
+@code{values} incluye todas las variables definidas por el usuario.
+
+La llamada @code{save (@var{filename}, [@var{m}, @var{n}])} almacena los valores de las etiquetas de entrada y salida desde @var{m} hasta @var{n}.
+N@'otese que @var{m} y @var{n} deben ser n@'umeros.
+Las etiquetas de entrada y salida tambi@'en se pueden almacenar una a una, por ejemplo, @code{save ("foo.1", %i42, %o42)}.
+La llamada @code{save (@var{filename}, labels)} almacena todas las etiquetas de entrada y salida.
+Cuando las etiquetas almacenadas en el archivo sean posteriormente recuperadas, se sobreescribir@'an las activas en ese momento.
+
+La llamada @code{save (@var{filename}, @var{name_1}=@var{expr_1}, @var{name_2}=@var{expr_2}, ...)}
+almacena los valores de @var{expr_1}, @var{expr_2}, ...,
+con los nombres @var{name_1}, @var{name_2}, ....
+Es @'util hacer este tipo de llamada para con etiquetas de entrada y salida, por ejemplo, @code{save ("foo.1", aa=%o88)}.
+El miembro derecho de la igualdad puede ser cualquier expresi@'on, que ser@'a evaluada.
+Esta llamada a la funci@'on @code{save} no incorpora nuevos nombres a la sesi@'on actual de Maxima,
+simplemente los almacena en el archivo @var{filename}.
+
+Todas estas formas de llamar a la funci@'on @code{save} se pueden combinar a voluntad.
+Por ejemplo, @code{save (@var{filename}, aa, bb, cc=42, functions, [11, 17])}.
+
+La llamada @code{save (@var{filename}, all)} almacena el estado actual de Maxima, lo que incluye todas las variables definidas por el usuario, funciones, arreglos, etc., as@'{@dotless{i}} como algunos objetos definidos autom@'aticamente.
+Los elementos almacenados incluyen variables del sistema, como @code{file_search_maxima} o @code{showtime}, si han sido modificadas por el usuario. V@'ease @code{myoptions}.
+
+@code{save} eval@'ua @var{filename} pero no el resto de argumentos.
+@end deffn
+
+@defvr {Variable opcional} savedef
+Valor por defecto: @code{true}
+
+Si @code{savedef} vale @code{true}, se mantiene la versi@'on Maxima de una funci@'on definida por el usuario cuando @'esta se traduce, lo que permite mostrar su c@'odigo con @code{dispfun} y que la funci@'on pueda ser editada.
+
+Si @code{savedef} vale @code{false}, los nombres de las funciones traducidas se eliminan de la lista @code{functions}.
+
+@end defvr
+
+@deffn {Funci@'on} show (@var{expr})
+Muestra @code{expr} con sus objetos indexados que tengan @'{@dotless{i}}ndices covariantes como sub@'{@dotless{i}}ndices y los contravariantes como super@'{@dotless{i}}ndices.  Los @'{@dotless{i}}ndices derivados se muestran como sub@'{@dotless{i}}ndices, separados por una coma de los covariantes.
+
+@end deffn
+
+@deffn {Funci@'on} showratvars (@var{expr})
+Devuelve una lista de las variables de expresiones can@'onicas racionales (CRE) en la expresi@'on @code{expr}.
+
+V@'ease tambi@'en @code{ratvars}.
+
+@end deffn
+
+@defvr {Variable opcional} stardisp
+Valor por defecto: @code{false}
+
+Si @code{stardisp} vale @code{true}, la multiplicaci@'on se muestra con un asterisco @code{*} entre los operandos.
+
+@end defvr
+
+@deffn {Funci@'on} string (@var{expr})
+Convierte @code{expr} a la notaci@'on lineal de Maxima, tal como si fuese tecleada.
+
+El valor que retorna la funci@'on @code{string} es una cadena, por lo que no puede ser utilizada en los c@'alculos.
+
+@end deffn
+
+@defvr {Variable opcional} stringdisp
+Valor por defecto: @code{false}
+
+Si @code{stringdisp} vale @code{true},
+las cadenas alfanum@'ericas se muestran encerradas entre comillas dobles. En caso contrario, no se nuestran las comillas.
+
+La variable @code{stringdisp} vale siempre @code{true} cuando se muestra la definici@'on de una funci@'on.
+
+
+Ejemplos:
+
+@c ===beg===
+@c stringdisp: false$
+@c "This is an example string.";
+@c foo () := 
+@c       print ("This is a string in a function definition.");
+@c stringdisp: true$
+@c "This is an example string.";
+@c ===end===
+@example
+(%i1) stringdisp: false$
+(%i2) "This is an example string.";
+(%o2)              This is an example string.
+(%i3) foo () :=
+      print ("This is a string in a function definition.");
+(%o3) foo() := 
+              print("This is a string in a function definition.")
+(%i4) stringdisp: true$
+(%i5) "This is an example string.";
+(%o5)             "This is an example string."
+@end example
+
+@end defvr
+
+@deffn {Funci@'on} stringout (@var{filename}, @var{expr_1}, @var{expr_2}, @var{expr_3}, ...)
+@deffnx {Funci@'on} stringout (@var{filename}, [@var{m}, @var{n}])
+@deffnx {Funci@'on} stringout (@var{filename}, input)
+@deffnx {Funci@'on} stringout (@var{filename}, functions)
+@deffnx {Funci@'on} stringout (@var{filename}, values)
+
+La funci@'on @code{stringout} escribe expresiones en un archivo de la misma forma en que se escribir@'{@dotless{i}}an como expresiones de entrada. El archivo puede ser utilizado entonces como entrada a las funciones @code{batch} o @code{demo}, y puede ser editado para cualquier otro prop@'osito.
+
+La forma general de @code{stringout} escribe los valores de una o m@'as expresiones en el archivo de salida. N@'otese que si una expresi@'on es una variable, solamente se escribir@'a el valor de la variable y no el nombre de @'esta. Como caso especial, y muy @'util en algunas ocasiones, las expresiones pueden ser etiquetas de entrada (@code{%i1}, @code{%i2}, @code{%i3}, ...) o de salida (@code{%o1}, @code{%o2}, @code{%o3}, ...).
+
+Si @code{grind} vale @code{true}, @code{stringout} formatea la salida utilizando @code{grind}. En caso contrario, se utilizar@'a el formato @code{string}. V@'eanse @code{grind} y @code{string}.
+
+La forma especial @code{stringout (@var{filename}, [@var{m}, @var{n}])} escribe los valores de las etiquetas de entrada desde la m hasta la n, ambas inclusive. 
+
+La forma especial @code{stringout (@var{filename}, input)} escribe todas las etiquetas de entrada en el archivo.
+
+La forma especial @code{stringout (@var{filename}, functions)} escribe todas las funciones definidas por el usuario, contenidas en la lista global @code{functions}, en el archivo.
+
+La forma especial @code{stringout (@var{filename}, values)} escribe todas las variables asignadas por el usuario, contenidas en la lista global @code{values}, en el archivo. Cada variable se escribe como una sentencia de asignaci@'on, con el nombre de la variable seguida de dos puntos y a continuaci@'on su valor. N@'otese que la forma general de @code{stringout} no escribe las variables como sentencias de asignaci@'on.
+
+@end deffn
+
+@deffn {Funci@'on} tex (@var{expr})
+@deffnx {Funci@'on} tex (@var{expr}, @var{destination})
+@deffnx {Funci@'on} tex (@var{expr}, false)
+@deffnx {Funci@'on} tex (@var{label})
+@deffnx {Funci@'on} tex (@var{label}, @var{destination})
+@deffnx {Funci@'on} tex (@var{label}, false)
+
+Devuelve la expresi@'on en un formato apropiado para para ser incorporado a un documento basado en TeX.
+El resultado que se obtiene es un fragmento de c@'odigo que puede incluirse en un documento mayor, pero que
+no puede ser procesado aisladamente.
+
+La instrucci@'on @code{tex (@var{expr})} imprime en la consola la representaci@'on en TeX de @var{expr}.
+
+La instrucci@'on @code{tex (@var{label})} imprime en la consola la representaci@'on en TeX de la expresi@'on a la que hace referencia la etiqueta @var{label}, asign@'andole a su vez una etiqueta de ecuaci@'on que ser@'a mostrada al lado izquierdo de la misma. La etiqueta de la expresi@'on en TeX es la misma que la de Maxima.
+
+@var{destination} puede ser tanto un flujo de salida como el nombre de un fichero.
+
+Si @var{destination} es el nombre de un fichero, @code{tex} a@~nade la salida al fichero.
+Las funciones @code{openw} y @code{opena} crean flujos de salida.
+
+Las instrucciones @code{tex (@var{expr}, false)} y @code{tex (@var{label}, false)}
+devuelven el c@'odigo TeX en formato de cadena.
+
+La funci@'on @code{tex} eval@'ua su primer argumento tras
+comprobar si se trata de una etiqueta. La doble comilla simple @code{''} 
+fuerza la evaluaci@'on del argumento, anulando la comprobaci@'on sobre la etiqueta.
+
+V@'ease tambi@'en @code{texput}.
+
+Ejemplos:
+
+@example
+(%i1) integrate (1/(1+x^3), x);
+                                    2 x - 1
+                  2            atan(-------)
+             log(x  - x + 1)        sqrt(3)    log(x + 1)
+(%o1)      - --------------- + ------------- + ----------
+                    6             sqrt(3)          3
+(%i2) tex (%o1);
+$$-@{@{\log \left(x^2-x+1\right)@}\over@{6@}@}+@{@{\arctan \left(@{@{2\,x-1
+ @}\over@{\sqrt@{3@}@}@}\right)@}\over@{\sqrt@{3@}@}@}+@{@{\log \left(x+1\right)
+ @}\over@{3@}@}\leqno@{\tt (\%o1)@}$$
+(%o2)                          (\%o1)
+(%i3) tex (integrate (sin(x), x));
+$$-\cos x$$
+(%o3)                           false
+(%i4) tex (%o1, "foo.tex");
+(%o4)                          (\%o1)
+@end example
+
+@code{tex (@var{expr}, false)} devuelve el c@'odigo TeX en formato de cadena.
+
+@c ===beg===
+@c S : tex (x * y * z, false);
+@c S;
+@c ===end===
+@example
+(%i1) S : tex (x * y * z, false);
+(%o1) $$x\,y\,z$$
+(%i2) S;
+(%o2) $$x\,y\,z$$
+@end example
+@end deffn
+
+
+@deffn {Funci@'on} tex1 (@var{e})
+Devuelve una cadena con el c@'odigo TeX de la expresi@'on @var{e}.
+El c@'odigo TeX no se encierra entre delimitadores para una ecuaci@'on
+ni cualesquiera otros entornos.
+
+Ejemplo:
+
+@c ===beg===
+@c tex1 (sin(x) + cos(x));
+@c ===end===
+@example
+(%i1) tex1 (sin(x) + cos(x));
+(%o1)                     \sin x+\cos x
+@end example
+@end deffn
+
+
+@deffn {Funci@'on} texput (@var{a}, @var{s})
+@deffnx {Funci@'on} texput (@var{a}, @var{f})
+@deffnx {Funci@'on} texput (@var{a}, @var{s}, @var{operator_type})
+@deffnx {Funci@'on} texput (@var{a}, [@var{s_1}, @var{s_2}], matchfix)
+@deffnx {Funci@'on} texput (@var{a}, [@var{s_1}, @var{s_2}, @var{s_3}], matchfix)
+
+Establece el formato en TeX del @'atomo @var{a}, el cual puede ser un
+s@'{@dotless{i}}mbolo o el nombre de un operador.
+
+La instrucci@'on @code{texput (@var{a}, @var{s})} hace que la funci@'on
+@code{tex} introduzca @var{s} en la salida TeX en el lugar de @var{a}.
+
+La instrucci@'on @code{texput (@var{a}, @var{f})} hace que @code{tex} llame
+a la funci@'on @var{f} para que genere c@'odigo TeX. La funci@'on @var{f} 
+debe aceptar un @'unico argumento, el cual es una expresi@'on que tenga como
+operador @var{a} y que devuelva una cadena con el c@'odigo TeX. Esta funci@'on
+puede llamar a @code{tex1} para generar el c@'odigo TeX para los argumentos
+de la expresi@'on de entrada.
+
+La instrucci@'on @code{texput (@var{a}, @var{s}, @var{operator_type})},
+en la que @var{operator_type} es @code{prefix}, @code{infix} o
+@code{postfix}, @code{nary} o @code{nofix},hace que la funci@'on
+@code{tex} introduzca @var{s} en la salida TeX en el lugar de @var{a},
+coloc@'andolo en el lugar correcto.
+
+La instrucci@'on @code{texput (@var{a}, [@var{s_1}, @var{s_2}], matchfix)}
+hace que la funci@'on @code{tex} introduzca @var{s_1} y @var{s_2} en la
+salida TeX a los lados de los argumentos de @var{a}. Si son m@'as de uno,
+los argumentos se separan por comas.
+
+La instrucci@'on @code{texput (@var{a}, [@var{s_1}, @var{s_2}, @var{s_3}],
+matchfix)} hace que la funci@'on @code{tex} introduzca @var{s_1} y
+@var{s_2} en la salida TeX a los lados de los argumentos de @var{a},
+con @var{s_3} separando los argumentos.
+
+Ejemplos:
+
+Asigna c@'odigo TeX para una variable.
+@c ===beg===
+@c texput (me,"\\mu_e");
+@c tex (me);
+@c ===end===
+
+Llama a una funci@'on que genera c@'odigo TeX.
+
+@c ===beg===
+@c texfoo (e) := block ([a, b], [a, b] : args (e),
+@c   concat ("\\left[\\stackrel{", tex1 (b), "}{", tex1 (a), "}\\right]"))$
+@c texput (foo, texfoo);
+@c tex (foo (2^x, %pi));
+@c ===end===
+@example
+(%i1) texfoo (e) := block ([a, b], [a, b] : args (e),
+  concat ("\\left[\\stackrel@{", tex1 (b), 
+          "@}@{", tex1 (a), "@}\\right]"))$
+(%i2) texput (foo, texfoo);
+(%o2)                        texfoo
+(%i3) tex (foo (2^x, %pi));
+$$\left[\stackrel@{\pi@}@{2^@{x@}@}\right]$$
+(%o3)                         false
+@end example
+
+@example
+(%i1) texput (me,"\\mu_e");
+(%o1)                         \mu_e
+(%i2) tex (me);
+$$\mu_e$$
+(%o2)                         false
+@end example
+
+Asigna c@'odigo TeX para una funci@'on ordinaria (no para un operador).
+@c ===beg===
+@c texput (lcm, "\\mathrm{lcm}");
+@c tex (lcm (a, b));
+@c ===end===
+
+@example
+(%i1) texput (lcm, "\\mathrm@{lcm@}");
+(%o1)                     \mathrm@{lcm@}
+(%i2) tex (lcm (a, b));
+$$\mathrm@{lcm@}\left(a , b\right)$$
+(%o2)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador prefijo.
+@c ===beg===
+@c prefix ("grad");
+@c texput ("grad", " \\nabla ", prefix);
+@c tex (grad f);
+@c ===end===
+
+@example
+(%i1) prefix ("grad");
+(%o1)                         grad
+(%i2) texput ("grad", " \\nabla ", prefix);
+(%o2)                        \nabla 
+(%i3) tex (grad f);
+$$ \nabla f$$
+(%o3)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador infijo.
+@c ===beg===
+@c infix ("~");
+@c texput ("~", " \\times ", infix);
+@c tex (a ~ b);
+@c ===end===
+
+@example
+(%i1) infix ("~");
+(%o1)                           ~
+(%i2) texput ("~", " \\times ", infix);
+(%o2)                        \times 
+(%i3) tex (a ~ b);
+$$a \times b$$
+(%o3)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador postfijo..
+@c ===beg===
+@c postfix ("##");
+@c texput ("##", "!!", postfix);
+@c tex (x ##);
+@c ===end===
+
+@example
+(%i1) postfix ("##");
+(%o1)                          ##
+(%i2) texput ("##", "!!", postfix);
+(%o2)                          !!
+(%i3) tex (x ##);
+$$x!!$$
+(%o3)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador n-ario.
+@c ===beg===
+@c nary ("@@");
+@c texput ("@@", " \\circ ", nary);
+@c tex (a @@ b @@ c @@ d);
+@c ===end===
+
+@example
+(%i1) nary ("@@@@");
+(%o1)                          @@@@
+(%i2) texput ("@@@@", " \\circ ", nary);
+(%o2)                         \circ 
+(%i3) tex (a @@@@ b @@@@ c @@@@ d);
+$$a \circ b \circ c \circ d$$
+(%o3)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador "no-fijo".
+@c ===beg===
+@c nofix ("foo");
+@c texput ("foo", "\\mathsc{foo}", nofix);
+@c tex (foo);
+@c ===end===
+
+@example
+(%i1) nofix ("foo");
+(%o1)                          foo
+(%i2) texput ("foo", "\\mathsc@{foo@}", nofix);
+(%o2)                     \mathsc@{foo@}
+(%i3) tex (foo);
+$$\mathsc@{foo@}$$
+(%o3)                         false
+@end example
+
+Asigna c@'odigo TeX para un operador "bi-fijo" (matchfix).
+@c ===beg===
+@c matchfix ("<<", ">>");
+@c texput ("<<", [" \\langle ", " \\rangle "], matchfix);
+@c tex (<<a>>);
+@c tex (<<a, b>>);
+@c texput ("<<", [" \\langle ", " \\rangle ", " \\, | \\,"], 
+@c       matchfix);
+@c tex (<<a>>);
+@c tex (<<a, b>>);
+@c ===end===
+
+@example
+(%i1) matchfix ("<<", ">>");
+(%o1)                          <<
+(%i2) texput ("<<", [" \\langle ", " \\rangle "], matchfix);
+(%o2)                [ \langle ,  \rangle ]
+(%i3) tex (<<a>>);
+$$ \langle a \rangle $$
+(%o3)                         false
+(%i4) tex (<<a, b>>);
+$$ \langle a , b \rangle $$
+(%o4)                         false
+(%i5) texput ("<<", [" \\langle ", " \\rangle ", " \\, | \\,"],
+      matchfix);
+(%o5)           [ \langle ,  \rangle ,  \, | \,]
+(%i6) tex (<<a>>);
+$$ \langle a \rangle $$
+(%o6)                         false
+(%i7) tex (<<a, b>>);
+$$ \langle a \, | \,b \rangle $$
+(%o7)                         false
+@end example
+
+@end deffn
+
+
+@deffn {Funci@'on} get_tex_environment (@var{op})
+@deffnx {Funci@'on} set_tex_environment (@var{op}, @var{before}, @var{after})
+
+Gestiona el entorno de las salidas TeX que se obtienen de la funci@'on @code{tex}.
+El entorno TeX est@'a formado por dos cadenas: una que se escribe antes que
+cualquier salida en TeX, y otra que se escribe despu@'es.
+
+@code{get_tex_environment} devuelve el entorno TeX que se aplica al operador @var{op}.
+Si no se ha asignado ning@'un entorno, devolver@'a el que tenga por defecto.
+
+@code{set_tex_environment} asigna el entorno TeX al operador @var{op}.
+
+Ejemplos:
+
+@c ===beg===
+@c get_tex_environment (":=");
+@c tex (f (x) := 1 - x);
+@c set_tex_environment (":=", "$$", "$$");
+@c tex (f (x) := 1 - x);
+@c ===end===
+@example
+(%i1) get_tex_environment (":=");
+(%o1) [
+\begin@{verbatim@}
+, ;
+\end@{verbatim@}
+]
+(%i2) tex (f (x) := 1 - x);
+
+\begin@{verbatim@}
+f(x):=1-x;
+\end@{verbatim@}
+
+(%o2)                         false
+(%i3) set_tex_environment (":=", "$$", "$$");
+(%o3)                       [$$, $$]
+(%i4) tex (f (x) := 1 - x);
+$$f(x):=1-x$$
+(%o4)                         false
+@end example
+@end deffn
+
+@deffn {Funci@'on} get_tex_environment_default ()
+@deffnx {Funci@'on} set_tex_environment_default (@var{before}, @var{after})
+
+Gestiona el entorno de las salidas TeX que se obtienen de la funci@'on @code{tex}.
+El entorno TeX est@'a formado por dos cadenas: una que se escribe antes que
+cualquier salida en TeX, y otra que se escribe despu@'es.
+
+@code{get_tex_environment_default} devuelve el entorno TeX que se aplica
+a expresiones para las cuales el operador de mayor rango no tiene entorno
+TeX asignado (mediante @code{set_tex_environment}).
+
+@code{set_tex_environment_default} asigna el entorno TeX por defecto.
+
+Ejemplos:
+
+@c ===beg===
+@c get_tex_environment_default ();
+@c tex (f(x) + g(x));
+@c set_tex_environment_default ("\\begin{equation}
+@c ", "
+@c \\end{equation}");
+@c tex (f(x) + g(x));
+@c ===end===
+@example
+(%i1) get_tex_environment_default ();
+(%o1)                       [$$, $$]
+(%i2) tex (f(x) + g(x));
+$$g\left(x\right)+f\left(x\right)$$
+(%o2)                         false
+(%i3) set_tex_environment_default ("\\begin@{equation@}
+", "
+\\end@{equation@}");
+(%o3) [\begin@{equation@}
+, 
+\end@{equation@}]
+(%i4) tex (f(x) + g(x));
+\begin@{equation@}
+g\left(x\right)+f\left(x\right)
+\end@{equation@}
+(%o4)                         false
+@end example
+@end deffn
+
+
+@deffn {Funci@'on} system (@var{command})
+Ejecuta la instrucci@'on @var{command} como un proceso independiente de Maxima.
+La instrucci@'on se le pasa a la consola del sistema para su ejecuci@'on.
+La funci@'on @code{system} no est@'a soportada por todos los sistemas operativos, pero suele estarlo en todos los entornos  Unix y similares.
+
+Suponiendo que @code{_hist.out} es una lista de frecuencias que se quieren representar en un diagrama de barras utilizando el programa @code{xgraph},
+
+@example
+(%i1) (with_stdout("_hist.out",
+           for i:1 thru length(hist) do (
+             print(i,hist[i]))),
+       system("xgraph -bar -brw .7 -nl < _hist.out"));
+@end example
+
+A fin de hacer el diagrama y eliminar el archivo temporal posteriormente, h@'agase:
+
+@example
+system("(xgraph -bar -brw .7 -nl < _hist.out;  rm -f _hist.out)&")
+@end example
+
+@end deffn
+
+@defvr {Variable opcional} ttyoff
+Valor por defecto: @code{false}
+
+Si @code{ttyoff} vale @code{true}, no se muestran las expresiones resultantes, pero @'estas se calculan de todos modos y se les asignan etiquetas. V@'ease @code{labels}.
+
+El texto que escriban las funciones internas de Maxima, tales como los mensajes de error y las salidas de @code{describe},
+no se ven afectadas por @code{ttyoff}.
+
+@end defvr
+
+
+@deffn {Funci@'on} with_stdout (@var{f}, @var{expr_1}, @var{expr_2}, @var{expr_3}, ...)
+@deffnx {Funci@'on} with_stdout (@var{s}, @var{expr_1}, @var{expr_2}, @var{expr_3}, ...)
+Eval@'ua  @var{expr_1}, @var{expr_2}, @var{expr_3}, ...
+y escribe los resultados en el fichero @var{f} o flujo de salida @var{s}.
+Las expresiones que se eval@'uan no se escriben. La salida puede generarse por medio
+de @code{print}, @code{display}, @code{grind} entre otras funciones.
+
+La variable global @code{file_output_append} controla si @code{with_stdout}
+a@~nade o reinicia el contenido del fichero de salida @var{f}.
+Si @code{file_output_append} vale @code{true}, @code{with_stdout} a@~nade
+contenido al fichero de salida. En cualquier caso, @code{with_stdout}
+crea el fichero si @'este no existe.
+
+La funci@'on @code{with_stdout} devuelve el valor de su @'ultimo argumento.
+
+V@'ease tambi@'en @code{writefile}.
+
+@c THIS DOESN'T SEEM VERY IMPORTANT TO MENTION ...
+@c Note the binding of display2d to be
+@c false, otherwise the printing will have things like "- 3" instead
+@c of "-3".
+@c
+@example
+@c THIS EXAMPLE USES SOME UNIX-ISH CONSTRUCTS -- WILL IT WORK IN WINDOWS ???
+@c ALSO IT'S SORT OF COMPLICATED AND THE SIMPLER SECOND EXAMPLE ILLUSTRATES with_stdout BETTER !!!
+@c mygnuplot (f, var, range, number_ticks) :=
+@c  block ([numer:true, display2d:false],
+@c  with_stdout("tmp.out",
+@c    dx: (range[2]-range[1])/number_ticks,
+@c    for x: range[1] thru range[2] step dx
+@c       do print (x, at (f, var=x))),
+@c  system ("echo \"set data style lines; set title '", f,"' ;plot '/tmp/gnu'
+@c ;pause 10 \" | gnuplot"))$
+(%i1) with_stdout ("tmp.out", 
+                   for i:5 thru 10 do print (i, "! yields", i!))$
+(%i2) printfile ("tmp.out")$
+5 ! yields 120 
+6 ! yields 720 
+7 ! yields 5040 
+8 ! yields 40320 
+9 ! yields 362880 
+10 ! yields 3628800
+@end example
+
+@end deffn
+
+@deffn {Funci@'on} writefile (@var{filename})
+Comienza escribiendo una transcripci@'on de la sesi@'on de Maxima en el archivo @var{filename}.
+Cualquier interacci@'on entre Maxima y el usuario se almacena tambi@'en en este archivo, tal como aparece en la consola.
+
+Puesto que la transcripci@'on se escribe en el formato de salida a la consola, su contenido no es interpretable por Maxima.
+Para hacer un archivo que contenga expresiones que puedan ser nuevamente cargadas en Maxima, v@'eanse @code{save} y @code{stringout}; la funci@'on @code{save} almacena expresiones en formato Lisp, mientras que @code{stringout} lo hace en formato Maxima.
+
+El resultado de ejecutar @code{writefile} cuando el archivo @var{filename} ya existe depende del entorno Lisp operativo; el contenido anterior puede ser sobreescrito o ampliado con la sesi@'on actual. La funci@'on @code{appendfile} siempre a@~nade la sesi@'on al contenido actual.
+
+Puede ser @'util ejecutar @code{playback} despu@'es de @code{writefile} para guardar las interacciones previas de la sesi@'on. Puesto que  @code{playback} muestra solamente las variables de entrada y salida (@code{%i1}, @code{%o1}, etc.),
+cualquier salida generada por una sentencia de impresi@'on desde dentro de una funci@'on no es mostrada por @code{playback}.
+
+La funci@'on @code{closefile} cierra los archivos abiertos por @code{writefile} o @code{appendfile}.
+
+@end deffn
+
+

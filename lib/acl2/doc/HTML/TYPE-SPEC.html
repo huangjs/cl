@@ -1,0 +1,86 @@
+<html>
+<head><title>TYPE-SPEC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TYPE-SPEC</h2>type specifiers in declarations
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Examples:
+The symbol INTEGER in (declare (type INTEGER i j k)) is a type-spec.  Other
+type-specs supported by ACL2 include RATIONAL, COMPLEX, (INTEGER 0 127),
+(RATIONAL 1 *), CHARACTER, and ATOM.  
+</pre>
+
+<p>
+The type-specs and their meanings (when applied to the variable <code>x</code>
+as in <code>(declare (type type-spec x))</code> are given below.
+
+<pre>
+type-spec              meaning
+(AND type1 ... typek)  (AND (p1 X) ... (pk X))
+                       where (pj x) is the meaning for type-spec typej
+ATOM                   (ATOM X)
+BIT                    (OR (EQUAL X 1) (EQUAL X 0))
+CHARACTER              (CHARACTERP X)
+COMPLEX,               (AND (COMPLEX-RATIONALP X)
+(COMPLEX RATIONAL)          (RATIONALP (REALPART X))
+                            (RATIONALP (IMAGPART X)))
+(COMPLEX type)         (AND (COMPLEX-RATIONALP X)
+                            (p (REALPART X))
+                            (p (IMAGPART X)))
+                       where (p x) is the meaning for type-spec type
+CONS                   (CONSP X)
+INTEGER                (INTEGERP X)
+(INTEGER i j)          (AND (INTEGERP X)   ; See notes below
+                            (&lt;= i X)
+                            (&lt;= X j))
+(MEMBER x1 ... xn)     (MEMBER X '(x1 ... xn))
+(MOD i)                same as (INTEGER 0 i-1)
+NIL                    NIL
+(NOT type)             (NOT (p X))
+                       where (p x) is the meaning for type-spec type
+NULL                   (EQ X NIL)
+(OR type1 ... typek)   (OR (p1 X) ... (pk X))
+                       where (pj x) is the meaning for type-spec typej
+RATIO                  (AND (RATIONALP X) (NOT (INTEGERP X)))
+RATIONAL               (RATIONALP X)
+(RATIONAL i j)         (AND (RATIONALP X)  ; See notes below
+                            (&lt;= i X)
+                            (&lt;= X j))
+REAL                   (RATIONALP X)       ; (REALP X) in ACL2(r)
+(REAL i j)             (AND (RATIONALP X)  ; See notes below
+                            (&lt;= i X)
+                            (&lt;= X j))
+(SATISFIES pred)       (pred X) ; Lisp requires a unary function, not a macro
+SIGNED-BYTE            (INTEGERP X)
+(SIGNED-BYTE i)        same as (INTEGER -2**i-1 (2**i-1)-1)
+STANDARD-CHAR          (STANDARD-CHARP X)
+STRING                 (STRINGP X)
+(STRING max)           (AND (STRINGP X) (EQUAL (LENGTH X) max))
+SYMBOL                 (SYMBOLP X)
+T                      T
+UNSIGNED-BYTE          same as (INTEGER 0 *)
+(UNSIGNED-BYTE i)      same as (INTEGER 0 (2**i)-1)
+</pre>
+
+<em>Notes:</em><p>
+
+In general, <code>(integer i j)</code> means
+
+<pre>
+     (AND (INTEGERP X)
+          (&lt;= i X)
+          (&lt;= X j)).
+</pre>
+
+But if <code>i</code> is the symbol <code>*</code>, the first inequality is omitted.  If <code>j</code>
+is the symbol <code>*</code>, the second inequality is omitted.  If instead of
+being an integer, the second element of the type specification is a
+list containing an integer, <code>(i)</code>, then the first inequality is made
+strict.  An analogous remark holds for the <code>(j)</code> case.  The <code>RATIONAL</code>
+and <code>REAL</code> type specifiers are similarly generalized.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

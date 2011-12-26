@@ -1,0 +1,1157 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: MONITOR,  Next: MONITORED-RUNES,  Prev: BRRatsign,  Up: BREAK-REWRITE
+
+MONITOR    to monitor the attempted application of a rule name
+
+     Example:
+     (monitor '(:rewrite assoc-of-app) 't)
+     :monitor (:rewrite assoc-of-app) t
+     :monitor (:definition app) (equal (brr@ :target) '(app c d))
+     
+     General Form:
+     (monitor rune term)
+
+where rune is a rune and term is a term, called the "break condition."
+Rune must be either a :rewrite rune or a :definition rune.
+
+When a rune is monitored any attempt to apply it may result in an
+interactive break in an ACL2 "wormhole state." There you will get a
+chance to see how the application proceeds.  See *Note BREAK-REWRITE::
+for a description of the interactive loop entered.  Whether an
+interactive break occurs depends on the value of the break condition
+expression associated with the monitored rune.
+
+NOTE: Some :rewrite rules are considered "simple abbreviations"; see
+*note SIMPLE::.  These can be be monitored, but only at certain times
+during the proof.  Monitoring is carried out by code inside the
+rewriter but abbreviation rules may be applied by a special purpose
+simplifier inside the so-called _preprocess_ phase of a proof.  If you
+desire to monitor an abbreviation rule, a warning will be printing
+suggesting that you may want to supply the hint :DO-NOT '(PREPROCESS);
+see *note HINTS::.  Without such a hint, an abbreviation rule can be
+applied during the preprocess phase of a proof, and no such application
+will cause an interactive break.
+
+To remove a rune from the list of monitored runes, use unmonitor.  To
+see which runes are monitored and what their break conditions are,
+evaluate (monitored-runes).
+
+Monitor, unmonitor and monitored-runes are macros that expand into
+expressions involving state.  While these macros appear to return the
+list of monitored runes this is an illusion.  They all print monitored
+rune information to the comment window and then return error triples
+instructing ld to print nothing.  It is impossible to return the list
+of monitored runes because it exists only in the wormhole state with
+which you interact when a break occurs.  This allows you to change the
+monitored runes and their conditions during the course of a proof
+attempt without changing the state in which the the proof is being
+constructed.
+
+Unconditional break points are obtained by using the break condition t.
+We now discuss conditional break points.  The break condition, expr,
+must be a term that contains no free variables other than state and
+that returns a single non-state result.  In fact, the result should be
+nil, t, or a true list of commands to be fed to the resulting
+interactive break.  Whenever the system attempts to use the associated
+rule, expr is evaluated in the wormhole interaction state.  A break
+occurs only if the result of evaluating expr is non-nil.  If the result
+is a true list, that list is appended to the front of standard-oi and
+hence is taken as the initial user commands issued to the interactive
+break.
+
+In order to develop effective break conditions it must be possible to
+access context sensitive information, i.e., information about the
+context in which the monitored rune is being tried.  The brr@ macro may
+be used in break conditions to access such information as the term
+being rewritten and the current governing assumptions.  This
+information is not stored in the proof state but is transferred into
+the wormhole state when breaks occur.  The macro form is (brr@ :sym)
+where :sym is one of several keyword symbols, including :target (the
+term being rewritten), :unify-subst (the substitution that instantiates
+the left-hand side of the conclusion of the rule so that it is the
+target term), and :type-alist (the governing assumptions).  See *Note
+BRR@: BRRatsign.
+
+For example,
+
+     ACL2 !>:monitor (:rewrite assoc-of-app)
+                     (equal (brr@ :target) '(app a (app b c)))
+
+will monitor (:rewrite assoc-of-app) but will cause an interactive
+break only when the target term, the term being rewritten, is (app a
+(app b c)).
+
+Because break conditions are evaluated in the interaction environment,
+the user developing a break condition for a given rune can test
+candidate break conditions before installing them.  For example,
+suppose an unconditional break has been installed on a rune, that an
+interactive break has occurred and that the user has determined both
+that this particular application is uninteresting and that many more
+such applications will likely occur.  An appropriate response would be
+to develop an expression that recognizes such applications and returns
+nil.  Of course, the hard task is figuring out what makes the current
+application uninteresting.  But once a candidate expression is
+developed, the user can evaluate it in the current context simply to
+confirm that it returns nil.
+
+Recall that when a break condition returns a non-nil true list that
+list is appended to the front of standard-oi.  For example,
+
+     ACL2 !>:monitor (:rewrite assoc-of-app) '(:go)
+
+will cause (:rewrite assoc-of-app) to be monitored and will make the
+break condition be '(:go).  This break condition always evaluates the
+non-nil true list (:go).  Thus, an interactive break will occur every
+time (:rewrite assoc-of-app) is tried.  The break is fed the command
+:go.  Now the command :go causes break-rewrite to (a) evaluate the
+attempt to apply the lemma, (b) print the result of that attempt, and
+(c) exit from the interactive break and let the proof attempt continue.
+Thus, in effect, the above :monitor merely "traces" the attempted
+applications of the rune but never causes an interactive break
+requiring input from the user.
+
+It is possible to use this feature to cause a conditional break where
+the effective break condition is tested *after* the lemma has been
+tried.  For example:
+
+     ACL2 !>:monitor (:rewrite lemma12)
+                     '(:unify-subst
+                       :eval$ nil
+                       :ok-if (or (not (brr@ :wonp))
+                                  (not (equal (brr@ :rewritten-rhs) '(foo a))))
+                       :rewritten-rhs)
+
+causes the following behavior when (:rewrite lemma12) is tried.  A
+break always occurs, but it is fed the commands above.  The first,
+:unify-subst, causes break-rewrite to print out the unifying
+substitution.  Then in response to :eval$ nil the lemma is tried but
+with all runes temporarily unmonitored.  Thus no breaks will occur
+during the rewriting of the hypotheses of the lemma.  When the attempt
+has been made, control returns to break-rewrite (which will print the
+results of the attempt, i.e., whether the lemma was applied, if so what
+the result is, if not why it failed).  The next command, the :ok-if
+with its following expression, is a conditional exit command.  It means
+exit break-rewrite if either the attempt was unsuccessful, (not (brr@
+:wonp)), or if the result of the rewrite is any term other than (foo
+a).  If this condition is met, the break is exited and the remaining
+break commands are irrelevant.  If this condition is not met then the
+next command, :rewritten-rhs, prints the result of the application
+(which in this contrived example is known to be (foo a)).  Finally, the
+list of supplied commands is exhausted but break-rewrite expects more
+input.  Therefore, it begins prompting the user for input.  The end
+result, then, of the above :monitor command is that the rune in
+question is elaborately traced and interactive breaks occur whenever it
+rewrites its target to (foo a).
+
+We recognize that the above break condition is fairly arcane.  We
+suspect that with experience we will develop some useful idioms.  For
+example, it is straightforward now to define macros that monitor runes
+in the ways suggested by the following names:  trace-rune,
+break-if-target-is, and break-if-result-is.  For example, the last
+could be defined as
+
+     (defmacro break-if-result-is (rune term)
+       `(monitor ',rune
+                 '(quote (:eval :ok-if
+                                (not (equal (brr@ :rewritten-rhs) ',term))))))
+
+(Note however that the submitted term must be in translated form.)
+
+Since we don't have any experience with this kind of control on lemmas
+we thought it best to provide a general (if arcane) mechanism and hope
+that the ACL2 community will develop the special cases that we find
+most convenient.
+
+
+File: acl2-doc-emacs.info,  Node: MONITORED-RUNES,  Next: OK-IF,  Prev: MONITOR,  Up: BREAK-REWRITE
+
+MONITORED-RUNES    print the monitored runes and their break conditions
+
+     Example and General Form:
+     :monitored-runes
+
+This macro prints a list, each element of which is of the form (rune
+expr), showing each monitored rune and its current break condition.
+
+
+File: acl2-doc-emacs.info,  Node: OK-IF,  Next: SET-BRR-TERM-EVISC-TUPLE,  Prev: MONITORED-RUNES,  Up: BREAK-REWRITE
+
+OK-IF    conditional exit from break-rewrite
+
+     Example Form:
+     :ok-if (null (brr@ :wonp))
+     
+     General Form:
+     :ok-if expr
+
+where expr is a term involving no free variables other than state and
+returning one non-state result which is treated as Boolean.  This form
+is intended to be executed from within break-rewrite (see *note
+BREAK-REWRITE::).
+
+Consider first the simple situation that the (ok-if term) is a command
+read by break-rewrite.  Then, if the term is non-nil, break-rewrite
+exits and otherwise it does not.
+
+More generally, ok-if returns an ACL2 error triple (mv erp val state).
+(See *Note LD:: for more on error triples.)  If any form being
+evaluated as a command by break-rewrite returns the triple returned by
+(ok-if term) then the effect of that form is to exit break-rewrite if
+term is non-nil.  Thus, one might define a function or macro that
+returns the value of ok-if expressions on all outputs and thus create a
+convenient new way to exit break-rewrite.
+
+The exit test, term, generally uses brr@ to access context sensitive
+information about the attempted rule application.  See *Note BRR@:
+BRRatsign.  Ok-if is useful inside of command sequences produced by
+break conditions.  See *Note MONITOR::.  :ok-if is most useful after an
+:eval command has caused break-rewrite to try to apply the rule because
+in the resulting break environment expr can access such things as
+whether the rule succeeded, if so, what term it produced, and if not,
+why.  There is no need to use :ok-if before :evaling the rule since the
+same effects could be achieved with the break condition on the rule
+itself.  Perhaps we should replace this concept with
+:eval-and-break-if?  Time will tell.
+
+
+File: acl2-doc-emacs.info,  Node: SET-BRR-TERM-EVISC-TUPLE,  Next: UNMONITOR,  Prev: OK-IF,  Up: BREAK-REWRITE
+
+SET-BRR-TERM-EVISC-TUPLE    controls printing of terms inside the break-rewrite loop
+
+This macro controls printing of terms inside the break-rewrite loop
+(see *note BREAK-REWRITE::).
+
+     Examples:
+     (set-brr-term-evisc-tuple nil) ; default (inside brr)
+     (set-brr-term-evisc-tuple '(nil 3 4 nil))
+
+The first of the examples above restores the break-rewrite state to one
+in which terms are printed in full.  The second sets the print-level to
+3 and the print-length to 4, to replace substructures deeper than 3 by
+"#" and those longer than 4 by "..."; see see *note LD-EVISC-TUPLE::
+for information about the shape of the argument of this macro, which is
+evaluated.
+
+This macro can be executed either inside a break from break-rewrite, or
+at the top level.  Its effect will persist, except potentially when you
+execute "#." to exit break-rewrite.
+
+Here is an example showing the effect of this macro.
+
+     1 ACL2 >:unify-subst
+          X : (CONS A
+                    (CONS B
+                          (CONS C
+                                (CONS D (CONS E (CONS F (CONS G 'NIL)))))))
+     1 ACL2 >(set-brr-term-evisc-tuple (evisc-tuple 3 4 nil nil))
+     <state>
+     1 ACL2 >:unify-subst
+          X : (CONS A (CONS B (CONS C #)))
+     1 ACL2 >
+
+
+File: acl2-doc-emacs.info,  Node: UNMONITOR,  Prev: SET-BRR-TERM-EVISC-TUPLE,  Up: BREAK-REWRITE
+
+UNMONITOR    to stop monitoring a rule name
+
+     Examples:
+     (unmonitor '(:rewrite assoc-of-app))
+     :unmonitor (:rewrite assoc-of-app)
+     :unmonitor :all
+     
+     General Forms:
+     (unmonitor rune)
+     (unmonitor :all)
+
+Here, rune is a rune that is currently among those with break points
+installed.  This function removes the break.
+
+Subtle point:  Because you may want to unmonitor a "rune" that is no
+longer a rune in the current ACL2 world, we don't actually check this
+about rune.  Instead, we simply check that rune is a consp beginning
+with a keywordp.  That way, you'll know you've made a mistake if you
+try to :unmonitor binary-append instead of :unmonitor (:definition
+binary-append), for example.
+
+
+File: acl2-doc-emacs.info,  Node: DOCUMENTATION,  Next: EVENTS,  Prev: BREAK-REWRITE,  Up: Top
+
+DOCUMENTATION    functions that display documentation at the terminal
+
+This section explains the ACL2 online documentation system.  Thus, it
+assumes that you are typing at the terminal, inside an ACL2 session.
+If you are reading this description in another setting (for example, on
+paper), simply ignore the parts of this description that involve typing
+at the terminal.
+
+For an introduction to the ACL2 online documentation system, type :more
+below.  Whenever the documentation system concludes with "(type :more
+for more, :more! for the rest)" you may type :more to see the next
+block of documentation.
+
+Topics related to documentation are documented individually:
+
+* Menu:
+
+* *TERMINAL-MARKUP-TABLE*:: a markup table used for printing to the terminal
+
+* ARGS:: args, guard, type, constraint, etc., of a function symbol
+
+* DOC:: brief documentation (type :doc name)
+
+* DOC!:: all the documentation for a name (type :doc! name)
+
+* DOC-STRING:: formatted documentation strings
+
+* DOCS:: available documentation topics (by section)
+
+* HELP:: brief survey of ACL2 features
+
+* MARKUP:: the markup language for ACL2 documentation strings
+
+* MORE:: your response to :doc or :more's ``(type :more...)''
+
+* MORE!:: another response to ``(type :more for more, :more! for the rest)''
+
+* MORE-DOC:: a continuation of the :doc documentation
+
+* NQTHM-TO-ACL2:: ACL2 analogues of Nqthm functions and commands
+
+The ACL2 online documentation feature allows you to see extensive
+documentation on many ACL2 functions and ideas.  You may use the
+documentation facilities to document your own ACL2 functions and
+theorems.
+
+If there is some name you wish to know more about, then type
+
+     ACL2 !>:doc name
+
+in the top-level loop.  If the name is documented, a brief blurb will
+be printed.  If the name is not documented, but is "similar" to some
+documented names, they will be listed.  Otherwise, nil is returned.
+
+Every name that is documented contains a one-line description, a few
+notes, and some details.  :Doc will print the one-liner and the notes.
+When :doc has finished it stops with the message "(type :more for more,
+:more! for the rest)" to remind you that details are available.  If you
+then type
+
+     ACL2 !>:more
+
+a block of the continued text will be printed, again concluding with
+"(type :more for more, :more! for the rest)" if the text continues
+further, or concluding with "*-" if the text has been exhausted.  By
+continuing to type :more until exhausting the text you can read
+successive blocks.  Alternatively, you can type :more! to get all the
+remaining blocks.
+
+If you want to get the details and don't want to see the elementary
+stuff typed by :doc name, type:
+
+     ACL2 !>:MORE-DOC name
+
+We have documented not just function names but names of certain
+important ideas too.  For example, see *note REWRITE:: and see *note
+META:: to learn about :rewrite rules and :meta rules, respectively.
+See *Note HINTS:: to learn about the structure of the :hints argument
+to the prover.  The deflabel event (see *note DEFLABEL::) is a way to
+introduce a logical name for no reason other than to attach
+documentation to it; also see *note DEFDOC::.
+
+How do you know what names are documented?  There is a documentation
+data base which is querried with the :docs command.
+
+The documentation data base is divided into sections.  The sections are
+listed by
+
+     ACL2 !>:docs *
+
+Each section has a name, sect, and by typing
+
+     ACL2 !>:docs sect
+
+or equivalently
+
+     ACL2 !>:doc sect
+
+you will get an enumeration of the topics within that section.  Those
+topics can be further explored by using :doc (and :more) on them.  In
+fact the section name itself is just a documented name.  :more
+generally gives an informal overview of the general subject of the
+section.
+
+     ACL2 !>:docs **
+
+will list all documented topics, by section.  This fills several pages
+but might be a good place to start.
+
+If you want documentation on some topic, but none of our names or brief
+descriptions seem to deal with that topic, you can invoke a command to
+search the text in the data base for a given string.  This is like the
+GNU Emacs "apropos" command.
+
+     ACL2 !>:docs "functional inst"
+
+will list every documented topic whose :doc or :more-doc text includes
+the substring "functional inst", where case and the exact number of
+spaces are irrelevant.
+
+If you want documentation on an ACL2 function or macro and the
+documentation data base does not contain any entries for it, there are
+still several alternatives.
+
+     ACL2 !>:args fn
+
+will print the arguments and some other relevant information about the
+named function or macro.  This information is all gleaned from the
+definition (not from the documentation data base) and hence this is a
+definitive way to determine if fn is defined as a function or macro.
+
+You might also want to type:
+
+     ACL2 !>:pc fn
+
+which will print the command which introduced fn.  You should see *note
+COMMAND-DESCRIPTOR:: for details on the kinds of input you can give the
+:pc command.
+
+The entire ACL2 documentation data base is user extensible.  That is,
+if you document your function definitions or theorems, then that
+documentation is made available via the data base and its query
+commands.
+
+The implementation of our online documentation system makes use of
+Common Lisp's "documentation strings." While Common Lisp permits a
+documentation string to be attached to any defined concept, Common Lisp
+assigns no interpretation to these strings.  ACL2 attaches special
+significance to documentation strings that begin with the characters
+":doc-section".  When such a documentation string is seen, it is stored
+in the data base and may be displayed via :doc, :more, :docs, etc.
+Such documentation strings must follow rigid syntactic rules to permit
+their processing by our commands.  These are spelled out elsewhere; see
+*note DOC-STRING::.
+
+A description of the structure of the documentation data base may also
+be found; see *note DOC-STRING::.
+
+
+File: acl2-doc-emacs.info,  Node: *TERMINAL-MARKUP-TABLE*,  Next: ARGS,  Prev: DOCUMENTATION,  Up: DOCUMENTATION
+
+*TERMINAL-MARKUP-TABLE*    a markup table used for printing to the terminal
+
+The value of the ACL2 constant *terminal-markup-table* is an association
+list pairing markup keys with strings, to be used for printing to the
+terminal.  See *Note MARKUP:: for a description of the ACL2 markup
+language.
+
+The entries in *terminal-markup-table* are of the form
+
+     (key . fmt-string)
+
+where key is one of the doc-string tilde directives (see *note
+MARKUP::), and fmt-string is a string as expected by the ACL2 printing
+function fmt.  The system arranges that for any arg, when an expression
+~key[arg] is encountered by the documentation printer, fmt will print
+fmt-string in the association list where #\a is bound to arg and #\A is
+bound to the result of applying the function string-upcase to arg.
+
+It is possible to implement tools in ACL2 for printing documentation to
+other than the terminal.  In fact, such tools exist for Texinfo and for
+HTML.  For now, discussion of this capability is beyond the scope of
+the present topic.
+
+
+File: acl2-doc-emacs.info,  Node: ARGS,  Next: DOC,  Prev: *TERMINAL-MARKUP-TABLE*,  Up: DOCUMENTATION
+
+ARGS    args, guard, type, constraint, etc., of a function symbol
+
+     Example:
+     :args assoc-eq
+
+Args takes one argument, a symbol which must be the name of a function
+or macro, and prints out the formal parameters, the guard expression,
+the output signature, the deduced type, the constraint (if any), and
+whether documentation about the symbol is available via :doc.
+
+
+File: acl2-doc-emacs.info,  Node: DOC,  Next: DOC!,  Prev: ARGS,  Up: DOCUMENTATION
+
+DOC    brief documentation (type :doc name)
+
+NOTE:  The :doc command only makes sense at the terminal.  Furthermore
+it only works at the terminal when a "full-size" image has been built.
+Most users will probably access the ACL2 documentation in other ways,
+as explained in the file "doc/README" that comes with the ACL2
+distribution.
+
+     Examples:
+     ACL2 !>:doc DEFTHM          ; print documentation of DEFTHM
+     ACL2 !>:doc logical-name    ; print documentation of LOGICAL-NAME
+     ACL2 !>:doc "MY-PKG"      ; print documentation of "MY-PKG"
+     
+     Related Topics:
+     :more                      ; continues last :doc or :more-doc text
+     :more-doc name             ; prints more documentation for name
+     :docs **                   ; lists all documented symbols
+     :docs "compil"             ; documented symbols apropos "compil"
+     :DOC documentation         ; describes how documentation works
+     
+     General Form:
+     ACL2>:doc logical-name
+
+where logical-name is a logical name (see *note LOGICAL-NAME::) for
+which you hope there is documentation.  Chances are there is no
+documentation at the moment, but we are working on adding documentation
+strings for all the user level ACL2 functions.
+
+For a general discussion of our treatment of documentation strings, see
+*note DOCUMENTATION::.
+
+This is the first cut at online documentation.  Users can be
+particularly helpful by sending mail on the inadequacies of the system.
+Address it just to Moore and put Documentation in the subject line.
+There are several things that trouble me about what I've done here.
+
+First, many concepts aren't documented.  Ultimately, I'd like to .
+document (a) every CLTL primitive (e.g., case and coerce) and (b) every
+ACL2 extension (e.g., aref1 and getprop).  But so far I have focussed
+on documenting (c) the ACL2 system primitives (e.g., defthm and what
+hints look like).  My priorities are (c), then (b), and then (a),
+following the philosophy that the most unstable features should get
+online documentation in these early releases.  Having gotten the basic
+documentation in place, I'll document new things as they are added, and
+in response to your pleas I'll try to add documentation to old things
+that are widely regarded as important.
+
+Second, I worry that the existing documentation is unhelpful because it
+provides too much or too little detail, or it provides the detail too
+far away from where it is needed.  Please be on the lookout for this.
+Did you get what you needed when you appealed to :doc or :more-doc?  If
+not, what was it you needed?  Would more cross-references help?  Did
+you get lost in maze of cross-references?
+
+
+File: acl2-doc-emacs.info,  Node: DOC!,  Next: DOC-STRING,  Prev: DOC,  Up: DOCUMENTATION
+
+DOC!    all the documentation for a name (type :doc! name)
+
+NOTE:  The :doc! command only makes sense at the terminal.
+
+     Examples:
+     ACL2 !>:doc! defthm
+     ACL2 !>:doc! certificate
+
+This command is like :doc name followed by :more!.  It prints all the
+documentation of name.
+
+
+File: acl2-doc-emacs.info,  Node: DOC-STRING,  Next: DOCS,  Prev: DOC!,  Up: DOCUMENTATION
+
+DOC-STRING    formatted documentation strings
+
+     Examples:
+     ":Doc-Section name
+     one-liner~/notes~/details"
+     
+     ":Doc-Section name
+     one-liner~/
+     notes~/
+     details~/
+     :cite old-name1
+     :cited-by old-name2"
+
+Use (get-doc-string 'name state) to see other examples.
+
+Documentation strings not beginning with ":Doc-Section" (case is
+irrelevant) are ignored.  See *Note MARKUP:: for how to supply
+formatting information (such as fonts and displayed text) in
+documentation strings.
+
+ACL2 attaches special importance to documentation strings beginning
+with the header ":Doc-Section" (or any variant thereof obtained by
+changing case).  Any documentation string that does not begin with such
+a header is considered unformatted and is ignored.  For the rest of
+this discussion, we use the phrase "documentation string" as though it
+read "formatted documentation string."
+
+Documentation strings are always processed in the context of some
+symbol, name, being defined.  (Indeed, if an event defines no symbol,
+e.g., verify-guards or in-theory, then it is not permitted to have a
+formatted documentation string.)  The string will be associated with
+name in the "documentation data base." The data base is divided into
+"sections" and each section is named by a symbol.  Among the sections
+are events, documentation, history, other, and miscellaneous.  A
+complete list of the sections may be obtained by typing :docs * at the
+terminal.  You can create new sections.  The main purpose of sections
+is simply to partition the large set of names into smaller subsets
+whose contents can be enumerated separately.  The idea is that the user
+may remember (or recognize) the relevant section name and then read its
+contents to find interesting items.
+
+Within a section are "documentation tuples" which associate with each
+documented name its documentation string and a list of related
+documented names, called the "related names" of the name.  When :doc
+prints the documentation for name, it always lists the related names.
+
+When a formatted documentation string is submitted with the defining
+event of some name, the section name and an initial set of related
+names are parsed from the string.  In addition, the formatted string
+contains various "levels" of detail that are printed out at different
+times.  Finally, it is possible for a string to cause the newly
+documented name to be added to the related names of any previously
+documented name.  Thus, as new names are introduced they can be grouped
+with old ones.
+
+The general form of an ACL2 formatted documentation string is
+
+     ":DOC-SECTION <section-name>
+       <one-liner>~/
+       <notes>~/
+       <details>~/
+       :CITE <n1>
+       ...
+       :CITE <nn>
+       :CITED-BY <m1>
+       ...
+       :CITED-BY <mm>"
+
+Before we explain this, let it be noted that (get-doc-string name
+state) will return the documentation string associated with name in the
+documentation data base.  You may want to call get-doc-string on 'pe
+and 'union-theories just to see some concrete documentation strings.
+This documentation string, which is rather long, is under 'doc-string.
+
+A formatted documentation string has five parts: the header and
+section-name (terminating in the first #\Newline), the <one-liner>,
+<notes>, and <details> (each terminating in a tilde-slash ("~/") pair),
+and a citation part.  These five parts are parsed into six components.
+<section-name> is read as the name of a symbol, section-name.
+<one-liner>, <notes>, and <details> are arbitrary sequences of
+characters (ignoring initial white space and not including the
+tilde-slash pairs which terminate them).  The <ni> are read as symbols
+and assembled into a list called the "cite" symbols.  The <mi> are read
+as symbols and assembled into a list called the "cited-by" symbols.
+See the warning below regarding the hackish nature of our symbol reader.
+
+Section-name must either be a previously documented symbol or else be
+name, the symbol being documented.  To open a new section of the data
+base, named section-name, you should define the logical name
+section-name (as by deflabel or any other event; also see *note
+DEFDOC::) and attach to it a documentation string for section
+section-name.  You might wish to print out the documentation string we
+use for some of our section names, e.g., (get-doc-string 'events
+state).  By forcing section names to be documented symbols, we permit
+sections themselves to have one line descriptions and discussions,
+presented by the standard documentation facilities like the facilities
+:doc and :more-doc that may be used at the terminal.
+
+Each of the ni's and mi's must be previously documented symbols.
+
+Both <one-liner> and <details> must be non-empty, i.e., must contain
+some non-whitespace characters.  <notes> may be empty.  The :cites and
+:cited-bys pairs may be intermingled and may be separated by either
+newlines or spaces.  The citation part may be empty.  When the citation
+part is empty, the tilde-slash pair terminating the <details> part may
+be omitted.  Thus, the simplest form of a formatted documentation
+string is:
+
+     ":Doc-Section <section-name>
+      <one-liner>~/~/
+      <details>"
+
+Since white space at the front of <one-liner>, <notes> and <details> is
+ignored, we often precede those parts by #\Newlines to make the strings
+easier to read in our source files.  We also typically indent all of
+the text in the string by starting each line with a few spaces.  (The
+Emacs commands for formatting Lisp get confused if you have arbitrary
+characters on the left margin.)  We assume that every line in
+<one-liner>, <notes>, and <details> starts with at least as many spaces
+as <one-liner> does, i.e., we assume they are all indented the same
+amount (or more).  Let d be the number of spaces separating <one-liner>
+from the #\Newline preceding it.  When the various parts are printed,
+we "de-indent" by stripping out the first d spaces following each
+#\Newline.
+
+However, we find that when documentation is printed flush against the
+left margin it is difficult to distinguish the documentation text from
+previous output.  We therefore prefix each line we print by a special
+pad of characters.  By default, this pad is "| " so that documentation
+text has a vertical bar running down the left margin.  But the pad is
+just the value of the global variable doc-prefix and you may assign it
+any string you wish.
+
+To add such a string to the data base under the symbol name we make a
+new entry in the section-name section of the data base.  The entry
+associates name with the string and uses the string's cites list as the
+initial value of the related names field.  In addition, we add name to
+the related names field of each of the names listed in the string's
+cited-by list.  We also add name to the related names field of its
+section-name.  Observe that the cites list in a string is only the
+initial value of the related names of the names.  Future documentation
+strings may add to it via :cited-by or :doc-section.  Indeed, this is
+generally the case.  We discuss this further below.
+
+When a brief description of name is required (as by :docs **), name and
+<one-liner> are printed.  <one-liner> is usually printed starting in
+column 15 (however see *note PRINT-DOC-START-COLUMN::).  Despite its
+name, <one-liner> need not be one line.  It usually is one line,
+however.
+
+When you type :doc name at the terminal, the first response will be to
+print name and <one-liner>.  Then :doc prints <notes>, if any.  Then,
+if name is the name of a section, it prints the <one-liner>s for each
+of its related names.  For example, try :doc events.  If name is not a
+section name but does have some related names, they are merely listed
+but not explained.  Try :doc theory-functions.  :more-doc name prints
+<details>.
+
+Our style is to let each new concept add itself to the related names of
+old concepts.  To do otherwise increases the chances that documentation
+gets outdated because one often forgets to update supposedly complete
+lists of the relevant topics when new topics are invented.  For
+example, :doc theory-functions lists each available theory function.
+But get-doc-string of 'theory-functions just shows a few examples and
+has an empty cites list.  From where do we get the names of the theory
+functions listed by :doc?  The answer is that each theory function has
+its own documentation string and those strings each specify :cited-by
+theory-functions.  See for example get-doc-string of 'union-theories.
+So by the time the entire system is assembled, the related names of
+'theory-functions contains all the (documented) theory functions.  This
+makes it easy to add new theory functions without changing the general
+discussion in 'theory-functions.
+
+When an event or command form is printed, as by :pe or :pc, that
+contains a formatted documentation string, we do not print the actual
+documentation string (since they are usually large and distracting).
+Instead we print the string:
+
+       "Documentation available via :doc"
+
+inviting you to use :doc and :more-doc (or get-doc-string) if you wish
+to see the documentation at the terminal.
+
+_Warning on Reading Symbols from Strings:_ When we read a symbol, such
+as the section-symbol, from a documentation string, we use a quick and
+dirty imitation of the much more powerful CLTL read program.  In
+particular, we scan past any whitespace, collect all the characters we
+see until we get to more whitespace or the end of the string, convert
+the characters to upper case, make a string out of them, and intern
+that string.  Thus, if you typed ":Doc-Section 123 ..." we would read
+the 123 as the symbol |123|.  Observe that special characters, such as
+parentheses and escape characters, are not afforded their usual
+reverence by our hack.  Furthermore, the question arises: in which
+package do we intern the symbol?  The answer is, usually, the package
+containing the name being defined.  I.e., if you are documenting
+my-pkg::name and you attach a documentation string that begins
+":Doc-Section: Machines ..." then the section-symbol will be
+my-pkg::machines.  We recognize two special cases. If the first
+character read is a colon, we use the keyword package.  If the first
+five characters read are acl2:: then we intern in the "ACL2" package.
+Our own section names, e.g., events, are in the "ACL2" package.
+
+In a related area, when you ask for the documentation of a name, e.g.,
+when you type :doc name at the terminal, that name is read with the
+full ACL2 reader, not the hack just described.  That name is read into
+the current package.  Thus, if you are operating in-package "MY-PKG"
+and type :doc events, what is read is my-pkg::events.  The data base
+may not contain an entry for this symbol.  Before reporting that no
+documentation exists, we try acl2::events.
+
+One last note: defpkg permits a formatted documentation string, which
+is associated in the data base with the name of the package.  But the
+name of the package is a string, not a symbol.  It is permitted to
+access the documentation of a string (i.e., package name).  But there
+are no facilities for getting such a stringp name into the related
+names of another name nor of making such stringp names be section
+names.  That is because we always read symbols from strings and never
+read strings from strings.  I.e., if you did write "Doc-Section
+\"MY-PKG\" ..." it would read in as a weird symbol.
+
+
+File: acl2-doc-emacs.info,  Node: DOCS,  Next: HELP,  Prev: DOC-STRING,  Up: DOCUMENTATION
+
+DOCS    available documentation topics (by section)
+
+NOTE:  The :docs command only makes sense at the terminal.
+
+When the :docs command is given a stringp argument it searches the text
+produced by :doc and :more-doc and lists all the documented topics
+whose text contains the given string.  For purposes of this string
+matching we ignore distinctions of case and the amount and kind (but
+not presence) of white space.  We also treat hyphen as whitespace.
+
+However, the following examples show how :docs can be used on other than
+string patterns.
+
+     Examples:
+     ACL2 !>:docs *           ; lists documentation sections
+     ACL2 !>:docs **          ; lists all documented topics within all sections
+     ACL2 !>:docs events      ; lists all topics in section EVENTS
+     ACL2 !>:docs "compil"    ; lists topics ``apropos''
+
+The data base of formatted documentation strings is structured into
+sections.  Within a section are topics.  Each topic has a one-liner,
+some notes, and some detailed discussions.  The :docs command provides
+a view of the entire data base.
+
+:docs takes one argument, as described below:
+
+     arg               effect
+     
+     *                 list all section headings in the data base
+     **                list all section headings and all topics within
+                       each section
+     name              list all topics in the section named name (where
+                       name is some symbol other than * and **).  This
+                       is always the same as :doc name.
+     pattern           list all topics whose :doc or :more-doc text
+                       mentions the string pattern.  For purposes of this
+                       string matching we ignore distinctions of case and
+                       the amount and kind (but not presence) of white
+                       space.  We also treat hyphen as whitespace.
+
+
+File: acl2-doc-emacs.info,  Node: HELP,  Next: MARKUP,  Prev: DOCS,  Up: DOCUMENTATION
+
+HELP    brief survey of ACL2 features
+
+     Example:
+     ACL2 !>:help
+
+See *Note LP:: for general information about the top-level command
+environment for ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: MARKUP,  Next: MORE,  Prev: HELP,  Up: DOCUMENTATION
+
+MARKUP    the markup language for ACL2 documentation strings
+
+ACL2 documentation strings make special use of the tilde character (~).
+In particular, we describe here a "markup language" for which the
+tilde character plays a special role.  The markup language is valuable
+if you want to write documentation that is to be displayed outside your
+ACL2 session.  If you are not writing such documentation, and if also
+you do not use the character `~', then there is no need to read on.
+
+Three uses of the tilde character (~) in documentation strings are as
+follows.  Below we explain the uses that constitute the ACL2 markup
+language.
+
+     ~/
+     Indicates the end of a documentation *section*; see *note
+     DOC-STRING::.
+
+     ~~
+     Indicates the literal insertion of a tilde character (~).
+
+     ~]
+     This directive in a documentation string is effective only during
+     the processing of part 2, the details (see *note DOC-STRING::), and
+     controls how much is shown on each round of :more processing when
+     printing to the terminal.  If the system is not doing :more
+     processing, then it acts as though the ~] is not present.
+     Otherwise, the system put out a newline and halts documentation
+     printing on the present topic, which can be resumed if the user
+     types :more at the terminal.
+
+
+The other uses of the tilde character are of the following form.
+
+       ~key[arg]
+
+Before launching into an explanation of how this works in detail, let
+us consider some small examples.
+
+Here is a word that is code:
+
+       ~c[function-name].
+
+Here is a phrase with an "emphasized" word, "not":
+
+       Do ~em[not] do that.
+
+Here is the same phrase, but where "not" receives stronger emphasis
+(presumably boldface in a printed version):
+
+       Do ~st[not] do that.
+
+Here is a passage that is set off as a display, in a fixed-width font:
+
+       ~bv[]
+       This passage has been set off as ``verbatim''.
+       The present line starts just after a line break.  Normally, printed
+       text is formatted, but inside ~bv[]...~ev[], line breaks are taken
+       literally.
+       ~ev[]
+
+In general, the idea is to provide a "markup language" that can be
+reasonably interpreted not only at the terminal (via :doc), but also
+via translators into other languages.  In fact, translators have been
+written into Texinfo and HTML.
+
+Let us turn to a more systematic consideration of how to mark text in
+documentation strings using expressions of the form ~key[arg], which we
+will call "doc-string tilde directives."  The idea is that key informs
+the documentation printer (which could be the terminal, a hardcopy
+printer, or some hypertext tool) about the "style" used to display arg.
+The intention is that each such printer should do the best it can.
+For example, we have seen above that ~em[arg] tells the printer to
+emphasize arg if possible, using an appropriate display to indicate
+emphasis (italics, or perhaps surrounding arg with some character like
+_, or ...).  For another example, the directive for bold font, ~b[arg],
+says that printed text for arg should be in bold if possible, but if
+there is no bold font available (such as at the terminal), then the
+argument should be printed in some other reasonable manner (for
+example, as ordinary text).  The key part is case-insensitive; for
+example, you can use ~BV[] or ~Bv[] or ~bV[] in place of ~bv[].
+
+Every form below may have any string as the argument (inside [..]), as
+long as it does not contain a newline (more on that below).  However,
+when an argument does not make much sense to us, we show it below as
+the empty string, e.g., "~bv[]" rather than "~bv[arg]".
+
+     ~-[]      Print the equivalent of a dash
+     
+     ~b[arg]   Print the argument in bold font, if available
+     
+     ~bid[arg]   ``Begin implementation dependent'' -- Ignores argument at
+               terminal.
+     
+     ~bf[]     Begin formatted text (respecting spaces and line breaks),
+               but in ordinary font (rather than, say, fixed-width font)
+               if possible
+     
+     ~bq[]     Begin quotation (indented text, if possible)
+     
+     ~bv[]     Begin verbatim (print in fixed-width font, respecting
+               spaces and line breaks)
+     
+     ~c[arg]   Print arg as ``code'', such as in a fixed-width font
+     
+     ~ef[]     End format; balances ~bf[]
+     
+     ~eid[arg]   ``End implementation dependent'' -- Ignores argument at
+               terminal.
+     
+     ~em[arg]  Emphasize arg, perhaps using italics
+     
+     ~eq[]     End quotation; balances ~bq[]
+     
+     ~ev[]     End verbatim; balances ~bv[]
+     
+     ~i[arg]   Print arg in italics font
+     
+     ~id[arg]   ``Implementation dependent'' -- Ignores argument at
+               terminal.
+     
+     ~il[arg]  Print argument as is, but make it a link (for true
+               hypertext environments)
+     
+     ~ilc[arg] Same as ~il[arg], except that arg should be printed as
+               with ~c[arg]
+     
+     ~l[arg]   Ordinary link; prints as ``See :DOC arg'' at the terminal
+               (but also see ~pl below, which puts ``see'' in lower case)
+     
+     ~nl[]     Print a newline
+     
+     ~par[]    Paragraph mark, of no significance at the terminal
+               (can be safely ignored; see also notes below)
+     
+     ~pl[arg]  Parenthetical link (borrowing from Texinfo):  same as
+               ~l[arg], except that ``see'' is in lower case.  This is
+               typically used at other than the beginning of a sentence.
+     
+     ~sc[arg]  Print arg in (small, if possible) capital letters
+     
+     ~st[arg]  Strongly emphasize arg, perhaps using a bold font
+     
+     ~t[arg]   Typewriter font; similar to ~c[arg], but leaves less
+               doubt about the font that will be used.
+     
+     ~terminal[arg]  Terminal only; arg is to be ignored except when
+               reading documentation at the terminal, using :DOC.
+
+_Style notes and further details_
+
+It is not a good idea to put doc-string tilde directives inside
+verbatim environments, ~bv[] ... ~ev[].
+
+Do not nest doc-string tilde directives; that is, do not write
+
+       The ~c[~il[append] function ...
+
+but note that the "equivalent" expression
+
+       The ~ilc[append] function ...
+
+is fine.  The following phrase is also acceptable:
+
+       ~bf[]This is
+       ~em[formatted] text.
+       ~ef[]
+
+because the nesting is only conceptual, not literal.
+
+We recommend that for displayed text, ~bv[] and ~ev[] should usually
+each be on lines by themselves.  That way, printed text may be less
+encumbered with excessive blank lines.  Here is an example.
+
+       Here is some normal text.  Now start a display:
+       ~bv[]
+         2 + 2 = 4
+       ~ev[]
+       And here is the end of that paragraph.
+     
+       Here is the start of the next paragraph.
+
+The analogous consideration applies to ~bf[] and ~ef[] as well as ~bq[]
+and ~eq[].
+
+You may "quote" characters inside the arg part of ~key[arg], by
+preceding them with ~.  This is, in fact, the only legal way to use a
+newline character or a right bracket (]) inside the argument to a
+doc-string tilde directive.
+
+Write your documentation strings without hyphens.  Otherwise, you may
+find your text printed on paper (via TeX, for example) like this --
+
+       Here is a hyphe- nated word.
+
+even if what you had in mind was:
+
+       Here is a hyphe-
+       nated word.
+
+When you want to use a dash (as opposed to a hyphen), consider using
+~-[], which is intended to be interpreted as a "dash."  For example:
+
+       This sentence ~-[] which is broken with dashes ~-[] is boring.
+
+would be written to the terminal (using :doc) by replacing ~-[] with
+two hyphen characters, but would presumably be printed on paper with a
+dash.
+
+Be careful to balance the "begin" and "end" pairs, such as ~bv[] and
+~ev[].  Also, do not use two "begin" directives (~bf[], ~bq[], or
+~bv[]) without an intervening "end" directive.  It is permissible (and
+perhaps this is not surprising) to use the doc-string part separator ~/
+while between such a begin-end pair.
+
+Because of a bug in texinfo (as of this writing), you may wish to avoid
+beginning a line with (any number of spaces followed by) the -
+character or ~-[].
+
+The "paragraph" directive, ~par[], is rarely if ever used.  There is a
+low-level capability, not presently documented, that interprets two
+successive newlines as though they were ~par[].  This is useful for the
+HTML driver.  For further details, see the authors of ACL2.
+
+Emacs code is available for manipulating documentation strings that
+contain doc-string tilde-directives (for example, for doing a
+reasonable job filling such documentation strings).  See the authors if
+you are interested.
+
+We tend to use ~em[arg] for "section headers," such as "Style notes and
+further details" above.  We tend to use ~st[arg] for emphasis of words
+inside text.  This division seems to work well for our Texinfo driver.
+Note that ~st[arg] causes arg to be printed in upper-case at the
+terminal (using :doc), while ~em[arg] causes arg to be printed at the
+terminal as though arg were not marked for emphasis.
+
+Our Texinfo and HTML drivers both take advantage of capabilities for
+indicating which characters need to be "escaped," and how.  Unless you
+intend to write your own driver, you probably do not need to know more
+about this issue; otherwise, contact the ACL2 authors.  We should
+probably mention, however, that Texinfo makes the following
+requirement:  when using ~l[arg], where arg contains one of the special
+characters @, {, or }, you must immediately follow this use with a
+period or comma.  Also, the Emacs "info" documentation that we generate
+by using our Texinfo driver has the property that in node names, : has
+been replaced by | (because of quirks in info); so for example, the
+"proof-checker" simplification command, s, is documented under
+acl2-pc||s rather than under acl2-pc::s.
+
+We have tried to keep this markup language fairly simple; in
+particular, there is no way to refer to a link by other than the actual
+name.  So for example, when we want to make :doc an invisible link in
+"code" font, we write the following form, which indicates that : should
+be in that font and then doc should both be in that font and be an
+invisible link.
+
+       ~c[:]~ilc[doc]
+
+
+File: acl2-doc-emacs.info,  Node: MORE,  Next: MORE!,  Prev: MARKUP,  Up: DOCUMENTATION
+
+MORE    your response to :doc or :more's ``(type :more...)''
+
+NOTE:  The command :more only makes sense at the terminal.
+
+     Example:
+     ACL2 !>:more
+
+will continue printing whatever documentation was started by :doc or
+:more-doc.
+
+When you type :doc name, for some documented name, the system responds
+by typing the one-liner and the notes sections of the documentation for
+name.  It then types "(type :more for more, :more! for the rest)".  If
+you then type
+
+     ACL2 !>:more
+
+the system will start to print the details section of name.  The same
+thing could be achieved by typing :more-doc name, but that requires you
+to type name again.
+
+Similarly, if you have typed :more-doc name, the system will print the
+first "block" of the details section and then print "(type :more for
+more, :more! for the rest)".  Typing :more at that point will cause the
+next block of the details section to be printed.  Eventually :more will
+conclude by printing "*-" which is the indicator that the text has been
+exhausted.
+
+What is a "block" of text?  :More looks for the end of a paragraph (two
+adjacent newlines) after printing n lines.  If it doesn't find one
+before it has printed k lines, it just stops there.  N and k here are
+the values of the two state global variables 'more-doc-min-lines and
+'more-doc-max-lines.  You may use @ and assign to inspect and set these
+variables, e.g., (@ more-doc-max-lines) will return the current maximum
+number of lines printed by :more and (assign more-doc-max-lines 19) will
+set it to 19.  On terminals having only 24 lines, we find min and max
+settings of 12 and 19 the most pleasant.
+
+If you want :more to print all of the details instead of feeding them
+to you one block at a time, type :more! instead.
+

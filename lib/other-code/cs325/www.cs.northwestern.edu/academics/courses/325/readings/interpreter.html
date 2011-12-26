@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>The Lisp Interpreter</title>
+<link href="../styles/cs325.css" rel="stylesheet" type=
+"text/css">
+</head>
+<body>
+<div id="logo"><a class="plain" href="../index.html" target=
+"_top"><img src="../images/cs325logo.gif" alt="CS 325 Logo"
+border="0"></a></div>
+
+<div id="banner">The Lisp Interpreter</div>
+
+<p>The heart of the Lisp interpreter is the "read-eval-print"
+loop. That is, the interpreter does the following three jobs over
+and over:</p>
+
+<ul>
+<li>read an input expression</li>
+
+<li>evaluate the expression</li>
+
+<li>print the results</li>
+</ul>
+
+<p>This loop can be written in Lisp itself very simply:</p>
+
+<blockquote>
+<pre>
+(loop (print (eval (read)))
+
+</pre>
+</blockquote>
+
+<p>Of course, this doesn't take into account error handling,
+multiple values, and so on, but much of what Lisp does, including
+some things that seem unintuitive, can be understood by reasoning
+about the above three step process.</p>
+
+<h2>The Lisp Reader</h2>
+
+<p>The input to the Lisp reader is a sequence of characters. The
+output is a Lisp expression. The job of the reader is to convert
+objects in <em>character world</em> to objects in <em>expression
+world.</em></p>
+
+<p><em>In character world,</em> there are no pointers, no lists,
+no symbols, just characters like <tt>A</tt>, <tt>b</tt>,
+<tt>`</tt>, and <tt>(</tt>. That is, <tt>(A B (C D) E)</tt> is
+not a list, it is a sequence of parentheses, spaces, and letters.
+<tt>"abc"</tt> is not a string, it is a sequence of letters.</p>
+
+<p><em>In expression world,</em> there are no parentheses, no
+spaces, no quote marks, just atoms and lists. That is, <tt>(A B
+(C D) E)</tt> has no parentheses or spaces. It is a list of three
+atoms and a list. <tt>"abc"</tt> has no quote marks. It is a
+string with three characters.</p>
+
+<p>The Common Lisp reader is quite complex (Steele has a full
+description), but it works roughly like this:</p>
+
+<ul>
+<li>If the reader sees a character with read-macro function, it
+calls that function, and returns whatever expression that
+function returns. For example, <tt>'</tt> has a pre-defined
+read-macro function that basically says <tt>(list (quote quote)
+(read))</tt>. Thus, <tt>'abc</tt> becomes <tt>(quote
+abc)</tt>.</li>
+
+<li>If the reader sees a <tt>"</tt>, it collects characters until
+it sees another <tt>"</tt>, and creates a string object with the
+characters found between the string quotes. Thus, the 5
+characters <tt>"abc"</tt> become the 3-character string with the
+characters <tt>a</tt>, <tt>b</tt>, and <tt>c</tt>.</li>
+
+<li>If the reader sees a digit (<tt>0</tt> - <tt>9</tt>), it
+collects the digits that follow, and creates the number those
+digits represent (base 10). Thus, the three characters
+<tt>123</tt> become the single number <tt>123</tt>.</li>
+
+<li>If the reader sees an alphabetic character, it collects
+characters until it sees a space or parenthesis, and then
+gets the symbol (using Lisp's <tt>intern</tt> function)
+that has those
+characters (converted to upper case) as its name. Thus the three
+characters <tt>abc</tt> become the single <em>unique</em> symbol
+<tt>ABC</tt>.</li>
+
+<li>If the reader sees a left parenthesis, it reads more
+characters, turning them into expressions, using all these rules,
+until it sees a right parenthesis. Then it returns the list of
+expressions read. Thus, the 7 characters <tt>(A B C)</tt> become
+the 3 element list <tt>(A B C)</tt>.</li>
+</ul>
+
+<h2>The Lisp Evaluator</h2>
+
+<p>The Lisp evaluator takes an expression and returns an
+expression. The
+expression returned is called the value of the expression
+evaluated. [I'll ignore expressions that return multiple
+values here.]</p>
+
+<p>The rules for evaluation are surprisingly simple. Graphically,
+it looks like this:</p>
+
+<img src="interpreter1.gif" width="435" height="236"> 
+
+<p>First, there are two rules for atoms:</p>
+
+<ul>
+<li>The value of a symbol is looked up in the current lexical
+environments. If none is found, <tt>symbol-value</tt> is called.
+If that fails, there's an error (unbound variable).</li>
+
+<li>The value of any other kind of atom is the atom itself.</li>
+</ul>
+
+<p>There are three rules for lists that start with a symbol. If
+they don't work, there's an error. The rules are:</p>
+
+<ul>
+<li>If the symbol names a special function, use the rules for
+evaluation stored with the special function.</li>
+
+<li>If the symbol has a macro function attached, <tt>apply</tt>
+the macro function to the rest of the list, and evaluate the
+result.</li>
+
+<li>If the symbol has a normal function attached, evaluate the
+other elements in the list, and <tt>apply</tt> the function to a
+list of the values returned. The value the function returns is
+the final value.</li>
+</ul>
+
+<p>There is one other case for lists, but it appears rarely in
+modern code:</p>
+
+<ul>
+<li>If the list has the form <tt>((lambda (vars) exps)
+args)</tt>, then evaluate the arguments, and <tt>apply</tt> the
+<tt>lambda</tt> function to the list of results. The value the
+<tt>lambda</tt> returns is the final value.</li>
+</ul>
+
+<p>Anything that can be done with a <code>lambda</code> can also
+be done with either <tt>let</tt> or
+<tt>destructuring-bind</tt>.</p>
+
+<h2>The Lisp Printer</h2>
+
+<p>The input to the Lisp printer is a Lisp expression. The output
+is a sequence of characters. The job of the printer is to convert
+objects in <em>expression world</em> to objects in <em>character
+world.</em></p>
+
+<p>The printer's rules are pretty simple. They all involve taking
+an expression and printing a sequence of characters:</p>
+
+<ul>
+<li>If the expression is an string, print <tt>"</tt> then the
+characters in the string, then another <tt>"</tt>.</li>
+
+<li>If the expression is a symbol, print the characters in the
+symbol's name.</li>
+
+<li>If the expression is a number, print the digits representing
+that numbers (base 10).</li>
+
+<li>If the expression is a list, print a left parenthesis, then
+print each element in the list, with a space after each element
+but the last, then print a right parenthesis.</li>
+</ul>
+
+<p>There are also rules for printing structures, special
+characters, and so on.</p>
+
+<p>The purpose of the above rules is to make the following as
+true as possible:</p>
+
+<blockquote>
+<pre>
+(equal exp
+      (read-from-string
+         (write-to-string exp)))
+
+</pre>
+</blockquote>
+
+<p>Often, however, that is not what we want. For example, we
+probably want the string <tt>"Pick an option:"</tt> to appear on
+the screen as</p>
+
+<blockquote>
+<pre>
+Pick an option:
+</pre>
+</blockquote>
+
+<p>not</p>
+
+<blockquote>
+<pre>
+Pick an option:""
+</pre>
+</blockquote>
+
+<p>The latter is correct in so far as, if Lisp read it, it would
+see a string, but we want people to read this message, not
+Lisp.</p>
+
+<p>Use functions like <tt>write-string</tt>, <tt>princ</tt>, and
+the <tt>~A format</tt> command to print things "for people"
+rather than for Lisp. However, don't use these functions for
+printing debugging information. The information these functions
+hide for readability may be exactly what you need for
+debugging.</p>
+
+<hr>
+<p id="closing">Comments? <img src="../images/comments.gif"
+align="bottom"> Send mail to <a href=
+"mailto:riesbeck@cs.northwestern.edu">Chris Riesbeck</a>.</p>
+</body>
+</html>
+

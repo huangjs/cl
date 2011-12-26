@@ -1,0 +1,154 @@
+v0.2.20
+	Fixed small quantizing bug created in 0.2.12 (FOMUS occasionally couldn't find tuplets)
+
+v0.2.19
+	Fixed inability to find LilyPond 2.10 executable
+
+v0.2.18
+	Eliminated annoying messages
+
+v0.2.17
+	Fixed another dumb error in accidentals (choked on empty parts)
+
+v0.2.16
+	Efficiency tweaks
+	Fixed a dumb error in accidentals created in v0.2.15
+
+v0.2.15
+	Updated install.sh script
+
+v0.2.14
+	Fix in MIDI backend for instruments that don't have a MIDI program change number (defaults to 0)
+	Support for key signatures finished (auto-accidentals algorithm takes key signature into account)--some testing/tweaking probably still needed
+
+v0.2.13
+	Fixed errors w/ compiling/loading modules
+
+v0.2.12
+	Some module-compiling/loading enhancements w/ ASDF (Kilian)
+	Fixed huge performance bottleneck noticeable especially in OpenMCL--now runs at least 30x faster in OpenMCL and slightly faster in other Lisps
+	      (small tweak in quantize function was all that was needed)
+	Changed "plugins" to "modules" everywhere (seems to be a better name for them)
+
+v0.2.11
+	Fixed some spanner bugs
+	Timedump backend module
+
+v0.2.10
+	Squashed a few bugs
+	:NOTES keyword in .fms files for specifying chords
+	AUTO-DYN-NODUP setting and cleaning repeated dynamic marks (more user control to be added)
+	OFF tags in .fms file for shifting offsets over sections of file
+	FOMUS uses ASDF (and ASDF-Binary-Locations) to determine where module .fasl files are placed
+	Changed some setting names
+	Fixed LilyPond backend bug involving alternate noteheads and grace notes
+	Added MARKS slot to percussion instrument definition
+	Added some more LilyPond settings
+	Straightened out deffomusmodule and made it look more like defpackage
+	Fixed bug with beaming in compound meters
+
+v0.2.9
+	Fixed a modules bug (deffomusmodule macro)
+	Fixed bug where automatically generated timesigs copied unwanted properties (ie. specified barlines) from neighboring timesigs
+
+v0.2.8
+	Grace notes can have floating point durations
+	:IGNORE mark can be used repeatedly
+	INPUT-OFFSET setting (shift events before processing)
+	Fixed minor bug in post-processing w/ voices and grace notes
+
+v0.2.7
+	.fms file load errors now show entry number and line where error occurred
+	Load-on-demand modules for accidentals, voices, staves/clefs, splitrules and backends
+	Added :IGNORE mark (does nothing)
+	Can compile command-line interface w/ CLISP
+	(Experimental) Adaptive search (Kilian)
+	(Experimental) Functionality for merging results of several fomus calls into one score (chunks)
+	".fms" files may contain "\" characters for reading several lines as one line
+	Improved command line interface (added some options)
+	Fixed install.sh bugs
+
+v0.2.6
+	Fixed small error with INSTR-MIDIPRGCH-EX slot when specifying an instrument with modifications
+
+v0.2.5
+	Mid-measure clef changes in MusicXML
+
+v0.2.4
+	Fixed bug with multiple marks on one note in MusicXML backend
+
+v0.2.3
+	REGISTER-BACKENDS function (Kilian)--removed +title+ +version+ from callback arguments and exported these (David)
+	Fixed more CLISP issues in Windows (viewing/compiling in LilyPond and CMN, finding executables)
+	(:SIZE :SMALL) and (:SIZE :TINY) marks (not in backends yet)
+	Fixed bug where harmonics weren't being spread over tied notes
+	Fixed bug involving 8va symbols over single notes/chords
+	Fixed harmonic/flageolet bug in LilyPond
+	Part name fix in LilyPond and CMN backends (Kilian)
+
+v0.2.2
+	CLISP port nearly (or maybe all) complete (errors with loop macros--still testing, haven't tested in Winblows yet)
+	Can choose which backends to compile with or leave out of installation
+	MIDI backend also takes a user callback function as its PLAY argument
+
+v0.2.1
+	Fixed error with some clef signatures in LilyPond (ones with underscores)
+
+v0.2.0
+	Version bump
+
+v0.1.69
+	Fixed placement issues w/ ornaments and accidentals (LilyPond and MusicXML)
+
+v0.1.68
+	Fixed Beaming 6 eighths in some measures (5/4 meters)
+	TIE mark to force tied notes ((:TIE :BEFORE) and (:TIE :AFTER), default is :AFTER)
+	LilyPond slurs over slurred appoggiaturas/acciaccaturas (FOMUS removes the gracenote slur to prevent it from breaking the other slurs if present)
+	Initial support for key signatures
+
+v0.1.67
+	Tremolo marks can receive optional :NOTATED symbol (meaning the given number is a notated duration like 1/8 or 1/16 and not in beats)
+	LILYPOND-VERSION setting (can also pass :VERSION to LilyPond backend)--ex. :lilypond-version "2.8"
+	Little bug in MIDI backend when there are no MIDI events to save/playback
+
+v0.1.66
+	Fixed cautionary accidentals bug
+	Fixed MusicXML nested tuplets (although Finale/Sibelius ignores <tuplets> tags on import)
+	More tuplets possible (ie. nontuplets and others that otherwise might be subdivided into nested tuplets are considered)
+	Better nested tuplet decisions involving regular groups of nested triplets, nested quintuplets, etc.
+	Got rid of CAUT-ACC-AFTER-ONE-MEAS setting
+	Level numbers in spanner marks can either be actual levels or IDs (a few more things to be added)
+
+v0.1.65
+	Fixed: problem with some nested tuplets
+	Fixed: tuplets being split unnecessarily into smaller tuplets (happens w/ septuplets + larger tuplets)
+	Improved some beaming problems involving tuplets
+	Got rid of stupid "simple tuplets" idea (implemented a better algorithm for determining whether to use larger or smaller tuplets)
+	Got rid of USE-DEFAULT-MEAS-DIVS and USE-DEFAULT-TUPLET-DIVS settings (there's no real reason to turn these off)
+	Added DEFAULT-TUPLETS and TUPLET-MOD settings to let user control how tuplets are notated (the "power of two" one isn't necessarily always used)
+	Added LILYPOND-EXE, LILYPOND-OPTS, LILYPOND-OUT-EXT, LILYPOND-VIEW-EXE, LILYPOND-VIEW-OPTS, CMN-VIEW-EXE and CMN-VIEW-OPTS settings (easier to set these in .fomus init file)
+	Fixed error with user :8UP and :8DOWN marks
+	Fixed error using numbers with :SLUR- marks
+	Fixed problems with double slurs (found problem with slurred grace notes underneath other slurs in LilyPond--not fixed yet)
+	Fixed error when user specifies no subdivisions in a measure (ex. '(2) in the DIV timesig slot when the meter is 2/4)
+	Inprovements in clef changes/distributing across staves (more testing/tweaking needed)
+	Much needed test suite underway
+
+v0.1.64
+	Improvements in voice distributing (+ speed)
+
+v0.1.63
+	:DISTR property (ability to expand a part into multiple parts)
+	Speed improvements (maybe 50%)
+	Improvements in voice distributing
+	Slight improvements in note spelling
+	Doc. update
+
+v0.1.62
+	Fixed bugs preventing FOMUS from working in LispWorks (a few more fixes might be needed)
+
+v0.1.61
+	Fixed bug involving notes being out of range (array out of bounds error) when using LilyPond backend
+
+v0.1.60
+	Fixed bug involving invisible rests in complex 3/4 part polyphony

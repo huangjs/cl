@@ -1,0 +1,137 @@
+**************************************************************************
+SAL (CVS)
+
+o General cleanup of sal.lisp code.
+
+o Removed the distinction between commands and statements from the sal
+  parser (now everything is a statement).  To keep Execute parsing
+  sane in emacs, sal-mode continues to recognize only
+  beginning-of-line statements as commands to execute.
+
+o Bug Fixes:
+  * (sal-mode) stop-sal now resets global vars to their default
+    values.
+
+**************************************************************************
+SAL 1.0.4
+
+o new conditional value notation:
+  #? (test, then ,else) 
+
+o SAL menu revamped, new items added:
+
+  Current Directory          shows current working dir
+  Set Directory...           set working dir using Dialog
+  System >                   submenu for loading system software
+  Load File...               load .lisp or .sal file
+  Compile File..             compile lisp file
+  Import File                not yet implemented
+  Play File...               play midi or audio file
+
+o define now prints variable's value and function's args
+
+o added sal->html colorizing: "stoh.lisp"
+
+o added SAL test suite "test.lisp", needs work
+
+o package qualified symbols now supported. use a single colon to
+  reference either internal or external symbols in a package,
+  i.e. foo:bar interns the symbol bar in package foo if the symbol
+  does not already exist.
+
+o class tokens <...> reference defined classes without depending on
+   the <...> variable existing. for example <midi> reference the 
+   class #<parameterized-class MIDI> and <fms:part> references the
+   part class in the fomus package.
+
+o if the first value to 'make' is a class identifier the arglist
+  is parsed at read time to catch bogus initargs. this
+  effectively turns the make function into the 'new' macro when
+  the class is known at read time.
+
+o Added new infix operators:
+   ^    exponentiation
+   %    modulus
+   &    logical and
+   |    logical or 
+   !    logical not
+   ~=   general equality
+
+o New assignment operators:
+   ^=   list appending
+   <=   minimization
+   >=   maximization
+
+o SALs printer now prints lists as {}, and floats to a precision
+  of three decimals. this can be controlled using *sal-lists* and
+  *sal-decimals* variables. 
+
+o SAL-mode syntax highlighting improved
+
+o Enter (execute command) now checks for SAL being loaded before
+evalling.
+
+o New 'system' sal command load software systems via use-system.
+
+INCOMPATIBLE CHANGES
+
+o 'load' now only loads lisp and sal files.
+o 'open' now expects comma delimited arguments.
+o lsdir has been removed
+o =/ (lisp not-equal) has been renamed !=
+o #a[class ...] macro has been disabled (use make)
+
+BUG FIXES
+
+o process definitions now parse begin...end bodies correctly
+o {} lists can now contain strings
+
+**************************************************************************
+SAL 1.0.3
+
+o added omitted iteration clauses 'downto' and 'above'
+
+SAL 1.0.2
+
+o SAL documention added to CM dictionary:
+  http://commonmusic.sf.net/doc/dict/sal-topic.html
+o sal-mode: new SAL menu
+o sal-mode: <Help> key looks up SAL documenation for symbol at point
+o sal-mode: better <Tab> indentation support
+o sal-mode: <Enter> now works on multiple commands in a region, not
+  just single commands
+
+o 'load' command: can now load .sal files (!)
+o 'sprout' command: incompatible syntax change (see doc)
+o 'output' command: incompatible syntax change (see doc)
+o comments inside code blocks now supported
+o fixed loop to allow unbound 'for i from ...' clause
+o fixed loop to allow 'for x over...' clauses
+o rotation added to pattern types
+o removed comma delimiting from load and open commands. Im
+  not sure if this is the Right Thing...
+
+SAL 1.0.1
+
+o better detection of errors due to missing spaces between operators
+  and operands
+
+  1) sal now allow symbols * + only at start and ending positions of
+     symbols, ie *foo* +bar+ are valid but foo*bar or *foo are not
+  2) / is illegal anywhere in symbol tokens
+  3) a symbol's words can be delimitied by - but each field must have
+     at least one alphabetical character, ie foo-bar foo-1a are valid
+     but not 123-foo or -foo
+
+o ' char is now explicitly illegal anywhere in a sexpr
+
+o  array notation: aaa[i]
+
+o new #a[...] constuctor expressions create objects from descriptions
+
+  #a[midi duration: 1 time: 3]
+  #a[list for i to 10 collect i]
+  #a[vector repeat 10 collect random(32)]
+  #a[cycle a b c d e]
+  #a[heap of rhythms q w e s e.. for 3]
+

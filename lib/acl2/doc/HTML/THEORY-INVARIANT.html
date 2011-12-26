@@ -1,0 +1,130 @@
+<html>
+<head><title>THEORY-INVARIANT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>THEORY-INVARIANT</h2>user-specified invariants on <a href="THEORIES.html">theories</a>
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(theory-invariant (not (and (active-runep '(:rewrite left-to-right))
+                            (active-runep '(:rewrite right-to-left))))
+                  :key my-invariant
+                  :error nil)<p>
+
+; Equivalent to the above:
+(theory-invariant (incompatible '(:rewrite left-to-right)
+                                '(:rewrite right-to-left))
+                  :key my-invariant
+                  :error nil)
+<p>
+General Form:
+(theory-invariant term &amp;key key error)
+</pre>
+
+where:
+<blockquote><p>
+
+o <code>term</code> is a term that uses no variables other than <code>ens</code> and
+<code><a href="STATE.html">state</a></code>;<p>
+
+o <code>key</code> is an arbitrary ``name'' for this invariant (if omitted, an integer
+is generated and used); and<p>
+
+o <code>:error</code> specifies the action to be taken when an invariant is violated
+-- either <code>nil</code> if a warning is to be printed, else <code>t</code> (the default)
+if an error is to be caused.<p>
+
+</blockquote>
+<code>Theory-invariant</code> is an event that adds to or modifies the <a href="TABLE.html">table</a>
+of user-supplied theory invariants that are checked each time a theory
+expression is evaluated.<p>
+
+The theory invariant mechanism is provided via a table
+(see <a href="TABLE.html">table</a>) named <code>theory-invariant-table</code>.  In fact, the
+<code>theory-invariant</code> ``event'' is just a macro that expands into a use of the
+<code><a href="TABLE.html">table</a></code> event.  More general access to the <code>theory-invariant</code>
+<a href="TABLE.html">table</a> is provided by <code><a href="TABLE.html">table</a></code> itself.  For example, the <a href="TABLE.html">table</a>
+can be inspected or cleared with <code><a href="TABLE.html">table</a></code>; you can clear an individual
+theory invariant by setting the invariant to <code>t</code>, or eliminate all theory
+invariants with the command <code>(table theory-invariant-table nil nil :clear)</code>.<p>
+
+<code>Theory-invariant-table</code> maps arbitrary keys to records containing terms
+that mention, at most, the variables <code>ens</code> and <code><a href="STATE.html">state</a></code>.  Every time an
+alleged theory expression is evaluated, e.g., in the <code><a href="IN-THEORY.html">in-theory</a></code> event or
+<code>:</code><code><a href="IN-THEORY.html">in-theory</a></code> hint, each of the terms in <code>theory-invariant-table</code> is
+evaluated with <code>ens</code> bound to a so-called ``enabled structure'' obtained
+from the theory expression and <code><a href="STATE.html">state</a></code> bound to the current ACL2 state
+(see <a href="STATE.html">state</a>).  Users generally need not know about the enabled structure,
+other than that it can be accessed using the macros <code>active-runep</code> and
+<code>incompatible</code>; see <a href="ACTIVE-RUNEP.html">active-runep</a> and see <a href="INCOMPATIBLE.html">incompatible</a>.  If the result is
+<code>nil</code>, a message is printed and an error occurs (except, only a warning
+occurs if <code>:error nil</code> is specified).  Thus, the <a href="TABLE.html">table</a> can be thought
+of as a list of conjuncts.  Each <code>term</code> in the <a href="TABLE.html">table</a> has a ``name,''
+which is just the key under which the term is stored.  When a theory violates
+the restrictions specified by some term, both the name and the term are
+printed.  By calling <code>theory-invariant</code> with a new term but the same name,
+you can overwrite that conjunct of the theory invariant; but see the Local
+Redefinition Caveat at the end of this note.  You may want to avoid using
+explicit names, since otherwise the subsequent inclusion of another book that
+defines a theory invariant with the same name will override your theory
+invariant.<p>
+
+Theory invariants are particularly useful in the context of large rule sets
+intended for re-use.  Such sets often contain conflicting rules, e.g., rules
+that are to be <a href="ENABLE.html">enable</a>d when certain function symbols are <a href="DISABLE.html">disable</a>d,
+rules that rewrite in opposite directions and thus loop if simultaneously
+<a href="ENABLE.html">enable</a>d, groups of rules which should be <a href="ENABLE.html">enable</a>d in concert, etc.
+The developer of such rule sets understands these restrictions and probably
+documents them.  The theory invariant mechanism allows the developer to
+codify his restrictions so that the user is alerted when they are violated.<p>
+
+Since theory invariants are arbitrary terms, macros may be used to
+express commonly used restrictions.  For example, executing the event
+
+<pre>
+(theory-invariant (incompatible (:rewrite left-to-right)
+                                (:rewrite right-to-left)))
+</pre>
+
+would subsequently cause an error any time the current theory contained both
+of the two <a href="RUNE.html">rune</a>s shown.  Of course, <a href="INCOMPATIBLE.html">incompatible</a> is just defined as
+a macro.  Its definition may be inspected with <code>:pe incompatible</code>.<p>
+
+In order for a <code>theory-invariant</code> event to be accepted, the proposed theory
+invariant must be satisfied by the current theory (see <a href="CURRENT-THEORY.html">current-theory</a>).  The
+value returned upon successful execution of the event is the key (whether
+user-supplied or generated).<p>
+
+Local Redefinition Caveat.  Care needs to be taken when redefining a theory
+invariant in a <a href="LOCAL.html">local</a> context.  Consider the following example.<p>
+
+
+<pre>
+(theory-invariant
+ (active-runep '(:definition binary-append))
+ :key app-inv)<p>
+
+(encapsulate
+ ()
+ (local (theory-invariant t :key app-inv))
+ (in-theory (disable binary-append))
+ (defthm ...))
+</pre>
+
+The second pass of the <code><a href="ENCAPSULATE.html">encapsulate</a></code> will fail, because the
+<code><a href="IN-THEORY.html">in-theory</a></code> event violates the original <code>theory-invariant</code> and the
+<code><a href="LOCAL.html">local</a></code> <code>theory-invariant</code> is skipped in the second pass of the
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>.  Of course, <code><a href="LOCAL.html">local</a></code> <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code>s in
+<a href="BOOKS.html">books</a> can cause the analogous problem in the second (<code><a href="INCLUDE-BOOK.html">include-book</a></code>)
+pass of a <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.  In both cases, though, the theory invariants
+are only checked at the conclusion of the (<code>include-book</code> or
+<code>encapsulate</code>) event.  Indeed, theory invariants are checked at the end of
+every event related to <a href="THEORIES.html">theories</a>, including <code><a href="DEFUN.html">defun</a></code>, <code><a href="DEFTHM.html">defthm</a></code>,
+<code><a href="IN-THEORY.html">in-theory</a></code>, <code><a href="ENCAPSULATE.html">encapsulate</a></code>, and <code><a href="INCLUDE-BOOK.html">include-book</a></code>, except for events
+executed on behalf of an <code><a href="INCLUDE-BOOK.html">include-book</a></code> or the second pass of an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

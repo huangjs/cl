@@ -1,0 +1,261 @@
+<html>
+<head><title>NOTE-3-0-1.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-3-0-1</h2>ACL2 Version  3.0.1 (August, 2006) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+NOTE!  New users can ignore these release notes, because the documentation
+has been updated to reflect all changes that are recorded here.<p>
+
+Fixed a soundness bug, introduced in the previous release, due to a failure
+to disallow <code><a href="TABLE.html">table</a></code> <a href="EVENTS.html">events</a> that set the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> in
+a <code><a href="LOCAL.html">local</a></code> context.  Here is a proof of <code>nil</code> that exploits the bug.
+
+<pre>
+(encapsulate ()
+ (local (program))
+ (defun foo ()
+   (declare (xargs :measure 17))
+   (+ 1 (foo))))
+(thm
+ nil
+ :hints (("Goal" :in-theory (disable foo (foo)) :use foo)))
+</pre>
+<p>
+
+Fixed a bug in the alternatives to <code><a href="GOOD-BYE.html">good-bye</a></code>, which are the <code><a href="EXIT.html">exit</a></code>
+and <code><a href="QUIT.html">quit</a></code> commands.  Thanks to Jared Davis and Peter Dillinger for
+pointing this out right away.<p>
+
+The definition of <code><a href="LEN.html">len</a></code> has been highly optimized in raw Lisp.  Thanks to
+Bob Boyer and Warren Hunt for suggesting such an improvement and providing
+a lot of help in coming up with the current implementation.<p>
+
+The clause subsumption algorithms have been improved, both to improve
+efficiency during warnings for <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules and to punt when the
+subsumption computation for induction appears to be blowing up.  Thanks to
+Robert Krug for bringing this issue to our attention and supplying a useful
+example.<p>
+
+A bug has been fixed that prevented <code><a href="TIME$.html">time$</a></code> from working properly in
+OpenMCL and multi-threaded SBCL (actually, in any ACL2 image where feature
+<code>:acl2-mv-as-values</code> is present).  Thanks to Sol Swords for bringing this
+problem to our attention.<p>
+
+A <a href="TYPE-SPEC.html">type-spec</a> of the form <code>(satisfies pred)</code> carries the requirement
+that <code>pred</code> be a unary function symbol in the current ACL2 <a href="WORLD.html">world</a>;
+otherwise, it is illegal.  Thanks to Dave Greve for pointing out that Common
+Lisp has this requirement.<p>
+
+Installed a fix provided by Gary Byers (for ACL2 source function
+<code>install-new-raw-prompt</code>), for OpenMCL, that fixes an issue exposed in some
+versions of OpenMCL when compiler optimization is off.<p>
+
+Fixed a bug in contributed book <code>misc/untranslate-patterns.lisp</code> that was
+causing calls of <code>add-untranslate-pattern</code> to be rejected in <a href="BOOKS.html">books</a>.
+Thanks to Ray Richards for pointing out this bug and to Jared Davis for
+assisting in the fix.<p>
+
+Fixed a bug in <code><a href="DEFSTOBJ.html">defstobj</a></code> when keywords <code>:initially</code> and <code>:resizable</code>
+are both supplied.  In this case, the definition of the resizing function
+mistakenly failed to quote the <code>:initially</code> value, even though this value
+is not to be evaluated.  One could even get an error in this case, as in the
+following example supplied by Erik Reeber, whom we thank for bringing this
+bug to our attention:
+
+<pre>
+  (defstobj $test 
+    (test-x :type (array t (5)) :initially (0) :resizable t))
+</pre>
+<p>
+
+A new feature, <code><a href="WITH-PROVER-TIME-LIMIT.html">with-prover-time-limit</a></code>, allows the setting of time
+limits during proofs.  This is <strong>not</strong> a general-purpose time-limit utility,
+nor is it guaranteed to implement a strict bound; it only attempts to limit
+time approximately during proofs.  Thanks to Pete Manolios and Daron Vroon,
+who made the most recent request for such a feature, and to Robert Krug for a
+helpful discussion.<p>
+
+(GCL only) Fixed a bug in the procedure for building a profiling image.
+Thanks to Sol Swords for bringing this bug to our attention and to Eric Smith
+for bringing a subsequent problem to our attention.<p>
+
+Handling of <a href="THEORIES.html">theories</a> can now use significantly less time and space.  A
+regression suite run took about 25% longer before this change than it did
+after making this change (and also the ones in the next two paragraphs).
+Thanks to Vernon Austel for bringing this issue to our attention and for
+supplying code, quite some time ago, that provided detailed, useful
+implementation suggestions.  Also thanks to the folks at Rockwell Collins,
+Inc. for pushing the limits of the existing implementation, thus encouraging
+this improvement.<p>
+
+Fixed a performance bug in obtaining executable counterpart symbols.<p>
+
+We now avoid certain computations made on behalf of warnings, when such
+warnings are disabled.<p>
+
+We have relaxed the checks made when including an uncertified book, to
+match the checks made when including a certified book.  Thanks to Eric Smith
+for suggesting this change.<p>
+
+Fixed a bug in <code>:</code><code><a href="PSO.html">pso</a></code> (see <a href="SET-SAVED-OUTPUT.html">set-saved-output</a>) that caused an error
+when printing the time summary.<p>
+
+Made fixes to avoid potential hard Lisp errors caused by the use of
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  The fix was to use a ``safe mode,''
+already in use to prevent such errors during macroexpansion;
+see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>.  However, such errors were possible during
+evaluation of macro <a href="GUARD.html">guard</a>s, for example as follows:
+
+<pre>
+(defun foo (x)
+  (declare (xargs :mode :program))
+  (car x))
+(defmacro mac (x)
+  (declare (xargs :guard (foo 3)))
+  x)
+(defun g (x)
+  (mac x))
+</pre>
+
+A similar issue existed for calls of <code><a href="DEFPKG.html">defpkg</a></code>, <code><a href="IN-THEORY.html">in-theory</a></code>,
+<code><a href="TABLE.html">table</a></code>, <code><a href="MAKE-EVENT.html">make-event</a></code>, and <code>value-triple</code>, but has been fixed for
+all but <code>in-theory</code> and <code>make-event</code>, where technical issues have caused
+us to defer this change.<p>
+
+Fixed a bug in <code><a href="WET.html">wet</a></code> that caused problems in OpenMCL, and perhaps other
+Lisp implementations, when the argument to <code>wet</code> calls, or depends on,
+certain built-ins including <code><a href="PROG2$.html">prog2$</a></code>, <code><a href="TIME$.html">time$</a></code>, <code><a href="MBE.html">mbe</a></code>, and
+<code><a href="MUST-BE-EQUAL.html">must-be-equal</a></code>.  Thanks to David Rager for bringing this problem to our
+attention.<p>
+
+The file <code>books/Makefile-generic</code> has been improved so that when book
+certification fails with <code>make</code>, the failure message contains the book
+filename.<p>
+
+Documentation has been written to explain how to avoid an expensive immediate
+rewrite of the result of applying a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="META.html">meta</a></code>
+rule.  See <a href="META.html">meta</a>.  Thanks to Robert Krug for supplying this trick, and to Eric
+Smith and Dave Greve for useful discussions.<p>
+
+(OpenMCL only) OpenMCL-based ACL2 image names formerly had extension
+<code>".dppccl"</code>, which was correct only for some platforms (including 32-bit
+Darwin PPC).  That has been fixed, thanks to a suggestion from Gary Byers.<p>
+
+It is now legal to attach both a <code>:use</code> and a <code>:cases</code> hint at the same
+goal.  Thanks to Eric Smith for (most recently) requesting this feature.<p>
+
+It is now permissible to include the same symbol more than once in the
+imports list of a <code><a href="DEFPKG.html">defpkg</a></code> form (i.e., its second argument).  Also, the
+evaluation of <code><a href="DEFPKG.html">defpkg</a></code> forms with long import lists now uses a reasonably
+efficient sorting routine to check for two different symbols with the same
+name (see also <code>books/sort-symbols.lisp</code>).  If you currently call a
+function like <code>remove-duplicates-eql</code> for your imports list, as had been
+suggested by a <code><a href="DEFPKG.html">defpkg</a></code> error message, then you may experience some
+speed-up by removing that call.  Thanks to Eric Smith for helping to discover
+this issue through profiling.<p>
+
+Made miscellaneous efficiency improvements not listed above (for example,
+following a suggestion of Eric Smith to avoid checking for so-called ``bad
+Lisp objects'' during <code><a href="INCLUDE-BOOK.html">include-book</a></code>, which saved almost 3% in time on
+one large example).<p>
+
+Modified the notion of ``untouchable'' to separate the notion of untouchable
+functions and macros from the notion of untouchable state global variables.
+See <a href="PUSH-UNTOUCHABLE.html">push-untouchable</a>.  Thanks to Bob Boyer for sending an example,
+<code>(put-global 'ld-evisc-tuple t state)</code>, that suggested to us the need for
+more restrictive handling of untouchables.  In particular, many <code>ld</code>
+specials (see <a href="LD.html">ld</a>) are now untouchable.  You may be able to work around this
+restriction by calling <code><a href="LD.html">ld</a></code>; see for example the change to
+<code>books/misc/expander.lisp</code>.  But please contact the ACL2 implementors if
+this sort of workaround does not appear to be sufficient for your purposes.<p>
+
+Fixed a bug in function <code>set-standard-oi</code> (see <a href="STANDARD-OI.html">standard-oi</a>).<p>
+
+Fixed a bug in the use of <code><a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a></code>.  The bad behavior was an
+improper use of the print-level and print-length components of the tuple
+(specifically, taking its <code><a href="CADDR.html">caddr</a></code> and <code><a href="CADDDR.html">cadddr</a></code> instead of taking its
+<code><a href="CADR.html">cadr</a></code> and <code><a href="CADDR.html">caddr</a></code>).  Thanks to Bob Boyer for bringing this bug to
+our attention.<p>
+
+A new argument to the <code>compile-flg</code> argument of <code><a href="CERTIFY-BOOK.html">certify-book</a></code>,
+<code>:all</code>, causes creation of a file to be compiled in place of the given
+book, where that file contains not only a copy of the book (with
+<code><a href="MAKE-EVENT.html">make-event</a></code> forms expanded) but also contains definitions of the
+so-called ``executable counterparts'' of the functions defined in the book.
+Then, functions defined in the book will be run compiled when including the
+book, even for functions whose <a href="GUARD.html">guard</a>s have not been verified, or are in
+<code>:program</code> mode and running in so-called ``safe mode''
+(for example, during expansion of macros).  The default behavior, value <code>t</code>
+of <code>compile-flg</code>, is unchanged.  Moreover, a new <code>:comp!</code> argument of
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> now compiles the executable counterparts when creating the
+book's compiled file, and unlike <code>:comp</code>, always deletes the old compiled
+file first so that one always gets a fresh compile.<p>
+
+Now, <code><a href="CERTIFY-BOOK.html">certify-book</a></code> gives a "Guards" warning only for <code>:</code><code><a href="LOGIC.html">logic</a></code>
+mode functions that are defined in the given book but have not had their
+guards verified.  Previously, it also warned about such functions that were
+defined in the certification world or in sub-books.<p>
+
+A new command, <code><a href="REDO-FLAT.html">redo-flat</a></code>, facilitates the debugging of failed
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> and <code><a href="PROGN.html">progn</a></code> forms by evaluating preliminary forms in
+order to leave one at the point of failure.  See <a href="REDO-FLAT.html">redo-flat</a>.  Thanks to
+Ray Richards and others for asking for such a utility, and to Sandip Ray
+for useful discussions.<p>
+
+We have changed the automatic declaration of of function types (still done in
+GCL and OpenMCL only, for now).  Our motivation was to avoid the assumption
+that Common Lisp functions return one value when ACL2 says that they do;
+thanks to Bob Boyer for bringing this issue to our attention with the example
+of defining <code>(foo x y)</code> to be <code>(floor x y)</code>.  ACL2 was saying that
+<code>foo</code> returns a single value, but because <code>floor</code> returns two values in
+raw Lisp, so does <code>foo</code>.  Other changes to automatic declaration include
+comprehending <code><a href="DEFUND.html">defund</a></code>, not just <code><a href="DEFUN.html">defun</a></code>.<p>
+
+A new function, <code><a href="MOD-EXPT.html">mod-expt</a></code>, computes <code>(mod (expt base exp) m)</code>, and
+does so efficiently in some implementations (currently only in GCL 2.7.0,
+which is not yet released).  Thanks to Warren Hunt for suggesting such an
+addition.<p>
+
+New functions <code><a href="GETENV$.html">getenv$</a></code> and <code><a href="SETENV$.html">setenv$</a></code> have been made available for
+reading and writing environment variables.  Thanks to Jun Sawada for
+requesting these utilities.<p>
+
+The query utility <code>:</code><code><a href="PL.html">pl</a></code> has been improved in several ways.  As
+before, <code>:</code><code><a href="META.html">meta</a></code> rules are only printed if the argument is a symbol;
+but the information printed for them is now more appropriate.  The following
+are changes for the case that the argument is not a symbol, but rather, a
+term.  (1) Rules are displayed that have <a href="EQUIVALENCE.html">equivalence</a> relations other
+than <code><a href="EQUAL.html">equal</a></code>.  (2) All matching <code>:</code><code><a href="DEFINITION.html">definition</a></code> rules are
+displayed, where previously <code>:definition</code> rules were only shown if they
+were ``simple'' rules (sometimes known as ``abbreviations''); see <a href="SIMPLE.html">simple</a>.
+(3) The ``Equiv'' field is printed for terms, not just symbols.  (4) The
+substitution is shown that, when applied to the left-hand side of the rule,
+will yield the specified term.  Thanks to Eric Smith for suggesting these
+changes.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> command <code>;show-rewrites</code> has been improved to match
+the changes described above for <code>:</code><code><a href="PL.html">pl</a></code>.  In particular,
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> rules that are not ``<a href="SIMPLE.html">simple</a>'' are now displayed by
+the <a href="PROOF-CHECKER.html">proof-checker</a>'s <code>show-rewrites</code> (and <code>sr</code>) command, and the
+<a href="PROOF-CHECKER.html">proof-checker</a>'s <code>rewrite</code> command has been correspondingly modified to
+accept these <code>:definition</code> rules.<p>
+
+Fixed <code>make</code> targets <code>copy-distribution</code>, <code>copy-workshops</code>, and
+<code>copy-nonstd</code> so that they should also work for non-developers.<p>
+
+Fixed a bug that was causing <code>:</code><code><a href="PR.html">pr</a></code> to display <code><a href="SYNTAXP.html">syntaxp</a></code>
+hypotheses oddly in some cases, in particular <code>(syntaxp (let ...))</code>.
+(The problem was in the ``untranslate'' display of the internal form of
+<code>syntaxp</code> calls.)  Thanks to Robert Krug for bringing this problem to our
+attention.  We also removed the restriction on <code><a href="BIND-FREE.html">bind-free</a></code> that its
+argument could not be a variable, a constant, or (more interestingly) a
+<code><a href="LAMBDA.html">lambda</a></code> application (i.e., a <code><a href="LET.html">let</a></code> or <code><a href="MV-LET.html">mv-let</a></code> expression).<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

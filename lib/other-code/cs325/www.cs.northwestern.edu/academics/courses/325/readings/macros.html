@@ -1,0 +1,664 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+   <TITLE>Macros</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Macros</DIV>
+
+<P>Macro functions are the means by which users can define forms that
+behave very much like Common Lisp's
+<A HREF="special-forms.html">special forms</A>. Many Common Lisp
+special functions, such as <code>let</code> and <code>cond</code>, could be
+defined as macros, assuming the existence of more primitive forms,
+such as <code>lambda</code> and <code>if</code>.</P>
+
+<H2>What are macros good for?</H2>
+
+<P>Far and away, the most common need for macros is to implement
+<I>definers</I>. Definers usually have names that begin with
+"<code>def</code>" or "<code>define-</code>" and are used to attach data to
+names. <code>defun</code>, <code>defstruct</code>, <code>defclass</code>, and so
+on, are examples of definers already in Common Lisp.</P>
+
+<P>Here are two examples from the CS 325 code library:</P>
+
+<PRE>(defmop m-elephant (m-animal)
+    :color m-grey)</PRE>
+
+<pre>(define-test pick-greater
+   (assert-equal 5 (pick-greater 2 5))
+   (assert-equal 5 (pick-greater 5 2))
+   (assert-equal 10 (pick-greater 10 10))
+   (assert-equal 0 (pick-greater -5 0))
+   )</pre>
+
+<a name="defmop"></a><P>Why can't you implement these as
+functions?<A HREF="#fn0">[1]</A></P>
+
+<p>Another common macro type is the <code>with-</code> macro.
+Built-in examples are <code>with-open-file</code>,
+<code>with-input-from-string</code>, 
+<code>with-output-to-string</code>, and 
+<code>with-accessors</code>. These macros usually have 
+the form <code>(with-... (<em>variable specifications</em>) <em>
+body of code</em>)</code>, e.g.,</p>
+
+<pre>(with-input-from-string (in "1 2 3")
+  (list (read in) (read in) (read in)))</pre>
+
+<p>Occasionally, though less often than you might think,
+there are macros for iteration. <a href="../exercises/lisp-exs.html#list-of">The
+<code>list-of</code> exercise</a> is one example. It lets
+you construct, for example, "the list of all n in a list that
+are odd" like this:</p>
+
+<pre>(list-of (n :in '(1 2 3 4 5)) (oddp n))</pre>
+
+
+<P>For many people, definers are the only kinds of macros they will
+need to create. Fortunately, they are also the simplest to implement,
+once you understand how macros work.</P>
+
+<H2>How do macros work?</H2>
+
+<P>A macro call looks just like a function call, but the
+<A HREF="interpreter.html">Lisp interpreter</A> has the following
+special rules for evaluating macro calls:</P>
+
+<OL>
+   <LI>The macro function is applied (using <code>apply</code>) to the
+   argument forms. Note: the arguments are not evaluated. The value
+   returned is called the <I>expansion</I> of the macro.
+
+   <LI>The expansion is evaluated.
+</OL>
+
+<P>The Lisp compiler has similar rules:</P>
+
+<OL>
+   <LI>The macro function is applied (using <code>apply</code>) to the
+   argument forms.
+
+   <LI>The expansion is compiled.
+</OL>
+
+<a name="macro-run-time"></a>
+<p>Because the compiler has to be able to expand a macro call 
+<em>at compile time</em>, it makes no sense for a macro definition
+to depend on the <em>run-time</em> value of a variable.</p>
+
+<H2>How are macros defined?</H2>
+
+<P>A macro definition looks just like a function definition, except
+that you use <code>defmacro</code> instead of <code>defun</code>. E.g.,</P>
+
+<BLOCKQUOTE><PRE class="code-syntax">(defmacro <i>macro-name</i> (<i>parameters</i>) ...)</PRE>
+</BLOCKQUOTE>
+
+<P>The rules for evaluating macros imply a very important, but often
+forgotten, principle for macro definitions:</P>
+
+<BLOCKQUOTE><P><I>A macro function should not do things. It should
+construct code to do things.</I></P></BLOCKQUOTE>
+
+<P>For example, suppose we wanted</P>
+
+<BLOCKQUOTE><PRE class="code-syntax">(test-exp <i>expression</i>)</PRE></BLOCKQUOTE>
+
+<P>to print a message of the form</P>
+
+<BLOCKQUOTE><PRE><i>expression</i> =&gt; <i>value</i></PRE></BLOCKQUOTE>
+
+<P>e.g.,</P>
+
+<BLOCKQUOTE><PRE>(let ((x 1) (y 2)) (test-exp (+ x y)))</PRE>
+</BLOCKQUOTE>
+
+<P>would print</P>
+
+<BLOCKQUOTE><PRE>(+ x y) =&gt; 3</PRE></BLOCKQUOTE>
+
+<a name="test-exp"></a><P>Why can't <code>test-exp</code> be a
+function?<A HREF="#fn1">[2]</A></P>
+
+<P>Here is a possible definition of the macro <code>test-exp</code>:</P>
+
+<a name="bad-test-exp"></a><BLOCKQUOTE><PRE>(defmacro test-exp (exp)
+  (format t "~&amp;~S =&gt; ~S~%" exp (eval exp)))</PRE>
+</BLOCKQUOTE>
+
+<P>What's wrong with this definition? When would it
+fail?<A HREF="#fn2">[3]</A></P>
+
+<P>Here's the proper definition:</P>
+
+<BLOCKQUOTE><PRE>(defmacro test-exp (exp)
+  `(format t "~&amp;~S =&gt; ~S~%" ',exp ,exp))</PRE></BLOCKQUOTE>
+
+<P>Notice that all the macro function does is build a piece of code.
+That's all any macro should do.</P>
+
+<H2>The Macro Defining Method</H2>
+
+<P>The following method for defining macros is <I>strongly</I>
+recommended. It's designed to avoid:</P>
+
+<UL>
+   <LI>macros that break when compiled because they do things rather
+   than generate code to do things
+
+   <LI>inefficient macros that calculate things at run-time that
+   could have been resolved at compile time
+</UL>
+
+<P>Here's the method:</P>
+
+<OL>
+   <LI>Define a function that does the "real" work. (This does not
+   usually apply to control-flow macros, like looping forms.)
+
+   <LI>Write down several examples of how the macro would be used.
+
+   <LI>For each example, write down the equivalent code you'd write,
+   using the function defined in Step 1, if the macro didn't exist.
+
+   <LI>(a) Write the <code>defmacro</code> header, (b) insert one of the
+   function call examples as the body, and (c) "parameterize" it,
+   using backquote and "comma" and "at-comma" forms to replace
+   specific data items with macro parameters.
+
+   <LI>Test the definition on the other examples and tweak as needed.
+
+</OL>
+
+<H2>Implementing the macro test-exp</H2>
+
+<P>Step 1: Possible, but not really necessary.</P>
+
+<P>Step 2: Write down some examples:</P>
+
+<BLOCKQUOTE><PRE>(test-exp (+ x y))</PRE></BLOCKQUOTE>
+
+<P>Step 3: Write down the equivalent code without the macro:</P>
+
+<BLOCKQUOTE><PRE>(format t "~&amp;~S =&gt; ~S~%" '(+ x y) (+ x y))</PRE>
+</BLOCKQUOTE>
+
+<P>Step 4(a): Write the <code>defmacro</code> header. :</P>
+
+<BLOCKQUOTE><PRE>(defmacro test-exp (form)
+  ...)</PRE></BLOCKQUOTE>
+
+<P>Step 4(b): Insert one of the examples in the body:</P>
+
+<BLOCKQUOTE><PRE>(defmacro test-exp (form)
+  `(format t "~&amp;~S =&gt; ~S~%" '(+ x y) (+ x y)))</PRE>
+</BLOCKQUOTE>
+
+<P>Step 4(c): Parameterize the body with backquote, etc. That is, we
+add a backquote, and replace specific data items with the macro's
+parameters. Thus, all occurrences of <code>(+ x y)</code> become
+<code>,form</code>. Notice that the quote's remain in the macro body.
+</P>
+
+<BLOCKQUOTE><PRE>(defmacro test-exp (form)
+  `(format t "~&amp;~S =&gt; ~S~%" ',form ,form))</PRE></BLOCKQUOTE>
+
+<P>Step 5: Test on other examples.</P>
+
+<H2>Implementing the macro defmop</H2>
+
+<P>Let's use the method to define <code>defmop</code>.</P>
+
+<P>Step 1: define a <I>function</I> to do the real work, e.g.,</P>
+
+<BLOCKQUOTE><PRE>(defun add-mop (...) ...)</PRE></BLOCKQUOTE>
+
+<P>We have to decide how this function would be called and what it
+does. Mops have a name, a list of abstractions, and a list of slots,
+and they're stored under the name. The principle of "Short Attention
+Span Programming" dictates that separate tasks be implemented in
+separate functions, so we'll define <code>make-mop</code> to make a mop
+structure, and <code>store-mop</code> to save that structure under its
+name in a table.</P>
+
+<BLOCKQUOTE><PRE>(defun add-mop (name absts slots)
+  (store-mop name
+     (make-mop :name name
+               :absts absts
+               :slots slots)))</PRE></BLOCKQUOTE>
+
+<P>Step 2: write down the some <code>defmop</code> calls:</P>
+
+<BLOCKQUOTE><PRE>(defmop m-elephant (m-animal)
+  :color m-grey)
+&nbsp;
+(defmop m-animal (m-thing))</PRE></BLOCKQUOTE>
+
+<P>Step 3: write down the equivalent calls to <code>add-mop</code>:</P>
+
+<BLOCKQUOTE><PRE>(add-mop 'm-elephant '(m-animal)
+         '(:color m-grey))
+&nbsp;
+(add-mop 'm-animal '(m-thing) '())</PRE></BLOCKQUOTE>
+
+<P>Step 4(a): Write the <code>defmacro</code> header. From our examples,
+we know that we want <code>defmop</code> to take a name, a list of
+abstractions, and then zero or more slots, so the header would be:
+</P>
+
+<BLOCKQUOTE><PRE>(defmacro defmop (name absts &amp;rest slots)
+  ...)</PRE></BLOCKQUOTE>
+
+<P>Step 4(b): Insert one of the examples in the body:</P>
+
+<BLOCKQUOTE><PRE>(defmacro defmop (name absts &amp;rest slots)
+  (add-mop 'm-elephant '(m-animal)
+           '(:color m-grey)))</PRE></BLOCKQUOTE>
+
+<P>Step 4(c): Parameterize the body with backquote, etc. That is, we
+add a backquote, and replace specific data items with the macro's
+parameters. Thus, <code>m-elephant</code> becomes <code>,name</code>,
+<code>(m-animal)</code> becomes <code>,,absts</code>, and <code>(:color
+m-grey)</code> becomes <code>,slots</code>. Notice that the quotes are
+<I>not</I> part of the specific data, so they remain in the macro
+body.</P>
+
+<BLOCKQUOTE><PRE>(defmacro defmop (name absts &amp;rest slots)
+  `(add-mop ',name ',absts
+            ',slots))</PRE></BLOCKQUOTE>
+
+<P>Step 5: Test on other examples. E.g., does <code>(defmop m-animal
+(m-thing))</code> work with the above definition, or does it need
+tweaking?</P>
+
+<H2>Debugging Macros</H2>
+
+<P>Don't rely on what the macro call returns when debugging. Use the
+following idiom to see what a macro call expands into. If
+the expansion looks suspicious, it probably is wrong, even if
+the right answer comes back in some test cases:</P>
+
+<BLOCKQUOTE><PRE>(pprint (macroexpand-1 'macro-call))</PRE>
+</BLOCKQUOTE>
+
+<H2>Defining Complex Macros</H2>
+
+<P>There are two ways in which a macro can be too complex for Step 4
+in the above method:</P>
+
+<UL>
+   <LI>It may need to calculate its expansion from the arguments,
+   rather than follow a fixed tempate.
+
+   <LI>It may need to process the arguments significantly before
+   expansion.
+</UL>
+
+<H3>Using Expander Functions</H3>
+
+<P>Some macros expand into a form that has to be "calculated" from
+their arguments. The most common situation is a macro that expands
+into a set of nested subforms.</P>
+
+<P>A very simple example of this is the macro <code>compose</code>.
+<code>compose</code> is an extension of <code>function</code>. It takes zero
+or more function specifications (usually function names, but they
+could be <code>(lambda ...)</code> forms), and "composes" them into one
+function. That is,</P>
+
+<BLOCKQUOTE><PRE>(compose fn1 fn2 fn3 ...)</PRE></BLOCKQUOTE>
+
+<P>returns a function fn with the property that</P>
+
+<BLOCKQUOTE><PRE>(funcall fn expression)</PRE></BLOCKQUOTE>
+
+<P>is the same as</P>
+
+<BLOCKQUOTE><PRE>(funcall fn1
+  (funcall fn2
+   (funcall fn3 ... expression)))</PRE></BLOCKQUOTE>
+
+<P>For example,</P>
+
+<a name="compose"></a>
+<BLOCKQUOTE><PRE>&gt; (mapcar (compose 1+ car) '((1 a) (2 b)))
+(2 3)</PRE></BLOCKQUOTE>
+
+<P>What function should <code>(compose)</code> -- i.e., no arguments -- 
+return?<A HREF="#fn3">[4]</A></P>
+
+<P><code>compose</code> is not a hard macro to define, but clearly it
+doesn't fit a fixed template. Because of the nested nature of the
+expansion, it can be most naturally defined with recursion.</P>
+
+<P>When an expansion is complex, define one or more <I>expander</I>
+functions to construct the expansion the macro needs. Being normal
+functions, they're easy to call recursively, and easy to debug, too.
+</P>
+
+<P>Here's a simple definition for <code>compose</code> using an expander
+function:</P>
+
+<BLOCKQUOTE><PRE>(defmacro compose (&amp;rest fns)
+  (let ((var (gensym)))
+   `#'(lambda (,var)
+       ,(expand-compose fns var))))
+&nbsp;
+(defun expand-compose (fns var)
+  (if (null fns) var
+    `(,(first fns)
+      ,(expand-compose (rest fns) var))))</PRE></BLOCKQUOTE>
+
+<H3>Using Argument Parsing Functions</H3>
+
+<P>The other way a macro can be complex is if it has a complicated
+calling format, or if a fair amount of processing has to be done to
+the arguments. For example, <code>loop</code> takes many different
+clauses, and each clause has its own format, including,</P>
+
+<BLOCKQUOTE><PRE>for <I>variable</I> in <I>list</I>
+for <I>variable</I> from <I>start</I> [to <I>end</I>] [by <I>increment</I>]
+for <I>variable</I> = <I>initial</I> [then <I>subsequent</I>]
+when <I>test</I> <I>clause</I>
+finally <I>expression</I></PRE></BLOCKQUOTE>
+
+<P>Another example is <code>bind</code>, defined in <I>AI
+Programming</I>. </P>
+
+<BLOCKQUOTE><PRE>(bind ((<I>place1 value2</I>)
+       (<I>place2 value2</I>)
+       ...)
+  <I>exp1 exp2</I> ...)</PRE></BLOCKQUOTE>
+
+<P>This generalizes <code>let</code>. Each <I><code>place</code></I> is
+assigned the corresponding <I><code>value</code></I>, using
+<code>setf</code>, then the expressions are evaluated, then
+<I><code>place</code></I>'s are restored to their original values.
+<code>bind</code> generates code with <code>unwind-protect</code> to
+guarantee that the old values are restored, even if there's a
+non-local exit (becaues of an error or a call to <code>return-from</code>
+or <code>throw</code>) during the expression evaluation.</P>
+
+<P>Although the calling format is simple (the same as <code>let</code>),
+and the expansion fits a fixed format, it turns out <code>bind</code> has
+to calculate a number of special values from the input arguments
+before it can fill out the expansion form.</P>
+
+<P>When the processing <I>before</I> expansion is complex, define one
+or more "parser" functions to process the arguments and get the data
+needed to build the expansion. Name these functions <code>get-...</code>
+or <code>parse-...</code>, to keep them straight from the expander
+functions.</P>
+
+<P>For example, <A HREF="../programs/bind.lisp">here's</A> a cleaner
+definition of the final version of <code>bind</code> in Section 3.16 of
+<I>AI Programming</I>.</P>
+
+<H2>Macros and Maintainable Code</H2>
+
+<P>Macros, like functions, should be used when they make code more
+maintainable, by making it easier to write code that is:</P>
+
+<UL>
+   <LI>readable
+
+   <LI>robust
+
+   <LI>efficient
+</UL>
+
+<P>For example, the form</P>
+
+<BLOCKQUOTE><PRE>(defmop m-elephant (m-animal)
+  :color m-grey)</PRE></BLOCKQUOTE>
+
+<P>is more readable than the equivalent function call with the quotes
+and extra parentheses. The form</P>
+
+<BLOCKQUOTE><PRE>(loop for x in l when (test x) collect x)</PRE>
+</BLOCKQUOTE>
+
+<P>will usually compile into more efficient code than the standard
+alternatives. The form</P>
+
+<BLOCKQUOTE><PRE>(with-open-file (instream file)
+  (do ((x (read instream nil nil)...))
+    ...))</PRE></BLOCKQUOTE>
+
+<P>generates more robust code than most programmers would write,
+using <code>unwind-protect</code> to guarantee that streams are closed,
+no matter what happens.</P>
+
+<H2><A NAME="pitfalls"></A>Macro Pitfalls</H2>
+
+<p>Even though macros are a simple idea, and macro definitions
+use regular old Lisp list functions, there are still several
+pitfalls that novices fall into repeatedly when defining macros.
+These mistakes happen when you fail to keep in mind two key
+facts about macros:</p>
+
+<ul>
+<li>Macros are not functions.</li>
+
+<li>Macros must be callable at compile-time.</li>
+</ul>
+
+<p>Here are some common macro mistakes. See if you can see
+what's wrong with each one.</p>
+
+<h3><a name="first-macro"></a>In-lining with Macros</h3>
+
+<p>Some Lisps before Common Lisp did not include functions
+like <code>first</code>, <code>second</code> and so on. So
+programmers who liked those names, would sometimes define
+these macros:</p>
+
+<pre>(defmacro first (l) `(car ,l))
+(defmacro second (l) `(cadr ,l))
+...</pre>
+
+<p>Programmers would use macros instead of normal functions for efficiency.
+When compiled, <code>first</code>, <code>second</code> and so 
+on, would be replaced with <code>car</code>, <code>cadr</code> and soon,
+so the resulting compiled code would be just as efficient as if
+<code>car</code>, <code>cadr</code>, and so on, had been used</p>
+
+<hr>
+<p><em>What's wrong with the above code?</em></p>
+<hr>
+
+<p>Macros are not functions. Therefore, even though <code>(first lst)</code>
+looks like a normal function call, you'll get an
+error if you try to do <code>(mapcar #'first lst)</code>
+or <code>(find x lst :key #'first)</code>.</p>
+
+<p>Functions are wonderfully useful things. If something can be a function,
+it should be a function. The right way in Common Lisp to get efficient function
+calls, 
+<em>when and only when</em> there's an efficiency problem, is to
+use the <code>inline</code> declaration. So, if there was a bottleneck
+in code (highly unlikely) because <code>first</code>, <code>second</code>,
+and so on were functions, then do this:</p>
+
+<pre>(declaim (inline first second ...)
+(defun first (l) (car l))
+(defun second (l) (cadr l))
+...</pre>
+
+<p>Reminder: Common Lisp already defines these functions for you.</p>
+
+<P>Problems with macros that look like but are not 
+functions often show up pretty quickly as "... is
+not a function" type messages. However, "function-like" macros can
+lead to <A HREF="macro-lesson.html">bugs that are quite hard to find</A>.</P>
+
+<h3><a name="bad-push"></a>A Bad <code>push</code> Macro</h3>
+
+<p>Some Lisps before Common Lisp did not include <code>push</code>. 
+Here's a simple definition for <code>(push
+<em>item list</em>)</code>, renamed to <code>x-push</code>
+to avoid name conflict:
+
+<BLOCKQUOTE><PRE>(defmacro x-push (x l)
+  `(setf ,l (cons ,x ,l)))</PRE></BLOCKQUOTE>
+
+<P>This will correctly handle <code>(x-push 'a l)</code>, 
+<code>(x-push (car x) l)</code>, and even <code>(x-push x (car l)</code>).
+The last form correctly pushes the value of <code>x</code> onto the front
+of the list stored in the <code>car</code> of <code>l</code>.</P>
+
+<hr>
+<p><em>What's wrong with the above code?</em></p>
+<hr>
+
+
+<P>Simple though it is, the above definition 
+manages to violate <I>two</I> expectations about normal argument
+evaluation:</p>
+
+<UL>
+   <LI>arguments are evaluated left to right
+
+   <LI>arguments are not evaluated more than once
+</UL>
+
+<p>Try running the following code. It takes a list
+of lists, <code>l</code>, and a list of items, e.g., 
+<code>(a b c)</code>, and pushes each item onto the
+corresponding list. (There are better ways to do this, but 
+this is one of the simplest cases I can think of to show
+the bug that could occur is more complicated code.)</p> 
+
+<pre>(let ((l (list nil nil nil))
+      (i -1))
+  (dolist (x '(a b c))
+    (push x (nth (incf i) l)))
+  l)</pre>
+  
+<p>If you run the above, you should get <code>((A) (B) (C))</code>
+as a result.</p>
+
+<p>Now try it with <code>x-push</code>. What happens? Why? How could
+you fix it? </p>
+
+<h3><a name="bad-pop"></a>A Bad <code>pop</code> Macro</h3>
+
+<p>Some Lisps before Common Lisp did not include <code>pop</code>. 
+Here's a simple definition for <code>(pop
+<em>list</em>)</code>, renamed to <code>x-pop</code>
+to avoid name conflict. The code has to save the first
+element of <em>list</em> so that it can return it after
+resetting <em>list</em> to its tail.</p>
+
+<BLOCKQUOTE><PRE>(defmacro x-pop (l)
+  `(let ((save (car ,l)))
+     (setf ,l (cdr ,l))
+     save))</PRE></BLOCKQUOTE>
+
+<p>This code has the same multiple evaluation problem that
+<code>x-push</code> has, but let's ignore that for now. Here's
+a test of <code>x-pop</code> that seems to do fine.</p>
+
+<pre>(let ((l '(a b c)))
+  (print (x-pop l))
+  (print (x-pop l))
+  (print (x-pop l))
+  l)</pre>
+
+<hr>
+<p><em>What's wrong with the above definition?</em></p>
+<hr>
+
+<p>Trying running the test code above, but change the name
+of the local variable from <code>l</code> to <code>save</code>.
+What happens? Why? How can you fix it?</p>
+
+
+<H2>Tell me more</H2>
+
+<P>For an excellent in-depth treatment of macros, see Paul Graham's
+<I>On Lisp</I> (Prentice-Hall). It gives a more sophisticated variant
+of the macro definition methodology outlined above, many examples,
+caveats, and so on. Warning: the later chapters introduce uses of
+macros that may be hazardous to code maintenance!</P>
+
+<HR>
+<h2>Footnotes</h2>
+
+<a name="fn0"></a>
+<p>[1] These can't be functions because one or
+more arguments are not
+evaluated. <a href="#defmop">[return]</a></p>
+
+<hr>
+
+<a name="fn1"></a>
+<p>[2] If <code>test-exp</code>
+was a function, it would be passed <code>3</code>, the
+value of <code>(+ x y)</code>, not the form itself. <a href="#test-exp">[return]</a>
+</p>
+
+<hr>
+
+<a name="fn2"></a>
+<p>[3] Consider this use of <code>test-exp</code>:
+</p>
+
+<pre>
+(let ((x 1) (y 2)) (test-exp (+ x y)))
+</pre>
+
+<p>The call to 
+<code>(test-exp (+ x y))</code> would expand into
+</p>
+
+<pre>
+(format t "~&amp;~S =&gt; ~S~%" exp (eval exp))
+</pre>
+
+<p>At run time, 
+<code>exp</code> will have the value <code>(+ x y)</code>. 
+The first problem is that <code>(eval '(+ x y))</code>
+evaluates the sum of the <i>special bindings</i> of <code>x</code> and <code>y</code>,
+not the local ones. If there are no such bindings,
+there will be an error. If you make <code>x</code> and <code>y</code> global,
+you're still in trouble. The value of <code>format</code> is always <code>nil</code>.
+Hence <code>(test-exp (+ x y))</code> expands into <code>nil</code>. So,
+if you compile a file with the above call to expression, the file will
+contain
+
+<pre>
+(let ((x 1) (y 2)) nil)
+</pre>
+
+<p>Not very useful. <a href="#bad-test-exp">[return]</a>
+</p>
+
+<hr>
+
+<a name="fn3"></a>
+<p>
+[4] <code>(compose)</code>
+should return a function that simply returns the argument passed to it, i.e.,
+the identity function. It's left as an exercise for the reader to determine if
+that's what the code given for <code>compose</code> actually does.
+<a href="#compose">[return]</a>
+</p>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

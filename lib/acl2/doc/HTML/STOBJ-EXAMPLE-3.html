@@ -1,0 +1,269 @@
+<html>
+<head><title>STOBJ-EXAMPLE-3.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-3</h2>another example of a single-threaded object
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+The event
+
+<pre>
+(defstobj $s
+  (x :type integer :initially 0)
+  (a :type (array (integer 0 9) (3)) :initially 9 :resizable t))
+</pre>
+
+introduces a stobj named <code>$S</code>.  The stobj has two fields, <code>X</code> and
+<code>A</code>.  The <code>A</code> field is an array.  The <code>X</code> field contains an
+integer and is initially 0.  The <code>A</code> field contains a list of
+integers, each between 0 and 9, inclusively.  (Under the hood, this
+``list'' is actually implemented as an array.)  Initially, the <code>A</code>
+field has three elements, each of which is 9.
+<p>
+This event introduces the following sequence of function definitions:
+
+<pre>
+(DEFUN XP (X) ...)               ; recognizer for X field
+(DEFUN AP (X) ...)               ; recognizer of A field
+(DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+(DEFUN CREATE-$S NIL ...)        ; creator for stobj $S
+(DEFUN X ($S) ...)               ; accessor for X field
+(DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+(DEFUN A-LENGTH ($S) ...)        ; length of A field
+(DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+(DEFUN AI (I $S) ...)            ; accessor for A field at index I
+(DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+</pre>
+<p>
+
+Here is the definition of <code>$SP</code>:
+
+<pre>
+(DEFUN $SP ($S)
+  (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T))
+  (AND (TRUE-LISTP $S)
+       (= (LENGTH $S) 2)
+       (XP (NTH 0 $S))
+       (AP (NTH 1 $S))
+       T))
+</pre>
+
+This reveals that in order to satisfy <code>$SP</code> an object must be
+a true list of length 2 whose first element satisfies <code>XP</code> and whose
+second satisfies <code>AP</code>.  By printing the definition of <code>AP</code> one
+learns that it requires its argument to be a true list, each element
+of which is an integer between 0 and 9.<p>
+
+The initial value of stobj <code>$S</code> is given by zero-ary ``creator''
+function <code>CREATE-$S</code>.  Creator functions may only be used in limited
+contexts.  See <a href="WITH-LOCAL-STOBJ.html">with-local-stobj</a>.<p>
+
+Here is the definition of <code>UPDATE-AI</code>, the updater for the <code>A</code> field
+at index <code>I</code>:
+
+<pre>
+(DEFUN UPDATE-AI (I V $S)
+  (DECLARE (XARGS :GUARD
+                  (AND ($SP $S)
+                       (INTEGERP I)
+                       (&lt;= 0 I)
+                       (&lt; I (A-LENGTH $S))
+                       (AND (INTEGERP V) (&lt;= 0 V) (&lt;= V 9)))
+                  :VERIFY-GUARDS T))
+  (UPDATE-NTH-ARRAY 1 I V $S))
+</pre>
+
+By definition <code>(UPDATE-NTH-ARRAY 1 I V $S)</code> is
+<code>(UPDATE-NTH 1 (UPDATE-NTH I V (NTH 1 $S)) $S)</code>.
+This may be a little surprising but should be perfectly clear.<p>
+
+First, ignore the guard, since it is irrelevant in the logic.
+Reading from the inside out, <code>(UPDATE-AI I V $S)</code> extracts <code>(NTH 1 $S)</code>,
+which is array <code>a</code> of <code>$S</code>.  (Recall that <code><a href="NTH.html">NTH</a></code> is
+0-based.)  The next higher expression in the definition above,
+<code>(UPDATE-NTH I V a)</code>, ``modifies'' <code>a</code> by setting its <code>I</code>th
+element to <code>V</code>.  Call this <code>a'</code>.  The next higher expression,
+<code>(UPDATE-NTH 1 a' $S)</code>, ``modifies'' <code>$S</code> by setting its 1st
+component to <code>a'</code>.  Call this result <code>$s'</code>.  Then <code>$s'</code> is
+the result returned by <code>UPDATE-AI</code>.<p>
+
+So the first useful observation is that from the perspective of the
+logic, the type ``restrictions'' on stobjs are irrelevant.  They
+are ``enforced'' by ACL2's guard mechanism, not by the definitions
+of the updater functions.<p>
+
+As one might also imagine, the accessor functions do not really
+``care,'' logically, whether they are applied to well-formed stobjs
+or not.  For example, <code>(AI I $S)</code> is defined to be <code>(NTH I (NTH 1 $S))</code>.<p>
+
+Thus, you will not be able to prove that (AI 2 $S) is an
+integer.  That is,
+
+<pre>
+(integerp (AI 2 $S))
+</pre>
+
+is not a theorem, because <code>$S</code> may not be well-formed.<p>
+
+Now <code>(integerp (AI 2 $S))</code> will always evaluate to <code>T</code> in the
+top-level ACL2 command loop, because we insist that the current value of
+the stobj <code>$S</code> always satisfies <code>$SP</code> by enforcing the guards on
+the updaters, independent of whether guard checking is on or off;
+see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.  But in a theorem <code>$S</code> is just
+another variable, implicitly universally quantified.<p>
+
+So <code>(integerp (AI 2 $S))</code> is not a theorem because it is not true when
+the variable <code>$S</code> is instantiated with, say,
+
+<pre>
+'(1 (0 1 TWO))
+</pre>
+
+because, logically speaking, <code>(AI 2 '(1 (0 1 TWO)))</code> evaluates to
+the symbol <code>TWO</code>.  That is,
+
+<pre>
+(equal (AI 2 '(1 (0 1 TWO))) 'TWO)
+</pre>
+
+is true.<p>
+
+However,
+
+<pre>
+(implies (and ($SP $S) (&lt; 2 (A-LENGTH $S))) (integerp (AI 2 $S)))
+</pre>
+
+is a theorem.  To prove it, you will have to prove a lemma about
+<code>AP</code>.  The following will do:
+
+<pre>
+(defthm ap-nth
+  (implies (and (AP x)
+                (integerp i)
+                (&lt;= 0 i)
+                (&lt; i (len x)))
+           (integerp (nth i x)))).
+</pre>
+<p>
+
+Similarly, 
+
+<pre>
+(implies (and (integerp i)
+              (&lt;= 0 i)
+              (&lt; i (A-LENGTH $S))
+              (integerp v)
+              (&lt;= 0 v)
+              (&lt;= v 9))
+         ($SP (UPDATE-AI i v $S)))
+</pre>
+
+is not a theorem until you add the additional hypothesis <code>($SP $S)</code>.
+To prove the resulting theorem, you will need a lemma such as the
+following.
+
+<pre>
+(defthm ap-update-nth
+  (implies (and (AP a)
+                (integerp v)
+                (&lt;= 0 v)
+                (&lt;= v 9)
+                (integerp i)
+                (&lt;= 0 i)
+                (&lt; i (len a)))
+           (AP (update-nth i v a))))
+</pre>
+<p>
+
+The moral here is that from the logical perspective, you must
+provide the hypotheses that, as a programmer, you think are
+implicit on the structure of your stobjs, and you must prove their
+invariance.  This is a good area for further support, perhaps in
+the form of a library of macros.<p>
+
+<em>Resizing Array Fields</em><p>
+
+Recall the specification of the array field, <code>A</code> for the stobj <code>$S</code>
+introduced above:
+
+<pre>
+(a :type (array (integer 0 9) (3)) :initially 9 :resizable t)
+</pre>
+
+Logically, this field is a list, initially of length 3.  Under the
+hood, this field is implemented using a Common Lisp array with 3
+elements.  In some applications, one may wish to lengthen an array
+field, or even (to reclaim space) to shrink an array field.  The
+<code><a href="DEFSTOBJ.html">defstobj</a></code> event provides functions to access the current length
+of an array field and to change the array field, with default names
+obtained by suffixing the field name with ``<code>LENGTH-</code>'' or prefixing
+it with ``<code>RESIZE-</code>,'' respectively.  The following log shows the uses
+of these fields in the above example.
+
+<pre>
+ACL2 !&gt;(A-LENGTH $S)
+3
+ACL2 !&gt;(RESIZE-A 10 $S) ; change length of A to 10
+&lt;$s&gt;
+ACL2 !&gt;(A-LENGTH $S)
+10
+ACL2 !&gt;(AI 7 $S)        ; new elements get value from :initially
+9
+ACL2 !&gt;(RESIZE-A 2 $S)  ; truncate A down to first 2 elements
+&lt;$s&gt;
+ACL2 !&gt;(A-LENGTH $S)
+2
+ACL2 !&gt;(AI 7 $S)        ; error:  access past array bound<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol AI, which
+is (AND ($SP $S) (INTEGERP I) (&lt;= 0 I) (&lt; I (A-LENGTH $S))), is violated
+by the arguments in the call (AI 7 $S).<p>
+
+ACL2 !&gt;
+</pre>
+
+Here are the definitions of the relevant functions for the above
+example; also see <a href="RESIZE-LIST.html">resize-list</a>.
+
+<pre>
+(DEFUN A-LENGTH ($S)
+  (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
+  (LEN (NTH 1 $S)))<p>
+
+(DEFUN RESIZE-A (K $S)
+  (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
+  (UPDATE-NTH 1
+              (RESIZE-LIST (NTH 1 $S) K 9)
+              $S))
+</pre>
+<p>
+
+It is important to note that the implementation of array resizing in
+ACL2 involves copying the entire array into a newly allocated space
+and thus can be quite costly if performed often.  This approach was
+chosen in order to make array access and update as efficient as
+possible, with the suspicion that for most applications, array
+access and update are considerably more frequent than resizing
+(especially if the programmer is aware of the relative costs
+beforehand).<p>
+
+It should also be noted that computations of lengths of stobj array
+fields should be fast (constant-time) in all or most Common Lisp
+implementations.<p>
+
+Finally, if <code>:resizable t</code> is not supplied as shown above, then
+an attempt to resize the array will result in an error.  If you do
+not intend to resize the array, it is better to omit the <code>:resizable</code>
+option (or to supply <code>:resizable nil</code>), since then the length
+function will be defined to return a constant, namely the initial
+length, which can simplify guard proofs (compare with the definition
+of <code>A-LENGTH</code> above).<p>
+
+This completes the tour through the documentation of <a href="STOBJ.html">stobj</a>s.
+However, you may now wish to read the documentation for the event
+that introduces a new single-threaded object; see <a href="DEFSTOBJ.html">defstobj</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

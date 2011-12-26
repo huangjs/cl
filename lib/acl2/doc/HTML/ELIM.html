@@ -1,0 +1,147 @@
+<html>
+<head><title>ELIM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ELIM</h2>make a destructor elimination rule
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and how they are
+used to build rules from formulas.  Here we describe the class of <code>:elim</code>
+rules, which is fundamentally quite different from the more common class of
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules.  Briefly put, a <code>:rewrite</code> rule replaces
+instances of its left-hand side with corresponding instances of its
+right-hand side.  But an <code>:elim</code> rule, on the other hand, has the effect of
+generalizing so-called ``destructor'' function applications to variables.  In
+essence, applicability of a <code>:rewrite</code> rule is based on matching its
+left-hand side, while applicability of an <code>:elim</code> rule is based on the
+presence of at least one destructor term.<p>
+
+For example, a conjecture about <code>(car x)</code> and <code>(cdr x)</code> can be replaced
+by a conjecture about new variables <code>x1</code> and <code>x2</code>, as shown in the
+following example.  (Run the command <code>:mini-proveall</code> and search for
+<code>CAR-CDR-ELIM</code> to see the full proof containing this excerpt.)
+
+<pre>
+Subgoal *1/1'
+(IMPLIES (AND (CONSP X)
+              (TRUE-LISTP (REV (CDR X))))
+         (TRUE-LISTP (APP (REV (CDR X)) (LIST (CAR X))))).<p>
+
+The destructor terms (CAR X) and (CDR X) can be eliminated by using
+CAR-CDR-ELIM to replace X by (CONS X1 X2), (CAR X) by X1 and (CDR X)
+by X2.  This produces the following goal.<p>
+
+Subgoal *1/1''
+(IMPLIES (AND (CONSP (CONS X1 X2))
+              (TRUE-LISTP (REV X2)))
+         (TRUE-LISTP (APP (REV X2) (LIST X1)))).<p>
+
+This simplifies, using primitive type reasoning, to<p>
+
+Subgoal *1/1'''
+(IMPLIES (TRUE-LISTP (REV X2))
+         (TRUE-LISTP (APP (REV X2) (LIST X1)))).
+</pre>
+
+The resulting conjecture is often simpler and hence more amenable to proof.<p>
+
+The application of an <code>:elim</code> rule thus replaces a variable by a term that
+contains applications of so-called ``destructor'' functions to that variable.
+The example above is typical: the variable <code>x</code> is replaced by the term
+<code>(cons (car x) (cdr x))</code>, which applies a so-called ``constructor''
+function, <code><a href="CONS.html">cons</a></code>, to applications <code>(car x)</code> and <code>(cdr x)</code> of
+destructor functions <code><a href="CAR.html">car</a></code> and <code><a href="CDR.html">cdr</a></code> to that same variable, <code>x</code>.
+But that is only part of the story.  ACL2 then generalizes the destructor
+applications <code>(car x)</code> and <code>(cdr x)</code> to new variables <code>x1</code> and <code>x2</code>,
+respectively, and ultimately the result is a simpler conjecture.<p>
+
+More generally, the application of an <code>:elim</code> rule replaces a variable by a
+term containing applications of destructors; there need not be a clear-cut
+notion of ``constructor.''  But the situation described above is typical, and
+we will focus on it, giving full details when we introduce the ``General
+Form'' below.<p>
+
+The example above employs the following built-in <code>:elim</code> rule named
+<code>car-cdr-elim</code>.
+
+<pre>
+Example:
+(implies (consp x)                      when (car v) or (cdr v) appears
+         (equal (cons (car x) (cdr x))  in a conjecture, and v is a
+                x))                     variable, consider replacing v by
+                                        (cons a b), for two new variables
+                                        a and b.<p>
+
+Notice that the situation is complicated a bit by the fact that this
+replacement is only valid if the variable being replaced a cons structure.
+Thus, when ACL2 applies <code>car-cdr-elim</code> to replace a variable <code>v</code>, it will
+split into two cases: one case in which <code>(consp v)</code> is true, in which <code>v</code>
+is replaced by <code>(cons (car v) (cdr v))</code> and then <code>(car v)</code> and
+<code>(cdr v)</code> are generalized to new variables; and one case in which
+<code>(consp v)</code> is false.  In practice, <code>(consp v)</code> is often provable,
+perhaps even literally present as a hypotheses; then of course there is no
+need to introduce the second case.  That is why there is no such second case
+in the example above.<p>
+
+You might find <code>:elim</code> rules to be useful whenever you have in mind a data
+type that can be built up from its fields with a ``constructor'' function and
+whose fields can be accessed by corresponding ``destructor'' functions.  So
+for example, if you have a ``house'' data structure that represents a house
+in terms of its address, price, and color, you might have a rule like the
+following.
+
+<pre>
+Example:
+(implies (house-p x)
+         (equal (make-house (address x)
+                            (price x)
+                            (color x))
+                x))
+</pre>
+
+The application of such a rule is entirely analogous to the application of
+the rule <code>car-cdr-elim</code> discussed above.  We discuss such rules and their
+application more carefully below.
+<p>
+General Form:
+(implies hyp (equiv lhs x))
+</pre>
+
+where <code>equiv</code> is a known equivalence relation (see <a href="DEFEQUIV.html">defequiv</a>); <code>x</code>
+is a variable symbol; and <code>lhs</code> contains one or more terms (called
+``destructor terms'') of the form <code>(fn v1 ... vn)</code>, where <code>fn</code> is
+a function symbol and the <code>vi</code> are distinct variable symbols,
+<code>v1</code>, ..., <code>vn</code> include all the variable symbols in the formula,
+no <code>fn</code> occurs in <code>lhs</code> in more than one destructor term, and all
+occurrences of <code>x</code> in <code>lhs</code> are inside destructor terms.<p>
+
+To use an <code>:elim</code> rule, the theorem prover waits until a conjecture has
+been maximally simplified.  It then searches for an instance of some
+destructor term <code>(fn v1 ... vn)</code> in the conjecture, where the instance for
+<code>x</code> is some variable symbol, <code>vi</code>, and every occurrence of <code>vi</code> outside
+the destructor terms is in an <code>equiv</code>-hittable position.  If such an
+instance is found, then the theorem prover instantiates the <code>:elim</code> formula
+as indicated by the destructor term matched; splits the conjecture into two
+goals, according to whether the instantiated hypothesis, <code>hyp</code>, holds; and
+in the case that it does hold, generalizes all the instantiated destructor
+terms in the conjecture to new variables and then replaces <code>vi</code> in the
+conjecture by the generalized instantiated <code>lhs</code>.  An occurrence of <code>vi</code>
+is ``<code>equiv</code>-hittable'' if sufficient congruence rules (see <a href="DEFCONG.html">defcong</a>) have
+been proved to establish that the propositional value of the clause is not
+altered by replacing that occurrence of <code>vi</code> by some <code>equiv</code>-equivalent
+term.<p>
+
+If an <code>:elim</code> rule is not applied when you think it should have been,
+and the rule uses an equivalence relation, <code>equiv</code>, other than <code>equal</code>,
+it is most likely that there is an occurrence of the variable that is not
+<code>equiv</code>-hittable.  Easy occurrences to overlook are those in
+the governing hypotheses.  If you see an unjustified occurrence of the
+variable, you must prove the appropriate congruence rule to allow the
+<code>:elim</code> to fire.<p>
+
+Further examples of how ACL2 <code>:elim</code> rules are used may be found in the
+corresponding discussion of ``Elimation of Destructors'' for Nqthm, in
+Section 10.4 of A Computational Logic Handbook.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+<HEAD>
+   <TITLE>Chapter 10 Notes</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 10 Notes</DIV>
+
+<H3>Page 162</H3>
+
+<H4><TT>nil!</TT></H4>
+
+<P>Exercise for the reader: what's the difference between Graham's
+<CODE>nil!</CODE> and the following:</P>
+
+<PRE>(defun set-nil (x)
+  (setf x nil))</PRE>
+
+<H3>Page 163</H3>
+
+<H4>Macro functions</H4>
+
+<P>The comment at the top of the page about macros being functions is
+confusing. Macros are <I>not</I> functions, so you can't pass a macro
+to <CODE>apply</CODE>, <CODE>mapcar</CODE>, etc.</P>
+
+<P>However, macros work by calling macro expanders to expand the
+macro call into Lisp code. Macro expanders <I>are</I> functions. You
+can get the macro expander for a macro using
+<CODE>macro-function</CODE>.</P>
+
+<H3>Page 165</H3>
+
+<H4><TT>rotatef</TT></H4>
+
+<P>Why is the macro that swaps two variables called
+<CODE>rotatef</CODE>? Well, the <CODE>f</CODE> part is by analogy to
+<CODE>setf</CODE>. <CODE>rotatef</CODE> operates on "places" just
+like <CODE>setf</CODE> does. The <CODE>rotate</CODE> part <a href="../../exercises/lisp-exs.html#list-of"></a>is because
+<CODE>rotatef</CODE> can handle any number of places, not just two.
+See the glossary in Graham for details.</P>
+
+<H4>Quicksort</H4>
+
+<P>If you do 
+<a href="../../exercises/lisp-exs.html#list-of">the <CODE>list-of</CODE> macro exercise</a>,
+then you can define
+<CODE>quicksort</CODE> on a list (not a vector) like this:</P>
+
+<PRE>(defun quicksort (l)
+  (cond ((null l) nil)
+        (t (let ((p (car l))
+                 (r (cdr l)))
+             (append (quicksort (list-of x (x :in r) (&lt; x p)))
+                     (list p)
+                     (quicksort (list-of x (x :in r) (&gt;= x p))))))))</PRE>
+
+<P>This is pretty inefficient (it conses a lot), but it does capture
+the essence of the algorithm nicely: choose a pivot p and split the
+list into those items less than p and greater than p.</P>
+
+<H3>Page 172</H3>
+
+<H4><TT>avg</TT></H4>
+
+<P>This is a cute example of compile-time optimization but it's also
+an example of an <A HREF="../macros.html#evilmacros">evil macro</A>.
+</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

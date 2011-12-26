@@ -1,0 +1,1089 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: FREE-VARIABLES,  Next: GENERALIZE,  Prev: FORWARD-CHAINING,  Up: RULE-CLASSES
+
+FREE-VARIABLES    free variables in rules
+
+As described elsewhere (see *note RULE-CLASSES::), ACL2 rules are
+treated as implications for which there are zero or more hypotheses hj
+to prove.  In particular, rules of class :rewrite may look like this:
+
+     (implies (and h1 ... hn)
+              (fn lhs rhs))
+
+Variables of hi are said to occur _free_ in the above :rewrite rule if
+they do not occur in lhs or in any hj with j<i.  (To be precise, here
+we are only discussing those variables that are not in the scope of a
+let/let*/lambda that binds them.)  We also refer to these as the _free
+variables_ of the rule.  ACL2 issues a warning or error when there are
+free variables in a rule, as described below.  (Variables of rhs may be
+considered free if they do not occur in lhs or in any hj.  But we do
+not consider those in this discussion.)
+
+In general, the _free variables_ of rules are those variables occurring
+in their hypotheses (not let/let*/lambda-bound) that are not bound when
+the rule is applied.  For rules of class :linear and :forward-chaining,
+variables are bound by a trigger term.  (See *Note RULE-CLASSES:: for a
+discussion of the :trigger-terms field).  For rules of class
+:type-prescription, variables are bound by the :typed-term field.
+
+Let us discuss the method for relieving hypotheses of rewrite rules with
+free variables.  Similar considerations apply to linear and
+forward-chaining rules, while for other rules (in particular,
+type-prescription rules), only one binding is tried, much as described
+in the discussion about :once below.
+
+See *Note FREE-VARIABLES-EXAMPLES:: for more examples of how this all
+works, including illustration of how the user can exercise some control
+over it.  In particular, see *note FREE-VARIABLES-EXAMPLES-REWRITE::
+for an explanation of output from the break-rewrite facility in the
+presence of rewriting failures involving free variables.
+
+* Menu:
+
+* FREE-VARIABLES-EXAMPLES:: examples pertaining to free variables in rules
+
+We begin with an example.  Does the proof of the thm below succeed?
+
+     (defstub p2 (x y) t)
+     
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (equal (p2 x z) t))
+       :rule-classes ((:rewrite :match-free :all)))
+     
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+
+Consider what happens when the proof of the thm is attempted.  The ACL2
+rewriter attempts to apply rule p2-trans to the conclusion, (p2 a d).
+So, it binds variables x and z from the left-hand side of the
+conclusion of p2-trans to terms a and d, respectively, and then
+attempts to relieve the hypotheses of p2-trans.  The first hypothesis of
+p2-trans, (p2 x y), is considered first.  Variable y is free in that
+hypothesis, i.e., it has not yet been bound.  Since x is bound to a,
+the rewriter looks through the context for a binding of y such that (p2
+a y) is true, and it so happens that it first finds the term (p2 a b),
+thus binding y to b.  Now it goes on to the next hypothesis, (p2 y z).
+At this point y and z have already been bound to b and d; but (p2 b d)
+cannot be proved.
+
+So, in order for the proof of the thm to succeed, the rewriter needs to
+backtrack and look for another way to instantiate the first hypothesis
+of p2-trans.  Because :match-free :all has been specified, backtracking
+does take place.  This time y is bound to c, and the subsequent
+instantiated hypothesis becomes (p2 c d), which is true.  The
+application of rule (p2-trans) succeeds and the theorem is proved.
+
+If instead :match-free :all had been replaced by :match-free :once in
+rule p2-trans, then backtracking would not occur, and the proof of the
+thm would fail.
+
+Next we describe in detail the steps used by the rewriter in dealing
+with free variables.
+
+ACL2 uses the following sequence of steps to relieve a hypothesis with
+free variables, except that steps (1) and (3) are skipped for
+:forward-chaining rules and step (3) is skipped for :type-prescription
+rules.  First, if the hypothesis is of the form (force hyp0) or
+(case-split hyp0), then replace it with hyp0.  (1) Suppose the
+hypothesis has the form (equiv var term) where var is free and no
+variable of term is free, and either equiv is equal or else equiv is a
+known equivalence relation and term is a call of double-rewrite.  Then
+bind var to the result of rewriting term in the current context.  (2)
+Look for a binding of the free variables of the hypothesis so that the
+corresponding instance of the hypothesis is known to be true in the
+current context.  (3) Search all enabled, hypothesis-free rewrite rules
+of the form (equiv lhs rhs), where lhs has no variables (other than
+those bound by let, let*, or lambda), rhs is known to be true in the
+current context, and equiv is typically equal but can be any equivalence
+relation appropriate for the current context (see *note CONGRUENCE::);
+then attempt to bind the free variables so that the instantiated
+hypothesis is lhs.  If all attempts fail and the original hypothesis is
+a call of force or case-split, where forcing is enabled (see *note
+FORCE::) then the hypothesis is relieved, but in the split-off goals,
+all free variables are bound to unusual names that call attention to
+this odd situation.
+
+When a rewrite or linear rule has free variables in the hypotheses, the
+user generally needs to specify whether to consider only the first
+instance found in steps (2) and (3) above, or instead to consider them
+all.  Below we discuss how to specify these two options as ":once" or
+":all" (the default), respectively.
+
+Is it better to specify :once or :all?  We believe that :all is
+generally the better choice because of its greater power, provided the
+user does not introduce a large number of rules with free variables,
+which has been known to slow down the prover due to combinatorial
+explosion in the search (Steps (2) and (3) above).
+
+Either way, it is good practice to put the "more substantial" hypotheses
+first, so that the most likely bindings of free variables will be found
+first (in the case of :all) or found at all (in the case of :once).  For
+example, a rewrite rule like
+
+     (implies (and (p1 x y)
+                   (p2 x y))
+              (equal (bar x) (bar-prime x)))
+
+may never succeed if p1 is nonrecursive and enabled, since we may well
+not find calls of p1 in the current context.  If however p2 is disabled
+or recursive, then the above rule may apply if the two hypotheses are
+switched.  For in that case, we can hope for a match of (p2 x y) in the
+current context that therefore binds x and y; then the rewriter's full
+power may be brought to bear to prove (p1 x y) for that x and y.
+
+Moreover, the ordering of hypotheses can affect the efficiency of the
+rewriter.  For example, the rule
+
+     (implies (and (rationalp y)
+                   (foo x y))
+              (equal (bar x) (bar-prime x)))
+
+may well be sub-optimal.  Presumably the intention is to rewrite (bar x)
+to (bar-prime x) in a context where (foo x y) is explicitly known to be
+true for some rational number y.  But y will be bound first to the
+first term found in the current context that is known to represent a
+rational number.  If the 100th such y that is found is the first one
+for which (foo x y) is known to be true, then wasted work will have
+been done on behalf of the first 99 such terms y -- unless :once has
+been specified, in which case the rule will simply fail after the first
+binding of y for which (rationalp y) is known to be true.  Thus, a
+better form of the above rule is almost certainly the following.
+
+     (implies (and (foo x y)
+                   (rationalp y))
+              (equal (bar x) (bar-prime x)))
+
+_Specifying `once' or `all'._ One method for specifying :once or :all
+for free-variable matching is to provide the :match-free field of the
+:rule-classes of the rule, for example, (:rewrite :match-free :all).
+See *Note RULE-CLASSES::.  However, there are global events that can be
+used to specify :once or :all; see *note SET-MATCH-FREE-DEFAULT:: and
+see *note ADD-MATCH-FREE-OVERRIDE::.  Here are some examples.
+
+     (set-match-free-default :once)    ; future rules without a :match-free field
+                                       ; are stored as :match-free :once (but this
+                                       ; behavior is local to a book)
+     (add-match-free-override :once t) ; existing rules are treated as
+                                       ; :match-free :once regardless of their
+                                       ; original :match-free fields
+     (add-match-free-override :once (:rewrite foo) (:rewrite bar . 2))
+                                       ; the two indicated rules are treated as
+                                       ; :match-free :once regardless of their
+                                       ; original :match-free fields
+
+_Some history._ Before Version  2.7 the ACL2 rewriter performed Step (2)
+above first.  More significantly, it always acted as though :once had
+been specified.  That is, if Step (2) did not apply, then the rewriter
+took the first binding it found using either Steps (1) or (3), in that
+order, and proceeded to relieve the remaining hypotheses without trying
+any other bindings of the free variables of that hypothesis.
+
+
+File: acl2-doc-emacs.info,  Node: FREE-VARIABLES-EXAMPLES,  Prev: FREE-VARIABLES,  Up: FREE-VARIABLES
+
+FREE-VARIABLES-EXAMPLES    examples pertaining to free variables in rules
+
+The examples in the two sub-topics of this topic illustrate the
+handling of free variables in rules of class :rewrite (see *note
+FREE-VARIABLES-EXAMPLES-REWRITE::]) and of class :forward-chaining (see
+*note FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING::]), respectively.
+These implicitly illustrate free-variable handling in rules of class
+:linear as well.  Also see *note FREE-VARIABLES:: and see *note
+RULE-CLASSES::.
+
+* Menu:
+
+* FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING:: examples pertaining to free variables in forward-chaining rules
+
+* FREE-VARIABLES-EXAMPLES-REWRITE:: examples pertaining to free variables in rewrite rules
+
+
+File: acl2-doc-emacs.info,  Node: FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING,  Next: FREE-VARIABLES-EXAMPLES-REWRITE,  Prev: FREE-VARIABLES-EXAMPLES,  Up: FREE-VARIABLES-EXAMPLES
+
+FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING    examples pertaining to free variables in forward-chaining rules
+
+The following examples illustrate ACL2's handling of free variables in
+forward-chaining rules, as well as user control over how such free
+variables are handled.  See *Note FREE-VARIABLES:: for a background
+discussion.
+
+     ; First let us introduce a transitive operation, op, and prove a
+     ; forward-chaining rule stating the transitivity of op.
+     
+     (encapsulate
+      (((op * *) => *))
+      (local (defun op (x y) (< x y)))
+      (defthm transitivity-of-op
+        (implies (and (op x y) (op y z)) (op x z))
+        :rule-classes :forward-chaining))
+     
+     ; The following theorem is proved by forward chaining, using the above rule.
+     
+     (thm
+      (implies (and (op u v) (op v w) (op v a))
+               (op u w)))
+     
+     ; The proof of the theorem just above succeeds because the term (op u v)
+     ; triggers the application of forward-chaining rule transitivity-of-op,
+     ; binding x to u and y to v.  Free variable z of that rule is bound to both w
+     ; and to a, resulting in the addition of both (op u w) and (op u a) to the
+     ; context.  However, (op v a) happens to be at the front of the context, so
+     ; if only one free-variable binding had been allowed, then z would have only
+     ; been bound to a, not to w, as we now illustrate.
+     
+     (add-match-free-override :once (:forward-chaining transitivity-of-op))
+     
+     (thm ; FAILS!
+      (implies (and (op u v) (op v w) (op v a))
+               (op u w)))
+     
+     :ubt! 1
+     
+     ; Starting over, this time we prove transitivity-of-op as a :match-free :once
+     ; forward-chaining rule.  Note that the presence of :match-free eliminates
+     ; the free-variables warning that we got the first time.
+     
+     (encapsulate
+      (((op * *) => *))
+      (local (defun op (x y) (< x y)))
+      (defthm transitivity-of-op
+        (implies (and (op x y) (op y z)) (op x z))
+        :rule-classes ((:forward-chaining :match-free :once))))
+     
+     (thm ; FAILS!
+      (implies (and (op u v) (op v w) (op v a))
+               (op u w)))
+     
+     ; Notice that if we swap the order of the last two hypotheses the theorem
+     ; goes through, because this time (op v w) is first in the context.
+     
+     (thm ; SUCCEEDS!
+      (implies (and (op u v) (op v a) (op v w))
+               (op u w)))
+     
+     :u
+     
+     ; Now let's try setting the default to :once.
+     
+     (set-match-free-default :once)
+     
+     ; We still get a free-variables warning when we admit this forward-chaining rule.
+     
+     (encapsulate
+      (((op * *) => *))
+      (local (defun op (x y) (< x y)))
+      (defthm transitivity-of-op
+        (implies (and (op x y) (op y z)) (op x z))
+        :rule-classes ((:forward-chaining))))
+     
+     ; This theorem fails--as it should.
+     
+     (thm ; FAILS!
+      (implies (and (op u v) (op v w) (op v a))
+               (op u w)))
+     
+     ; But if we convert this rule (or here, all possible rules) to :all rules,
+     ; then the proof succeeds.
+     
+     (add-match-free-override :all t)
+     
+     (thm ; SUCCEEDS!
+      (implies (and (op u v) (op v w) (op v a))
+               (op u w)))
+     
+     ; Now let's test a relatively slow :all case (the next thm below).
+     
+     :ubt! 1
+     
+     (encapsulate
+      (((op1 *) => *)
+       ((op3 * * *) => *))
+      (local (defun op1 (x) (declare (ignore x)) t))
+      (local (defun op3 (x0 x1 x2)
+               (declare (ignore x0 x1 x2))
+               t))
+      (defthm op1-op3-property
+        (implies (and (op1 x0) (op1 x1) (op1 x2))
+                 (op3 x0 x1 x2))
+        :rule-classes ((:forward-chaining :match-free :all))))
+     
+     ; The following succeeds, but takes a little time (about a second in one run).
+     
+     (thm (implies
+           (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+                (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+                (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+                (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+           (op3 a5 a6 a0)))
+     
+     (add-match-free-override :once t)
+     
+     ; The same theorem now fails because of the add-match-free-override, but is
+     ; more than an order of magnitude faster.
+     
+     (thm (implies
+           (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+                (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+                (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+                (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+           (op3 a5 a6 a0)))
+     
+     ; A slight variant succeeds in a negligible amount of time (still with the
+     ; :once override above).
+     
+     (thm (implies
+           (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+                (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+                (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+                (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+           (op3 a5 a20 a20)))
+     
+     ; Reality check: This shouldn't give a free-variables warning, and everything
+     ; should work great since there are no free variables with this trigger term.
+     
+     :ubt! 1
+     
+     (encapsulate
+      (((op1 *) => *)
+       ((op7 * * * * * * *) => *))
+      (local (defun op1 (x)
+               (declare (ignore x))
+               t))
+      (local (defun op7 (x0 x1 x2 x3 x4 x5 x6)
+               (declare (ignore x0 x1 x2 x3 x4 x5 x6))
+               t))
+      (defthm op1-op7-property
+        (implies (and (op1 x0) (op1 x1) (op1 x2)
+                      (op1 x3) (op1 x4) (op1 x5) (op1 x6))
+                 (op7 x0 x1 x2 x3 x4 x5 x6))
+        :rule-classes ((:forward-chaining
+                        :trigger-terms ((op7 x0 x1 x2 x3 x4 x5 x6))))))
+     
+     ; The following then succeeds, and very quickly.
+     
+     (thm (implies (and (op1 a0) (op1 a1) (op1 a2)
+                        (op1 a3) (op1 a4) (op1 a5) (op1 a6))
+                   (op7 a4 a6 a5 a6 a6 a6 a6)))
+
+
+File: acl2-doc-emacs.info,  Node: FREE-VARIABLES-EXAMPLES-REWRITE,  Prev: FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING,  Up: FREE-VARIABLES-EXAMPLES
+
+FREE-VARIABLES-EXAMPLES-REWRITE    examples pertaining to free variables in rewrite rules
+
+The following examples illustrate ACL2's handling of free variables in
+rewrite rules, as well as user control over how such free variables are
+handled.  See *Note FREE-VARIABLES:: for a background discussion.
+
+     (defstub p2 (x y) t) ; introduce unconstrained function
+     
+     ; Get warning because of free variable.  This would be an error if you had
+     ; first executed (set-match-free-error t) in order to force yourself to
+     ; specify :match-free (illustrated later, below).
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (p2 x z)))
+     
+     ; Succeeds.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     ; The following causes an error because p2-trans is not a rune.
+     (add-match-free-override :once p2-trans)
+     
+     ; After the following, the rewrite rule p2-trans will only allow one
+     ; attempt per hypothesis to bind free variables.
+     (add-match-free-override :once (:rewrite p2-trans))
+     
+     ; Now this same theorem fails to be proved.  Here's why.  The
+     ; context for proving (p2 a d) happens to include the hypotheses in
+     ; reverse order.  So when the first hypothesis of p2-trans, namely
+     ; (p2 x y), is relieved, where x is bound to a (as we are attempting
+     ; to rewrite the current literal (p2 a d)), we find (p2 a b) in the
+     ; context before (p2 a c) and hence y is bound to b.  The
+     ; instantiated second hypothesis of p2-trans is thus (p2 b d), and
+     ; the proof fails.  Before the add-match-free-override form above,
+     ; the proof succeeded because the rewriter was allowed to backtrack
+     ; and find the other binding for the first hypothesis of p2-trans,
+     ; namely, y bound to c.  Then the instantiated second hypothesis of
+     ; p2-trans is (p2 c d), which is known to be true in the current
+     ; context.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     ; Return to original behavior for binding free variables.
+     (add-match-free-override :all t)
+     
+     ; Succeeds once again.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     (u) ; undo (add-match-free-override :all t)
+     
+     ; This is an error, since no further arguments should appear after
+     ; :clear.
+     (add-match-free-override :clear t)
+     
+     ; Return all rules to original behavior for binding free variables,
+     ; regardless of which previous add-match-free-override forms have
+     ; been executed.
+     (add-match-free-override :clear)
+     
+     ; This succeeds just as it did originally.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     (ubt! 'p2-trans) ; back to the start, except retain the defstub
+     
+     ; Require that :match-free be specified for :linear and :rewrite rules with
+     ; free variables.
+     (set-match-free-error t)
+     
+     ; Fails because :match-free is missing.
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (p2 x z)))
+     
+     ; Fails because :match-free must be followed by :once or :all.
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (p2 x z))
+       :rule-classes ((:rewrite :match-free nil)))
+     
+     ; Succeeds, this time with no warning at all.
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (p2 x z))
+       :rule-classes ((:rewrite :match-free :once)))
+     
+     ; Fails because we only bind once (see earlier long comment).
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     ; Treat p2-trans as though `:match-free :all' had been specified.
+     (add-match-free-override :all (:rewrite p2-trans))
+     
+     ; Succeeds since more than one binding is allowed for p2-trans.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     (u)
+     (u)
+     
+     ; Specify that future :linear and :rewrite rules with free variables
+     ; that do not have :match-free specified are treated as though
+     ; `:match-free :once' were specified.
+     (set-match-free-default :once)
+     
+     ; Succeeds without error since `:match-free' is specified, as described
+     ; above.  But there is a warning, since :match-free is not specified for this
+     ; :rewrite rule.
+     (defaxiom p2-trans
+       (implies (and (p2 x y)
+                     (p2 y z))
+                (p2 x z)))
+     
+     ; Fails since only single bindings are allowed for p2-trans.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     ; Treat p2-trans as though `:match-free :all' had been specified.
+     (add-match-free-override :all t)
+     
+     ; Succeeds.
+     (thm (implies (and (p2 a c)
+                        (p2 a b)
+                        (p2 c d))
+                   (p2 a d)))
+     
+     ;;; Test searching of ground units, i.e. rewrite rules without
+     ;;; variables on the left side of the conclusion, for use in
+     ;;; relieving hypotheses with free variables.  This is a very
+     ;;; contrived example.
+     
+     (ubt! 1) ; back to the start
+     
+     (encapsulate
+      (((p1 *) => *)
+       ((p2 * *) => *)
+       ((p3 *) => *)
+       ((a) => *)
+       ((b) => *))
+      (local (defun p1 (x) x))
+      (local (defun p2 (x y) (list x y)))
+      (local (defun p3 (x) x))
+      (local (defun a () 0))
+      (local (defun b () 0)))
+     
+     ; Allow default of :match-free :all (form may be omitted).
+     (set-match-free-error nil)
+     
+     (defaxiom ax1
+       (implies (and (p2 x y)
+                     (p1 y))
+                (p3 x)))
+     
+     (defaxiom p2-a-b
+       (p2 (a) (b)))
+     
+     (defaxiom p2-a-a
+       (p2 (a) (a)))
+     
+     (defaxiom p1-b
+       (p1 (b)))
+     
+     ; Succeeds; see long comment below on next attempt to prove this
+     ; theorem.
+     (thm (implies (p2 (a) y)
+                   (p3 (a))))
+     
+     ; Now ax1 will only relieve hypothesis (p2 x y) for one binding of y:
+     (add-match-free-override :once t)
+     
+     ; Fails when ax1 attempts to rewrite the conclusion to true, because
+     ; the most recent ground unit for hypothesis (p2 x y) with x bound
+     ; to (a) is rule p2-a-a, which binds y to (a).  If more than one ground
+     ; unit could be used then we would backtrack and apply rule p2-a-b,
+     ; which binds y to (b) and hence hypothesis (p1 y) of ax1 is
+     ; relieved by rule p1-b.
+     (thm (implies (p2 (a) y)
+                   (p3 (a))))
+     
+     ; Return rules to original :match-free behavior.
+     (add-match-free-override :clear)
+     
+     ; Succeeds once again.
+     (thm (implies (p2 (a) y)
+                   (p3 (a))))
+     
+     ; Just for kicks, change the behavior of a built-in rule irrelevant
+     ; to the proof at hand.
+     (add-match-free-override :once (:rewrite string<-l-trichotomy))
+     
+     ; Still succeeds.
+     (thm (implies (p2 (a) y)
+                   (p3 (a))))
+     
+     ;;;;;;;;;;
+
+FINALLY, here is an example illustrating the use of the break-rewrite
+facility to get information about handling of free variables by the
+rewriter.  Explanation is given after this (edited) transcript.  Input
+begins on lines with a prompt (search for "ACL2"); the rest is output.
+
+     ACL2 !>(encapsulate
+             ((p1 (u x) t)
+              (bad (x) t)
+              (p2 (x y z) t)
+              (bar (x y) t)
+              (foo (x y) t)
+              (poo (x y) t)
+              (prop (u) t))
+     
+             (local (defun p1 (u x) (declare (ignore u x)) nil))
+             (local (defun bad (x) (declare (ignore x)) nil))
+             (local (defun p2 (x y z) (declare (ignore x y z)) nil))
+             (local (defun bar (x y) (declare (ignore x y)) nil))
+             (local (defun foo (x y) (declare (ignore x y)) nil))
+             (local (defun poo (x y) (declare (ignore x y)) nil))
+             (local (defun prop (u) (declare (ignore u)) t))
+     
+             (defthm foo-poo
+               (implies (syntaxp (equal y 'y3))
+                        (equal (foo x y)
+                               (poo x y))))
+     
+             (defthm lemma-1
+               (implies (and (p1 u x)
+                             (bad x)
+                             (p2 x y z)
+                             (bar x y)
+                             (equal x x) ; admittedly silly!
+                             (foo x y))
+                        (prop u))
+               :rule-classes ((:rewrite :match-free :all))))
+     
+     ; [[ output omitted ]]
+     
+     Summary
+     Form:  ( ENCAPSULATE ((P1 ...) ...) ...)
+     Rules: NIL
+     Warnings:  Subsume and Non-rec
+     Time:  0.08 seconds (prove: 0.00, print: 0.01, other: 0.06)
+      T
+     ACL2 !>:brr t
+     The monitored runes are:
+     NIL
+      T
+     ACL2 !>:monitor (:rewrite lemma-1) t
+     (((:REWRITE LEMMA-1) 'T))
+     ACL2 !>(thm (implies (and (p1 u0 x1)
+                               (bad x1)
+                               (bad x3)
+                               (bar x3 y1)
+                               (bar x3 y3)
+                               (p1 u0 x2)
+                               (p1 u0 x3)
+                               (p2 x3 y1 z1)
+                               (p2 x3 y3 z1))
+                          (prop u0)))
+     
+     (1 Breaking (:REWRITE LEMMA-1) on (PROP U0):
+     1 ACL2 >:eval
+     
+     1x (:REWRITE LEMMA-1) failed because :HYP 1 contains free variables.
+     The following display summarizes the attempts to relieve hypotheses
+     by binding free variables; see :DOC free-variables and see :DOC set-
+     brr-term-evisc-tuple.
+     
+         [1] X : X1
+     Failed because :HYP 3 contains free variables Y and Z, for which no
+     suitable bindings were found.
+         [1] X : X2
+     Failed because :HYP 2 rewrote to (BAD X2).
+         [1] X : X3
+             [3] Z : Z1
+                 Y : Y1
+     Failed because :HYP 6 rewrote to (FOO X3 Y1).
+             [3] Z : Z1
+                 Y : Y3
+     Failed because :HYP 6 rewrote to (POO X3 Y3).
+     
+     1 ACL2 >:unify-subst
+          U : U0
+     1 ACL2 >
+
+The :eval command above asks the rewriter to attempt to apply the
+rewrite rule lemma-1 to the term (prop u0), shown just above the line
+with :eval.  As we can see at the end, the variable u in the conclusion
+of lemma-1 is being bound to the variable u0 in the conjecture.  The
+first hypothesis of lemma-1 is (p1 u x), so the rewriter looks for some
+x for which (p1 u0 x) is known to be true.  It finds x1, and then goes
+on to consider the second hypothesis, (bad x).  Since the theorem we
+are proving has (bad x1) in the hypothesis and x is currently bound to
+x1, the rewriter is satisfied and moves on to the third hypothesis of
+lemma-1, (p2 x y z).  However, x is bound to x1 and there are no
+instances of y and z for which (p2 x1 y z) is known in the current
+context.  All of the above analysis is summarized in the first part of
+the output from :eval above:
+
+         [1] X : X1
+     Failed because :HYP 3 contains free variables Y and Z, for which no
+     suitable bindings were found.
+
+Thus, the binding of x to x1 on behalf of the first hypothesis has
+failed.
+
+The rewriter now backs up to look for other values of x that satisfy the
+first hypothesis, and finds x2 because our current theorem has a
+hypothesis of (p1 u0 x2).  But this time, the second hypothesis of
+lemma-1, (bad x), is not known to be true for x; that is, (bad x2) does
+not rewrite to t; in fact, it rewrites to itself.  That explains the
+next part of the output from :eval above:
+
+         [1] X : X2
+     Failed because :HYP 2 rewrote to (BAD X2).
+
+The rewriter now backs up again to look for other values of x that
+satisfy the first hypothesis, and finds x3 because our current theorem
+has a hypothesis of (p1 u0 x3).  This time, the second hypothesis of
+lemma-1 is not a problem, and moreover, the rewriter is able to bind y
+and z to y1 and z1, respectively, in order to satisfy the third
+hypothesis, (p2 x y z): that is, (p2 x2 y1 z1) is known in the current
+context.  That explains more of the above output from :eval:
+
+         [1] X : X3
+             [3] Z : Z1
+                 Y : Y1
+
+Unfortunately, the sixth hypothesis, (foo x y), rewrites to itself
+under the above bindings:
+
+     Failed because :HYP 6 rewrote to (FOO X3 Y1).
+
+So the rewriter looks for other bindings to satisfy the third
+hypothesis and finds these.
+
+             [3] Z : Z1
+                 Y : Y3
+
+This time, the sixth hypothesis can be rewritten under the above
+bindings, from (foo x3 y3) to (poo x3 y3) by lemma foo-poo, but still
+not to t.
+
+     Failed because :HYP 6 rewrote to (POO X3 Y3).
+
+There are no more free variable bindings to try, so this concludes the
+output from :eval.
+
+
+File: acl2-doc-emacs.info,  Node: GENERALIZE,  Next: INDUCTION,  Prev: FREE-VARIABLES,  Up: RULE-CLASSES
+
+GENERALIZE    make a rule to restrict generalizations
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :generalize rule might be built is:
+
+     Example:
+     any theorem
+     
+     General Form:
+     any theorem
+
+To use such a :generalize rule, the system waits until it has decided
+to generalize some term, term, by replacing it with some new variable
+v.  If any :generalize formula can be instantiated so that some
+non-variable subterm becomes term, then that instance of the formula is
+added as a hypothesis.
+
+At the moment, the best description of how ACL2 :generalize rules are
+used may be found in the discussion of "Generalize Rules," page 248 of
+A Computational Logic Handbook, or "Generalization," page 132 of
+"Computer-Aided Reasoning: An Approach."
+
+
+File: acl2-doc-emacs.info,  Node: INDUCTION,  Next: LINEAR,  Prev: GENERALIZE,  Up: RULE-CLASSES
+
+INDUCTION    make a rule that suggests a certain induction
+
+     Example:
+     (:induction :corollary t  ; the theorem proved is irrelevant!
+                 :pattern (* 1/2 i)
+                 :condition (and (integerp i) (>= i 0))
+                 :scheme (recursion-by-sub2 i))
+
+In ACL2, as in Nqthm, the functions in a conjecture "suggest" the
+inductions considered by the system.  Because every recursive function
+must be admitted with a justification in terms of a measure that
+decreases in a well-founded way on a given set of "controlling"
+arguments, every recursive function suggests a dual induction scheme
+that "unwinds" the function from a given application.
+
+For example, since append (actually binary-append, but we'll ignore the
+distinction here) decomposes its first argument by successive cdrs as
+long as it is a non-nil true list, the induction scheme suggested by
+(append x y) has a base case supposing x to be either not a true list
+or to be nil and then has an induction step in which the induction
+hypothesis is obtained by replacing x by (cdr x).  This substitution
+decreases the same measure used to justify the definition of append.
+Observe that an induction scheme is suggested by a recursive function
+application only if the controlling actuals are distinct variables, a
+condition that is sufficient to ensure that the "substitution" used to
+create the induction hypothesis is indeed a substitution and that it
+drives down a certain measure.  In particular, (append (foo x) y) does
+not suggest an induction unwinding append because the induction scheme
+suggested by (append x y) requires that we substitute (cdr x) for x and
+we cannot do that if x is not a variable symbol.
+
+Once ACL2 has collected together all the suggested induction schemes it
+massages them in various ways, combining some to simultaneously unwind
+certain cliques of functions and vetoing others because they "flaw"
+others.  We do not further discuss the induction heuristics here; the
+interested reader should see Chapter XIV of A Computational Logic
+(Boyer and Moore, Academic Press, 1979) which represents a fairly
+complete description of the induction heuristics of ACL2.
+
+However, unlike Nqthm, ACL2 provides a means by which the user can
+elaborate the rules under which function applications suggest induction
+schemes.  Such rules are called :induction rules.  The definitional
+principle automatically creates an :induction rule, named (:induction
+fn), for each admitted recursive function, fn.  It is this rule that
+links applications of fn to the induction scheme it suggests.
+Disabling (:induction fn) will prevent fn from suggesting the induction
+scheme derived from its recursive definition.  It is possible for the
+user to create additional :induction rules by using the :induction rule
+class in defthm.
+
+Technically we are "overloading" defthm by using it in the creation of
+:induction rules because no theorem need be proved to set up the
+heuristic link represented by an :induction rule.  However, since
+defthm is generally used to create rules and rule-class objects are
+generally used to specify the exact form of each rule, we maintain that
+convention and introduce the notion of an :induction rule.  An
+:induction rule can be created from any lemma whatsoever.
+
+     General Form of an :induction Lemma or Corollary:
+     T
+     
+     General Form of an :induction rule-class:
+     (:induction :pattern pat-term
+                 :condition cond-term
+                 :scheme scheme-term)
+
+where pat-term, cond-term, and scheme-term are all terms, pat-term is
+the application of a function symbol, fn, scheme-term is the
+application of a function symbol, rec-fn, that suggests an induction,
+and, finally, every free variable of cond-term and scheme-term is a
+free variable of pat-term.  We actually check that rec-fn is either
+recursively defined -- so that it suggests the induction that is
+intrinsic to its recursion -- or else that another :induction rule has
+been proved linking a call of rec-fn as the :pattern to some scheme.
+
+The induction rule created is used as follows.  When an instance of the
+:pattern term occurs in a conjecture to be proved by induction and the
+corresponding instance of the :condition term is known to be non-nil
+(by type reasoning alone), the corresponding instance of the :scheme
+term is created and the rule "suggests" the induction, if any,
+suggested by that term.  If rec-fn is recursive, then the suggestion is
+the one that unwinds that recursion.
+
+Consider, for example, the example given above,
+
+     (:induction :pattern (* 1/2 i)
+                 :condition (and (integerp i) (>= i 0))
+                 :scheme (recursion-by-sub2 i)).
+
+In this example, we imagine that recursion-by-sub2 is the function:
+
+     (defun recursion-by-sub2 (i)
+       (if (and (integerp i)
+                (< 1 i))
+           (recursion-by-sub2 (- i 2))
+           t))
+
+Observe that this function recursively decomposes its integer argument
+by subtracting 2 from it repeatedly and stops when the argument is 1 or
+less.  The value of the function is irrelevant; it is its induction
+scheme that concerns us.  The induction scheme suggested by
+(recursion-by-sub2 i) is
+
+     (and (implies (not (and (integerp i) (< 1 i)))   ; base case
+                   (:p i))
+          (implies (and (and (integerp i) (< 1 i))    ; induction step
+                        (:p (- i 2)))
+                   (:p i)))
+
+We can think of the base case as covering two situations.  The first is
+when i is not an integer.  The second is when the integer i is 0 or 1.
+In the base case we must prove (:p i) without further help.  The
+induction step deals with those integer i greater than 1, and
+inductively assumes the conjecture for i-2 while proving it for i.  Let
+us call this scheme "induction on i by twos."
+
+Suppose the above :induction rule has been added.  Then an occurrence
+of, say, (* 1/2 k) in a conjecture to be proved by induction would
+suggest, via this rule, an induction on k by twos, provided k was known
+to be a nonnegative integer.  This is because the induction rule's
+:pattern is matched in the conjecture, its :condition is satisfied, and
+the :scheme suggested by the rule is that derived from
+(recursion-by-sub2 k), which is induction on k by twos.  Similarly, the
+term (* 1/2 (length l)) would suggest no induction via this rule, even
+though the rule "fires" because it creates the :scheme
+(recursion-by-sub2 (length l)) which suggests no inductions unwinding
+recursion-by-sub2 (since the controlling argument of recursion-by-sub2
+in this :scheme is not a variable symbol).
+
+Continuing this example one step further illustrates the utility of
+:induction rules.  We could define the function recursion-by-cddr that
+suggests the induction scheme decomposing its consp argument two cdrs
+at a time.  We could then add the :induction rule linking (* 1/2
+(length x)) to (recursion-by-cddr x) and arrange for (* 1/2 (length l))
+to suggest induction on l by cddr.
+
+Observe that :induction rules require no proofs to be done.  Such a
+rule is merely a heuristic link between the :pattern term, which may
+occur in conjectures to be proved by induction, and the :scheme term,
+from which an induction scheme may be derived.  Hence, when an
+:induction rule-class is specified in a defthm event, the theorem
+proved is irrelevant.  The easiest theorem to prove is, of course, t.
+Thus, we suggest that when an :induction rule is to be created, the
+following form be used:
+
+     (defthm name T
+       :rule-classes ((:induction :pattern pat-term
+                                  :condition cond-term
+                                  :scheme scheme-term)))
+
+The name of the rule created is (:induction name).  When that rune is
+disabled the heuristic link between pat-term and scheme-term is broken.
+
+
+File: acl2-doc-emacs.info,  Node: LINEAR,  Next: META,  Prev: INDUCTION,  Up: RULE-CLASSES
+
+LINEAR    make some arithmetic inequality rules
+
+See *Note RULE-CLASSES:: for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example :corollary
+formula from which a :linear rule might be built is:
+
+     Example:
+     (implies (and (eqlablep e)           if inequality reasoning begins to
+                   (true-listp x))        consider how (length (member a b))
+              (<= (length (member e x))   compares to any other term, add to
+                  (length x)))            set of known inequalities the fact
+                                          that it is no larger than (length b),
+                                          provided (eqlablep a) and (true-listp b)
+                                          rewrite to t
+     
+     General Form:
+     (and ...
+          (implies (and ...hi...)
+                   (implies (and ...hk...)
+                            (and ...
+                                 (rel lhs rhs)
+                                 ...)))
+          ...)
+
+Note: One :linear rule class object might create many linear arithmetic
+rules from the :corollary formula.  To create the rules, we first
+flatten the and and implies structure of the formula, transforming it
+into a conjunction of formulas, each of the form
+
+     (implies (and h1 ... hn) (rel lhs rhs))
+
+where no hypothesis is a conjunction and rel is one of the inequality
+relations <, <=, =, >, or >=.  If necessary, the hypothesis of such a
+conjunct may be vacuous.  We create a :linear rule for each such
+conjunct, if possible, and otherwise cause an error.
+
+Each rule has one or more "trigger terms" which may be specified by the
+user using the :trigger-terms field of the rule class or which may be
+defaulted to values chosen by the system.  We discuss the determination
+of trigger terms after discussing how linear rules are used.
+
+:linear rules are used by an arithmetic decision procedure during
+rewriting.  See *Note LINEAR-ARITHMETIC:: and see *note
+NON-LINEAR-ARITHMETIC::.  Here we assume that the reader is familiar
+with the material described in linear-arithmetic.
+
+Recall that we eliminate the unknowns of an inequality in term-order,
+largest unknowns first.  (See *Note TERM-ORDER::.)  In order to
+facilitate this strategy, we store the inequalities in "linear pots".
+For purposes of the present discussion, let us say that an inequality is
+"about" its largest unknown.  Then, all of the inequalities about a
+particular unknown are stored in the same linear pot, and the pot is
+said to be "labeled" with that unknown.  This storage layout groups all
+of the inequalities which are potential candidates for cancellation
+with each other into one place.  It is also key to the efficient
+operation of :linear rules.
+
+If the arithmetic decision procedure has stabilized and not yielded a
+contradiction, we scan through the list of linear pots examining each
+label as we go.  If the trigger term of some :linear rule can be
+instantiated to match the label, we so instantiate that rule and
+attempt to relieve the hypotheses with general-purpose rewriting.  If
+we are successful, we add the rule's instantiated conclusion to our set
+of inequalities.  This may let cancellation continue.
+
+Note: Problems may arise if you explicitly store a linear lemma under a
+trigger term that, when instantiated, is not the largest unknown in the
+instantiated concluding inequality.  Suppose for example you store the
+linear rule (<= (fn i j) (/ i (* j j))) under the trigger term (fn i
+j).  Then when the system "needs" an inequality about (fn a b), (i.e.,
+because (fn a b) is the label of some linear pot, and hence the largest
+unknown in some inequality), it will appeal to the rule and deduce (<=
+(fn a b) (/ a (* b b))).  However, the largest unknown in this
+inequality is (/ a (* b b)) and hence it will be stored in a linear pot
+labeled with (/ a (* b b)).  The original, triggering inequality which
+is in a pot about (fn a b) will therefore not be cancelled against the
+new one.  It is generally best to specify as a trigger term one of the
+"maximal" terms of the polynomial, as described below.
+
+We now describe how the trigger terms are determined.  Most of the
+time, the trigger terms are not specified by the user and are instead
+selected by the system.  However, the user may specify the terms by
+including an explicit :trigger-terms field in the rule class, e.g.,
+
+     General Form of a Linear Rule Class:
+     (:LINEAR :COROLLARY formula
+              :TRIGGER-TERMS (term1 ... termk))
+
+Each termi must be a term and must not be a variable, quoted constant,
+lambda application, let-expression or if-expression.  In addition, each
+termi must be such that if all the variables in the term are
+instantiated and then the hypotheses of the corollary formula are
+relieved (possibly instantiating additional free variables), then all
+the variables in the concluding inequality are instantiated.  We
+generate a linear rule for each conjuctive branch through the corollary
+and store each rule under each of the specified triggers.  Thus, if the
+corollary formula contains several conjuncts, the variable restrictions
+on the termi must hold for each conjunct.
+
+If :trigger-terms is omitted the system computes a set of trigger
+terms.  Each conjunct of the corollary formula may be given a unique
+set of triggers depending on the variables that occur in the conjunct
+and the addends that occur in the concluding inequality.  In
+particular, the trigger terms for a conjunct is the list of all
+"maximal addends" in the concluding inequality.
+
+The "addends" of (+ x y) and (- x y) are the union of the addends of x
+and y.  The addends of (- x) and (* n x), where n is a rational
+constant, is just {x}.  The addends of an inequality are the union of
+the addends of the left- and right-hand sides.  The addends of any
+other term, x, is {x}.
+
+A term is maximal for a conjunct (implies hyps concl) of the corollary
+if (a) the term is a non-variable, non-quote, non-lambda application,
+non-let and non-if expression, (b) the term contains enough variables
+so that when they are instantiated and the hypotheses are relieved
+(which may bind some free variables; see *note FREE-VARIABLES::) then
+all the variables in concl are instantiated, and (c) no other addend is
+always "bigger" than the term, in the technical sense described below.
+
+The technical notion below depends on the notion of _fn-count_, the
+number of function symbols in a term, and _pseudo-fn-count_, which is
+the number of function symbols implicit in a constant (see the comment
+on pseduo-fn-count in the definition of var-fn-count in the sources for
+details).  We say term1 is always bigger than term2 if all instances of
+term1 have a larger fn-count (actually lexicographic order of fn-count
+and pseudo-fn-count) than the corresponding instances of term2.  This
+is equivalent to saying that the fn-count of term1 is larger than that
+of term2 (by "fn-count" here we mean the lexicographic order of
+fn-count and pseudo-fn-count) and the variable bag for term2 is a
+subbag of that for term1.  For example, (/ a (* b b)) is always bigger
+than (fn a b) because the first has two function applications and {a b}
+is a subbag of a b b, but (/ a (* b b)) is not always bigger than (fn a
+x).
+

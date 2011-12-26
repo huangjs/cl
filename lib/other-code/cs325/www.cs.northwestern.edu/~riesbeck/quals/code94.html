@@ -1,0 +1,209 @@
+<html>
+<head>
+   <title>Qual '94 Programming Code</title>
+</head>
+<body bgcolor="#ffffff">
+
+<h1>Data structures</h1>
+
+<pre>;;;  A FACT is just a name.
+;;;    Ex. HUSBAND-HAS-DISEASE
+;;;    
+;;;  A FACT-SET is a list of exhaustive, mutually exclusive facts.
+;;;    Ex. (HUSBAND-HAS-DISEASE HUSBAND-HAS-TRAIT HUSBAND-OK)
+;;;    
+;;;  A SCENARIO is a list of facts, one from each possible fact-set.
+;;;    Ex. (HUSBAND-HAS-TRAIT WIFE-OK)
+;;;
+;;;  A PROBE has the components:
+;;;     name        the probe's name
+;;;     rules       a list of result rules, where a rule has the
+;;;                 components:
+;;;                     result      the name of the result
+;;;                     causes      a list of facts that would cause
+;;;                                 that result
+;;;    Ex. (LOOK-HUSBAND-BLOOD
+;;;          (HUSBAND-SICKLE-BLOOD HUSBAND-HAS-DISEASE)
+;;;          (HUSBAND-ROUND-BLOOD HUSBAND-HAS-TRAIT)
+;;;          (HUSBAND-ROUND-BLOOD HUSBAND-OK))
+;;;
+;;;  A RESULT-SET is a list of probe results, appearing in the order
+;;;  of probes stored in *PROBE-RULES*.
+;;;    Ex. (HUSBAND-ROUND-BLOOD WIFE-ROUND-BLOOD)
+;;;  
+;;;  A SCENARIO-RESULTS (SR) structure has the components:
+;;;     scenario    a scenario
+;;;     results     a result-set
+;;;    Ex. Scenario: (HUSBAND-HAS-TRAIT WIFE-OK)
+;;;        Results:  (HUSBAND-ROUND-BLOOD WIFE-ROUND-BLOOD)
+&nbsp;
+&nbsp;
+(defun probe-name (probe) (first probe))
+(defun probe-rules (probe) (rest probe))
+&nbsp;
+(defun rule-result (rule) (first rule))
+(defun rule-causes (rule) (rest rule))
+&nbsp;
+(defstruct sr scenario results)
+&nbsp;</pre>
+
+<h1>Global variables</h1>
+
+<pre>;;;  The fact-sets are stored in *POSSIBLE-FACTS*.
+;;;
+;;;  The probes and their rules are stored in *PROBE-RULES*.
+;;;
+;;;  The current scenario is stored in *SCENARIO*.
+;;;
+;;;  All possible scenarios and their result-sets are stored in
+;;;  *SCENARIO-RESULTS*.
+;;;
+;;;  The results that the student has seen for far are stored in
+;;;  *RESULT-SET*, with NIL for results not seen yet.
+&nbsp;
+(defvar *possible-facts* nil
+  "A list of all fact-sets.")
+&nbsp;
+(defvar *probe-rules* nil
+  "A list of all probes.")
+&nbsp;
+(defvar *scenario* nil
+  "The current scenario.")
+&nbsp;
+(defvar *scenario-results* nil
+  "A list of all possible scenarios and their results.")
+&nbsp;
+(defvar *result-set* nil
+  "The results the students has seen so far.")
+&nbsp;</pre>
+
+<h1><a name="do-probe"></a>DO-PROBE</h1>
+
+<pre>;;; (DO-PROBE probe-name [scenario]) =&gt; result
+;;;   Given a probe name and a list of facts, returns the name of the
+;;;   result that probe yields in that scenario.  Also updates the
+;;;   set of results probed so far for later use by CONSISTENT-P.
+;;;
+;;; This just looks at each (result . causes) for the probe until
+;;; it finds ones that fits the current scenario, i.e., the causes are
+;;; a subset of the facts in the scenario. 
+&nbsp;
+(defun do-probe (name &amp;optional (scenario *scenario*))
+  (let ((result (find-probe-result name scenario)))
+    (update-result-set name result)
+    result))
+&nbsp;
+(defun find-probe-result (name scenario)
+  (loop for rule in (probe-rules (find-probe name))
+           when (triggers-rule-p scenario rule)
+               return (rule-result rule)))
+&nbsp;
+(defun find-probe (name)
+  (find name *probe-rules* :key #'probe-name))
+&nbsp;
+(defun triggers-rule-p (scenario rule)
+  (subsetp (rule-causes rule) scenario))
+&nbsp;
+(defun update-result-set (name result)
+  (setf (elt *result-set*
+             (position name *probe-rules* :key #'probe-name))
+        result))
+&nbsp;</pre>
+
+<h1><a name="consistent-p"></a>CONSISTENT-P</h1>
+
+<pre>;;; (CONSISTENT-P hypothesis) =&gt; true or false
+;;;   Returns true if the hypothesized fact is consistent with the
+;;;   results probed so far.
+;;;
+;;; Rather than trying to figure this out dynamically, we generate
+;;; a table of results for all probes for all scenarios. The table for
+;;; a typical UGH-style GBS is probably a thousand entries or less.
+;;; Then we just have to see if there's a line in the table with the
+;;; hypothesized fact and results that include the results probed by
+;;; the student so far. By storing results in a canonical form, sorted
+;;; by probe order, the match function is more efficient than using
+;;; SUBSETP. 
+&nbsp;
+(defun consistent-p (hypothesis)
+  (find-if #'(lambda (sr)
+               (and (member hypothesis (sr-scenario sr))
+                    (result-matches-p *result-set* (sr-results sr))))
+           *scenario-results*))
+&nbsp;
+(defun result-matches-p (pattern result-set)
+  (every #'(lambda (x y) (or (null x) (eql x y)))
+         pattern result-set))
+&nbsp;</pre>
+
+<h1><a name="generate-scenario-results"></a>Generating the scenario
+results table</h1>
+
+<pre>;;; (GENERATE-SCENARIO-RESULTS) =&gt; list of scenario results
+;;;   Returns a list of all possible scenarios and their result-sets.
+&nbsp;
+&nbsp;
+(defun generate-scenario-results ()
+  (mapcar #'(lambda (scenario)
+              (make-sr :scenario scenario
+                       :results (make-scenario-result-set scenario)))
+          (generate-all-scenarios)))
+&nbsp;
+(defun generate-all-scenarios (&amp;optional (fact-sets *possible-facts*))
+  (if (null fact-sets)
+      (list nil)
+      (mapcan #'(lambda (scenario)
+                  (mapcar #'(lambda (hx) (cons hx scenario))
+                          (first fact-sets)))
+              (generate-all-scenarios (rest fact-sets)))))
+&nbsp;
+(defun make-scenario-result-set (scenario)
+  (mapcar #'(lambda (probe) 
+              (find-probe-result (probe-name probe) scenario))
+          *probe-rules*))
+&nbsp;
+&nbsp;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Generating an empty result set
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+&nbsp;
+(defun generate-empty-result-set ()
+  (make-list (length *probe-rules*)))
+&nbsp;</pre>
+
+<h1>Define the example</h1>
+
+<pre>(setq *possible-facts*
+      '((husband-has-disease husband-has-trait husband-ok)
+        (wife-has-disease wife-has-trait wife-ok)))
+&nbsp;
+(setq *probe-rules* 
+      '((look-husband-blood
+         (husband-sickle-blood husband-has-disease)
+         (husband-round-blood husband-has-trait)
+         (husband-round-blood husband-ok))
+        (look-wife-blood
+         (wife-sickle-blood wife-has-disease)
+         (wife-round-blood wife-has-trait)
+         (wife-round-blood wife-ok))
+        ))
+&nbsp;
+(setq *scenario* '(husband-has-trait wife-ok))
+&nbsp;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Calculate the scenario results from the above data.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+&nbsp;
+(setq *scenario-results* (generate-scenario-results))
+&nbsp;
+&nbsp;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Initialize the student's result set.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+&nbsp;
+(setq *result-set* (generate-empty-result-set))
+&nbsp;</pre>
+
+<hr>
+</body>
+</html>

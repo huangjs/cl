@@ -1,0 +1,408 @@
+<html>
+<head><title>GUARDS-AND-EVALUATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARDS-AND-EVALUATION</h3>the relationship between guards and evaluation
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+The guard has no effect on the logical axiom added by the definition
+of a function.  It does, however, have consequences for how calls of
+that function are evaluated in ACL2.  We begin by explaining those
+consequences, when ACL2 is in its default ``mode,'' i.e., as
+originally brought up.  In subsequent discussion we'll consider
+other ways that guards can interact with evaluation.<p>
+
+For more about guards in general, see <a href="GUARD.html">guard</a>.  For in-depth discussion of the
+interaction between the <a href="DEFUN-MODE.html">defun-mode</a> and guard checking,
+see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>, see <a href="GUARD-EVALUATION-TABLE.html">guard-evaluation-table</a>,
+see <a href="GUARD-EVALUATION-EXAMPLES-SCRIPT.html">guard-evaluation-examples-script</a>, and
+see <a href="GUARD-EVALUATION-EXAMPLES-LOG.html">guard-evaluation-examples-log</a>.  Also see <a href="GENERALIZED-BOOLEANS.html">generalized-booleans</a> for
+discussion about a subtle issue in the evaluation of certain Common Lisp
+functions.
+<p>
+<em>Guards and evaluation I:  the default</em><p>
+
+Consider the following very simple definition.
+
+<pre>
+(defun foo (x) (cons 1 (cdr x)))
+</pre>
+
+First consider how raw Common Lisp behaves when evaluating calls of
+this function.  To evaluate <code>(foo x)</code> for some expression <code>x</code>, first
+<code>x</code> is evaluated to some value <code>v</code>, and then <code>(cons 1 (cdr x))</code> is
+evaluated with <code>x</code> bound to <code>v</code>.  For example, if <code>v</code> is <code>(cons 'a 3)</code>, then
+Common Lisp computes <code>(cons 1 3)</code>.  But if (for example) <code>v</code> is a
+number, e.g., <code>7</code>, then there is no way to predict what Common
+Lisp might do.  Some implementations would cause ``sensible''
+errors, others might return nonsense, still others might crash the
+host machine.  The results tend toward the catastrophic if the call
+of <code>foo</code> in question is in compiled code.<p>
+
+Now by default, ACL2 evaluates calls of <code>foo</code> exactly as Common
+Lisp does, except that it uses guards to check the ``legality'' of
+each function call.  So for example, since <code>(cdr x)</code> has a guard
+of <code>(or (consp x) (equal x nil))</code>, the call <code>(foo 7)</code> would cause a
+``guard violation,'' as illustrated below.
+
+<pre>
+ACL2 !&gt;(foo 7)<p>
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol CDR, which
+is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+call (CDR 7).<p>
+
+ACL2 !&gt;
+</pre>
+
+Thus, the relation between evaluation in ACL2 and evaluation in
+Common Lisp is that the two produce the very same results, provided
+there is no guard violation.<p>
+
+<em>Guards and evaluation II:</em>  <code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code>.<p>
+
+The ACL2 logic is a logic of total functions.  That is, every
+application of a function defined has a completely specified result.
+See the <a href="DOCUMENTATION.html">documentation</a> for each individual primitive for the
+specification of what it returns when its guard is violated; for
+example, see <a href="CDR.html">cdr</a>.<p>
+
+The presence of guards thus introduces a choice in the sense of
+evaluation.  When you type a form for evaluation do you mean for
+guards to be checked or not?  Put another way, do you mean for the
+form to be evaluated in Common Lisp (if possible) or in the ACL2
+logic?  Note:  If Common Lisp delivers an answer, it will be the
+same as in the logic, but it might be erroneous to execute the form
+in Common Lisp.  For example, the ACL2 logic definition of <code><a href="CDR.html">cdr</a></code>
+implies that the <code><a href="CDR.html">cdr</a></code> of an <a href="ATOM.html">atom</a> is <code>nil</code>; see <a href="CDR.html">cdr</a>.  So:
+should <code>(cdr 7)</code> cause a guard violation error or return <code>nil</code>?<p>
+
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  By default, ``guard checking'' is on, by which we
+mean that guards are checked at runtime, in the sense already described.  To
+allow execution to proceed in the logic when there is a guard violation, do
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> nil</code>; or evaluate
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> :none</code> to skip guard checking entirely.  To
+turn ``guard checking'' back on, execute the top-level form
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> t</code>.  The status of guard checking
+reflected in the <a href="PROMPT.html">prompt</a>; guard-checking is ``on'' when the <a href="PROMPT.html">prompt</a>
+contains an exclamation mark (also see <a href="DEFAULT-PRINT-PROMPT.html">default-print-prompt</a>).  For example,
+
+<pre>
+ACL2 !&gt;
+</pre>
+
+means guard checking is on and  
+
+<pre>
+ACL2 &gt; 
+</pre>
+
+means guard checking is off.  The exclamation mark can be thought of
+as ``barring'' certain computations.  The absence of the mark
+suggests the absence of error messages or unbarred access to the
+logical axioms.  Thus, for example
+
+<pre>
+ACL2 !&gt;(car 'abc)
+</pre>
+
+will signal an error, while
+
+<pre>
+ACL2 &gt;(car 'abc)
+</pre>
+
+will return <code>nil</code>.  To return to our previous example:  with guard
+checking off, <code>(foo 7)</code> evaluates to <code>(cons 1 nil)</code>.  Also
+see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.<p>
+
+<em>Guards and evaluation III:  guard verification</em><p>
+
+Consider the defininition of <code>foo</code> given above, but modified so
+that a reasonable guard of <code>(consp x)</code> is specified, as shown below.
+
+<pre>
+(defun foo (x)
+  (declare (xargs :guard (consp x)))
+  (cons 1 (cdr x)))
+</pre>
+
+We say ``reasonable guard'' above because if <code>x</code> is such that
+<code>(consp x)</code> holds, then the call of <code><a href="CDR.html">cdr</a></code> in the evaluation of
+<code>(foo x)</code> will not cause a guard violation.  Thus, it ``should'' be
+legal to evaluate <code>(foo x)</code>, for any such <code>x</code>, simply by
+evaluating this form in raw Common Lisp.<p>
+
+The <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> event has been provided for this purpose.
+Details may be found elsewhere; see <a href="VERIFY-GUARDS.html">verify-guards</a>.  Briefly,
+for any defined function <code>fn</code>, the event <code>(verify-guards fn)</code>
+attempts to check the condition discussed above, that whenever <code>fn</code>
+is called on arguments that satisfy its guard, the evaluation of
+this call will proceed without any guard violation.  (Moreover, the
+guard itself should be evaluable without any guard violation.)  If
+this check is successful, then future calls of this sort will be
+evaluated in raw Common Lisp.<p>
+
+Returning to our example above, the <code>(verify-guards foo)</code> will
+succeed because the guard <code>(consp x)</code> of <code>foo</code> implies the guard
+generated from the call <code>(cdr x)</code> in the body of the definition,
+namely, <code>(or (consp x) (equal x nil))</code> (see <a href="CDR.html">cdr</a>).  Then the
+evaluation of <code>(foo (cons 'a 3))</code> will take place in raw Common
+Lisp, because <code>(cons 'a 3)</code> satisfies the guard of <code>foo</code>.<p>
+
+This ability to dive into raw Common Lisp hinges on the proof that
+the guards you attach to your own functions are sufficient to ensure
+that the guards encountered in the body are satisfied.  This is
+called ``guard verification.'' Once a function has had its guards
+verified, then ACL2 can evaluate the function somewhat faster (but
+see ``Guards and evaluation V:  efficiency issues'' below).  Perhaps
+more importantly, ACL2 can also guarantee that the function will be
+evaluated correctly by any implementation of Common Lisp (provided
+the guard of the function is satisfied on the input).  That is, if
+you have verified the guards of a system of functions and you have
+determined that they work as you wish in your host ACL2 (perhaps by
+proving it, perhaps by testing), then they will work identically in
+any Common Lisp.<p>
+
+There is a subtlety to our treatment of evaluation of calls of
+functions whose guards have been verified.  If the function's guard
+is not satisfied by such a call, then no further attempt is made to
+evaluate any call of that function in raw lisp during the course of
+evaluation of that call.  This is obvious if guard checking is on,
+because an error is signalled the first time its guard is violated;
+but in fact it is also true when guard checking is off.
+See <a href="GUARD-EXAMPLE.html">guard-example</a> for an example.<p>
+
+<em>Guards and evaluation IV:  functions having :program mode</em><p>
+
+Strictly speaking, functions in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode (see <a href="DEFUN-MODE.html">defun-mode</a>) do
+not have definitions in the ACL2 logic.  So what does it mean to evaluate
+calls of such functions in ACL2?  In general we treat <code>:</code><code><a href="PROGRAM.html">program</a></code>
+functions much as we treat <code>:</code><code><a href="LOGIC.html">logic</a></code> functions whose guards have been
+verified, except that when no error occurs then the corresponding raw Lisp
+function is always called.  (We say ``in general'' because there are
+exceptions, discussed in the ``Aside'' just below.)  Note that when the guard
+of a function in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode is violated, there is still a value
+that the ACL2 logic proves is equal to the given call.  But the same cannot
+be said for a function in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode.  Nevertheless, for the
+sake of convenience we go ahead and evaluate the corresponding raw Lisp
+function except in the situation where the guard is violated and
+guard-checking is on, aside from the following:<p>
+
+<strong>Aside</strong>.  There are exceptions to the use of raw Lisp, discussed just
+above, to evaluate calls of <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  The primary
+one is that after <code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> :none</code>, evaluation of
+user-defined <code>:</code><code><a href="PROGRAM.html">program</a></code> mode function calls is done in the ACL2
+logic, not in raw Lisp.  The more obscure exception is that during expansion
+of macros and <code><a href="MAKE-EVENT.html">make-event</a></code> forms, and during evaluation of <code><a href="DEFCONST.html">defconst</a></code>
+forms, ACL2 enters a ``safe mode'' in which this escape to raw Lisp is
+prevented.  The following example illustrates how the user can experiment
+directly with safe mode, though it is preferred to use
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> :none</code> if you are happy to skip all guard
+checking and evaluate forms in the logic.
+
+<pre>
+ACL2 !&gt;(defun foo (x)
+         (declare (xargs :mode :program :guard t))
+         (car x))<p>
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ FOO
+ACL2 !&gt;(foo 3)
+Error: Attempt to take the car of 3 which is not listp.
+  [condition type: SIMPLE-ERROR]<p>
+
+Restart actions (select using :continue):
+ 0: Return to Top Level (an "abort" restart).
+ 1: Abort entirely from this process.
+[1] ACL2(2): :pop
+ACL2 !&gt;(assign safe-mode t)
+ T
+ACL2 !&gt;(foo 3)<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+call (CAR 3).  See :DOC wet for how you might be able to get an error
+backtrace.<p>
+
+ACL2 !&gt;(assign safe-mode nil)
+ NIL
+ACL2 !&gt;(foo 3)
+Error: Attempt to take the car of 3 which is not listp.
+  [condition type: SIMPLE-ERROR]<p>
+
+Restart actions (select using :continue):
+ 0: Return to Top Level (an "abort" restart).
+ 1: Abort entirely from this process.
+[1] ACL2(2):
+</pre>
+
+The other exception occurs after <code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code> can be called with
+a value of <code>:all</code>; see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>.
+<strong>End of aside.</strong><p>
+
+Thus, as with <code>:</code><code><a href="LOGIC.html">logic</a></code> functions:  when a guard has been
+satisfied on a call of a function with <code>:</code><code><a href="PROGRAM.html">program</a></code> mode, no subsidiary
+guard checking will be done.<p>
+
+Notice that by treating functions in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode like functions
+whose guards have been verified, we are using raw lisp to compute
+their values when their guards are met.  We do not check guards any
+further once raw lisp is invoked.  This can lead to hard lisp errors
+if the guards are not appropriate, as illustrated below.
+
+<pre>
+ACL2 &gt;:program
+ACL2 p&gt;(defun foo (x)
+        (declare (xargs :guard t))
+        (cons 1 (cdr x)))<p>
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+Warnings:  None
+Time:  0.02 seconds (prove: 0.00, print: 0.00, proof tree: 0.00, other: 0.02)
+ FOO
+ACL2 p&gt;(foo 3)<p>
+
+Error: 3 is not of type LIST.
+Fast links are on: do (use-fast-links nil) for debugging
+Error signalled by CDR.
+Broken at COND.  Type :H for Help.
+ACL2&gt;&gt;
+</pre>
+
+See <a href="DEFUN-MODE-CAVEAT.html">defun-mode-caveat</a>.<p>
+
+However, here is a way to get ACL2 to do run-time guard checking for
+user-defined <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  With this method, ACL2 will
+evaluate calls of user-defined <code>:program</code> mode functions in a manner
+that follows their ACL2 definitions.  Simply execute the following in the
+ACL2 loop to put ACL2 into a ``safe mode.''
+
+<pre>
+(f-put-global 'safe-mode t state)
+</pre>
+
+Let us revisit the example above, using safe mode.  Notice that the guard of
+<code><a href="CDR.html">cdr</a></code> is now being checked, because the executable counterpart of <code>foo</code>
+is being called even though the <a href="GUARD.html">guard</a> is <code>t</code>.
+
+<pre>
+ACL2 !&gt;(f-put-global 'safe-mode t state)
+&lt;state&gt;
+ACL2 !&gt;:program
+ACL2 p!&gt;(defun foo (x)
+          (declare (xargs :guard t))
+          (cons 1 (cdr x)))<p>
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ FOO
+ACL2 p!&gt;(foo 3)<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol CDR, which
+is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+call (CDR 3).  You may be able to see a trace of calls leading up to
+this violation by executing (wet &lt;form&gt;), where &lt;form&gt; is the form
+you submitted to the ACL2 loop.  See :DOC wet for how to get an error
+backtrace.<p>
+
+ACL2 p!&gt;(wet (foo 3))<p>
+
+<p>
+
+ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+CDR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+in the call (CDR 3).  (Backtrace is below.)<p>
+
+1&gt; (ACL2_*1*_ACL2::FOO 3)<p>
+
+ACL2 p!&gt;
+</pre>
+
+If we go back into ``unsafe'' mode, then we once again see a raw Lisp error,
+as we now illustrate.
+
+<pre>
+ACL2 p!&gt;(f-put-global 'safe-mode nil state)
+&lt;state&gt;
+ACL2 p!&gt;(foo 3)<p>
+
+Error: 3 is not of type LIST.
+Fast links are on: do (si::use-fast-links nil) for debugging
+Error signalled by CDR.
+Broken at COND.  Type :H for Help.
+ACL2&gt;&gt;
+</pre>
+<p>
+
+<em>Guards and evaluation V:  efficiency issues</em><p>
+
+We have seen that by verifying the guards for a <code>:</code><code><a href="LOGIC.html">logic</a></code> function, we
+arrange that raw lisp is used for evaluation of calls of such
+functions when the arguments satisfy its guard.<p>
+
+This has several apparent advantages over the checking of guards as
+we go.  First, the savings is magnified as your system of functions
+gets deeper: the guard is checked upon the top-level entry to your
+system and then raw Common Lisp does all the computing.  Second, if
+the raw Common Lisp is compiled, enormous speed-ups are possible.
+Third, if your Common Lisp or its compiler does such optimizations
+as <code>tail-recursion</code> removal, raw Common Lisp may be able to
+compute your functions on input much ``bigger'' than ACL2 can.<p>
+
+The first of these advantages is quite important if you have
+complicated guards.  However, the other two advantages are probably
+not very important, as we now explain.<p>
+
+When a function is defined in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode, its <code><a href="DEFUN.html">defun</a></code> is
+executed in raw Common Lisp.  (We might call this the ``primary''
+raw lisp definition of the function.)  However, a corresponding
+``logic definition'' is also executed.  The ``logic definition'' is
+a <code><a href="DEFUN.html">defun</a></code> in raw lisp that checks guards at runtime and escapes to
+the primary raw lisp definition if the guard holds of the arguments
+and the function has already had its guards verified.  Otherwise the
+logic definition executes the body of the function by calling the
+logic definitions of each subroutine.  Now it is true that
+<a href="COMPILATION.html">compilation</a> generally speeds up execution enormously.  However, the
+<code>:</code><code><a href="COMP.html">comp</a></code> command (see <a href="COMP.html">comp</a>) compiles both of the raw lisp
+definitions associated with a <code>:</code><code><a href="LOGIC.html">logic</a></code> function.  Also, we have
+attempted to arrange that for every tail recursion removal done on
+the actual <code><a href="DEFUN.html">defun</a></code>, a corresponding tail recursion removal is done
+on the ``logic definition.''<p>
+
+We believe that in most cases, the logic definition executes almost
+as fast as the primary raw lisp definition, at least if the
+evaluation of the guards is fast.  So, the main advantage of guard
+verification is probably that it lets you know that the function may
+be executed safely in raw lisp, returning the value predicted by the
+ACL2 logic, whenever its arguments satisfy its guard.  We envision
+the development of systems of applicative lisp functions that have
+been developed and reasoned about using ACL2 but which are intended
+for evaluation in raw Common Lisp (perhaps with only a small
+``core'' of ACL2 loaded), so this advantage of guard verification is
+important.<p>
+
+Nevertheless, guard verification might be important for optimal
+efficiency when the functions make use of type declarations.  For
+example, at this writing, the GCL implementation of Common Lisp can
+often take great advantage of <code><a href="DECLARE.html">declare</a></code> forms that assign small
+integer types to formal parameters.<p>
+
+To continue the discussion of guards,
+see <a href="GUARDS-FOR-SPECIFICATION.html">guards-for-specification</a> to read about the use of guards as
+a specification device.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

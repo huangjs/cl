@@ -1,0 +1,245 @@
+<html>
+<head><title>DOC-STRING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DOC-STRING</h2>formatted <a href="DOCUMENTATION.html">documentation</a> strings
+<pre>Major Section:  <a href="DOCUMENTATION.html">DOCUMENTATION</a>
+</pre><p>
+
+
+<pre>
+Examples:
+":Doc-Section name
+one-liner~/notes~/details"<p>
+
+":Doc-Section name
+one-liner~/
+notes~/
+details~/
+:cite old-name1
+:cited-by old-name2"
+</pre>
+
+Use <code>(get-doc-string 'name state)</code> to see other examples.<p>
+
+<a href="DOCUMENTATION.html">Documentation</a> strings not beginning with ``<code>:Doc-Section</code>'' (case is
+irrelevant) are ignored.  See <a href="MARKUP.html">markup</a> for how to supply
+formatting information (such as fonts and displayed text) in
+<a href="DOCUMENTATION.html">documentation</a> strings.
+<p>
+ACL2 attaches special importance to <a href="DOCUMENTATION.html">documentation</a> strings beginning
+with the header ``<code>:Doc-Section</code>'' (or any variant thereof obtained by
+changing case).  Any <a href="DOCUMENTATION.html">documentation</a> string that does not begin with
+such a header is considered unformatted and is ignored.  For the
+rest of this discussion, we use the phrase ``<a href="DOCUMENTATION.html">documentation</a> string''
+as though it read ``formatted <a href="DOCUMENTATION.html">documentation</a> string.''<p>
+
+<a href="DOCUMENTATION.html">Documentation</a> strings are always processed in the context of some
+symbol, <code>name</code>, being defined.  (Indeed, if an event defines no
+symbol, e.g., <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> or <code><a href="IN-THEORY.html">in-theory</a></code>, then it is not permitted
+to have a formatted <a href="DOCUMENTATION.html">documentation</a> string.)  The string will be
+associated with name in the ``<a href="DOCUMENTATION.html">documentation</a> data base.'' The data
+base is divided into ``sections'' and each section is named by a
+symbol.  Among the sections are <code><a href="EVENTS.html">events</a></code>, <code><a href="DOCUMENTATION.html">documentation</a></code>, <code><a href="HISTORY.html">history</a></code>,
+<code><a href="OTHER.html">other</a></code>, and <code><a href="MISCELLANEOUS.html">miscellaneous</a></code>.  A complete list of the sections may be
+obtained by typing <code>:docs *</code> at the terminal.  You can create new
+sections.  The main purpose of sections is simply to partition the
+large set of names into smaller subsets whose contents can be
+enumerated separately.  The idea is that the user may remember (or
+recognize) the relevant section name and then read its contents to
+find interesting items.<p>
+
+Within a section are ``<a href="DOCUMENTATION.html">documentation</a> tuples'' which associate with
+each documented name its <a href="DOCUMENTATION.html">documentation</a> string and a list of related
+documented names, called the ``related names'' of the name.  When
+<code>:</code><code><a href="DOC.html">doc</a></code> prints the <a href="DOCUMENTATION.html">documentation</a> for name, it always lists the related
+names.<p>
+
+When a formatted <a href="DOCUMENTATION.html">documentation</a> string is submitted with the defining
+event of some name, the section name and an initial set of related
+names are parsed from the string.  In addition, the formatted string
+contains various ``levels'' of detail that are printed out at
+different times.  Finally, it is possible for a string to cause the
+newly documented name to be added to the related names of any
+previously documented name.  Thus, as new names are introduced they
+can be grouped with old ones.<p>
+
+The general form of an ACL2 formatted <a href="DOCUMENTATION.html">documentation</a> string is
+
+<pre>
+":DOC-SECTION &lt;section-name&gt;
+  &lt;one-liner&gt;~/
+  &lt;notes&gt;~/
+  &lt;details&gt;~/
+  :CITE &lt;n1&gt;
+  ...
+  :CITE &lt;nn&gt;
+  :CITED-BY &lt;m1&gt;
+  ...
+  :CITED-BY &lt;mm&gt;"
+</pre>
+
+Before we explain this, let it be noted that
+<code>(get-doc-string name state)</code> will return the <a href="DOCUMENTATION.html">documentation</a> string
+associated with <code>name</code> in the <a href="DOCUMENTATION.html">documentation</a> data base.  You may
+want to call <code>get-doc-string</code> on <code>'</code><code><a href="PE.html">pe</a></code> and <code>'</code><code><a href="UNION-THEORIES.html">union-theories</a></code> just
+to see some concrete <a href="DOCUMENTATION.html">documentation</a> strings.  This <a href="DOCUMENTATION.html">documentation</a>
+string, which is rather long, is under <code>'doc-string</code>.<p>
+
+A formatted <a href="DOCUMENTATION.html">documentation</a> string has five parts: the header and
+section-name (terminating in the first <code>#\Newline</code>), the <code>&lt;one-liner&gt;</code>,
+<code>&lt;notes&gt;</code>, and <code>&lt;details&gt;</code> (each terminating in a tilde-slash (``<code>~/</code>'')
+pair), and a citation part.  These five parts are parsed into six
+components.  <code>&lt;section-name&gt;</code> is read as the name of a symbol,
+section-name.  <code>&lt;one-liner&gt;</code>, <code>&lt;notes&gt;</code>, and <code>&lt;details&gt;</code> are arbitrary
+sequences of <a href="CHARACTERS.html">characters</a> (ignoring initial white space and not
+including the tilde-slash pairs which terminate them).  The <code>&lt;ni&gt;</code> are
+read as symbols and assembled into a list called the ``cite''
+symbols.  The <code>&lt;mi&gt;</code> are read as symbols and assembled into a list
+called the ``cited-by'' symbols.  See the warning below regarding
+the hackish nature of our symbol reader.<p>
+
+<code>Section-name</code> must either be a previously documented symbol or else
+be <code>name</code>, the symbol being documented.  To open a new section of the
+data base, named <code>section-name</code>, you should define the logical name
+section-name (as by <code><a href="DEFLABEL.html">deflabel</a></code> or any other event; also
+see <a href="DEFDOC.html">defdoc</a>) and attach to it a <a href="DOCUMENTATION.html">documentation</a> string for section
+section-name.  You might wish to print out the <a href="DOCUMENTATION.html">documentation</a> string
+we use for some of our section names, e.g.,
+<code>(get-doc-string 'events state)</code>.  By forcing section names to be
+documented symbols, we permit sections themselves to have one line
+descriptions and discussions, presented by the standard
+<a href="DOCUMENTATION.html">documentation</a> facilities like the facilities <code>:</code><code><a href="DOC.html">doc</a></code> and <code>:</code><code><a href="MORE-DOC.html">more-doc</a></code> that
+may be used at the terminal.<p>
+
+Each of the <code>ni</code>'s and <code>mi</code>'s must be previously documented symbols.<p>
+
+Both <code>&lt;one-liner&gt;</code> and <code>&lt;details&gt;</code> must be non-empty, i.e., must contain
+some non-whitespace <a href="CHARACTERS.html">characters</a>.  <code>&lt;notes&gt;</code> may be empty.  The <code>:cite</code>s
+and <code>:cited-by</code>s pairs may be intermingled and may be separated by
+either newlines or spaces.  The citation part may be empty.  When
+the citation part is empty, the tilde-slash pair terminating the
+<code>&lt;details&gt;</code> part may be omitted.  Thus, the simplest form of a
+formatted <a href="DOCUMENTATION.html">documentation</a> string is:
+
+<pre>
+":Doc-Section &lt;section-name&gt;
+ &lt;one-liner&gt;~/~/
+ &lt;details&gt;"
+</pre>
+
+Since white space at the front of <code>&lt;one-liner&gt;</code>, <code>&lt;notes&gt;</code> and
+<code>&lt;details&gt;</code> is ignored, we often precede those parts by <code>#\Newline</code>s to
+make the strings easier to read in our source files.  We also
+typically indent all of the text in the string by starting each line
+with a few spaces.  (The Emacs commands for formatting Lisp get
+confused if you have arbitrary <a href="CHARACTERS.html">characters</a> on the left margin.)  We
+assume that every line in <code>&lt;one-liner&gt;</code>, <code>&lt;notes&gt;</code>, and <code>&lt;details&gt;</code> starts
+with at least as many spaces as <code>&lt;one-liner&gt;</code> does, i.e., we assume
+they are all indented the same amount (or more).  Let <code>d</code> be the
+number of spaces separating <code>&lt;one-liner&gt;</code> from the <code>#\Newline</code>
+preceding it.  When the various parts are printed, we ``de-indent''
+by stripping out the first d spaces following each <code>#\Newline</code>.<p>
+
+However, we find that when <a href="DOCUMENTATION.html">documentation</a> is printed flush against
+the left margin it is difficult to distinguish the <a href="DOCUMENTATION.html">documentation</a>
+text from previous output.  We therefore prefix each line we print
+by a special pad of <a href="CHARACTERS.html">characters</a>.  By default, this pad is ``<code>| </code>'' so
+that <a href="DOCUMENTATION.html">documentation</a> text has a vertical bar running down the left
+margin.  But the pad is just the value of the global variable
+<code>doc-prefix</code> and you may <code><a href="ASSIGN.html">assign</a></code> it any string you wish.<p>
+
+To add such a string to the data base under the symbol <code>name</code> we make
+a new entry in the section-name section of the data base.  The entry
+associates <code>name</code> with the string and uses the string's cites list as
+the initial value of the related names field.  In addition, we add
+<code>name</code> to the related names field of each of the names listed in the
+string's cited-by list.  We also add <code>name</code> to the related names field
+of its section-name.  Observe that the cites list in a string is
+only the initial value of the related names of the names.  Future
+<a href="DOCUMENTATION.html">documentation</a> strings may add to it via <code>:cited-by</code> or <code>:doc-section</code>.
+Indeed, this is generally the case.  We discuss this further below.<p>
+
+When a brief description of <code>name</code> is required (as by <code>:docs **</code>), <code>name</code>
+and <code>&lt;one-liner&gt;</code> are printed.  <code>&lt;one-liner&gt;</code> is usually printed
+starting in column 15 (however see <a href="PRINT-DOC-START-COLUMN.html">print-doc-start-column</a>).
+Despite its name, <code>&lt;one-liner&gt;</code> need not be one line.  It usually is
+one line, however.<p>
+
+When you type <code>:</code><code><a href="DOC.html">doc</a></code> name at the terminal, the first response will be
+to print <code>name</code> and <code>&lt;one-liner&gt;</code>.  Then <code>:</code><code><a href="DOC.html">doc</a></code> prints <code>&lt;notes&gt;</code>, if any.
+Then, if <code>name</code> is the name of a section, it prints the <code>&lt;one-liner&gt;</code>s
+for each of its related names.  For example, try <code>:doc events</code>.  If
+<code>name</code> is not a section name but does have some related names, they
+are merely listed but not explained.  Try <code>:doc theory-functions</code>.
+<code>:more-doc name</code> prints <code>&lt;details&gt;</code>.<p>
+
+Our style is to let each new concept add itself to the related names
+of old concepts.  To do otherwise increases the chances that
+<a href="DOCUMENTATION.html">documentation</a> gets outdated because one often forgets to update
+supposedly complete lists of the relevant topics when new topics are
+invented.  For example, <code>:doc theory-functions</code> lists each available
+theory function.  But <code>get-doc-string</code> of <code>'</code><code><a href="THEORY-FUNCTIONS.html">theory-functions</a></code> just
+shows a few examples and has an empty cites list.  From where do we
+get the names of the theory functions listed by <code>:</code><code><a href="DOC.html">doc</a></code>?  The answer is
+that each theory function has its own <a href="DOCUMENTATION.html">documentation</a> string and those
+strings each specify <code>:cited-by</code> <a href="THEORY-FUNCTIONS.html">theory-functions</a>.  See for example
+<code>get-doc-string</code> of <code>'</code><code><a href="UNION-THEORIES.html">union-theories</a></code>.  So by the time the entire system
+is assembled, the related names of <code>'</code><code><a href="THEORY-FUNCTIONS.html">theory-functions</a></code> contains all
+the (documented) theory functions.  This makes it easy to add new
+theory functions without changing the general discussion in
+<code>'</code><code><a href="THEORY-FUNCTIONS.html">theory-functions</a></code>.<p>
+
+When an event or <a href="COMMAND.html">command</a> form is printed, as by <code>:</code><code><a href="PE.html">pe</a></code> or <code>:</code><code><a href="PC.html">pc</a></code>, that
+contains a formatted <a href="DOCUMENTATION.html">documentation</a> string, we do not print the
+actual <a href="DOCUMENTATION.html">documentation</a> string (since they are usually large and
+distracting).  Instead we print the string:
+
+<pre>
+  "Documentation available via :doc"
+</pre>
+
+inviting you to use <code>:</code><code><a href="DOC.html">doc</a></code> and <code>:</code><code><a href="MORE-DOC.html">more-doc</a></code> (or <code>get-doc-string</code>) if you
+wish to see the <a href="DOCUMENTATION.html">documentation</a> at the terminal.<p>
+
+<em>Warning on Reading Symbols from Strings:</em> When we read a symbol, such
+as the section-symbol, from a <a href="DOCUMENTATION.html">documentation</a> string, we use a quick
+and dirty imitation of the much more powerful CLTL <code>read</code> program.  In
+particular, we scan past any whitespace, collect all the <a href="CHARACTERS.html">characters</a>
+we see until we get to more whitespace or the end of the string,
+convert the <a href="CHARACTERS.html">characters</a> to upper case, make a string out of them, and
+<code><a href="INTERN.html">intern</a></code> that string.  Thus, if you typed <code>":Doc-Section 123 ..."</code> we
+would read the <code>123</code> as the symbol <code>|123|</code>.  Observe that special
+<a href="CHARACTERS.html">characters</a>, such as parentheses and escape <a href="CHARACTERS.html">characters</a>, are not
+afforded their usual reverence by our hack.  Furthermore, the
+question arises: in which package do we <code><a href="INTERN.html">intern</a></code> the symbol?  The
+answer is, usually, the package containing the name being defined.
+I.e., if you are documenting <code>my-pkg::name</code> and you attach a
+<a href="DOCUMENTATION.html">documentation</a> string that begins <code>":Doc-Section: Machines ..."</code> then
+the section-symbol will be <code>my-pkg::machines</code>.  We recognize two
+special cases. If the first character read is a colon, we use the
+<code>keyword</code> package.  If the first five <a href="CHARACTERS.html">characters</a> read are <code>acl2::</code> then
+we <a href="INTERN.html">intern</a> in the <code>"ACL2"</code> package.  Our own section names, e.g.,
+<code><a href="EVENTS.html">events</a></code>, are in the <code>"ACL2"</code> package.<p>
+
+In a related area, when you ask for the <a href="DOCUMENTATION.html">documentation</a> of a name,
+e.g., when you type <code>:doc name</code> at the terminal, that name is read
+with the full ACL2 reader, not the hack just described.  That name
+is read into the current package.  Thus, if you are operating
+<code><a href="IN-PACKAGE.html">in-package</a></code> <code>"MY-PKG"</code> and type <code>:doc events</code>, what is read is
+<code>my-pkg::events</code>.  The data base may not contain an entry for this
+symbol.  Before reporting that no <a href="DOCUMENTATION.html">documentation</a> exists, we try
+<code>acl2::events</code>.<p>
+
+One last note: <code><a href="DEFPKG.html">defpkg</a></code> permits a formatted <a href="DOCUMENTATION.html">documentation</a> string,
+which is associated in the data base with the name of the package.
+But the name of the package is a string, not a symbol.  It is
+permitted to access the <a href="DOCUMENTATION.html">documentation</a> of a string (i.e., package
+name).  But there are no facilities for getting such a <code><a href="STRINGP.html">stringp</a></code> name
+into the related names of another name nor of making such <a href="STRINGP.html">stringp</a>
+names be section names.  That is because we always read symbols from
+strings and never read strings from strings.  I.e., if you did write
+<code>"Doc-Section \"MY-PKG\" ..."</code> it would read in as a weird
+symbol.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

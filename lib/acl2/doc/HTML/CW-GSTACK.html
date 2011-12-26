@@ -1,0 +1,91 @@
+<html>
+<head><title>CW-GSTACK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CW-GSTACK</h2>debug a rewriting loop or stack overflow
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+General Forms:
+(cw-gstack)
+(cw-gstack :frames 10)       ; show only the top 10 frames
+(cw-gstack :frames (1 10))   ; same as above:  show only frames 1 through 10
+(cw-gstack :frames (10 20))  ; show only frames 10 through 20
+(cw-gstack :evisc-tuple nil) ; print using default ``evisceration''
+(cw-gstack :evisc-tuple x)   ; print with evisceration tuple x
+</pre>
+
+For the last case above, see <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a>.<p>
+
+Stack overflows may occur, perhaps caused by looping rewrite rules.
+In some Lisps, especially GCL, stack overflows often manifest
+themselves as segmentation faults, causing the entire ACL2 image to
+crash.  Finding looping rewrite rules can be tricky, especially if
+you are using books supplied by other people.  (However,
+see <a href="SET-REWRITE-STACK-LIMIT.html">set-rewrite-stack-limit</a> for a way to avoid stack overflows
+caused by rewriter loops.)<p>
+
+A wonderful trick is the following.  When there is a stack overflow
+during a proof, abort and then try it again after turning on rewrite
+stack monitoring with <code>:</code><code><a href="BRR.html">brr</a></code><code> t</code>.  When the stack
+overflows again, exit to raw Lisp.  How you exit to raw Lisp depends
+on which Lisp you are using.  In Allegro Common Lisp, for example,
+the stack overflow will leave you in an interactive break.  It is
+often a good idea to exit the break immediately (e.g., using
+<code>:pop</code> if you use Allegro Common Lisp, or <code>:q</code> using GCL), which
+will leave you in the top-level ACL2 command loop, after which it is
+recommended to leave that loop using <code>:</code><code><a href="Q.html">q</a></code>.  That will leave
+you in raw Lisp.  Then, execute
+
+<pre>
+(cw-gstack)
+</pre>
+
+If the loop is in the rewriter, it will probably be evident!  You
+can re-enter the ACL2 loop now with <code>(</code><code><a href="LP.html">lp</a></code><code>)</code>.<p>
+
+Note: By default, <code>cw-gstack</code> ``eviscerates'' terms, printing
+abbreviated representations of large terms.  The user can control
+this behavior by using <code>(cw-gstack :evisc-tuple x)</code>, where <code>x</code>
+is <code>nil</code> or an evisceration tuple; see <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a>.  For
+example, <code>(cw-gstack :evisc-tuple nil)</code> will avoid all
+evisceration, while the default behavior can be obtained by using
+<code>(cw-gstack :evisc-tuple '(nil 3 4 (hide)))</code>, meaning that
+substructures deeper than 3 are replaced by ``<code>#</code>'' and those
+longer than 4 are replaced by ``<code>...</code>'', and terms of the form
+<code>(hide ...)</code> are printed as <code>&lt;hidden&gt;</code>.<p>
+
+If you are in GCL the stack overflow may cause a segmentation fault
+and abort the Lisp job.  This makes it harder to debug but here is
+what you do.  First, re-create the situation just prior to
+submitting the form that will cause the stack overflow.  You can do
+this without suffering through all the proofs by using the
+<code>:</code><code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> option of <code><a href="LD.html">ld</a></code> to reload your
+scripts.  Before you submit the form that causes the stack overflow,
+exit the ACL2 command loop with <code>:</code><code><a href="Q.html">q</a></code>.  In raw GCL type:
+
+<pre>
+(si::use-fast-links nil)
+</pre>
+
+This will slow GCL down but make it detect and signal stack overflows
+rather than overwrite the system memory.  Now reenter the ACL2
+command loop with <code>(</code><code><a href="LP.html">lp</a></code><code>)</code>.  <p>
+
+Now carry on as described above, turning on rewrite stack monitoring
+with <code>:</code><code><a href="BRR.html">brr</a></code><code> t</code> and provoking the stack overflow.  When
+it occurs, you will be in an interactive break.  Exit to raw Lisp
+with two successive <code>:</code><code>q</code>'s, one to get out of the error break
+and the next to get out of the top-level ACL2 command loop.  Then
+in raw GCL execute <code>(cw-gstack)</code>.<p>
+
+Suggestion: Once you have found the loop and fixed it, you should
+execute the ACL2 command <code>:</code><code><a href="BRR.html">brr</a></code><code> nil</code>, so that you don't slow
+down subsequent proof attempts.  If you are in GCL, you should also
+get into raw Lisp and execute <code>(si::use-fast-links t)</code>.
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

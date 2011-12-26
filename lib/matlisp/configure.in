@@ -1,0 +1,417 @@
+dnl Copyright (c) 2000 The Regents of the University of California.
+dnl All rights reserved. 
+dnl
+dnl Permission is hereby granted, without written agreement and without
+dnl license or royalty fees, to use, copy, modify, and distribute this
+dnl software and its documentation for any purpose, provided that the
+dnl above copyright notice and the following two paragraphs appear in all
+dnl copies of this software.
+dnl
+dnl IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY
+dnl FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+dnl ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
+dnl THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF
+dnl SUCH DAMAGE.
+dnl
+dnl THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+dnl INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+dnl MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE
+dnl PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+dnl CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
+dnl ENHANCEMENTS, OR MODIFICATIONS.
+dnl
+dnl ======================================================================
+dnl
+dnl Originally written by Tunc Simsek, Univ. of California, Berkeley,
+dnl 2000, simsek@eecs.berkeley.edu
+dnl
+dnl ======================================================================
+dnl
+dnl Process this file with autoconf to produce a configure script.
+dnl For example:
+dnl
+dnl          autoconf configure.in > configure
+dnl
+dnl You need autoconf 2.50 or later.
+dnl ======================================================================
+dnl
+dnl $Id: configure.in,v 1.18 2006/09/18 13:22:17 rtoy Exp $
+dnl
+dnl $Log: configure.in,v $
+dnl Revision 1.18  2006/09/18 13:22:17  rtoy
+dnl Forgot to define MATLIB for darwin.  Fix from Matthew West,
+dnl matlisp-users, 2006/08/13.
+dnl
+dnl Revision 1.17  2005/08/19 15:03:35  rtoy
+dnl Compile dlamch without optimization because the causes issues with
+dnl geev and perhaps others.  The LAPACK FAQ recommends this as well.
+dnl
+dnl INSTALL:
+dnl   o Document how to specify the Fortran compiler and flags, espeically
+dnl     for Solaris
+dnl   o Add note to make sure dlmach is compiled without optimization.
+dnl
+dnl configure.in:
+dnl   o Add --with-fflags option to allow user to specify flags for the
+dnl     Fortran compiler.  This is needed so that we can compile dlamch
+dnl     without optimization.  This also means you shouldn't do things
+dnl     like --with-f77='f77 -O'.
+dnl
+dnl matlisp.mk.in:
+dnl   o Add speical rule to compile dlamch without optimization.
+dnl
+dnl Revision 1.16  2005/06/24 04:04:04  rtoy
+dnl Update for CMUCL with linkage tables.  In this case, we can just load
+dnl up the matlisp shared lib.  But not if we're also using ATLAS, which
+dnl usually doesn't come as a shared lib.
+dnl
+dnl Revision 1.15  2005/06/15 13:12:43  rtoy
+dnl Update from Cyrus Harmon to support Mac OS X 10.4.  This very likely
+dnl breaks earlier versions though.
+dnl
+dnl Revision 1.14  2004/05/24 16:34:21  rtoy
+dnl More SBCL support from Robert Sedgewick.  The previous SBCL support
+dnl was incomplete.
+dnl
+dnl Revision 1.13  2004/03/17 03:38:41  simsek
+dnl Adding support for MinGW on windows
+dnl
+dnl Revision 1.12  2003/12/07 15:03:44  rtoy
+dnl Add support for SBCL.  I did not test if SBCL works, but CMUCL still
+dnl works.
+dnl
+dnl From Robbie Sedgewick on matlisp-users, 2003-11-13.
+dnl
+dnl Revision 1.11  2001/10/26 13:51:46  rtoy
+dnl ACL doesn't want the trailing underscore added by our name-mangler
+dnl because it does it by itself.
+dnl
+dnl Revision 1.10  2001/07/26 15:48:59  rtoy
+dnl Support Fortran name mangling supported by autoconf.
+dnl
+dnl Revision 1.9  2001/06/06 14:24:22  rtoy
+dnl Update to autoconf 2.50 and add tests
+dnl o Check that -c and -o are supported by the Fortran compiler
+dnl o Check the Fortran name mangling.  We give up if it doesn't match our
+dnl   current assumptions of lower case, underscore, and no extra
+dnl   underscore.  (Should probably communicate this info to lisp so we
+dnl   can support this type of mangling.)
+dnl
+dnl Revision 1.8  2001/04/26 13:43:33  rtoy
+dnl o ATLAS_DIR variable needs to contain the -L flag.  Otherwise, we get
+dnl   a dangling -L option if we're not using ATLAS.
+dnl o Remove a debug statement
+dnl
+dnl Revision 1.7  2001/04/25 18:08:13  rtoy
+dnl o Added --with-f77 to specify the f77 compiler (and options) to use.
+dnl o Need to make sure the C and F77 compilers understand -c and -o.
+dnl o Strip out any -Xlinker flags we might find in FLIBS (placed there by
+dnl   configure with the Sun F77 compiler)
+dnl o Use SHARED_LIB_LDFLAGS to specify the flags needed to build a shared
+dnl   lib.
+dnl o Export srcdir.
+dnl
+dnl Revision 1.6  2001/03/19 17:07:46  rtoy
+dnl Allow the user to specify using ATLAS libraries.
+dnl
+dnl Revision 1.5  2001/03/08 16:56:24  rtoy
+dnl o --with-lisp selects some default name for the Lisp executable.  (May
+dnl   need some tweaking.)
+dnl o Added --with-ld to specify the ld to use.  If unspecified, use plain
+dnl   ld, except on Solaris, use /usr/ccs/bin/ld.
+dnl
+dnl Revision 1.4  2001/03/06 17:57:43  rtoy
+dnl o Added option --with-lisp to specify which Lisp we're using (acl or
+dnl   cmucl).
+dnl o Added option --with-lisp-exec to specify the name of the Lisp
+dnl   executable we want to use.
+dnl
+dnl Revision 1.3  2000/07/11 18:02:34  simsek
+dnl o Added credits
+dnl
+dnl Revision 1.2  2000/07/11 02:16:12  simsek
+dnl o Added support for shared libraries
+dnl
+dnl Revision 1.1  2000/04/13 20:37:25  simsek
+dnl o Created this file to detect machine specific parameters,
+dnl   especially Fortran parameters.
+dnl o In future revisions, this file should be modified to check whether
+dnl   a Fortran DOUBLE PRECISION is a C double (the main assumption in src/fortran.lisp)
+dnl   and should create a src/fortran.lisp file from a src/fortran.lisp.in file
+dnl   in case there are ambiguities.  This will ensure that the Matlisp Fortran interface
+dnl   works correctly with at least the distributed BLAS/LAPACK sources.
+dnl
+dnl
+dnl ======================================================================
+
+AC_INIT(system.dcl)
+
+AC_CANONICAL_SYSTEM
+
+dnl Process our additional features
+
+dnl --with-lisp for the Lisp system we want to use.
+AC_ARG_WITH([lisp],
+[  --with-lisp=name        Which lisp system to use.  Currently supported
+                           systems are acl, sbcl and cmucl.],
+[LISPSYS=$withval
+
+dnl Verify we got a supported system and figure out the command
+dnl line eval option name.  Choose some default name for the Lisp 
+dnl executable too.
+
+case $LISPSYS in
+  acl)
+    LISPEVAL='-e'
+    LISPEXEC=cl
+    ;;
+  cmucl)
+    # Don't run the user's init function!
+    LISPEVAL='-noinit -eval'
+    LISPEXEC=lisp
+    ;;
+  sbcl)
+    # Don't run the user's init function!
+    LISPEVAL='--sysinit /dev/null --userinit /dev/null --eval'
+    LISPEXEC=sbcl
+    ;;
+  *)
+     AC_MSG_ERROR([Unknown Lisp system:  $LISPSYS.  Supported systems are acl, sbcl and cmucl])
+     ;;
+esac
+])
+
+dnl Allow user to specify the Lisp executable name.  (The names aren't
+dnl standardized, and might actually conflict.)
+
+AC_ARG_WITH([lisp-exec],
+[  --with-lisp-exec=name   Name of lisp program],
+[LISPEXEC=$withval]
+)
+
+dnl Allow user to use ATLAS if available.
+dnl We assume the standard names for the ATLAS libraries.
+AC_ARG_WITH([atlas],
+[  --with-atlas=libpath    Location of the ATLAS libraries],
+[
+  # Building with ATLAS
+  ATLAS_DIR="-L$withval"
+  ATLAS_LIBS="-llapack -lcblas -lf77blas -latlas"
+  ATLAS_P=t
+],
+[
+  # Building without ATLAS.  Need these objects from our own copy of 
+  # LAPACK.
+  ATLAS_P=nil
+BLAS_OBJS="dgemm.o dswap.o dtrmv.o lsame.o zdotu.o zhemv.o ztrmv.o dgemv.o  dsymv.o  dtrsm.o  zher2.o   ztrsm.o dasum.o  dger.o   dsyr.o   dtrsv.o   zdscal.o zher2k.o ztrsv.o daxpy.o  dsyr2.o  dzasum.o xerbla.o  zgemm.o  zherk.o dcabs1.o dnrm2.o  dsyr2k.o dznrm2.o  zaxpy.o  zgemv.o  zscal.o dcopy.o  drot.o   dsyrk.o  idamax.o  zcopy.o  zgerc.o  zswap.o ddot.o	 dscal.o  dtrmm.o  izamax.o  zdotc.o  zgeru.o  ztrmm.o dsymm.o"
+NO_ATLAS_LAPACK_OBJS="dgetrf.o zgetrf.o dgetrs.o zgetrs.o dlaswp.o zlaswp.o dgesv.o zgesv.o"
+]
+)
+
+dnl Specify the fortran compiler to use
+AC_ARG_WITH([f77],
+[  --with-f77=compiler     Fortran 77 compiler to use (default is g77)],
+[
+  # Set the compiler
+  F77="$withval"
+])
+
+dnl Specify the Fortran compiler flags
+AC_ARG_WITH([fflags],
+[  --with-fflags=flags     Compiler flags to use with Fortran compiler],
+[
+  # Set flags
+  FFLAGS="$withval"
+])
+
+dnl     Set output variable `RANLIB' to `ranlib' if `ranlib' is found,
+dnl     otherwise to `:' (do nothing).
+AC_PROG_RANLIB
+
+dnl
+dnl     Determine a C compiler to use.
+dnl
+AC_PROG_CC
+dnl
+dnl	We require -c and -o options for the compiler to work
+dnl
+AC_PROG_CC_C_O
+
+dnl Allow user to specify which linker to use.  Default is ld, wherever 
+dnl that is on the user's path.
+AC_ARG_WITH([ld],
+[  --with-ld=<ld>          Name of the linker to use],
+[LD=$withval],
+[
+  case "$host" in
+    *-*-solaris*)
+      # Always use this one on Solaris, unless told otherwise.
+      LD=/usr/ccs/bin/ld
+      ;;
+    *)
+      LD=ld
+      ;;  
+  esac
+])
+
+dnl
+dnl	Set the Fortran language
+dnl
+AC_LANG_FORTRAN77
+
+dnl
+dnl	We need -c and -o supported by the Fortran compiler
+dnl     (Available in autoconf 2.49d or later?)
+AC_PROG_F77_C_O
+
+dnl     Determine a Fortran 77 compiler to use.  If `F77' is not already
+dnl     set in the environment, check for `g77', `f77' and `f2c', in that
+dnl     order.  Set the output variable `F77' to the name of the compiler
+dnl     found.
+dnl
+dnl     If using `g77' (the GNU Fortran 77 compiler), then `AC_PROG_F77'
+dnl     will set the shell variable `G77' to `yes', and empty otherwise.
+dnl     If the output variable `FFLAGS' was not already set in the
+dnl     environment, then set it to `-g -02' for `g77' (or `-O2' where
+dnl     `g77' does not accept `-g').  Otherwise, set `FFLAGS' to `-g' for
+dnl     all other Fortran 77 compilers.
+AC_PROG_F77
+
+dnl     Determine the linker flags (e.g. `-L' and `-l') for the "Fortran
+dnl     77 intrinsic and run-time libraries" that are required to
+dnl     successfully link a Fortran 77 program or shared library.  The
+dnl     output variable `FLIBS' is set to these flags.
+dnl
+dnl     This macro is intended to be used in those situations when it is
+dnl     necessary to mix, e.g. C++ and Fortran 77 source code into a single
+dnl     program or shared library (*note Mixing Fortran 77 With C and C++:
+dnl     (automake)Mixing Fortran 77 With C and C++.).
+dnl
+dnl     For example, if object files from a C++ and Fortran 77 compiler
+dnl     must be linked together, then the C++ compiler/linker must be used
+dnl     for linking (since special C++-ish things need to happen at link
+dnl     time like calling global constructors, instantiating templates,
+dnl     enabling exception support, etc.).
+dnl
+dnl     However, the Fortran 77 intrinsic and run-time libraries must be
+dnl     linked in as well, but the C++ compiler/linker doesn't know by
+dnl     default how to add these Fortran 77 libraries.  Hence, the macro
+dnl     `AC_F77_LIBRARY_LDFLAGS' was created to determine these Fortran 77
+dnl     libraries.
+AC_F77_LIBRARY_LDFLAGS
+
+dnl
+dnl	Figure out what the Fortran name mangling is
+dnl
+dnl This is only for autoconf 2.49d or later!
+AC_F77_FUNC(f77_name)
+# Setup our environment variables based on the value of f77_name
+F77_LOWER_CASE=t
+F77_UNDERSCORE=t
+F77_EXTRA_UNDERSCORE=nil
+case $f77_name in
+  F77*)	F77_LOWER_CASE=nil
+	case $f77_name in
+	  F77_NAME) F77_UNDERSCORE=nil
+		    ;;
+ 	  F77_NAME_) F77_UNDERSCORE=t
+		     F77_EXTRA_UNDERSCORE=nil
+		;;
+ 	  F77_NAME__) F77_UNDERSCORE=t
+		     F77_EXTRA_UNDERSCORE=t
+		;;
+	esac
+	;;
+  f77*) F77_LOWER_CASE=t
+	case $f77_name in
+	  f77_name) F77_UNDERSCORE=nil
+		    ;;
+ 	  f77_name_) F77_UNDERSCORE=t
+		     F77_EXTRA_UNDERSCORE=nil
+		;;
+ 	  f77_name__) F77_UNDERSCORE=t
+		     F77_EXTRA_UNDERSCORE=t
+		;;
+	esac
+	;;
+esac
+
+# However, ACL doesn't want our name mangler to add a trailing
+# underscore because it does it by itself.
+case $LISPSYS in
+  acl)
+    F77_UNDERSCORE=nil
+    ;;
+esac
+
+dnl End autoconf 2.49d stuff
+
+# Determine the argument given to ld to make shared libraries.
+# (We should do a better job here.)
+case "$host" in
+  *-*-solaris* | *-*-sunos*)
+	# FLIBS=`echo $FLIBS | awk -f purgargs.awk`
+	FLIBS=`echo $FLIBS | sed 's;-Xlinker;;g' | awk -f purgargs.awk`
+	SHARED_LIB_LDFLAGS="-G"
+	MATLIB="libmatlisp.so"
+  	;;  
+  *-*-linux*)
+	SHARED_LIB_LDFLAGS="-shared"
+	MATLIB="libmatlisp.so"
+  	;;
+  *-*-darwin*)
+        LD="ld"
+
+	# Cyrus Harmon says -lcc_dynamic isn't needed for Mac OS X
+	# 10.4.  But it's needed (apparently) for earlier versions.
+	# We need to be able to figure this out!)
+
+        FLIBS="-L/sw/lib -lf2c -lSystem /usr/lib/bundle1.o"
+#        FLIBS="-L/sw/lib -lf2c -lSystem -lcc_dynamic /usr/lib/bundle1.o"
+#        SHARED_LIB_LDFLAGS="-dynamiclib -flat_namespace -undefined suppress"
+        SHARED_LIB_LDFLAGS="-bundle -flat_namespace -undefined suppress"
+	MATLIB="libmatlisp.so"
+        ;;
+  *-*-cygwin32)
+	AC_MSG_WARN([Configure has detected that you are compiling])
+	AC_MSG_WARN([for Cygwin.  We hope that you have a fairly])
+	AC_MSG_WARN([complete set of MinGW environment installed])
+	AC_MSG_WARN([on your system.  We currently do now know how])
+	AC_MSG_WARN([to produce MSVC compatible DLL's using the])
+	AC_MSG_WARN([Cygwin compilers.  We hope that gcc and g77])
+	AC_MSG_WARN([refers to the MinGW version of gcc and g77.])
+	MATLIB="libmatlisp.dll"
+	;;
+  *)
+	AC_MSG_WARN([Oops! Matlisp is tested on Solaris, SunOS, Darwin or Linux])
+	AC_MSG_WARN([Matlisp may not compile on your system $host.])
+	LD="ld"
+	SHARED_LIB_LDFLAGS="-G"
+	MATLIB="libmatlisp.so"
+  	;;
+esac
+
+dnl     The following substitutions will be made in the .in files listed
+dnl     under AC_OUTPUT at the end of this file.
+
+AC_SUBST(MATLIB)
+AC_SUBST(F77)
+AC_SUBST(FFLAGS)
+AC_SUBST(FLIBS)
+AC_SUBST(CC)
+AC_SUBST(CLIBS)
+AC_SUBST(LD)
+AC_SUBST(SHARED_LIB_LDFLAGS)
+AC_SUBST(LISPEXEC)
+AC_SUBST(LISPEVAL)
+AC_SUBST(BLAS_OBJS)
+AC_SUBST(NO_ATLAS_LAPACK_OBJS)
+AC_SUBST(ATLAS_DIR)
+AC_SUBST(ATLAS_LIBS)
+AC_SUBST(ATLAS_P)
+AC_SUBST(srcdir)
+AC_SUBST(F77_LOWER_CASE)
+AC_SUBST(F77_UNDERSCORE)
+AC_SUBST(F77_EXTRA_UNDERSCORE)
+
+AC_OUTPUT(matlisp.mk lib/lazy-loader.lisp src/f77-mangling.lisp)

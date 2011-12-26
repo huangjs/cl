@@ -1,0 +1,311 @@
+<html>
+<head><title>EQUIVALENCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>EQUIVALENCE</h2>mark a relation as an equivalence relation
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:equivalence</code> rule might be built is
+as follows.  (We assume that <code>r-equal</code> has been defined.)
+
+<pre>
+Example:
+(and (booleanp (r-equal x y))
+     (r-equal x x)
+     (implies (r-equal x y) (r-equal y x))
+     (implies (and (r-equal x y)
+                   (r-equal y z))
+              (r-equal x z))).
+</pre>
+
+Also see <a href="DEFEQUIV.html">defequiv</a>.
+<p>
+
+<pre>
+General Form:
+(and (booleanp (equiv x y))
+     (equiv x x)
+     (implies (equiv x y) (equiv y x))
+     (implies (and (equiv x y)
+                   (equiv y z))
+              (equiv x z)))
+</pre>
+
+except that the order of the conjuncts and terms and the choice of
+variable symbols is unimportant.  The effect of such a rule is to
+identify <code>equiv</code> as an equivalence relation.  Note that only Boolean
+2-place function symbols can be treated as equivalence relations.
+See <a href="CONGRUENCE.html">congruence</a> and see <a href="REFINEMENT.html">refinement</a> for closely related
+concepts.<p>
+
+The macro form <code>(defequiv equiv)</code> is an abbreviation for a <code><a href="DEFTHM.html">defthm</a></code> of
+rule-class <code>:equivalence</code> that establishes that <code>equiv</code> is an
+equivalence relation.  It generates the formula shown above.
+See <a href="DEFEQUIV.html">defequiv</a>.<p>
+
+When <code>equiv</code> is marked as an equivalence relation, its reflexivity,
+symmetry, and transitivity are built into the system in a deeper way
+than via <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules.  More importantly, after <code>equiv</code> has been
+shown to be an equivalence relation, lemmas about <code>equiv</code>, e.g.,
+
+<pre>
+(implies hyps (equiv lhs rhs)),
+</pre>
+
+when stored as <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules, cause the system to rewrite certain
+occurrences of (instances of) <code>lhs</code> to (instances of) <code>rhs</code>.  Roughly
+speaking, an occurrence of <code>lhs</code> in the <code>kth</code> argument of some
+<code>fn</code>-expression, <code>(fn ... lhs' ...)</code>, can be rewritten to produce
+<code>(fn ...  rhs' ...)</code>, provided the system ``knows'' that the value
+of <code>fn</code> is unaffected by <code>equiv</code>-substitution in the <code>kth</code>
+argument.  Such knowledge is communicated to the system via
+``congruence lemmas.''<p>
+
+For example, suppose that <code>r-equal</code> is known to be an equivalence
+relation.  The <code>:</code><code><a href="CONGRUENCE.html">congruence</a></code> lemma
+
+<pre>
+(implies (r-equal s1 s2)
+         (equal (fn s1 n) (fn s2 n)))
+</pre>
+
+informs the rewriter that, while rewriting the first argument of
+<code>fn</code>-expressions, it is permitted to use <code>r-equal</code> rewrite-rules.
+See <a href="CONGRUENCE.html">congruence</a> for details about <code>:</code><code><a href="CONGRUENCE.html">congruence</a></code> lemmas.
+Interestingly, congruence lemmas are automatically created when an
+equivalence relation is stored, saying that either of the
+equivalence relation's arguments may be replaced by an equivalent
+argument.  That is, if the equivalence relation is <code>fn</code>, we store
+congruence rules that state the following fact:
+
+<pre>
+(implies (and (fn x1 y1)
+              (fn x2 y2))
+         (iff (fn x1 x2) (fn y1 y2)))
+</pre>
+
+Another aspect of equivalence relations is that of ``refinement.''
+We say <code>equiv1</code> ``refines'' <code>equiv2</code> iff <code>(equiv1 x y)</code> implies
+<code>(equiv2 x y)</code>.  <code>:</code><code><a href="REFINEMENT.html">refinement</a></code> rules permit you to establish such
+connections between your equivalence relations.  The value of
+refinements is that if the system is trying to rewrite something
+while maintaining <code>equiv2</code> it is permitted to use as a <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+rule any refinement of <code>equiv2</code>.  Thus, if <code>equiv1</code> is a
+refinement of <code>equiv2</code> and there are <code>equiv1</code> rewrite-rules
+available, they can be brought to bear while maintaining <code>equiv2</code>.
+See <a href="REFINEMENT.html">refinement</a>.<p>
+
+The system initially has knowledge of two equivalence relations,
+equality, denoted by the symbol <code><a href="EQUAL.html">equal</a></code>, and propositional
+equivalence, denoted by <code><a href="IFF.html">iff</a></code>.  <code><a href="EQUAL.html">Equal</a></code> is known to be a refinement of
+all equivalence relations and to preserve equality across all
+arguments of all functions.<p>
+
+Typically there are five steps involved in introducing and using a
+new equivalence relation, equiv.
+<blockquote><p>
+
+(1) Define <code>equiv</code>,<p>
+
+(2) prove the <code>:equivalence</code> lemma about <code>equiv</code>,<p>
+
+(3) prove the <code>:</code><code><a href="CONGRUENCE.html">congruence</a></code> lemmas that show where <code>equiv</code> can be used
+to maintain known relations,<p>
+
+(4) prove the <code>:</code><code><a href="REFINEMENT.html">refinement</a></code> lemmas that relate <code>equiv</code> to known
+relations other than equal, and<p>
+
+(5) develop the theory of conditional <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules that drive
+equiv rewriting.<p>
+
+</blockquote>
+More will be written about this as we develop the techniques.  For
+now, here is an example that shows how to make use of equivalence
+relations in rewriting.<p>
+
+Among the theorems proved below is
+
+<pre>
+(defthm insert-sort-is-id 
+  (perm (insert-sort x) x))
+</pre>
+
+Here <code>perm</code> is defined as usual with <code>delete</code> and is proved to be an
+equivalence relation and to be a congruence relation for <code><a href="CONS.html">cons</a></code> and
+<code><a href="MEMBER.html">member</a></code>.<p>
+
+Then we prove the lemma
+
+<pre>
+(defthm insert-is-cons
+  (perm (insert a x) (cons a x)))
+</pre>
+
+which you must think of as you would <code>(insert a x) = (cons a x)</code>.<p>
+
+Now prove <code>(perm (insert-sort x) x)</code>.  The base case is trivial.  The
+induction step is
+
+<pre>
+   (consp x)
+ &amp; (perm (insert-sort (cdr x)) (cdr x))<p>
+
+-&gt; (perm (insert-sort x) x).
+</pre>
+
+Opening <code>insert-sort</code> makes the conclusion be
+
+<pre>
+   (perm (insert (car x) (insert-sort (cdr x))) x).
+</pre>
+
+Then apply the induction hypothesis (rewriting <code>(insert-sort (cdr x))</code>
+to <code>(cdr x)</code>), to make the conclusion be
+
+<pre>
+(perm (insert (car x) (cdr x)) x)
+</pre>
+
+Then apply <code>insert-is-cons</code> to get <code>(perm (cons (car x) (cdr x)) x)</code>.
+But we know that <code>(cons (car x) (cdr x))</code> is <code>x</code>, so we get <code>(perm x x)</code>
+which is trivial, since <code>perm</code> is an equivalence relation.<p>
+
+Here are the events.
+
+<pre>
+(encapsulate (((lt * *) =&gt; *))
+  (local (defun lt (x y) (declare (ignore x y)) nil))
+  (defthm lt-non-symmetric (implies (lt x y) (not (lt y x)))))<p>
+
+(defun insert (x lst)
+  (cond ((atom lst) (list x))
+        ((lt x (car lst)) (cons x lst))
+        (t (cons (car lst) (insert x (cdr lst))))))<p>
+
+(defun insert-sort (lst)
+  (cond ((atom lst) nil)
+        (t (insert (car lst) (insert-sort (cdr lst))))))<p>
+
+(defun del (x lst)
+  (cond ((atom lst) nil)
+        ((equal x (car lst)) (cdr lst))
+        (t (cons (car lst) (del x (cdr lst))))))<p>
+
+(defun mem (x lst)
+  (cond ((atom lst) nil)
+        ((equal x (car lst)) t)
+        (t (mem x (cdr lst)))))<p>
+
+(defun perm (lst1 lst2)
+  (cond ((atom lst1) (atom lst2))
+        ((mem (car lst1) lst2)
+         (perm (cdr lst1) (del (car lst1) lst2)))
+        (t nil)))<p>
+
+(defthm perm-reflexive
+  (perm x x))<p>
+
+(defthm perm-cons
+  (implies (mem a x)
+           (equal (perm x (cons a y))
+                  (perm (del a x) y)))
+  :hints (("Goal" :induct (perm x y))))<p>
+
+(defthm perm-symmetric
+  (implies (perm x y) (perm y x)))<p>
+
+(defthm mem-del
+  (implies (mem a (del b x)) (mem a x)))<p>
+
+(defthm perm-mem
+  (implies (and (perm x y)
+                (mem a x))
+           (mem a y)))<p>
+
+(defthm mem-del2
+  (implies (and (mem a x)
+                (not (equal a b)))
+           (mem a (del b x))))<p>
+
+(defthm comm-del
+  (equal (del a (del b x)) (del b (del a x))))<p>
+
+(defthm perm-del
+  (implies (perm x y)
+           (perm (del a x) (del a y))))<p>
+
+(defthm perm-transitive
+  (implies (and (perm x y) (perm y z)) (perm x z)))<p>
+
+(defequiv perm)<p>
+
+(in-theory (disable perm
+                    perm-reflexive
+                    perm-symmetric
+                    perm-transitive))<p>
+
+(defcong perm perm (cons x y) 2)<p>
+
+(defcong perm iff (mem x y) 2)<p>
+
+(defthm atom-perm
+  (implies (not (consp x)) (perm x nil))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable perm))))<p>
+
+(defthm insert-is-cons
+  (perm (insert a x) (cons a x)))<p>
+
+(defthm insert-sort-is-id 
+  (perm (insert-sort x) x))<p>
+
+(defun app (x y) (if (consp x) (cons (car x) (app (cdr x) y)) y))<p>
+
+(defun rev (x)
+  (if (consp x) (app (rev (cdr x)) (list (car x))) nil))<p>
+
+(defcong perm perm (app x y) 2)<p>
+
+(defthm app-cons
+  (perm (app a (cons b c)) (cons b (app a c))))<p>
+
+(defthm app-commutes
+  (perm (app a b) (app b a)))<p>
+
+(defcong perm perm (app x y) 1
+  :hints (("Goal" :induct (app y x))))<p>
+
+(defthm rev-is-id (perm (rev x) x))<p>
+
+(defun == (x y)
+  (if (consp x)
+      (if (consp y)
+          (and (equal (car x) (car y))
+               (== (cdr x) (cdr y)))
+          nil)
+      (not (consp y))))<p>
+
+(defthm ==-reflexive (== x x))<p>
+
+(defthm ==-symmetric (implies (== x y) (== y x)))<p>
+
+(defequiv ==)<p>
+
+(in-theory (disable ==-symmetric ==-reflexive))<p>
+
+(defcong == == (cons x y) 2)<p>
+
+(defcong == iff (consp x) 1)<p>
+
+(defcong == == (app x y) 2)<p>
+
+(defcong == == (app x y) 1)<p>
+
+(defthm rev-rev (== (rev (rev x)) x))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

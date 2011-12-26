@@ -1,0 +1,973 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: CERTIFY-BOOK,  Next: FULL-BOOK-NAME,  Prev: CERTIFICATE,  Up: BOOKS
+
+CERTIFY-BOOK    how to produce a certificate for a book
+
+     Examples:
+     (certify-book "my-arith" 3)      ;certify in a world with 3 commands
+     (certify-book "my-arith")        ;certify in a world with 0 commands
+     (certify-book "my-arith" 0 nil)  ;as above, but do not compile
+     (certify-book "my-arith" 0 t)    ;as above, but compile
+     (certify-book "my-arith" 0 :all) ;as above, but compile exececutable
+                                        ;  counterparts too
+     (certify-book "my-arith" t)      ;certify from world of old certificate
+     
+     General Form:
+     (certify-book book-name k compile-flg
+                   :defaxioms-okp t/nil        ; [default nil]
+                   :skip-proofs-okp t/nil      ; [default nil]
+                   :save-expansion :save/t/nil ; [default nil]
+                   :ttags ttags                ; [default nil]
+                   )
+
+where book-name is a book name (see *note BOOK-NAME::), k is either t
+or an integer used to indicate your approval of the "certification
+world."  Compile-flg indicates whether you wish to compile the
+(functions in the) book.  Compile-flg defaults to t, meaning to
+compile; nil means do not compile.
+
+The second argument k is optional as well; it defaults to 0.
+
+Two keyword arguments, :defaxioms-okp and :skip-proofs-okp, determine
+how the system handles the inclusion of defaxiom events and skip-proofs
+events, respectively, in the book.  The value t allows such events, but
+prints a warning message.  The value nil is the default, and causes an
+error if such an event is found.
+
+The keyword argument :ttags may normally be omitted.  A few constructs,
+used for example if you are building your own system based on ACL2, may
+require it.  See *Note DEFTTAG:: for an explanation of this argument.
+
+To advanced users only: in the rare case that you are willing to add to
+compilation time in return for compiling the executable counterparts of
+functions defined in the book, you may supply a value of :all for
+compile-flg.  This setting is useful for compiling a book whose
+functions are called during macroexpansion, because evaluation during
+macroexpansion is done in a "safe mode" that avoids calling raw Lisp
+functions (see *note GUARDS-AND-EVALUATION::).
+
+The keyword argument :save-expansion controls whether or not a so-called
+"book expansion" file is written, obtained by appending the string
+"@expansion.lsp" to the end of the book name.  See *Note MAKE-EVENT::
+for discussion of the book expansion; in a nutshell, make-event calls
+generate forms that replace them in the book expansion.  Book expansion
+is skipped if compile-flg and :save-expansion are both nil.  Otherwise,
+the values of nil and t for :save-expansion cause the book expansion to
+be created only when a make-event form occurs in a book (i.e., only if
+there is some expansion), or if at least one executable counterpart is
+to be compiled (see preceding paragraph).  If the book expansion is
+created, then it is deleted after compilation if :save-expansion is
+nil.  Finally, if :save-expansion is :save, then the book expansion
+file is created in all cases, and is not deleted.
+
+For a general discussion of books, see *note BOOKS::.  Certify-book is
+akin to what we have historically called a "proveall": all the forms in
+the book are "proved" to guarantee their admissibility.  More
+precisely, certify-book (1) reads the forms in the book, confirming
+that the appropriate packages are defined in the certification world;
+(2) does the full admissibility checks on each form (proving
+termination of recursive functions, proving theorems, etc.), checking
+as it goes that each form is an embedded event form (see *note
+EMBEDDED-EVENT-FORM::); (3) rolls the world back to the initial
+certification world and does an include-book of the book to check for
+local incompatibilities (see *note LOCAL-INCOMPATIBILITY::); (4) writes
+a certificate recording not only that the book was certified but also
+recording the commands necessary to recreate the certification world (so
+the appropriate packages can be defined when the book is included in
+other worlds) and the check sums of all the books involved (see *note
+CERTIFICATE::); (5) compiles the book if so directed (and then loads
+the object file in that case).  The result of executing a certify-book
+command is the creation of a single new event, which is actually an
+include-book event.  If you don't want its included events in your
+present world, simply execute :ubt :here afterwards.
+
+Certify-book requires that the default defun-mode (see *note
+DEFAULT-DEFUN-MODE::) be :logic when certification is attempted.  If
+the mode is not :logic, an error is signalled.
+
+An error will occur if certify-book has to deal with any uncertified
+book other than the one on which it was called.  For example, if the
+book being certified includes another book, that subbook must already
+have been certified.
+
+Certification occurs in some logical world, called the "certification
+world." That world must contain the defpkgs needed to read and execute
+the forms in the book.  The commands necessary to recreate that world
+from the ACL2 initial world will be copied into the certificate created
+for the book.  Those commands will be re-executed whenever the book is
+included, to ensure that the appropriate packages (and all other names
+used in the certification world) are correctly defined.  The certified
+book will be more often usable if the certification world is kept to a
+minimal extension of the ACL2 initial world.  Thus, before you call
+certify-book for the first time on a book, you should get into the
+initial ACL2 world (e.g., with :ubt 1 or just starting a new version of
+ACL2), defpkg the desired packages, and then invoke certify-book.
+
+The k argument to certify-book must be either a nonnegative integer or
+else one of the symbols t or ? in the ACL2 package.  If k is an
+integer, then it must be the number of commands that have been executed
+after the initial ACL2 world to create the world in which certify-book
+was called.  One way to obtain this number is by doing :pbt :start to
+see all the commands back to the first one.
+
+If k is t it means that certify-book should use the same world used in
+the last certification of this book.  K may be t only if you call
+certify-book in the initial ACL2 world and there is a certificate on
+file for the book being certified.  (Of course, the certificate is
+probably invalid.)  In this case, certify-book reads the old
+certificate to obtain the portcullis commands and executes them to
+recreate the certification world.
+
+Finally, k may be ?, in which case there is no check made on the
+certification world.  That is, if k is ? then no action related to the
+preceding two paragraphs is performed, which can be a nice convenience
+but at the cost of eliminating a potentially valuable check that the
+certification world may be as expected.
+
+If you have a certified book that has remained unchanged for some time
+you are unlikely even to remember the appropriate defpkgs for it.  If
+you begin to change the book, don't throw away its certificate file
+just because it has become invalid!  It is an important historical
+document until the book is re-certified.
+
+When certify-book is directed to produce a compiled file, it calls the
+Common Lisp function compile-file on the original source file.  This
+creates a compiled file with an extension known to ACL2, e.g., if the
+book is named "my-book" then the source file is "my-book.lisp" and the
+compiled file under AKCL will be "my-book.o" while under Lucid it will
+be "my-book.lbin" or "my-book.sbin".  The compiled file is then loaded.
+When include-book is used later on "my-book" it will automatically
+load the compiled file, provided the compiled file has a later write
+date than the source file.  The only effect of such compilation and
+loading is that the functions defined in the book execute faster.  See
+*Note GUARD:: for a discussion of the issues.
+
+When certify-book is directed not to produce a compiled file, it will
+delete any existing compiled file for the book, so as not to mislead
+include-book into loading the now outdated compiled file.
+
+After execution of a certify-book form, the value of
+acl2-defaults-table is restored to what it was immediately before that
+certify-book form was executed.  See *Note ACL2-DEFAULTS-TABLE::.
+
+This completes the tour through the documentation of books.
+
+
+File: acl2-doc-emacs.info,  Node: FULL-BOOK-NAME,  Next: KEEP,  Prev: CERTIFY-BOOK,  Up: BOOKS
+
+FULL-BOOK-NAME    book naming conventions assumed by ACL2
+
+For this discussion we assume that the resident operating system is
+Unix (trademark of AT&T), but analogous remarks apply to other
+operating systems supported by ACL2, in particular, the Macintosh
+operating system where `:' plays roughly the role of `/' in Unix; see
+*note PATHNAME::.
+
+ACL2 defines a "full book name" to be an "absolute filename string,"
+that may be divided into contiguous sections:  a "directory string", a
+"familiar name" and an "extension".  See *Note PATHNAME:: for the
+definitions of "absolute," "filename string," and other notions
+pertaining to naming files.  Below we exhibit the three sections of one
+such string:
+
+     "/usr/home/smith/project/arith.lisp"
+     
+     "/usr/home/smith/project/"           ; directory string
+                             "arith"      ; familiar name
+                                  ".lisp" ; extension
+
+The sections are marked by the rightmost slash and rightmost dot, as
+shown below.
+
+     "/usr/home/smith/project/arith.lisp"
+                             |     |
+                             slash dot
+                             |     |
+     "/usr/home/smith/project/"           ; directory string
+                             "arith"      ; familiar name
+                                  ".lisp" ; extension
+
+The directory string includes (and terminates with) the rightmost
+slash.  The extension includes (and starts with) the rightmost dot.
+The dot must be strictly to the right of the slash so that the familiar
+name is well-defined and nonempty.
+
+If you are using ACL2 on a system in which file names do not have this
+form, please contact the authors and we'll see what we can do about
+generalizing ACL2's conventions.
+
+
+File: acl2-doc-emacs.info,  Node: KEEP,  Next: MAKEFILES,  Prev: FULL-BOOK-NAME,  Up: BOOKS
+
+KEEP    how we know if include-book read the correct files
+
+The certificate (see *note CERTIFICATE:: for general information) of a
+certified file is divided into two parts, a portcullis and a keep.
+These names come from castle lore.  The keep is the strongest and
+usually tallest tower of a castle from which the entire courtyard can
+be surveyed by the defenders.  The keep of a book is a list of file
+names and check sums used after the book has been included, to
+determine if the files read were (up to check sum) those certified.
+
+Once the portcullis is open, include-book can enter the book and read
+the event forms therein.  The non-local event forms are in fact
+executed, extending the host theory.  That may read in other books.
+When that has been finished, the keep of the certificate is inspected.
+The keep is a list of the book names which are included (hereditarily
+through all subbooks) in the certified book (including the certified
+book itself) together with the check sums of the objects in those books
+at the time of certification.  We compare the check sums of the books
+just included to the check sums of the books stored in the keep.  If
+differences are found then we know that the book or one of its subbooks
+has been changed since certification.
+
+See *Note INCLUDE-BOOK:: to continue the guided tour through books.
+
+
+File: acl2-doc-emacs.info,  Node: MAKEFILES,  Next: PATHNAME,  Prev: KEEP,  Up: BOOKS
+
+MAKEFILES    See *Note BOOK-MAKEFILES::.
+
+
+File: acl2-doc-emacs.info,  Node: PATHNAME,  Next: PORTCULLIS,  Prev: MAKEFILES,  Up: BOOKS
+
+PATHNAME    introduction to filename conventions in ACL2
+
+The notion of pathname objects from Common Lisp is not supported in
+ACL2, nor is the function pathname.  However, ACL2 supports file
+operations, using conventions for naming files based on those of the
+Unix (trademark of AT&T) operating system, so that the character / is
+used to terminate directory names.  Some file names are "absolute"
+(complete) descriptions of a file or directory; others are "relative"
+to the current working directory or to the connected book directory
+(see *note CBD::).  We emphasize that even for users of Windows-based
+systems or Macintosh computers, ACL2 file names are in the Unix style.
+We will call these _ACL2 pathnames_, often omitting the "ACL2."
+
+Pathnames starting with the directory separator (/) are absolute
+pathnames.  All other pathnames are relative pathnames.  An exception
+is in the Microsoft Windows operating system, where the drive may be
+included, e.g., "c:/home/smith/acl2/book-1.lisp".  In fact, the drive
+_must_ be included in the portcullis of a book; see *note PORTCULLIS::.
+
+Consider the following examples.  The filename string
+
+     "/home/smith/acl2/book-1.lisp"
+
+is an absolute pathname, with top-level directory "home", under that
+the directory "smith" and then the directory "acl2", and finally,
+within that directory the file "book-1.lisp".  If the connected book
+directory is "/home/smith/" (see *note CBD::), then the filename string
+above also corresponds to the relative filename string
+"acl2/book1.lisp".
+
+
+File: acl2-doc-emacs.info,  Node: PORTCULLIS,  Next: SET-CBD,  Prev: PATHNAME,  Up: BOOKS
+
+PORTCULLIS    the gate guarding the entrance to a certified book
+
+The certificate (see *note CERTIFICATE:: for general information) of a
+certified file is divided into two parts, a portcullis and a keep.
+These names come from castle lore.  The portcullis of a castle is an
+iron grate that slides up through the ceiling of the tunnel-like
+entrance.  The portcullis of a book ensures that include-book does not
+start to read the book until the appropriate context has been created.
+
+Technically, the portcullis consists of the version number of the
+certifying ACL2, a list of commands used to create the "certification
+world" and an alist specifying the check sums of all the books included
+in that world.  The portcullis is constructed automatically by
+certify-book from the world in which certify-book is called, but that
+world must have certain properties described below.  After listing the
+properties we discuss the issues in a more leisurely manner.
+
+Each command in the portcullis must be either a defpkg form or an
+embedded event form (see *note EMBEDDED-EVENT-FORM::).
+
+Consider a book to be certified.  The book is a file containing event
+forms.  Suppose the file contains references to such symbols as
+my-pkg::fn and acl2-arith::cancel, but that the book itself does not
+create the packages.  Then a hard Lisp error would be caused merely by
+the attempt to read the expressions in the book.  The corresponding
+defpkgs cannot be written into the book itself because the book must be
+compilable and Common Lisp compilers differ on the rules concerning the
+inline definition of new packages.  The only safe course is to make all
+defpkgs occur outside of compiled files.
+
+More generally, when a book is certified it is certified within some
+logical world.  That "certification world" contains not only the
+necessary defpkgs but also, perhaps, function and constant definitions
+and maybe even references to other books.  When certify-book creates
+the certificate for a file it recovers from the certification world the
+commands used to create that world from the initial ACL2 world.  Those
+commands become part of the portcullis for the certified book.  In
+addition, certify-book records in the portcullis the check sums (see
+*note CHECK-SUM::) of all the books included in the certification world.
+
+Include-book presumes that it is impossible even to read the contents
+of a certified book unless the portcullis can be "raised." To raise the
+portcullis we must be able to execute (possibly redundantly, but
+certainly without error), all of the commands in the portcullis and
+then verify that the books thus included were identical to those used
+to build the certification world (up to check sum).  This raising of
+the portcullis must be done delicately since defpkgs are present: we
+cannot even read a command in the portcullis until we have successfully
+executed the previous ones, since packages are being defined.
+
+Clearly, a book is most useful if it is certified in the most
+elementary extension possible of the initial logic.  If, for example,
+your certification world happens to contain a defpkg for "MY-PKG" and
+the function foo, then those definitions become part of the portcullis
+for the book.  Every time the book is included, those names will be
+defined and will have to be either new or redundant (see *note
+REDUNDANT-EVENTS::).  But if those names were not necessary to the
+certification of the book, their presence would unnecessarily restrict
+the utility of the book.
+
+See *Note KEEP:: to continue the guided tour of books.
+
+
+File: acl2-doc-emacs.info,  Node: SET-CBD,  Next: UNCERTIFIED-BOOKS,  Prev: PORTCULLIS,  Up: BOOKS
+
+SET-CBD    to set the connected book directory
+
+     Example Forms:
+     ACL2 !>:set-cbd "/usr/home/smith/"
+     ACL2 !>:set-cbd "my-acl2/books"
+
+See *Note CBD:: for a description of the connected book directory.
+
+     General Form:
+     (set-cbd str)
+
+where str is a nonempty string that represents the desired directory
+(see *note PATHNAME::).  This command sets the connected book directory
+(see *note CBD::) to the string representing the indicated directory.
+Thus, this command may determine which files are processed by
+include-book and certify-book commands typed at the top-level.
+However, the cbd is also temporarily set by those two book processing
+commands.
+
+IMPORTANT:  Pathnames in ACL2 are in the Unix (trademark of AT&T)
+style.  That is, the character "/" separates directory components of a
+pathname, and pathnames are absolute when they start with this
+character, and relative otherwise.  See *Note PATHNAME::.
+
+
+File: acl2-doc-emacs.info,  Node: UNCERTIFIED-BOOKS,  Prev: SET-CBD,  Up: BOOKS
+
+UNCERTIFIED-BOOKS    invalid certificates and uncertified books
+
+Include-book has a special provision for dealing with uncertified
+books: If the file has no certificate or an invalid certificate (i.e.,
+one whose check sums describe files other than the ones actually read),
+a warning is printed and the book is otherwise processed as though it
+were certified and had an open portcullis.  (For details see *note
+BOOKS::, see *note CERTIFICATE::, and see *note PORTCULLIS::.)
+
+This can be handy, but it can have disastrous consequences.
+
+The provision allowing uncertified books to be included can have
+disastrous consequences, ranging from hard lisp errors, to damaged
+memory, to quiet logical inconsistency.
+
+It is possible for the inclusion of an uncertified book to render the
+logic inconsistent.  For example, one of its non-local events might be
+(defthm t-is-nil (equal t nil)).  It is also possible for the inclusion
+of an uncertified book to cause hard errors or breaks into raw Common
+Lisp.  For example, if the file has been edited since it was certified,
+it may contain too many open parentheses, causing Lisp to read past
+"end of file." Similarly, it might contain non-ACL2 objects such as
+3.1415 or ill-formed event forms that cause ACL2 code to break.
+
+Even if a book is perfectly well formed and could be certified (in a
+suitable extension of ACL2's initial world), its uncertified inclusion
+might cause Lisp errors or inconsistencies!  For example, it might
+mention packages that do not exist in the host world.  The portcullis
+of a certified book ensures that the correct defpkgs have been
+admitted, but if a book is read without actually raising its
+portcullis, symbols in the file, e.g., acl2-arithmetic::fn, could cause
+"unknown package" errors in Common Lisp.  Perhaps the most subtle
+disaster occurs if the host world does have a defpkg for each package
+used in the book but the host defpkg imports different symbols than
+those required by the portcullis.  In this case, it is possible that
+formulas which were theorems in the certified book are non-theorems in
+the host world, but those formulas can be read without error and will
+then be quietly assumed.
+
+In short, if you include an uncertified book, *all bets are off*
+regarding the validity of the future behavior of ACL2.
+
+That said, it should be noted that ACL2 is pretty tough and if errors
+don't occur, the chances are that deductions after the inclusion of an
+uncertified book are probably justified in the (possibly inconsistent)
+logical extension obtained by assuming the admissibility and validity
+of the definitions and conjectures in the book.
+
+
+File: acl2-doc-emacs.info,  Node: BREAK-REWRITE,  Next: DOCUMENTATION,  Prev: BOOKS,  Up: Top
+
+BREAK-REWRITE    the read-eval-print loop entered to monitor rewrite rules
+
+ACL2 allows the user to monitor the application of rewrite rules.  When
+monitored rules are about to be tried by the rewriter, an interactive
+break occurs and the user is allowed to watch and, in a limited sense,
+control the attempt to apply the rule.  This interactive loop, which is
+technically just a call of the standard top-level ACL2 read-eval-print
+loop, ld, on a "wormhole state" (see *note WORMHOLE::), is called
+"break-rewrite."  While in break-rewrite, certain keyword commands are
+available for accessing information about the context in which the
+lemma is being tried.  These keywords are called break-rewrite
+"commands."
+
+To abort from inside break-rewrite at any time, execute
+sharpsign-period (#.).
+
+For further information, see the related :doc topics listed below.
+
+* Menu:
+
+* BREAK-LEMMA:: a quick introduction to breaking rewrite rules in ACL2
+
+* BRR:: to enable or disable the breaking of rewrite rules
+
+* BRR-COMMANDS:: Break-Rewrite Commands
+
+* BRRatsign:: (BRR@) to access context sensitive information within break-rewrite
+
+* MONITOR:: to monitor the attempted application of a rule name
+
+* MONITORED-RUNES:: print the monitored runes and their break conditions
+
+* OK-IF:: conditional exit from break-rewrite
+
+* SET-BRR-TERM-EVISC-TUPLE:: controls printing of terms inside the break-rewrite loop
+
+* UNMONITOR:: to stop monitoring a rule name
+
+As explained in the documentation for monitor, it is possible to cause
+the ACL2 rewriter to monitor the attempted application of selected
+rules.  When such a rule is about to be tried, the rewriter evaluates
+its break condition and if the result is non-nil, break-rewrite is
+entered.
+
+Break-rewrite permits the user to inspect the current state by
+evaluating break-rewrite commands.  Type :help in break-rewrite to see
+what the break-rewrite commands are.  However, break-rewrite is
+actually just a call of the general ACL2 read-eval-print loop, ld, on a
+certain state and the break-rewrite commands are simply aliases
+provided by the ld-special ld-keyword-aliases.  See *Note LD:: for
+details about this read-eval-print loop.  Thus, with a few exceptions,
+anything you can do at the ACL2 top-level can be done within
+break-rewrite.  For example, you can evaluate arbitrary expressions,
+use the keyword command hack, access documentation, print events, and
+even define functions and prove theorems.  However, the "certain state"
+upon which ld was called is a "wormhole state" (see *note WORMHOLE::)
+because break-rewrite is not allowed to have any effect upon the
+behavior of rewrite.  What this means, very roughly but understandably,
+is that break-rewrite operates on a copy of the state being used by
+rewrite and when break-rewrite exits the wormhole closes and the state
+"produced" by break-rewrite disappears.  Thus, break-rewrite lets you
+query the state of the rewriter and even do experiments involving
+proofs, etc., but these experiments have no effect on the ongoing proof
+attempt.
+
+When you first enter break-rewrite a simple herald is printed such as:
+
+     (3 Breaking (:rewrite lemma12) on (delta a (+ 1 j)):
+
+The integer after the open parenthesis indicates the depth of nested
+break-rewrite calls.  In this discussion we use 3 consistently for this
+integer.  Unless you abort or somehow enter unbalanced parentheses into
+the script, the entire session at a given depth will be enclosed in
+balanced parentheses, making it easy to skip over them in Emacs.
+
+You then will see the break-rewrite prompt:
+
+     3 ACL2 !>
+
+The leading integer is, again, the depth.  Because breaks often occur
+recursively it is convenient always to know the level with which you
+are interacting.
+
+You may type arbitrary commands as in the top-level ACL2 loop.  For
+example, you might type:
+
+     3 ACL2 !>:help
+
+or
+
+     3 ACL2 !>:pe lemma12
+
+More likely, upon entering break-rewrite you will determine the context
+of the attempted application.  Here are some useful commands:
+
+     3 ACL2 >:target           ; the term being rewritten
+     3 ACL2 >:unify-subst      ; the unifying substitution
+     3 ACL2 >:path             ; the stack of goals pursued by the rewriter
+                               ; starting at the top-level clause being simplified
+                               ; and ending with the current application
+
+At this point in the interaction the system has not yet tried to apply
+the monitored rule.  That is, it has not tried to establish the
+hypotheses, considered the heuristic cost of backchaining, rewritten
+the right-hand side of the conclusion, etc.  When you are ready for it
+to try the rule you can type one of several different "proceed"
+commands.  The basic proceed commands are :ok, :go, and :eval.
+
+     :ok
+
+exits break-rewrite without further interaction.  When break-rewrite
+exits it prints "3)", closing the parenthesis that opened the level 3
+interaction.
+
+     :go
+
+exits break-rewrite without further interaction, but prints out the
+result of the application attempt, i.e., whether the application
+succeeded, if so, what the :target term was rewritten to, and if not
+why the rule was not applicable.
+
+     :eval
+
+causes break-rewrite to attempt to apply the rule but interaction at
+this level of break-rewrite resumes when the attempt is complete.  When
+control returns to this level of break-rewrite a message indicating the
+result of the application attempt (just as in :go) is printed, followed
+by the prompt for additional user input.
+
+Generally speaking, :ok and :go are used when the break in question is
+routine or uninteresting and :eval is used when the break is one that
+the user anticipates is causing trouble.  For example, if you are
+trying to determine why a lemma isn't being applied to a given term and
+the :target of the current break-rewrite is the term in question, you
+would usually :eval the rule and if break-rewrite reports that the rule
+failed then you are in a position to determine why, for example by
+carefully inspecting the :type-alist of governing assumptions or why
+some hypothesis of the rule could not be established.
+
+It is often the case that when you are in break-rewrite you wish to
+change the set of monitored runes.  This can be done by using :monitor
+and :unmonitor as noted above.  For example, you might want to monitor
+a certain rule, say hyp-reliever, just when it is being used while
+attempting to apply another rule, say main-lemma.  Typically then you
+would monitor main-lemma at the ACL2 top-level, start the
+proof-attempt, and then in the break-rewrite in which main-lemma is
+about to be tried, you would install a monitor on hyp-reliever.  If
+during the ensuing :eval hyp-reliever is broken you will know it is
+being used under the attempt to apply main-lemma.
+
+However, once hyp-reliever is being monitored it will be monitored even
+after main-lemma has been tried.  That is, if you let the proof attempt
+proceed then you may see many other breaks on hyp-reliever, breaks that
+are not "under" the attempt to apply main-lemma.  One way to prevent
+this is to :eval the application of main-lemma and then :unmonitor
+hyp-reliever before exiting.  But this case arises so often that ACL2
+supports several additional "flavors" of proceed commands.
+
+:Ok!, :go!, and :eval! are just like their counterparts (:ok, :go, and
+:eval, respectively), except that while processing the rule that is
+currently broken no runes are monitored.  When consideration of the
+current rule is complete, the set of monitored runes is restored to its
+original setting.
+
+:Ok$, :go$, and :eval$ are similar but take an additional argument
+which must be a list of runes.  An example usage of :eval$ is
+
+     3 ACL2 !>:eval$ ((:rewrite hyp-reliever))
+
+These three commands temporarily install unconditional breaks on the
+runes listed, proceed with the consideration of the currently broken
+rule, and then restore the set of monitored rules to its original
+setting.
+
+Thus, there are nine ways to proceed from the initial entry into
+break-rewrite although we often speak as though there are two, :ok and
+:eval, and leave the others implicit.  We group :go with :ok because in
+all their flavors they exit break-rewrite without further interaction
+(at the current level).  All the flavors of :eval require further
+interaction after the rule has been tried.
+
+To abort a proof attempt and return to the top-level of ACL2 you may at
+any time type #. (that is, number-sign followed by a period) followed
+by a carriage return.
+
+We now address ourselves to the post-:eval interaction with
+break-rewrite.  As noted, that interaction begins with break-rewrite's
+report on the results of applying the rule: whether it worked and
+either what it produced or why it failed.  This information is also
+printed by certain keyword commands available after :eval, namely
+:wonp, :rewritten-rhs, and :failure-reason.  In addition, by using brr@
+(see *note BRR@: BRRatsign.) you can obtain this information in the
+form of ACL2 data objects.  This allows the development of more
+sophisticated "break conditions"; see *note MONITOR:: for examples.  In
+this connection we point out the macro form (ok-if term).  See *Note
+OK-IF::.  This command exits break-rewrite if term evaluates to non-nil
+and otherwise does not exit.  Thus it is possible to define macros that
+provide other kinds of exits from break-rewrite.  The only way to exit
+break-rewrite after :eval is :ok (or, equivalently, the use of ok-if).
+
+ACL2 users who wish to know more about break-rewrite so that they can
+develop more convenient ways to monitor rules are encouraged to speak
+to J Moore.
+
+The rest of this documentation discusses a few implementation details
+of break-rewrite and may not be interesting to the typical user.
+
+There is no ACL2 function named break-rewrite.  It is an illusion
+created by appropriate calls to two functions named brkpt1 and brkpt2.
+As previously noted, break-rewrite is ld operating on a wormhole state.
+One might therefore wonder how break-rewrite can apply a rule and then
+communicate the results back to the rewriter running in the external
+state.  The answer is that it cannot.  Nothing can be communicated
+through a wormhole.  In fact, brkpt1 and brkpt2 are each calls of ld
+running on wormhole states.  Brkpt1 implements the pre-:eval
+break-rewrite and brkpt2 implements the post-:eval break-rewrite.  The
+rewriter actually calls brkpt1 before attempting to apply a rule and
+calls brkpt2 afterwards.  In both cases, the rewriter passes into the
+wormhole the relevant information about the current context.  Logically
+brkpt1 and brkpt2 are no-ops and rewrite ignores the nil they return.
+But while control is in them the execution of rewrite is suspended and
+cannot proceed until the break-rewrite interactions complete.
+
+This design causes a certain anomoly that might be troubling.  Suppose
+that inside break-rewrite before :evaling a rule (i.e., in the brkpt1
+wormhole state) you define some function, foo.  Suppose then you :eval
+the rule and eventually control returns to break-rewrite (i.e., to
+brkpt2 on a wormhole state with the results of the application in it).
+You will discover that foo is no longer defined!  That is because the
+wormhole state created during your pre-:eval interaction is lost when
+we exit the wormhole to resume the proof attempt.  The post-:eval
+wormhole state is in fact identical to the initial pre-:eval state
+(except for the results of the application) because rewrite did not
+change the external state and both wormhole states are copies of it.
+
+There is a lot more to know about break-rewrite, most of which is
+fairly easy to learn from looking at the code, since it is all
+expressed in ACL2.  Feel free to ask questions of J Moore.
+
+
+File: acl2-doc-emacs.info,  Node: BREAK-LEMMA,  Next: BRR,  Prev: BREAK-REWRITE,  Up: BREAK-REWRITE
+
+BREAK-LEMMA    a quick introduction to breaking rewrite rules in ACL2
+
+     Example:
+     :brr t                          ; if you haven't done that yet
+     :monitor (:rewrite lemma12) t   ; to install a break point on the
+                                     ; rule named (:rewrite lemma12)
+
+ACL2 does not support Nqthm's break-lemma but supports a very similar
+and more powerful break facility.  Suppose some proof is failing;
+apparently some particular rule is not being used and you wish to learn
+why.  Then you need the ACL2 break-rewrite facility.  See *Note
+BREAK-REWRITE:: and all of its associated :doc topics for details.  The
+following basic steps are required.
+
+(1) To enable the "break rewrite" feature, you must first execute
+
+     ACL2 !>:brr t
+
+at the top-level of ACL2.  Equivalently, evaluate (brr t).
+Break-rewrite stays enabled until you disable it with (brr nil).  When
+break-rewrite is enabled the ACL2 rewriter will run slower than normal
+but you will be able to monitor the attempts to apply specified rules.
+
+(2) Decide what runes (see *note RUNE::) you wish to monitor.  For
+example, you might want to know why (:rewrite lemma12 . 2) is not being
+used in the attempted proof.  That, by the way, is the name of the
+second rewrite rule generated from the event named lemma12.
+
+The command
+
+     ACL2 !>:monitor (:rewrite lemma12 . 2) t
+
+will install an "unconditional" break point on that rule.  The "t" at
+the end of the command means it is unconditional, i.e., a break will
+occur every time the rule is tried.  ACL2 supports conditional breaks
+also, in which case the t is replaced by an expression that evaluates
+to non-nil when you wish for a break to occur.  See *Note MONITOR::.
+The above keyword command is, of course, equivalent to
+
+     ACL2 !>(monitor '(:rewrite lemma12 . 2) t)
+
+which you may also type.  You may install breaks on as many rules as
+you wish.  You must use monitor on each rule.  You may also change the
+break condition on a rule with monitor.  Use unmonitor (see *note
+UNMONITOR::) to remove a rule from the list of monitored rules.
+
+(3) Then try the proof again.  When a monitored rule is tried by the
+rewriter you will enter an interactive break, called break-rewrite.
+See *Note BREAK-REWRITE:: for a detailed description.  Very simply,
+break-rewrite lets you inspect the context of the attempted application
+both before and after the attempt.  When break-rewrite is entered it
+will print out the "target" term being rewritten.  If you type :go
+break-rewrite will try the rule and then exit, telling you (a) whether
+the rule was applied, (b) if so, how the target was rewritten, and (c)
+if not, why the rule failed.  There are many other commands.  See *Note
+BRR-COMMANDS::.
+
+(4) When you have finished using the break-rewrite feature you should
+disable it to speed up the rewriter.  You can disable it with
+
+     ACL2 !>:brr nil
+
+The list of monitored rules and their break conditions persists but is
+ignored.  If you enable break-rewrite later, the list of monitored
+rules will be displayed and will be used again by rewrite.
+
+You should disable the break-rewrite feature whenever you are not
+intending to use it, even if the list of monitored rules is empty,
+because the rewriter is slowed down as long as break-rewrite is enabled.
+
+If you get a stack overflow, see *note CW-GSTACK::.
+
+
+File: acl2-doc-emacs.info,  Node: BRR,  Next: BRR-COMMANDS,  Prev: BREAK-LEMMA,  Up: BREAK-REWRITE
+
+BRR    to enable or disable the breaking of rewrite rules
+
+     Example:
+     :brr t       ; enable
+     :brr nil     ; disable
+     
+     General Form:
+     (brr flg)
+
+where flg evaluates to t or nil.  This function modifies state so that
+the attempted application of certain rewrite rules are "broken." "Brr"
+stands for "break-rewrite" and can be thought of as a mode with two
+settings.  The normal mode is "disabled."
+
+When brr mode is "enabled" the ACL2 rewriter monitors the attempts to
+apply certain rules and advises the user of those attempts by entering
+an interactive wormhole break.  From within this break the user can
+watch selected application attempts.  See *Note BREAK-REWRITE::.  The
+user can also interact with the system during brr breaks via
+brr-commands.
+
+The rules monitored are selected by using the monitor and unmonitor
+commands.  It is possible to break a rune "conditionally" in the sense
+that an interactive break will occur only if a specified predicate is
+true of the environment at the time of the attempted application.  See
+*Note MONITOR:: and see *note UNMONITOR::.
+
+Even if a non-empty set of rules has been selected, no breaks will occur
+unless brr mode is enabled.  Thus, the first time in a session that you
+wish to monitor a rewrite rule, use :brr t to enable brr mode.
+Thereafter you may select runes to be monitored with monitor and
+unmonitor with the effect that whenever monitored rules are tried (and
+their break conditions are met) an interactive break will occur.  Be
+advised that when brr mode is enabled the rewriter is somewhat slower
+than normal.  Furthermore, that sluggishness persists even if no runes
+are monitored.  You may regain normal performance -- regardless of what
+runes are monitored -- by disabling brr mode with :brr nil.
+
+Why isn't brr mode disabled automatically when no runes are monitored?
+More generally, why does ACL2 have brr mode at all?  Why not just test
+whether there are monitored runes?  If you care about the answers, see
+*note WHY-BRR::.
+
+BRR Mode and Console Interrupts: If the system is operating in brr mode
+and you break into raw Lisp (as by causing a console interrupt or
+happening upon a signalled Lisp error; see *note BREAKS::), you can
+return to the ACL2 top-level, outside any brr environment, by executing
+(abort!).  Otherwise, the normal way to quit from such a break (for
+example :q in GCL, :reset in Allegro CL, and q in CMU CL) will return
+to the innermost ACL2 read-eval-print loop, which may or may not be the
+top-level of your ACL2 session!  In particular, if the break happens to
+occur while ACL2 is within the brr environment (in which it is
+preparing to read brr-commands), the abort will merely return to that
+brr environment.  Upon exiting that environment, normal theorem proving
+is continued (and the brr environment may be entered again in response
+to subsequent monitored rule applications).  Before returning to the brr
+environment, ACL2 "cleans up" from the interrupted brr processing.
+However, it is not possible (given the current implementation) to clean
+up perfectly.  This may have two side-effects.  First, the system may
+occasionally print the self-explanatory "Cryptic BRR Message 1" (or 2),
+informing you that the system has attempted to recover from an aborted
+brr environment.  Second, it is possible that subsequent brr behavior
+in that proof will be erroneous because the cleanup was done
+incorrectly.  The moral is that you should not trust what you learn
+from brr if you have interrupted and aborted brr processing during the
+proof.  These issues do not affect the behavior or soundness of the
+theorem prover.
+
+
+File: acl2-doc-emacs.info,  Node: BRR-COMMANDS,  Next: BRRatsign,  Prev: BRR,  Up: BREAK-REWRITE
+
+BRR-COMMANDS    Break-Rewrite Commands
+
+     #.              abort to ACL2 top-level
+     :target         term being rewritten
+     :unify-subst    substitution making :lhs equal :target
+     :hyps           hypotheses of the rule
+     :hyp i          ith hypothesis of the rule
+     :lhs            left-hand side of rule's conclusion
+     :rhs            right-hand side of rule's conclusion
+     :type-alist     type assumptions governing :target
+     :initial-ttree  ttree before :eval (see *note TTREE::)
+     :ancestors      negations of backchaining hypotheses being pursued
+     :wonp           indicates if application succeed (after :eval)
+     :rewritten-rhs  rewritten :rhs (after :eval)
+     :final-ttree    ttree after :eval (see *note TTREE::)
+     :failure-reason reason rule failed (after :eval)
+     :path           rewrite's path from top clause to :target
+     :frame i        ith frame in :path
+     :top            top-most frame in :path
+     :ok             exit break
+     :go             exit break, printing result
+     :eval           try rule and re-enter break afterwards
+     :ok!            :ok but no recursive breaks
+     :go!            :go but no recursive breaks
+     :eval!          :eval but no recursive breaks
+     :ok$ runes      :ok with runes monitored during recursion
+     :go$ runes      :go with runes monitored during recursion
+     :eval$ runes    :eval with runes monitored during recursion
+     :help           this message
+     :standard-help  :help message from ACL2 top-level
+
+Break-rewrite is just a call of the standard ACL2 read-eval-print loop,
+ld, on a "wormhole" state.  Thus, you may execute most commands you
+might normally execute at the top-level of ACL2.  However, all state
+changes you cause from within break-rewrite are lost when you exit or
+:eval the rule.  You cannot modify stobjs from within the break.  See
+*Note BREAK-REWRITE:: for more details and see *note LD:: for general
+information about the standard ACL2 read-eval-print loop.
+
+
+File: acl2-doc-emacs.info,  Node: BRRatsign,  Next: MONITOR,  Prev: BRR-COMMANDS,  Up: BREAK-REWRITE
+
+BRR@    to access context sensitive information within break-rewrite
+
+     Example:
+     (brr@ :target)      ; the term being rewritten
+     (brr@ :unify-subst) ; the unifying substitution
+     
+     General Form:
+     (brr@ :symbol)
+
+where :symbol is one of the following keywords.  Those marked with *
+probably require an implementor's knowledge of the system to use
+effectively.  They are supported but not well documented.  More is said
+on this topic following the table.
+
+     :symbol             (brr@ :symbol)
+     -------             ---------------------
+     
+     :target             the term to be rewritten.  This term is an
+                         instantiation of the left-hand side of the
+                         conclusion of the rewrite-rule being broken.
+                         This term is in translated form!  Thus, if
+                         you are expecting (equal x nil) -- and your
+                         expectation is almost right -- you will see
+                         (equal x 'nil); similarly, instead of (cadr a)
+                         you will see (car (cdr a)).  In translated
+                         forms, all constants are quoted (even nil, t,
+                         strings and numbers) and all macros are
+                         expanded.
+     
+     :unify-subst        the substitution that, when applied to :target,
+                         produces the left-hand side of the rule being
+                         broken.  This substitution is an alist pairing
+                         variable symbols to translated (!) terms.
+     
+     :wonp               t or nil indicating whether the rune was
+                         successfully applied.  (brr@ :wonp) returns
+                         nil if evaluated before :EVALing the rule.
+     
+     :rewritten-rhs      the result of successfully applying the rule
+                         or else nil if (brr@ :wonp) is nil.  The result
+                         of successfully applying the rule is always a
+                         translated (!) term and is never nil.
+     
+     :failure-reason     some non-nil lisp object indicating why the rule
+                         was not applied or else nil.  Before the rule is
+                         :EVALed, (brr@ :failure-reason) is nil.  After
+                         :EVALing the rule, (brr@ :failure-reason) is nil
+                         if (brr@ :wonp) is t.  Rather than document the
+                         various non-nil objects returned as the failure
+                         reason, we encourage you simply to evaluate
+                         (brr@ :failure-reason) in the contexts of interest.
+                         Alternatively, study the ACL2 function tilde-@-
+                         failure-reason-phrase.
+     
+     :lemma           *  the rewrite rule being broken.  For example,
+                         (access rewrite-rule (brr@ :lemma) :lhs) will
+                         return the left-hand side of the conclusion
+                         of the rule.
+     
+     :type-alist      *  a display of the type-alist governing :target.
+                         Elements on the displayed list are of the form
+                         (term type), where term is a term and type
+                         describes information about term assumed to hold
+                         in the current context.  The type-alist may be
+                         used to determine the current assumptions, e.g.,
+                         whether A is a CONSP.
+     
+     :ancestors       *  a stack of frames indicating the backchain history
+                         of the current context.  The theorem prover is in
+                         the process of trying to establish each hypothesis
+                         in this stack.  Thus, the negation of each hypothesis
+                         can be assumed false.  Each frame also records the
+                         rules on behalf of which this backchaining is being
+                         done and the weight (function symbol count) of the
+                         hypothesis.  All three items are involved in the
+                         heuristic for preventing infinite backchaining.
+                         Exception:  Some frames are ``binding hypotheses''
+                         (equal var term) or (equiv var (double-rewrite term))
+                         that bind variable var to the result of rewriting
+                         term.
+     
+     :gstack          *  the current goal stack.  The gstack is maintained
+                         by rewrite and is the data structure printed as the
+                         current ``path.''  Thus, any information derivable
+                         from the :path brr command is derivable from gstack.
+                         For example, from gstack one might determine that
+                         the current term is the second hypothesis of a
+                         certain rewrite rule.
+
+In general brr@-expressions are used in break conditions, the
+expressions that determine whether interactive breaks occur when
+monitored runes are applied.  See *Note MONITOR::.  For example, you
+might want to break only those attempts in which one particular term is
+being rewritten or only those attempts in which the binding for the
+variable a is known to be a consp.  Such conditions can be expressed
+using ACL2 system functions and the information provided by brr@.
+Unfortunately, digging some of this information out of the internal
+data structures may be awkward or may, at least, require intimate
+knowledge of the system functions.  But since conditional expressions
+may employ arbitrary functions and macros, we anticipate that a set of
+convenient primitives will gradually evolve within the ACL2 community.
+It is to encourage this evolution that brr@ provides access to the *'d
+data.
+

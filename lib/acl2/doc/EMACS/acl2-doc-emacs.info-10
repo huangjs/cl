@@ -1,0 +1,957 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: DEFREFINEMENT,  Next: DEFSTOBJ,  Prev: DEFPKG,  Up: EVENTS
+
+DEFREFINEMENT    prove that equiv1 refines equiv2
+
+     Example:
+     (defrefinement equiv1 equiv2)
+     
+     is an abbreviation for
+     (defthm equiv1-refines-equiv2
+       (implies (equiv1 x y) (equiv2 x y))
+       :rule-classes (:refinement))
+
+See *Note REFINEMENT::.
+
+     General Form:
+     (defrefinement equiv1 equiv2
+       :rule-classes rule-classes
+       :instructions instructions
+       :hints hints
+       :otf-flg otf-flg
+       :event-name event-name
+       :doc doc)
+
+where equiv1 and equiv2 are known equivalence relations, event-name, if
+supplied, is a symbol and all other arguments are as specified in the
+documentation for defthm.  The defrefinement macro expands into a call
+of defthm.  The name supplied is equiv1-refines-equiv2, unless
+event-name is supplied, in which case it is used as the name.  The term
+supplied states that equiv1 refines equiv2.  The rule-class :refinement
+is added to the rule-classes specified, if it is not already there.
+All other arguments to the generated defthm form are as specified by
+the other keyword arguments above.
+
+
+File: acl2-doc-emacs.info,  Node: DEFSTOBJ,  Next: DEFSTUB,  Prev: DEFREFINEMENT,  Up: EVENTS
+
+DEFSTOBJ    define a new single-threaded object
+
+     Example:
+     (defstobj st
+               (reg :type (array (unsigned-byte 31) (8))
+                    :initially 0)
+               (p-c :type (unsigned-byte 31)
+                    :initially 555)
+               halt                  ; = (halt :type t :initially nil)
+               (mem :type (array (unsigned-byte 31) (64))
+                    :initially 0 :resizable t))
+     
+     General Form:
+     (defstobj name
+               (field1 :type type1 :initially val1 :resizable b1)
+               ...
+               (fieldk :type typek :initially valk :resizable bk)
+               :renaming alist
+               :doc doc-string
+               :inline inline-flag)
+
+where name is a new symbol, each fieldi is a symbol, each typei is
+either a type-spec or (ARRAY type-spec (max)), each vali is an object
+satisfying typei, and each bi is t or nil.  Each pair :initially vali
+and :resizable bi may be omitted; more on this below.  The alist
+argument is optional and allows the user to override the default
+function names introduced by this event.  The doc-string is also
+optional.  The inline-flag Boolean argument is also optional and
+declares to ACL2 that the generated access and update functions for the
+stobj should be implemented as macros under the hood (which has the
+effect of inlining the function calls).  We describe further
+restrictions on the fieldi, typei, vali, and on alist below.  We
+recommend that you read about single-threaded objects (stobjs) in ACL2
+before proceeding; see *note STOBJ::.
+
+The effect of this event is to introduce a new single-threaded object
+(i.e., a "stobj"), named name, and the associated recognizers, creator,
+accessors, updaters, constants, and, for fields of ARRAY type, length
+and resize functions.
+
+_The Single-Threaded Object Introduced_
+
+The defstobj event effectively introduces a new global variable, named
+name, which has as its initial logical value a list of k elements,
+where k is the number of "field descriptors" provided.  The elements
+are listed in the same order in which the field descriptors appear.  If
+the :type of a field is (ARRAY type-spec (max)) then the corresponding
+element of the stobj is initially a list of length max containing the
+value, val, specified by :initially val.  Otherwise, the :type of the
+field is a type-spec and the corresponding element of the stobj is the
+specified initial value val.  (The actual representation of the stobj
+in the underlying Lisp may be quite different; see *note
+STOBJ-EXAMPLE-2::.  For the moment we focus entirely on the logical
+aspects of the object.)
+
+In addition, the defstobj event introduces functions for recognizing
+and creating the stobj and for recognizing, accessing, and updating its
+fields.  For fields of ARRAY type, length and resize functions are also
+introduced.  Constants are introduced that correspond to the accessor
+functions.
+
+_Restrictions on the Field Descriptions in Defstobj_
+
+Each field descriptor is of the form:
+
+     (fieldi :TYPE typei :INITIALLY vali)
+
+Note that the type and initial value are given in "keyword argument"
+format and may be given in either order.  The typei and vali
+"arguments" are not evaluated.  If omitted, the type defaults to t
+(unrestricted) and the initial value defaults to nil.
+
+Each typei must be either a type-spec or else a list of the form (ARRAY
+type-spec (max)).  The latter forms are said to be "array types."
+Examples of legal typei are:
+
+     (INTEGERP 0 31)
+     (SIGNED-BYTE 31)
+     (ARRAY (SIGNED-BYTE 31) (16))
+
+The typei describes the objects which are expected to occupy the given
+field.  Those objects in fieldi should satisfy typei.  We are more
+precise below about what we mean by "expected."  We first present the
+restrictions on typei and vali.
+
+Non-Array Types
+
+When typei is a type-spec it restricts the contents, x, of fieldi
+according to the "meaning" formula given in the table for type-spec.
+For example, the first typei above restricts the field to be an integer
+between 0 and 31, inclusive.  The second restricts the field to be an
+integer between -2^30 and (2^30)-1, inclusive.
+
+The initial value, vali, of a field description may be any ACL2 object
+but must satisfy typei.  Note that vali is not a form to be evaluated
+but an object.  A form that evaluates to vali could be written 'vali,
+but defstobj does not expect you to write the quote mark.  For example,
+the field description
+
+     (days-off :initially (saturday sunday))
+
+describes a field named days-off whose initial value is the list
+consisting of the two symbols SATURDAY and SUNDAY.  In particular, the
+initial value is NOT obtained by applying the function saturday to the
+variable sunday!  Had we written
+
+     (days-off :initially '(saturday sunday))
+
+it would be equivalent to writing
+
+     (days-off :initially (quote (saturday sunday)))
+
+which would initialize the field to a list of length two, whose first
+element is the symbol quote and whose second element is a list
+containing the symbols saturday and sunday.
+
+Array Types
+
+When typei is of the form (ARRAY type-spec (max)), the field is
+supposed to be a list of items, initially of length max, each of which
+satisfies the indicated type-spec.  Max must be a non-negative integer
+less than (2^28)-1.  We discuss this limitation below. Thus,
+
+     (ARRAY (SIGNED-BYTE 31) (16))
+
+restricts the field to be a list of integers, initially of length 16,
+where each integer in the list is a (SIGNED-BYTE 31).  We sometimes
+call such a list an "array" (because it is represented as an array in
+the underlying Common Lisp).  The elements of an array field are
+indexed by position, starting at 0.  Thus, the maximum legal index of
+an array field is max-1.
+
+Note that the ARRAY type requires that the max be enclosed in
+parentheses.  This makes ACL2's notation consistent with the Common
+Lisp convention of describing the (multi-)dimensionality of arrays.
+But ACL2 currently supports only single dimensional arrays in stobjs.
+
+For array fields, the initial value vali must be an object satisfying
+the type-spec of the ARRAY description.  The initial value of the field
+is a list of max repetitions of vali.
+
+Array fields can be "resized," that is, their lengths can be changed,
+if :resizable t is supplied as shown in the example and General Form
+above.  The new length must satisfy the same restriction as does max,
+as described above.  Each array field in a defstobj event gives rise to
+a length function, which gives the length of the field, and a resize
+function, which modifies the length of the field if :resizable t was
+supplied with the field when the defstobj was introduced and otherwise
+causes an error.
+
+Array resizing is relatively slow, so we recommend using it somewhat
+sparingly.
+
+_The Default Function Names_
+
+To recap, in
+
+     (defstobj name
+               (field1 :type type1 :initially val1)
+               ...
+               (fieldk :type typek :initially valk)
+               :renaming alist
+               :doc doc-string
+               :inline inline-flag)
+
+name must be a new symbol, each fieldi must be a symbol, each typei
+must be a type-spec or (ARRAY type-spec (max)), and each vali must be
+an object satisfying typei.
+
+Roughly speaking, for each fieldi, a defstobj introduces a recognizer
+function, an accessor function, and an updater function.  The accessor
+function, for example, takes the stobj and returns the indicated
+component; the updater takes a new component value and the stobj and
+return a new stobj with the component replaced by the new value.  But
+that summary is inaccurate for array fields.
+
+The accessor function for an array field does not take the stobj and
+return the indicated component array, which is a list of length max.
+Instead, it takes an additional index argument and returns the
+indicated element of the array component.  Similarly, the updater
+function for an array field takes an index, a new value, and the stobj,
+and returns a new stobj with the indicated element replaced by the new
+value.
+
+These functions -- the recognizer, accessor, and updater, and also
+length and resize functions in the case of array fields -- have
+"default names."  The default names depend on the field name, fieldi,
+and on whether the field is an array field or not.  For clarity,
+suppose fieldi is named c. The default names are shown below in calls,
+which also indicate the arities of the functions.  In the expressions,
+we use x as the object to be recognized by field recognizers, i as an
+array index, v as the "new value" to be installed by an updater, and
+name as the single-threaded object.
+
+                      non-array field        array field
+     recognizer         (cP x)                (cP x)
+     accessor           (c name)              (cI i name)
+     updater            (UPDATE-c v name)     (UPDATE-cI i v name)
+     length                                   (c-LENGTH name)
+     resize                                   (RESIZE-c k name)
+
+Finally, a recognizer and a creator for the entire single-threaded
+object are introduced.  The creator returns the initial stobj, but may
+only be used in limited contexts; see *note WITH-LOCAL-STOBJ::.  If the
+single-threaded object is named name, then the default names and
+arities are as shown below.
+
+     top recognizer     (nameP x)
+     creator            (CREATE-name)
+
+For example, the event
+
+     (DEFSTOBJ $S
+       (X :TYPE INTEGER :INITIALLY 0)
+       (A :TYPE (ARRAY (INTEGER 0 9) (3)) :INITIALLY 9))
+
+introduces a stobj named $S.  The stobj has two fields, X and A.  The A
+field is an array.  The X field contains an integer and is initially 0.
+The A field contains a list of integers, each between 0 and 9,
+inclusively.  Initially, each of the three elements of the A field is 9.
+
+This event introduces the following sequence of definitions:
+
+     (DEFUN XP (X) ...)               ; recognizer for X field
+     (DEFUN AP (X) ...)               ; recognizer of A field
+     (DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+     (DEFUN CREATE-$S () ...)         ; creator for stobj $S
+     (DEFUN X ($S) ...)               ; accessor for X field
+     (DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+     (DEFUN A-LENGTH ($S) ...)        ; length of A field
+     (DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+     (DEFUN AI (I $S) ...)            ; accessor for A field at index I
+     (DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+
+_Avoiding the Default Function Names_
+
+If you do not like the default names listed above you may use the
+optional :renaming alist to substitute names of your own choosing.
+Each element of alist should be of the form (fn1 fn2), where fn1 is a
+default name and fn2 is your choice for that name.
+
+For example
+
+     (DEFSTOBJ $S
+       (X :TYPE INTEGER :INITIALLY 0)
+       (A :TYPE (ARRAY (INTEGER 0 9) (3)) :INITIALLY 9)
+       :renaming ((X XACCESSOR) (CREATE-$S MAKE$S)))
+
+introduces the following definitions
+
+     (DEFUN XP (X) ...)               ; recognizer for X field
+     (DEFUN AP (X) ...)               ; recognizer of A field
+     (DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+     (DEFUN MAKE$S () ...)            ; creator for stobj $S
+     (DEFUN XACCESSOR ($S) ...)       ; accessor for X field
+     (DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+     (DEFUN A-LENGTH ($S) ...)        ; length of A field
+     (DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+     (DEFUN AI (I $S) ...)            ; accessor for A field at index I
+     (DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+
+Note that even though the renaming alist substitutes "XACCESSOR" for
+"X" the updater for the X field is still called "UPDATE-X."  That is
+because the renaming is applied to the default function names, not to
+the field descriptors in the event.
+
+Use of the :renaming alist may be necessary to avoid name clashes
+between the default names and and pre-existing function symbols.
+
+_Constants_
+
+Defstobj events also introduce constant definitions (see *note
+DEFCONST::).  One constant is introduced for each accessor function by
+prefixing and suffixing a `*' character on the function name.  The
+value of that constant is the position of the field being accessed.
+For example, if the accessor functions are a, b, and c, in that order,
+then the following constant definitions are introduced.
+
+     (defconst *a* 0)
+     (defconst *b* 1)
+     (defconst *c* 2)
+
+These constants are used for certain calls of nth and update-nth that
+are displayed to the user in proof output.  For example, for stobj st
+with accessor functions a, b, and c, in that order, the term (nth '2
+st) would be printed during a proof as (nth *c* st).  Also see *note
+TERM::, in particular the discussion there of untranslated terms, and
+see *note NTH-ALIASES-TABLE::.
+
+_Inspecting the Effects of a Defstobj_
+
+Because the stobj functions are introduced as "sub-events" of the
+defstobj the history commands :pe and :pc will not print the
+definitions of these functions but will print the superior defstobj
+event.  To see the definitions of these functions use the history
+command :pcb!.
+
+To see an s-expression containing the definitions what constitute the
+raw Lisp implementation of the event, evaluate the form
+
+     (nth 4 (global-val 'cltl-command (w state)))
+
+_immediately after_ the defstobj event has been processed.
+
+A defstobj is considered redundant only if the name, field descriptors,
+renaming alist, and inline flag are identical to a previously executed
+defstobj.  Note that a redundant defstobj does not reset the stobj
+fields to their initial values.
+
+_Inlining and Performance_
+
+The :inline keyword argument controls whether or not accessor, updater,
+and length functions are inlined (as macros under the hood, in raw
+Lisp).  If :inline t is provided then these are inlined; otherwise they
+are not.  The advantage of inlining is potentially better performance;
+there have been contrived examples, doing essentially nothing except
+accessing and updating array fields, where inlining reduced the time by
+a factor of 10 or more; and inlining has sped up realistic examples by
+a factor of at least 2.  Inlining may get within a factor of 2 of C
+execution times for such contrived examples, and within a few percent
+of C execution times on realistic examples.
+
+A drawback to inlining is that redefinition may not work as expected,
+much as redefinition may not work as expected for macros: defined
+functions that call a macro, or inlined stobj function, will not see a
+subsequent redefinition of the macro or inlined function.  Another
+drawback to inlining is that because inlined functions are implemented
+as macros in raw Lisp, tracing (see *note TRACE$::) will not show their
+calls.  These drawbacks are avoided by default, but the user who is not
+concerned about them is advised to specify :inline t.
+
+
+File: acl2-doc-emacs.info,  Node: DEFSTUB,  Next: DEFTHEORY,  Prev: DEFSTOBJ,  Up: EVENTS
+
+DEFSTUB    stub-out a function symbol
+
+     Examples:
+     ACL2 !>(defstub subr1 (* * state) => (mv * state))
+     ACL2 !>(defstub add-hash (* * hash-table) => hash-table)
+     
+     General Forms:
+     (defstub name args-sig => output-sig)
+     (defstub name args-sig => output-sig :doc doc-string)
+
+Name is a new function symbol and (name . args-sig) => output-sig) is a
+signature.  If the optional doc-string is supplied it should be a
+documentation string.  See also the "Old Style" heading below.
+
+Defstub macro expands into an encapsulate event (see *note
+ENCAPSULATE::).  Thus, no axioms are available about name but it may be
+used wherever a function of the given signature is permitted.
+
+Old Style:
+
+     Old Style General Form:
+     (defstub name formals output)
+     (defstub name formals output :doc doc-string)
+
+where name is a new function symbol, formals is its list of formal
+parameters, and output is either a symbol (indicating that the function
+returns one result) or a term of the form (mv s1 ... sn), where each si
+is a symbol (indicating that the function returns n results).  Whether
+and where the symbol state occurs in formals and output indicates how
+the function handles state.  It should be the case that (name formals
+output) is in fact a signature (see *note SIGNATURE::).
+
+Note that with the old style notation it is impossible to stub-out a
+function that uses any single-threaded object other than state.  The
+old style is preserved for compatibility with earlier versions of ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: DEFTHEORY,  Next: DEFTHM,  Prev: DEFSTUB,  Up: EVENTS
+
+DEFTHEORY    define a theory (to enable or disable a set of rules)
+
+     Example:
+     (deftheory interp-theory
+                (set-difference-theories
+                  (universal-theory :here)
+                  (universal-theory 'interp-section)))
+     
+     General Form:
+     (deftheory name term :doc doc-string)
+
+where name is a new symbolic name (see *note NAME::), term is a term
+that when evaluated will produce a theory (see *note THEORIES::), and
+doc-string is an optional documentation string (see *note
+DOC-STRING::).  Except for the variable world, term must contain no
+free variables.  Term is evaluated with world bound to the current
+world (see *note WORLD::) and the resulting theory is then converted to
+a _runic theory_ (see *note THEORIES::) and associated with name.
+Henceforth, this runic theory is returned as the value of the theory
+expression (theory name).
+
+The value returned is the length of the resulting theory.  For example,
+in the following, the theory associated with 'FOO has 54 runes:
+
+     ACL2 !>(deftheory foo (union-theories '(binary-append)
+                                           (theory 'minimal-theory)))
+     
+     Summary
+     Form:  ( DEFTHEORY FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      54
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: DEFTHM,  Next: DEFTHMD,  Prev: DEFTHEORY,  Up: EVENTS
+
+DEFTHM    prove and name a theorem
+
+     Examples:
+     (defthm assoc-of-app
+             (equal (app (app a b) c)
+                    (app a (app b c))))
+
+The following nonsensical example illustrates all the optional
+arguments but is illegal because not all combinations are permitted.
+See *Note HINTS:: for a complete list of hints.
+
+     (defthm main
+             (implies (hyps x y z) (concl x y z))
+            :rule-classes (:REWRITE :GENERALIZE)
+            :instructions (induct prove promote (dive 1) x
+                                  (dive 2) = top (drop 2) prove)
+            :hints (("Goal"
+                     :do-not '(generalize fertilize)
+                     :in-theory (set-difference-theories
+                                  (current-theory :here)
+                                  '(assoc))
+                     :induct (and (nth n a) (nth n b))
+                     :use ((:instance assoc-of-append
+                                      (x a) (y b) (z c))
+                           (:functional-instance
+                             (:instance p-f (x a) (y b))
+                             (p consp)
+                             (f assoc)))))
+            :otf-flg t
+            :doc "#0[one-liner/example/details]")
+     
+     General Form:
+     (defthm name term
+             :rule-classes rule-classes
+             :instructions instructions
+             :hints        hints
+             :otf-flg      otf-flg
+             :doc          doc-string)
+
+where name is a new symbolic name (see *note NAME::), term is a term
+alleged to be a theorem, and rule-classes, instructions, hints, otf-flg
+and doc-string are as described in their respective documentation.  The
+five keyword arguments above are all optional, however you may not
+supply both :instructions and :hints, since one drives the proof
+checker and the other drives the theorem prover.  If :rule-classes is
+not specified, the list (:rewrite) is used; if you wish the theorem to
+generate no rules, specify :rule-classes nil.
+
+When ACL2 processes a defthm event, it first tries to prove the term
+using the indicated hints (see *note HINTS::) or instructions (see
+*note PROOF-CHECKER::).  If it is successful, it stores the rules
+described by the rule-classes (see *note RULE-CLASSES::), proving the
+necessary corollaries.
+
+
+File: acl2-doc-emacs.info,  Node: DEFTHMD,  Next: DEFTTAG,  Prev: DEFTHM,  Up: EVENTS
+
+DEFTHMD    prove and name a theorem and then disable it
+
+Use defthmd instead of defthm when you want to disable a theorem
+immediately after proving it.  This macro has been provided for users
+who prefer working in a mode where theorems are only enabled when
+explicitly directed by :in-theory.  Specifically, the form
+
+     (defthmd NAME TERM ...)
+
+expands to:
+
+     (progn
+       (defthmd NAME TERM ...)
+       (with-output
+        :off summary
+        (in-theory (disable NAME)))
+       (value NAME)).
+
+Note that defthmd commands are never redundant (see *note
+REDUNDANT-EVENTS::).  Even if the defthm event is redundant, then the
+in-theory event will still be executed.
+
+The summary for the in-theory event is suppressed.  See *Note DEFTHM::
+for documentation of defthm.
+
+
+File: acl2-doc-emacs.info,  Node: DEFTTAG,  Next: DEFUN,  Prev: DEFTHMD,  Up: EVENTS
+
+DEFTTAG    introduce a trust tag (ttag)
+
+     General Forms:
+     (defttag tag-name)
+     (defttag tag-name :doc doc-string)
+
+where tag-name is a symbol.  The :doc doc-string argument is optional;
+if supplied, then it must be a valid documentation string (see *note
+DOC-STRING::), and the defttag call will generate a corresponding
+defdoc event.  For the rest of this discussion we ignore the :doc
+argument.
+
+*WARNING!*  This event is intended for advanced users who, in essence,
+want to build extensions of ACL2.  Anyone who uses this event, even by
+way of including books, is placing trust in the correctness of all
+forms executed in the scope of that defttag event.  (Thus, it may be a
+good idea if the scope of a defttag event, which is the enclosing book
+or encapsulate event, is kept small.)  The documentation below explains
+this issue in detail.
+
+This event introduces or removes a so-called active trust tag (or
+"ttag", pronounced "tee tag").  An active ttag is a non-nil symbol
+(tag) that is associated with potentially unsafe acts.  For example,
+sys-call can be used in an unsafe way, for example to overwrite files,
+or worse (see *note SYS-CALL:: for a frightening example from Bob
+Boyer).  Therefore, calls of sys-call are illegal unless a defttag
+event has been executed.  If one introduces an active ttag and then
+writes definitions that calls sys-call, presumably in a defensibly
+"safe" way, then responsibility for those calls is attributed to that
+ttag.  This attribution (or blame!) is at the level of books; a book's
+certificate contains a list of ttags that are active in that book, or
+in a book that is included (possibly locally), or in a book included in
+a book that is included (either inclusion being potentially local), and
+so on.  We explain all this in more detail below.
+
+(Defttag tag-name) is essentially equivalent to
+
+     (table acl2-defaults-table :ttag tag-name)
+
+and hence is local to any books and encapsulate events in which it
+occurs; see *note ACL2-DEFAULTS-TABLE::.  We say more about the scope of
+defttag forms below.
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless executes the above table event and hence changes the ACL2
+logical world, and is so recorded.  Although no event summary is
+printed, it is important to note that the "TTAG NOTE", discussed below,
+is always printed for a non-nil tag-name.
+
+*Active ttags.*  Suppose tag-name is a non-nil symbol.  Then (defttag
+tag-name) sets tag-name to be the "active ttag."  There must be an
+active ttag in order for there to be any mention of certain function
+and macro symbols, including sys-call; evaluate the form (strip-cars
+*ttag-fns-and-macros*) to see the full list of such symbols.  On the
+other hand, (defttag nil) removes the active ttag, if any; there is
+then no active ttag.  The scope of a defttag form in a book being
+certified or included is limited to subsequent forms in the same book
+before the next defttag (if any) in that book.  Similarly, if a defttag
+form is evaluated in the top-level loop, then its effect is limited to
+subsequent forms in the top-level loop before the next defttag in the
+top-level loop (if any).  Moreoever, certify-book is illegal when a
+ttag is active; of course, in such a circumstance one can execute
+(defttag nil) in order to allow book certification.
+
+*Ttag notes and the "certifier."*  When a defttag is executed with an
+argument other than nil, output is printed, starting on a fresh line
+with:  TTAG NOTE.  For example:
+
+     ACL2 !>(defttag foo)
+     
+     TTAG NOTE: Adding ttag FOO from the top level loop.
+      FOO
+     ACL2 !>
+
+If the defttag occurs in an included book, the message looks like this.
+
+     TTAG NOTE (for included book): Adding ttag FOO from file /u/smith/acl2/my-book.lisp.
+
+The "TTAG NOTE" message is always printed on a single line.  The
+intention is that one can search the standard output for all such notes
+in order to find all defttag events.  In a sense, defttag events can
+allow you to define your own system on top of ACL2 (for example, see
+*note PROGN!::).  So in order for someone else (who we might call the
+"certifier") to be confident that your collection of books is
+meaningful, that certifier should certify all the user-supplied books
+from scratch and check either that no :ttags were supplied to
+certify-book, or else look for every TTAG NOTE in the standard output
+in order to locate all defttag events with non-nil tag-name.  In this
+way, the certifier can in principle decide whether to be satisfied that
+those defttag events did not allow inappropriate forms in the
+user-supplied books.
+
+*Allowed ttags when certifying and including books.*  A defttag form
+may not be evaluated unless its argument is a so-called "allowed" ttag.
+All ttags are allowed in the interactive top-level loop.  However,
+during certify-book and include-book, the set of allowed ttags is
+restricted according to the :ttags keyword argument.  If this argument
+is omitted then no ttag is allowed, so a defttag call will fail during
+book certification or inclusion in this case.  This restriction applies
+even to defttag forms already evaluated in the so-called certification
+world at the time certify-book is called.  But note that (defttag nil)
+is always legal.
+
+A :ttags argument of certify-book and include-book can have value :all,
+indicating that every ttag is allowed, i.e., no restriction is being
+placed on the arguments, just as in the interactive top-level loop.
+Otherwise, the value is a true list of ttag specifications, each having
+one of the following forms, where sym is a non-nil symbol.
+
+     (1) sym
+
+     (2) (sym)
+
+     (3) (sym x1 x2 ... xk), where k > 0 and each xi is a string, except
+     that one xi may be nil.
+
+In Case (1), (defttag sym) is allowed to occur in at most one book or
+else in the top-level loop (i.e., the certification world for a book
+under certification or a book being included).  Case (2) allows
+(defttag sym) to occur in an unlimited number of books.  For case (3)
+the xi specify where (defttag sym) may occur, as follows.  The case
+that xi is nil refers to the top-level loop, while all other xi are
+filenames, where the ".lisp" extension is optional and relative
+pathnames are considered to be relative to the connected book directory
+(see *note CBD::).
+
+An error message, as shown below, illustrates how ACL2 enforcess the
+notion of allowed ttags.  Suppose that you call certify-book with
+argument :ttags (foo), where you have already executed (defttag foo) in
+the certification world (i.e., before calling certify-book).  Then ACL2
+immediately associates the ttag foo with nil, where again, nil refers
+to the top-level loop.  If ACL2 then encounters (defttag foo) inside
+that book, you will get the following error (using the full book name
+for the book, as shown):
+
+     ACL2 Error in ( TABLE ACL2-DEFAULTS-TABLE ...):  The ttag FOO associated
+     with file /u/smith/work/my-book.lisp is not among the set of ttags permitted
+     in the current context, namely:
+       ((FOO NIL)).
+     See :DOC defttag.
+
+In general the structure displayed by the error message, which is ((FOO
+NIL)) in this case, represents the currently allowed ttags with
+elements as discussed in (1) through (3) above.  In this case, that
+list's unique element is (FOO NIL), meaning that ttag FOO is only
+allowed at the top level (as represented by NIL).
+
+*Associating ttags with books and with the top-level loop.*  When a book
+is certified, each form (defttag tag) that is encountered for non-nil
+tag in that book or an included book is recorded in the generated
+certificate, which associates tag with the full-book-name of the book
+containing that deftag.  If such a defttag form is encountered outside
+a book, hence in the portcullis of the book being certified or one of
+its included books, then tag is associated with nil in the generated
+certificate.  Note that the notion of "included book" here applies to
+the recursive notion of a book either included directly in the book
+being certified or else included in such a book, where we account even
+for locally included books.
+
+For examples of ways to take advantage of ttags, see
+books/misc/hacker.lisp and see *note TTAGS-SEEN::, see *note PROGN!::,
+see *note REMOVE-UNTOUCHABLE::, see *note SET-RAW-MODE::, and see *note
+SYS-CALL::.
+
+
+File: acl2-doc-emacs.info,  Node: DEFUN,  Next: DEFUN-SK,  Prev: DEFTTAG,  Up: EVENTS
+
+DEFUN    define a function symbol
+
+     Examples:
+     (defun app (x y)
+       (if (consp x)
+           (cons (car x) (app (cdr x) y))
+           y))
+     
+     (defun fact (n)
+       (declare (xargs :guard (and (integerp n)
+                                   (>= n 0))))
+       (if (zp n)
+           1
+           (* n (fact (1- n)))))
+     
+     General Form:
+     (defun fn (var1 ... varn) doc-string dcl ... dcl body),
+
+where fn is the symbol you wish to define and is a new symbolic name
+(see *note NAME::), (var1 ... varn) is its list of formal parameters
+(see *note NAME::), and body is its body.  The definitional axiom is
+logically admissible provided certain restrictions are met.  These are
+sketched below.
+
+Note that ACL2 does not support the use of lambda-list keywords (such
+as &optional) in the formals list of functions.  We do support some
+such keywords in macros and often you can achieve the desired syntax by
+defining a macro in addition to the general version of your function.
+See *Note DEFMACRO::.  The documentation string, doc-string, is
+optional; for a description of its form, see *note DOC-STRING::.
+
+The _declarations_ (see *note DECLARE::), dcl, are also optional.  If
+more than one dcl form appears, they are effectively grouped together
+as one.  Perhaps the most commonly used ACL2 specific declaration is of
+the form (declare (xargs :guard g :measure m)).  This declaration in
+the defun of some function fn has the effect of making the "guard" for
+fn be the term g and the "measure" be the term m.  The notion of
+"measure" is crucial to ACL2's definitional principle.  The notion of
+"guard" is not, and is discussed elsewhere; see *note VERIFY-GUARDS::
+and see *note SET-VERIFY-GUARDS-EAGERNESS::.  Note that the :measure is
+ignored in :program mode; see *note DEFUN-MODE::.
+
+We now briefly discuss the ACL2 definitional principle, using the
+following definition form which is offered as a more or less generic
+example.
+
+     (defun fn (x y)
+       (declare (xargs :guard (g x y)
+                       :measure (m x y)))
+       (if (test x y)
+           (stop x y)
+           (step (fn (d x) y))))
+
+Note that in our generic example, fn has just two arguments, x and y,
+the guard and measure terms involve both of them, and the body is a
+simple case split on (test x y) leading to a "non-recursive" branch,
+(stop x y), and a "recursive" branch.  In the recursive branch, fn is
+called after "decrementing" x to (d x) and some step function is
+applied to the result.  Of course, this generic example is quite
+specific in form but is intended to illustrate the more general case.
+
+Provided this definition is admissible under the logic, as outlined
+below, it adds the following axiom to the logic.
+
+     Defining Axiom:
+     (fn x y)
+       =
+     (if (test x y)
+         (stop x y)
+       (step (fn (d x) y)))
+
+Note that the guard of fn has no bearing on this logical axiom.
+
+This defining axiom is actually implemented in the ACL2 system by a
+:definition rule, namely
+
+     (equal (fn x y)
+            (if (test a b)
+                (stop a b)
+              (step (fn (d a) b)))).
+
+See *Note DEFINITION:: for a discussion of how definition rules are
+applied.  Roughly speaking, the rule causes certain instances of (fn x
+y) to be replaced by the corresponding instances of the body above.
+This is called "opening up" (fn x y).  The instances of (fn x y) opened
+are chosen primarily by heuristics which determine that the recursive
+calls of fn in the opened body (after simplification) are more
+desirable than the unopened call of fn.
+
+This discussion has assumed that the definition of fn was admissible.
+Exactly what does that mean?  First, fn must be a previously
+unaxiomatized function symbol (however, see *note
+LD-REDEFINITION-ACTION::).  Second, the formal parameters must be
+distinct variable names.  Third, the guard, measure, and body should
+all be terms and should mention no free variables except the formal
+parameters.  Thus, for example, body may not contain references to
+"global" or "special" variables; ACL2 constants or additional formals
+should be used instead.
+
+The final conditions on admissibility concern the termination of the
+recursion.  Roughly put, all applications of fn must terminate.  In
+particular, there must exist a binary relation, rel, and some unary
+predicate mp such that rel is well-founded on objects satisfying mp,
+the measure term m must always produce something satisfying mp, and the
+measure term must decrease according to rel in each recursive call,
+under the hypothesis that all the tests governing the call are
+satisfied.  By the meaning of well-foundedness, we know there are no
+infinitely descending chains of successively rel-smaller mp-objects.
+Thus, the recursion must terminate.
+
+The only primitive well-founded relation in ACL2 is o< (see *note
+O<::), which is known to be well-founded on the o-ps (see *note O-P::).
+For the proof of well-foundedness, see *note
+PROOF-OF-WELL-FOUNDEDNESS::.  However it is possible to add new
+well-founded relations.  For details, see *note
+WELL-FOUNDED-RELATION::.  We discuss later how to specify which
+well-founded relation is selected by defun and in the present
+discussion we assume, without loss of generality, that it is o< on the
+o-ps.
+
+For example, for our generic definition of fn above, with measure term
+(m x y), two theorems must be proved.  The first establishes that m
+produces an ordinal:
+
+     (o-p (m x y)).
+
+The second shows that m decreases in the (only) recursive call of fn:
+
+     (implies (not (test x y))
+              (o< (m (d x) y) (m x y))).
+
+Observe that in the latter formula we must show that the "m-size" of (d
+x) and y is "smaller than" the m-size of x and y, provided the test,
+(test x y), in the body fails, thus leading to the recursive call (fn
+(d x) y).
+
+See *Note O<:: for a discussion of this notion of "smaller than."  It
+should be noted that the most commonly used ordinals are the natural
+numbers and that on natural numbers, o< is just the familiar "less
+than" relation (<).  Thus, it is very common to use a measure m that
+returns a nonnegative integer, for then (o-p (m x y)) becomes a simple
+conjecture about the type of m and the second formula above becomes a
+conjecture about the less-than relationship of nonnegative integer
+arithmetic.
+
+The most commonly used measure function is acl2-count, which computes a
+nonnegative integer size for all ACL2 objects.  See *Note ACL2-COUNT::.
+
+Probably the most common recursive scheme in Lisp programming is when
+some formal is supposed to be a list and in the recursive call it is
+replaced by its cdr.  For example, (test x y) might be simply (atom x)
+and (d x) might be (cdr x).  In that case, (acl2-count x) is a suitable
+measure because the acl2-count of a cons is strictly larger than the
+acl2-counts of its car and cdr.  Thus, "recursion by car" and
+"recursion by cdr" are trivially admitted if acl2-count is used as the
+measure and the definition protects every recursive call by a test
+insuring that the decremented argument is a consp.  Similarly,
+"recursion by 1-" in which a positive integer formal is decremented by
+one in recursion, is also trivially admissible.  See *Note
+BUILT-IN-CLAUSES:: to extend the class of trivially admissible
+recursive schemes.
+
+We now turn to the question of which well-founded relation defun uses.
+It should first be observed that defun must actually select both a
+relation (e.g., o<) and a domain predicate (e.g., o-p) on which that
+relation is known to be well-founded.  But, as noted elsewhere (see
+*note WELL-FOUNDED-RELATION::), every known well-founded relation has a
+unique domain predicate associated with it and so it suffices to
+identify simply the relation here.
+
+The xargs field of a declare permits the explicit specification of any
+known well-founded relation with the keyword :well-founded-relation.
+An example is given below.  If the xargs for a defun specifies a
+well-founded relation, that relation and its associated domain
+predicate are used in generating the termination conditions for the
+definition.
+
+If no :well-founded-relation is specified, defun uses the
+:well-founded-relation specified in the acl2-defaults-table.  See *Note
+SET-WELL-FOUNDED-RELATION:: to see how to set the default well-founded
+relation (and, implicitly, its domain predicate).  The initial default
+well-founded relation is o< (with domain predicate o-p).
+
+This completes the brief sketch of the ACL2 definitional principle.
+
+On very rare occasions ACL2 will seem to "hang" when processing a
+definition, especially if there are many subexpressions of the body
+whose function symbol is if (or which macroexpand to such an
+expression).  In those cases you may wish to supply the following to
+xargs:  :normalize nil.  This is an advanced feature that turns off
+ACL2's usual propagation upward of if tests.
+
+The following example illustrates all of the available declarations,
+but is completely nonsensical.  For documentation, see *note XARGS:: and
+see *note HINTS::.
+
+     (defun example (x y z a b c i j)
+       (declare (ignore a b c)
+                (type integer i j)
+                (xargs :guard (symbolp x)
+                       :measure (- i j)
+                       :well-founded-relation my-wfr
+                       :hints (("Goal"
+                                :do-not-induct t
+                                :do-not '(generalize fertilize)
+                                :expand ((assoc x a) (member y z))
+                                :restrict ((<-trans ((x x) (y (foo x)))))
+                                :hands-off (length binary-append)
+                                :in-theory (set-difference-theories
+                                             (current-theory :here)
+                                             '(assoc))
+                                :induct (and (nth n a) (nth n b))
+                                :non-executable t
+                                :use ((:instance assoc-of-append
+                                                 (x a) (y b) (z c))
+                                      (:functional-instance
+                                        (:instance p-f (x a) (y b))
+                                        (p consp)
+                                        (f assoc)))))
+                       :guard-hints (("Subgoal *1/3'"
+                                      :use ((:instance assoc-of-append
+                                                       (x a) (y b) (z c)))))
+                       :mode :logic
+                       :normalize nil
+                       :otf-flg t))
+       (example-body x y z i j))
+

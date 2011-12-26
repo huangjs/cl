@@ -1,0 +1,190 @@
+<html>
+<head><title>BIND-FREE-EXAMPLES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>BIND-FREE-EXAMPLES</h3>examples pertaining to <code><a href="BIND-FREE.html">bind-free</a></code> hypotheses
+<pre>Major Section:  <a href="BIND-FREE.html">BIND-FREE</a>
+</pre><p>
+
+See <a href="BIND-FREE.html">bind-free</a> for a basic discussion of the use of <code>bind-free</code> to control
+rewriting.
+<p>
+We give examples of the use of <code><a href="BIND-FREE.html">bind-free</a></code> hypotheses from the
+perspective of a user interested in reasoning about arithmetic, but
+it should be clear that <code><a href="BIND-FREE.html">bind-free</a></code> can be used for many other
+purposes also.<p>
+
+EXAMPLE 1:  Cancel a common factor.<p>
+
+
+<pre>
+(defun bind-divisor (a b)<p>
+
+; If a and b are polynomials with a common factor c, we return a
+; binding for x.  We could imagine writing get-factor to compute the
+; gcd, or simply to return a single non-invertible factor.<p>
+
+  (let ((c (get-factor a b)))
+    (and c (list (cons 'x c)))))<p>
+
+(defthm cancel-factor
+  ;; We use case-split here to ensure that, once we have selected
+  ;; a binding for x, the rest of the hypotheses will be relieved.
+  (implies (and (acl2-numberp a)
+                (acl2-numberp b)
+                (bind-free (bind-divisor a b) (x))
+                (case-split (not (equal x 0)))
+                (case-split (acl2-numberp x)))
+           (iff (equal a b)
+                (equal (/ a x) (/ b x)))))
+</pre>
+<p>
+
+EXAMPLE 2:  Pull integer summand out of floor.  Note:  This example
+has an <em>extended</em> <code><a href="BIND-FREE.html">bind-free</a></code> hypothesis, which uses the term
+<code>(find-int-in-sum sum mfc state)</code>.<p>
+
+
+<pre>
+(defun fl (x)
+  ;; This function is defined, and used, in the IHS books.
+  (floor x 1))<p>
+
+(defun int-binding (term mfc state)
+  ;; The call to mfc-ts returns the encoded type of term.
+  ;; Thus, we are asking if term is known by type reasoning to
+  ;; be an integer.
+  (declare (xargs :stobjs (state) :mode :program))
+  (if (ts-subsetp (mfc-ts term mfc state)
+                  *ts-integer*)
+        (list (cons 'int term))
+  nil))<p>
+
+(defun find-int-in-sum (sum mfc state)
+  (declare (xargs :stobjs (state) :mode :program))
+  (if (and (nvariablep sum)
+           (not (fquotep sum))
+           (eq (ffn-symb sum) 'binary-+))
+      (or (int-binding (fargn sum 1) mfc state)
+          (find-int-in-sum (fargn sum 2) mfc state))
+    (int-binding sum mfc state)))<p>
+
+; Some additional work is required to prove the following.  So for
+; purposes of illustration, we wrap skip-proofs around the defthm.<p>
+
+(skip-proofs
+ (defthm cancel-fl-int
+  ;; The use of case-split is probably not needed, since we should
+  ;; know that int is an integer by the way we selected it.  But this
+  ;; is safer.
+   (implies (and (acl2-numberp sum)
+                 (bind-free (find-int-in-sum sum mfc state) (int))
+                 (case-split (integerp int)))
+            (equal (fl sum)
+                   (+ int (fl (- sum int)))))
+   :rule-classes ((:rewrite :match-free :all)))
+)<p>
+
+; Arithmetic libraries will have this sort of lemma.
+(defthm hack (equal (+ (- x) x y) (fix y)))<p>
+
+(in-theory (disable fl))<p>
+
+(thm (implies (and (integerp x) (acl2-numberp y))
+              (equal (fl (+ x y)) (+ x (fl y)))))<p>
+
+</pre>
+<p>
+
+EXAMPLE 3:  Simplify terms such as (equal (+ a (* a b)) 0)<p>
+
+
+<pre>
+(defun factors (product)
+  ;; We return a list of all the factors of product.  We do not
+  ;; require that product actually be a product.
+  (if (eq (fn-symb product) 'BINARY-*)
+      (cons (fargn product 1)
+            (factors (fargn product 2)))
+    (list product)))<p>
+
+(defun make-product (factors)
+  ;; Factors is assumed to be a list of ACL2 terms.  We return an
+  ;; ACL2 term which is the product of all the ellements of the
+  ;; list factors.
+  (cond ((atom factors)
+         ''1)
+        ((null (cdr factors))
+         (car factors))
+        ((null (cddr factors))
+         (list 'BINARY-* (car factors) (cadr factors)))
+        (t
+         (list 'BINARY-* (car factors) (make-product (cdr factors))))))<p>
+
+(defun quotient (common-factors sum)
+  ;; Common-factors is a list of ACL2 terms.   Sum is an ACL2 term each
+  ;; of whose addends have common-factors as factors.  We return
+  ;; (/ sum (make-product common-factors)).
+  (if (eq (fn-symb sum) 'BINARY-+)
+      (let ((first (make-product (set-difference-equal (factors (fargn sum 1))
+                                                       common-factors))))
+        (list 'BINARY-+ first (quotient common-factors (fargn sum 2))))
+    (make-product (set-difference-equal (factors sum)
+                                        common-factors))))<p>
+
+(defun intersection-equal (x y)
+  (cond ((endp x)
+         nil)
+        ((member-equal (car x) y)
+         (cons (car x) (intersection-equal (cdr x) y)))
+        (t
+         (intersection-equal (cdr x) y))))<p>
+
+(defun common-factors (factors sum)
+  ;; Factors is a list of the factors common to all of the addends
+  ;; examined so far.  On entry, factors is a list of the factors in
+  ;; the first addend of the original sum, and sum is the rest of the
+  ;; addends.  We sweep through sum, trying to find a set of factors
+  ;; common to all the addends of sum.
+  (declare (xargs :measure (acl2-count sum)))
+  (cond ((null factors)
+         nil)
+        ((eq (fn-symb sum) 'BINARY-+)
+         (common-factors (intersection-equal factors (factors (fargn sum 1)))
+                         (fargn sum 2)))
+        (t
+         (intersection-equal factors (factors sum)))))<p>
+
+(defun simplify-terms-such-as-a+ab-rel-0-fn (sum)
+  ;; If we can find a set of factors common to all the addends of sum,
+  ;; we return an alist binding common to the product of these common
+  ;; factors and binding quotient to (/ sum common).
+  (if (eq (fn-symb sum) 'BINARY-+)
+      (let ((common-factors (common-factors (factors (fargn sum 1))
+                                            (fargn sum 2))))
+        (if common-factors
+            (let ((common (make-product common-factors))
+                  (quotient (quotient common-factors sum)))
+              (list (cons 'common common)
+                    (cons 'quotient quotient)))
+          nil))
+    nil))<p>
+
+(defthm simplify-terms-such-as-a+ab-=-0
+  (implies (and (bind-free
+                 (simplify-terms-such-as-a+ab-rel-0-fn sum)
+                 (common quotient))
+                (case-split (acl2-numberp common))
+                (case-split (acl2-numberp quotient))
+                (case-split (equal sum
+                                   (* common quotient))))
+           (equal (equal sum 0)
+                  (or (equal common 0)
+                      (equal quotient 0)))))<p>
+
+(thm (equal (equal (+ u (* u v)) 0)
+      (or (equal u 0) (equal v -1))))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

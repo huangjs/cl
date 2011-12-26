@@ -1,0 +1,195 @@
+<html>
+<head><title>PROOF-OF-WELL-FOUNDEDNESS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PROOF-OF-WELL-FOUNDEDNESS</h2>a proof that <code><a href="O_lt_.html">o&lt;</a></code> is well-founded on <code><a href="O-P.html">o-p</a></code>s
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+The soundness of ACL2 rests in part on the well-foundedness of <code><a href="O_lt_.html">o&lt;</a></code> on
+<code><a href="O-P.html">o-p</a></code>s.  This can be taken as obvious if one is willing to grant that
+those concepts are simply encodings of the standard mathematical notions of
+the ordinals below <code>epsilon-0</code> and its natural ordering relation.  But it
+is possible to prove that <code><a href="O_lt_.html">o&lt;</a></code> is well-founded on <code><a href="O-P.html">o-p</a></code>s without
+having to assert any connection to the ordinals and that is what we do here.
+The book <code>books/ordinals/proof-of-well-foundedness</code> carries out the proof
+outlined below in ACL2, using only that the natural numbers are
+well-founded.
+<p>
+Before outlining the above mentioned proof, we note that in the analogous
+documentation page of ACL2 Version_2.7, there is a proof of the
+well-foundedness of <code>e0-ord-&lt;</code> on <code>e0-ordinalp</code>s, the less-than relation
+and recognizer for the old ordinals (that is, for the ordinals appearing in
+ACL2 up through that version).  Manolios and Vroon have given a proof in ACL2
+Version_2.7 that the current ordinals (based on <code><a href="O_lt_.html">o&lt;</a></code> and <code><a href="O-P.html">o-p</a></code>) are
+order-isomorphic to the old ordinals (based on <code>e0-ord-&lt;</code> and
+<code>e0-ordinalp</code>).  Their proof establishes that switching from the old
+ordinals to the current ordinals preserves the soundness of ACL2.  For
+details see their paper:
+
+<pre>
+Manolios, Panagiotis &amp; Vroon, Daron.
+Ordinal arithmetic in ACL2.
+Kaufmann, Matt, &amp; Moore, J Strother (eds). 
+Fourth International Workshop on the ACL2 Theorem
+Prover and Its Applications (ACL2-2003),
+July, 2003.
+See URL <code>http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/</code>.
+</pre>
+<p>
+
+We now give an outline of the above mentioned proof of well-foundedness.  We
+first observe three facts about <code><a href="O_lt_.html">o&lt;</a></code> on ordinals that have been proved by
+ACL2 using only structural induction on lists.  These theorems can be proved
+by hand.
+
+<pre>
+(defthm transitivity-of-o&lt;
+  (implies (and (o&lt; x y)
+                (o&lt; y z))
+           (o&lt; x z))
+  :rule-classes nil)<p>
+
+(defthm non-circularity-of-o&lt;
+  (implies (o&lt; x y)
+           (not (o&lt; y x)))
+  :rule-classes nil)<p>
+
+(defthm trichotomy-of-o&lt;
+  (implies (and (o-p x)
+                (o-p y))
+           (or (equal x y)
+               (o&lt; x y)
+               (o&lt; y x)))
+  :rule-classes nil)
+</pre>
+
+These three properties establish that <code><a href="O_lt_.html">o&lt;</a></code> orders the
+<code><a href="O-P.html">o-p</a></code>s.  To put such a statement in the most standard
+mathematical nomenclature, we can define the macro:
+
+<pre>
+(defmacro o&lt;= (x y)
+  `(not (o&lt; ,y ,x)))
+</pre>
+
+and then establish that <code>o&lt;=</code> is a relation that is a simple,
+complete (i.e., total) order on ordinals by the following three
+lemmas, which have been proved:
+
+<pre>
+(defthm antisymmetry-of-o&lt;=
+  (implies (and (o-p x)
+                (o-p y)
+                (o&lt;= x y)
+                (o&lt;= y x))
+           (equal x y))
+  :rule-classes nil
+  :hints (("Goal" :use non-circularity-of-o&lt;)))<p>
+
+(defthm transitivity-of-o&lt;=
+  (implies (and (o-p x)
+                (o-p y)
+                (o&lt;= x y)
+                (o&lt;= y z))
+           (o&lt;= x z))
+  :rule-classes nil
+  :hints (("Goal" :use transitivity-of-o&lt;)))<p>
+
+(defthm trichotomy-of-o&lt;=
+  (implies (and (o-p x)
+                (o-p y))
+           (or (o&lt;= x y)
+               (o&lt;= y x)))
+  :rule-classes nil
+  :hints (("Goal" :use trichotomy-of-o&lt;)))
+</pre>
+
+Crucially important to the proof of the well-foundedness of
+<code><a href="O_lt_.html">o&lt;</a></code> on <code><a href="O-P.html">o-p</a></code>s is the concept of ordinal-depth,
+abbreviated <code>od</code>:
+
+<pre>
+(defun od (l)
+  (if (o-finp l) 
+      0 
+    (1+ (od (o-first-expt l)))))
+</pre>
+
+If the <code>od</code> of an <code><a href="O-P.html">o-p</a></code> <code>x</code> is smaller than that of an
+<code><a href="O-P.html">o-p</a></code> <code>y</code>, then <code>x</code> is <code><a href="O_lt_.html">o&lt;</a></code> <code>y</code>:
+
+<pre>
+(defun od-1 (x y)
+  (if (o-finp x)
+      (list x y)
+    (od-1 (o-first-expt x) (o-first-expt y))))<p>
+
+(defthm od-implies-ordlessp
+  (implies (and (o-p x)
+                (&lt; (od x) (od y)))
+           (o&lt; x y))
+  :hints (("Goal"
+           :induct (od-1 x y))))
+</pre>
+
+Remark.  A consequence of this lemma is the fact that if <code>s = s(1)</code>,
+<code>s(2)</code>, ... is an infinite, <code><a href="O_lt_.html">o&lt;</a></code> descending sequence of <code><a href="O-P.html">o-p</a></code>s, then
+<code>od(s(1))</code>, <code>od(s(2))</code>, ... is a ``weakly'' descending sequence of
+non-negative integers: <code>od(s(i))</code> is greater than or equal to
+<code>od(s(i+1))</code>.<p>
+
+<em>Lemma Main.</em>  For each non-negative integer <code>n</code>, <code><a href="O_lt_.html">o&lt;</a></code> well-orders
+the set of <code><a href="O-P.html">o-p</a></code>s with <code>od</code> less than or equal to <code>n</code> .
+
+<pre>
+ Base Case.  n = 0.  The o-ps with 0 od are the non-negative
+ integers.  On the non-negative integers, o&lt; is the same as &lt;.<p>
+
+ Induction Step.  n &gt; 0.  We assume that o&lt; well-orders the
+ o-ps with od less than n.<p>
+
+   If o&lt; does not well-order the o-ps with od less than or equal to n,
+   consider, D, the set of infinite, o&lt; descending sequences of o-ps of od
+   less than or equal to n.  The first element of a sequence in D has od n.
+   Therefore, the o-first-expt of the first element of a sequence in D has od
+   n-1.  Since o&lt;, by IH, well-orders the o-ps with od less than n, the set
+   of o-first-expts of first elements of the sequences in D has a minimal
+   element, which we denote by B and which has od of n-1.<p>
+
+   Let k be the minimum integer such that for some infinite, o&lt; descending
+   sequence s of o-ps with od less than or equal to n, the first element of s
+   has an o-first-expt of B and an o-first-coeff of k.  Notice that k is
+   positive.<p>
+
+   Having fixed B and k, let s = s(1), s(2), ... be an infinite, o&lt;
+   descending sequence of o-ps with od less than or equal to n such that s(1)
+   has a o-first-expt of B and an o-first-coeff of k.<p>
+
+   We show that each s(i) has a o-first-expt of B and an o-first-coeff of
+   k. For suppose that s(j) is the first member of s either with o-first-expt
+   B and o-first-coeff m (m neq k) or with o-first-expt B' and o-first-coeff
+   B' (B' neq B). If (o-first-expt s(j)) = B', then B' has od n-1 (otherwise,
+   by IH, s would not be infinite) and B' is o&lt; B, contradicting the
+   minimality of B. If 0 &lt; m &lt; k, then the fact that the sequence beginning
+   at s(j) is infinitely descending contradicts the minimality of k. If m &gt;
+   k, then s(j) is greater than its predecessor; but this contradicts the
+   fact that s is descending.<p>
+
+   Thus, by the definition of o&lt;, for s to be a decreasing sequence of o-ps,
+   (o-rst s(1)), (o-rst s(2)), ... must be a decreasing sequence. We end by
+   showing this cannot be the case. Let t = t(1), t(2), ... be an infinite
+   sequence of o-ps such that t(i) = (o-rst s(i)). Then t is infinitely
+   descending. Furthermore, t(1) begins with an o-p B' that is o&lt; B. Since t
+   is in D, t(1) has od n, therefore, B' has od n-1. But this contradicts the
+   minimality of B. Q.E.D.
+</pre>
+
+Theorem.  <code><a href="O_lt_.html">o&lt;</a></code> well-orders the <code><a href="O-P.html">o-p</a></code>s.  Proof.  Every
+infinite,<code> o&lt;</code> descending sequence of <code><a href="O-P.html">o-p</a></code>s has the
+property that each member has <code>od</code> less than or equal to the 
+<code>od</code>, <code>n</code>, of the first member of the sequence.  This 
+contradicts Lemma Main.
+Q.E.D.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

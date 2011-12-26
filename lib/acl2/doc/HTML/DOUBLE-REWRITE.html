@@ -1,0 +1,243 @@
+<html>
+<head><title>DOUBLE-REWRITE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DOUBLE-REWRITE</h2>cause a term to be rewritten twice
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Logically, <code>double-rewrite</code> is the <code><a href="IDENTITY.html">identity</a></code> function:
+<code>(double-rewrite x)</code> is equal to <code>x</code>.  However, the ACL2 rewriter treats
+calls of <code>double-rewrite</code> in the following special manner.  When it
+encounters a term <code>(double-rewrite u)</code>, it first rewrites <code>u</code> in the current
+context, and then the rewriter rewrites the result.<p>
+
+Such double-rewriting is rarely necessary, but it can be useful when
+rewriting under non-trivial equivalence relations (see <a href="EQUIVALENCE.html">equivalence</a>).  The
+following example will illustrate the issue.
+
+<pre>
+; Define an equivalence relation.
+(defun my-equiv (x y)
+  (equal x y))
+(defequiv my-equiv)<p>
+
+; Define a unary function whose argument is preserved by my-equiv.
+(defun foo (x)
+  (declare (ignore x))
+  t)
+(defcong my-equiv equal (foo x) 1)<p>
+
+; Define some other unary functions.
+(defun g (x) x)
+(defun h1 (x) x)
+(defun h2 (x) x)<p>
+
+; Prove some lemmas and then disable the functions above.
+(defthm lemma-1
+  (my-equiv (h1 x) (h2 x)))
+(defthm lemma-2
+  (foo (h2 x)))
+(defthm lemma-3
+  (implies (foo x)
+           (equal (g x) x)))
+(in-theory (union-theories (theory 'minimal-theory)
+                           '(lemma-1 lemma-2 lemma-3
+                             my-equiv-implies-equal-foo-1)))<p>
+
+; Attempt to prove a simple theorem that follows ``obviously'' from the
+; events above.
+(thm (equal (g (h1 a)) (h1 a)))
+</pre>
+
+We might expect the proof of this final <code>thm</code> to succeed by the following
+reasoning.  It is immediate from <code>lemma-3</code> provided we can establish
+<code>(foo (h1 a))</code>.  By the <code>defcong</code> event above, we know that
+<code>(foo (h1 a))</code> equals <code>(foo (h2 a))</code> provided
+<code>(my-equiv (h1 a) (h2 a))</code>; but this is immediate from <code>lemma-1</code>.  And
+finally, <code>(foo (h2 a))</code> is true by <code>lemma-2</code>.<p>
+
+Unfortunately, the proof fails.  But fortunately, ACL2 gives the following
+useful warning when <code>lemma-3</code> is submitted:
+
+<pre>
+ACL2 Warning [Double-rewrite] in ( DEFTHM LEMMA-3 ...):  In the :REWRITE
+rule generated from LEMMA-3, equivalence relation MY-EQUIV is maintained
+at one problematic occurrence of variable X in hypothesis (FOO X),
+but not at any binding occurrence of X.  Consider replacing that occurrence
+of X in this hypothesis with (DOUBLE-REWRITE X).  See :doc double-
+rewrite for more information on this issue.
+</pre>
+
+We can follow the warning's advice by changing <code>lemma-3</code> to the following.
+
+<pre>
+(defthm lemma-3
+  (implies (foo (double-rewrite x))
+           (equal (g x) x)))
+</pre>
+
+With this change, the proof succeeds for the final <code>thm</code> above.<p>
+
+In practice, it should suffice for users to follow the advice given in the
+``<code>Double-rewrite</code>'' warnings, by adding calls of <code>double-rewrite</code> around
+certain variable occurrences.  But this can cause inefficiency in large proof
+efforts.  For that reason, and for completeness,it seems prudent to explain
+more carefully what is going on; and that is what we do for the remainder of
+this <a href="DOCUMENTATION.html">documentation</a> topic.  Optionally, also see the paper ``Double
+Rewriting for Equivalential Reasoning in ACL2'' by Matt Kaufmann and J
+Strother Moore, in the proceedings of the 2006 ACL2 Workshop.
+<p>
+<strong>Suggesting congruence rules.</strong><p>
+
+Sometimes the best way to respond to a ``<code>Double-rewrite</code>'' warning may be
+to prove a congruence rule.  Consider for example this rule.
+
+<pre>
+(defthm insert-sort-is-id
+  (perm (insert-sort x) x))
+</pre>
+
+Assuming that <code>perm</code> has been identified as an <a href="EQUIVALENCE.html">equivalence</a> relation
+(see <a href="DEFEQUIV.html">defequiv</a>), we will get the following warning.
+
+<pre>
+ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-SORT-IS-ID ...): 
+In a :REWRITE rule generated from INSERT-SORT-IS-ID, equivalence relation
+PERM is maintained at one problematic occurrence of variable X in the
+right-hand side, but not at any binding occurrence of X.  Consider
+replacing that occurrence of X in the right-hand side with 
+(DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
+this issue.
+</pre>
+
+The problem is that the second occurrence of <code>x</code> (the right-hand side of
+the rule <code>insert-sort-is-id</code>) is in a context where <code>perm</code> is to be
+maintained, yet in this example, the argument <code>x</code> of <code>insert-sort</code> on the
+left-hand side of that rule is in a context where <code>perm</code> will not be
+maintained.  This can lead one to consider the possibility that <code>perm</code>
+could be maintained in that left-hand side occurrence of <code>x</code>, and if so, to
+prove the following congruence rule.
+
+<pre>
+(defcong perm perm (insert-sort x) 1)
+</pre>
+
+This will eliminate the above warning for <code>insert-sort-is-id</code>.  More
+important, this <code><a href="DEFCONG.html">defcong</a></code> event would probably be useful, since it would
+allow rewrite rules with equivalence relation <code>perm</code> to operate on the
+first argument of any call of <code>insert-sort</code> whose context calls for
+maintaining <code>perm</code>.<p>
+
+<strong>Details on double-rewrite.</strong><p>
+
+The reader who wants these details may first wish to see <a href="EQUIVALENCE.html">equivalence</a> for
+relevant review.<p>
+
+The ACL2 rewriter takes a number of contextual arguments,
+including the generated equivalence relation being maintained
+(see <a href="CONGRUENCE.html">congruence</a>) and an association list that maps variables to terms.  We
+call the latter alist the <code>unify-subst</code> because it is produced by unifying
+(actually matching) a pattern against a current term; let us explain this
+point by returning to the example above.  Consider what happens when the
+rewriter is given the top-level goal of the <code>thm</code> above.
+
+<pre>
+(equal (g (h1 a)) (h1 a))
+</pre>
+
+This rewrite is performed with the empty alist (<code>unify-subst</code>), and is
+begun by rewriting the first argument (in that same empty <code>unify-subst</code>):
+
+<pre>
+(g (h1 a))
+</pre>
+
+Note that the only equivalence relation being maintained at this point is
+<code>equal</code>.  Now, the rewriter notices that the left-hand side of <code>lemma-3</code>,
+which is <code>(g x)</code>, matches <code>(g (h1 a))</code>.  The rewriter thus creates a
+<code>unify-subst</code> binding <code>x</code> to <code>(h1 a)</code>: <code>((x . (h1 a)))</code>.  It now
+attempts to rewrite the hypothesis of <code>lemma-3</code> to <code>t</code> under this
+<code>unify-subst</code>.<p>
+
+Consider what happens now if the hypothesis of <code>lemma-3</code> is <code>(foo x)</code>.
+To rewrite this hypothesis under a <code>unify-subst</code> of <code>((x . (h1 a)))</code>, it
+will first rewrite <code>x</code> under this <code>unify-subst</code>.  The key observation
+here is that this rewrite takes place simply by returning the value of <code>x</code>
+in the <code>unify-subst</code>, namely <code>(h1 a)</code>.  No further rewriting is done!
+The efficiency of the ACL2 rewriter depends on such caching of previous
+rewriting results.<p>
+
+But suppose that, instead, the hypothesis of <code>lemma-3</code> is
+<code>(foo (double-rewrite x))</code>.  As before, the rewriter dives to the first
+argument of this call of <code>foo</code>.  But this time the rewriter sees the call
+<code>(double-rewrite x)</code>, which it handles as follows.  First, <code>x</code> is
+rewritten as before, yielding <code>(h1 a)</code>.  But now, because of the call of
+<code>double-rewrite</code>, the rewriter takes <code>(h1 a)</code> and rewrites it under the
+empty <code>unify-subst</code>.  What's more, because of the <code>defcong</code> event above,
+this rewrite takes place in a context where it suffices to maintain the
+equivalence relation <code>my-equiv</code>.  This allows for the application of
+<code>lemma-1</code>, hence <code>(h1 a)</code> is rewritten (under <code>unify-subst</code> = <code>nil</code>)
+to <code>(h2 a)</code>.  Popping back up, the rewriter will now rewrite the call of
+<code>foo</code> to <code>t</code> using <code>lemma-2</code>.<p>
+
+The example above explains how the rewriter treats calls of
+<code>double-rewrite</code>, but it may leave the unfortunate impression that the user
+needs to consider each <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="LINEAR.html">linear</a></code> rule
+carefully, just in case a call of <code>double-rewrite</code> may be appropriate.
+Fortunately, ACL2 provides a ``[Double-rewrite]'' warning to inform the user
+of just this sort of situation.  If you don't see this warning when you
+submit a (<code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="LINEAR.html">linear</a></code>) rule, then the issue
+described here shouldn't come up for that rule.  Such warnings may appear for
+hypotheses or right-hand side of a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule, and for
+hypotheses or full conclusion (as opposed to just the trigger term) of a
+<code>:</code><code><a href="LINEAR.html">linear</a></code> rule.<p>
+
+If you do see a ``[Double-rewrite]'' warning, then should you add the
+indicated call(s) of <code>double-rewrite</code>?  At the time of writing this
+<a href="DOCUMENTATION.html">documentation</a>, the answer is not clear.  Early experiments with double
+rewriting suggested that it may be too expensive to call <code>double-rewrite</code>
+in every instance where a warning indicates that there could be an advantage
+to doing so.  And at the time of this writing, the ACL2 regression suite has
+about 1900 such warnings (but note that books were developed before
+<code>double-rewrite</code> or the ``[Double-rewrite]'' warning were implemented),
+which suggests that one can often do fine just ignoring such warnings.
+However, it seems advisable to go ahead and add the calls of
+<code>double-rewrite</code> indicated by the warnings unless you run across
+efficiency problems caused by doing so.  Of course, if you decide to ignore
+all such warnings you can execute the event:<br>
+
+<code>(</code><code><a href="SET-INHIBIT-WARNINGS.html">set-inhibit-warnings</a></code><code> "Double-rewrite")</code>.<p>
+
+Finally, we note that it is generally not necessary to call
+<code>double-rewrite</code> in order to get its effect in the following case, where
+the discussion above might have led one to consider a call of
+<code>double-rewrite</code>: a hypothesis is a variable, or more generally, we are
+considering a variable occurrence that is a branch of the top-level <code>IF</code>
+structure of a hypothesis.  The automatic handling of this case, by a form of
+double rewriting, was instituted in ACL2 Version_2.9 and remains in place
+with the introduction of <code>double-rewrite</code>.  Here is a simple illustrative
+example.  Notice that <code>foo-holds</code> applies to prove the final <code><a href="THM.html">thm</a></code>
+below, even without a call of <code>double-rewrite</code> in the hypothesis of
+<code>foo-holds</code>, and that there is no ``[Double-rewrite]'' warning when
+submitting <code>foo-holds</code>.
+
+<pre>
+(encapsulate
+ (((foo *) =&gt; *)
+  ((bar *) =&gt; *))<p>
+
+ (local (defun foo (x) (declare (ignore x)) t))
+ (local (defun bar (x) (declare (ignore x)) t))<p>
+
+ (defthm foo-holds
+   (implies x
+            (equal (foo x) t)))
+ (defthm bar-holds-propositionally
+   (iff (bar x) t)))
+
+(thm (foo (bar y)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

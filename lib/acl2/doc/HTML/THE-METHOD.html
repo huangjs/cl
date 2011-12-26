@@ -1,0 +1,99 @@
+<html>
+<head><title>THE-METHOD.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>THE-METHOD</h2>how to find proofs
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Many users develop proof scripts in an Emacs buffer and submit one
+event at a time to the theorem prover running in a <code>*shell*</code> buffer.
+The script buffer is logically divided into two regions: the events
+that have been accepted by the theorem prover and those that have
+not yet been accepted.  An imaginary ``barrier'' divides these two
+regions.  The region above the barrier describes the state of the
+<code>*shell*</code> buffer (and ACL2's logical world).  The region below the
+barrier is the ``to do'' list.<p>
+
+We usually start a proof project by typing the key lemmas, and main
+goal into the to do list.  Definitions are here just regarded as
+theorems to prove (i.e., the measure conjectures).  Then we follow
+``The Method.''<p>
+
+(1) Think about the proof of the first theorem in the to do list.
+Structure the proof either as an induction followed by
+simplification or just simplification.  Have the necessary lemmas
+been proved? That is, are the necessary lemmas in the done list
+already?  If so, proceed to Step 2.  Otherwise, add the necessary
+lemmas at the front of the to do list and repeat Step 1.<p>
+
+(2) Call the theorem prover on the first theorem in the to do list
+and let the output stream into the *shell* buffer.  Abort the proof
+if it runs more than a few seconds.<p>
+
+(3) If the theorem prover succeeded, advance the barrier past the
+successful command and go to Step 1.<p>
+
+(4) Otherwise, inspect the failed proof attempt, starting from the
+beginning, not the end.  Basically you should look for the first
+place the proof attempt deviates from your imagined proof.  If your
+imagined proof was inductive, inspect the induction scheme used by
+ACL2.  If that is ok, then find the first subsequent subgoal that is
+stable under simplification and think about why it was not proved by
+the simplifier.  If your imagined proof was not inductive, then
+think about the first subgoal stable under simplification, as above.
+Modify the script appropriately.  It usually means adding lemmas to
+the to do list, just in front of the theorem just tried.  It could
+mean adding hints to the current theorem.  In any case, after the
+modifications go to Step 1.
+<p>
+We do not seriously suggest that this or any rotely applied
+algorithm will let you drive ACL2 to difficult proofs.  Indeed, to
+remind you of this we call this ``The Method'' rather than ``the
+method.''  That is, we are aware of the somewhat pretentious nature
+of any such advice.  But these remarks have helped many users
+approach ACL2 in a constructive and disciplined way.<p>
+
+We say much more about The Method in the ACL2 book.  See the
+home page.<p>
+
+Learning to read failed proofs is a useful skill.  There are several
+kinds of ``checkpoints'' in a proof: (1) a formula to which induction
+is being (or would be) applied, (2) the first formula stable under
+simplification, (3) a formula that is possibly generalized, either
+by cross-fertilizing with and throwing away an equivalence hypothesis
+or by explicit generalization of a term with a new variable.  <p>
+
+At the induction checkpoint, confirm that you believe the formula
+being proved is a theorem and that it is appropriately strong for an
+inductive proof.  Read the selected induction scheme and make sure it
+agrees with your idea of how the proof should go.<p>
+
+At the post-simplification checkpoint, which is probably the most
+commonly seen, consider whether there are additional rewrite rules
+you could prove to make the formula simplify still further.  Look
+for compositions of function symbols you could rewrite.  Look for
+contradictions among hypotheses and prove the appropriate
+implications: for example, the checkpoint might contain the two
+hypotheses <code>(P (F A))</code> and <code>(NOT (Q (G (F A))))</code> and you might
+realize that <code>(implies (p x) (q (g x)))</code> is a theorem.  Look for
+signs that your existing rules did not apply, e.g., for terms that
+should have been rewritten, and figure out why they were not.
+Possible causes include that they do not exactly match your old
+rules, that your old rules have hypotheses that cannot be relieved
+here -- perhaps because some other rules are missing, or perhaps
+your old rules are disabled.  If you cannot find any further
+simplifications to make in the formula, ask yourself whether it is
+valid.  If so, sketch a proof.  Perhaps the proof is by appeal to a
+combination of lemmas you should now prove?  <p>
+
+At the two generalization checkpoints --- where hypotheses are
+discarded or terms are replaced by variables --- ask yourself whether
+the result is a theorem.  It often is not.  Think about rewrite rules
+that would prove the formula.  These are often restricted versions of the
+overly-general formulas created by the system's heuristics.<p>
+
+See <a href="PROOF-TREE.html">proof-tree</a> for a discussion of a tool to help you navigate through
+ACL2 proofs.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

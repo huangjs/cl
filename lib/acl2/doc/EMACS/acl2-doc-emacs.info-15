@@ -1,0 +1,882 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: PUFF*,  Next: RESET-KILL-RING,  Prev: PUFF,  Up: HISTORY
+
+PUFF*    replace a compound command by its subevents
+
+     Example Forms:
+     ACL2 !>:puff* :max
+     ACL2 !>:puff* :x
+     ACL2 !>:puff* 15
+     ACL2 !>:puff* "book"
+     
+     General Form:
+     :puff* cd
+
+where cd is a command descriptor (see *note COMMAND-DESCRIPTOR::) for a
+"puffable" command.  See *Note PUFF:: for the definition of "puffable"
+and for a description of the basic act of "puffing" a command.  Puff*
+is just the recursive application of puff.  Puff* prints the region
+puffed, using pcs.
+
+To puff a command is to replace it by its immediate subevents, each of
+which is executed as a command.  To puff* a command is to replace the
+command by each of its immediate subevents and then to puff* each of
+the puffable commands among the newly introduced ones.
+
+For example, suppose "ab" is a book containing the following
+
+     (in-package "ACL2")
+     (include-book "a")
+     (include-book "b")
+
+Suppose that book "a" only contained defuns for the functions a1 and a2
+and that "b" only contained defuns for b1 and b2.
+
+Now consider an ACL2 state in which only two commands have been
+executed, the first being (include-book "ab") and the second being
+(include-book "c").  Thus, the relevant part of the display produced by
+:pbt 1 would be:
+
+     1 (INCLUDE-BOOK "ab")
+     2 (INCLUDE-BOOK "c")
+
+Call this state the "starting state" in this example, because we will
+refer to it several times.
+
+Suppose :puff 1 is executed in the starting state.  Then the first
+command is replaced by its immediate subevents and :pbt 1 would show:
+
+     1 (INCLUDE-BOOK "a")
+     2 (INCLUDE-BOOK "b")
+     3 (INCLUDE-BOOK "c")
+
+Contrast this with the execution of :puff* 1 in the starting state.
+Puff* would first puff (include-book "ab") to get the state shown
+above.  But then it would recursively puff* the puffable commands
+introduced by the first puff.  This continues recursively as long as
+any puff introduced a puffable command.  The end result of :puff* 1 in
+the starting state is
+
+     1 (DEFUN A1 ...)
+     2 (DEFUN A2 ...)
+     3 (DEFUN B1 ...)
+     4 (DEFUN B2 ...)
+     5 (INCLUDE-BOOK "c")
+
+Observe that when puff* is done, the originally indicated command,
+(include-book "ab"), has been replaced by the corresponding sequence of
+primitive events.  Observe also that puffable commands elsewhere in the
+history, for example, command 2 in the starting state, are not affected
+(except that their command numbers grow as a result of the splicing in
+of earlier commands).
+
+
+File: acl2-doc-emacs.info,  Node: RESET-KILL-RING,  Next: U,  Prev: PUFF*,  Up: HISTORY
+
+RESET-KILL-RING    save memory by resetting and perhaps resizing the kill ring used by oops
+
+By default, ACL2 holds on to old logical worlds when you undo commands
+(see *note UBT::), as documented elswhere; see *note OOPS::.  You can
+free up memory by deleting those old worlds using reset-kill-ring.
+
+     Examples:
+     (reset-kill-ring t state)   ; replace each element of the kill ring by nil
+     (reset-kill-ring 2 state)   ; create a new kill ring of '(nil nil)
+     (reset-kill-ring 0 state)   ; create a new kill ring that is empty
+     (reset-kill-ring nil state) ; just return the length of the kill ring
+     
+     General form:
+     (reset-kill-ring n state)
+
+where n evaluates either to t, to nil, or to a nonnegative integer (a
+natp).  If n evaluates to t, it is treated as the length of the current
+kill ring.  If n is nil, then the length k of the current kill ring is
+returned as a value triple (mv nil k state).  If n is a natp, then the
+kill ring is replaced with a list of n nils.
+
+In particular, use (reset-kill-ring 0 state) to avoid saving any old
+logical worlds, at the cost of disabling the effect of the oops command.
+
+
+File: acl2-doc-emacs.info,  Node: U,  Next: UBT,  Prev: RESET-KILL-RING,  Up: HISTORY
+
+U    undo last command, without a query
+
+     Example:
+     :u
+
+The keyword command :u is the same as :ubt :max, but with related
+queries suppressed appropriately.  :Oops will undo the last :u.  See
+*Note UBT::, see *note UBU::, see *note UBT!::, and see *note UBU!::.
+
+
+File: acl2-doc-emacs.info,  Node: UBT,  Next: UBT!,  Prev: U,  Up: HISTORY
+
+UBT    undo the commands back through a command descriptor
+
+     Examples:
+     :ubt :max      ; undo back through the most recent command
+                    ; (which just means undo the most recent command)
+     :ubt :x        ; same as :ubt :max
+     :u             ; same as :ubt :max with no questions asked
+     :ubt fn        ; undo back through the introduction of fn
+                    ; (including all the other events in fn's block)
+     :ubt 5         ; undo back through the fifth command executed
+     :ubt (:max -4) ; undo back through the most recent five commands
+     :ubt (:x -4)   ; undo back through the most recent five commands
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Ubt takes one argument, a command descriptor, and undoes the commands
+from :max (aka :x) through the one described.  See *Note
+COMMAND-DESCRIPTOR::.  Pbt will print the commands that ubt will undo.
+:Oops will undo the undo.  See *Note OOPS::.
+
+Ubt can cause errors or queries.  To avoid these, see *note UBT!::.
+
+It is important to remember that a command may create several events.
+That is, the command that introduces fn1 may also introduce fn2.
+Undoing the command that created either of these will undo them both.
+The events created by a command constitute the command's "block" and we
+can only undo entire blocks.  Use pcb to print the command block of a
+command if you wish to see what will be lost by undoing the command.
+
+Ubt will not undo into "prehistory".  :Ubt 1 will undo all of your
+commands.  But :ubt -5 will cause an error, warning you that :ubt
+cannot undo system initialization.
+
+See *Note U:: for how to undo just the latest command, and see *note
+UBU:: and see *note UBU!:: for how to undo back up to, but not
+including, the current command.
+
+
+File: acl2-doc-emacs.info,  Node: UBT!,  Next: UBT-PREHISTORY,  Prev: UBT,  Up: HISTORY
+
+UBT!    undo commands, without a query or an error
+
+     Example:
+     :ubt! :x-4
+
+The keyword command :ubt! is the same as :ubt, but with related queries
+suppressed appropriately, and with a guarantee that it is "error-free."
+More precisely, the error triple returned by :ubt!  will always have a
+first component of nil.  :Oops will undo the last :ubt!.  See *Note
+UBT::, see *note UBU::, and see *note U::.
+
+
+File: acl2-doc-emacs.info,  Node: UBT-PREHISTORY,  Next: UBU,  Prev: UBT!,  Up: HISTORY
+
+UBT-PREHISTORY    undo the commands back through the last reset-prehistory event
+
+This command is only used to eliminate a reset-prehistory event.  If
+your most recent reset-prehistory event does not have a flag argument
+of t, then :ubt-prehistory undoes all command back through, and
+including, that reset-prehistory event.
+
+
+File: acl2-doc-emacs.info,  Node: UBU,  Next: UBU!,  Prev: UBT-PREHISTORY,  Up: HISTORY
+
+UBU    undo the commands back up to (not including) a command descriptor
+
+     Examples:
+     :ubu :x-3      ; undo the last three commands (same as :ubt :x-2)
+     :ubu (:x -3)   ; same as above
+     :ubu fn        ; undo back up to, but not including the introduction of fn
+                    ; (so fn will continue to be defined)
+     :ubu 5         ; undo back up to, but not including, the fifth command
+                    ; executed (leaving the first five commands in place)
+
+See *Note COMMAND-DESCRIPTOR::.
+
+Ubu takes one argument, a command descriptor, and undoes the commands
+from :max (aka :x) up to, but not including, the indicated command.
+See *Note COMMAND-DESCRIPTOR::.
+
+Ubu can cause errors or queries.  To avoid these, see *note UBU!::.
+
+Also see *note UBT::, which is similar but also undoes the indicated
+command.  As for :ubt, :oops will undo the undo (see *note OOPS::) and
+ubu will not undo into "prehistory".
+
+See *Note U:: for how to undo just the latest command, and see *note
+UBT:: and see *note UBT!:: for how to undo back through (that is,
+including) the current command.
+
+
+File: acl2-doc-emacs.info,  Node: UBU!,  Prev: UBU,  Up: HISTORY
+
+UBU!    undo commands, without a query or an error
+
+     Example:
+     :ubu! :x-4
+
+The keyword command :ubu! is the same as :ubu, but with related queries
+suppressed appropriately, and with a guarantee that it is "error-free."
+More precisely, the error triple returned by :ubu!  will always have a
+first component of nil.  :Oops will undo the last :ubu!.  Also see
+*note UBU::, see *note UBT::, and see *note U::.
+
+
+File: acl2-doc-emacs.info,  Node: MISCELLANEOUS,  Next: OTHER,  Prev: HISTORY,  Up: Top
+
+MISCELLANEOUS    a miscellany of documented functions and concepts
+               (often cited in more accessible documentation)
+
+* Menu:
+
+* ABORT!:: to return to the top-level of ACL2's command loop
+
+* ACCUMULATED-PERSISTENCE:: to get statistics on which runes are being tried
+
+* ACKNOWLEDGMENTS:: some contributors to the well-being of ACL2
+
+* ACL2-COUNT:: a commonly used measure for justifying recursion
+
+* ACL2-CUSTOMIZATION:: file of initial commands for ACL2 to run at startup
+
+* APROPOS:: searching :doc and :more-doc text
+
+* ARRAYS:: an introduction to ACL2 arrays
+
+* BACKCHAIN-LIMIT:: limiting the effort expended on relieving hypotheses
+
+* BIBLIOGRAPHY:: reports about ACL2
+
+* BIND-FREE:: to bind free variables of a rewrite or linear rule
+
+* BREAKS:: Common Lisp breaks
+
+* BY:: hints keyword :BY
+
+* CASE-SPLIT:: like force but immediately splits the top-level goal on the hypothesis
+
+* CASE-SPLIT-LIMITATIONS:: a list of two ``numbers'' limiting the number of cases produced at once
+
+* CASES:: hints keyword :CASES
+
+* CHECK-SUM:: assigning ``often unique'' integers to files and objects
+
+* CLAUSE-IDENTIFIER:: the internal form of a goal-spec
+
+* COMMAND:: forms you type at the top-level, but...
+
+* COMMAND-DESCRIPTOR:: an object describing a particular command typed by the user
+
+* COMPUTED-HINTS:: computing advice to the theorem proving process
+
+* CONSTRAINT:: restrictions on certain functions introduced in encapsulate events
+
+* COPYRIGHT:: ACL2 copyright, license, sponsorship
+
+* COROLLARY:: the corollary formula of a rune
+
+* CURRENT-PACKAGE:: the package used for reading and printing
+
+* DEFAULT-BACKCHAIN-LIMIT:: specifying the backchain limit for a rule
+
+* DEFAULT-DEFUN-MODE:: the default defun-mode of defun'd functions
+
+* DEFAULT-HINTS:: a list of hints added to every proof attempt
+
+* DEFAULT-PRINT-PROMPT:: the default prompt printed by ld
+
+* DEFUN-MODE:: determines whether a function definition is a logical act
+
+* DEFUN-MODE-CAVEAT:: functions with defun-mode of :program considered unsound
+
+* DEFUNS:: an alternative to mutual-recursion
+
+* DISABLE-FORCING:: to disallow forced case-splits
+
+* DISABLE-IMMEDIATE-FORCE-MODEP:: forced hypotheses are not attacked immediately
+
+* DISABLEDP:: determine whether a given name or rune is disabled
+
+* DO-NOT:: hints keyword :DO-NOT
+
+* DO-NOT-INDUCT:: hints keyword :DO-NOT-INDUCT
+
+* DOUBLE-REWRITE:: cause a term to be rewritten twice
+
+* EMBEDDED-EVENT-FORM:: forms that may be embedded in other events
+
+* ENABLE-FORCING:: to allow forced splits
+
+* ENABLE-IMMEDIATE-FORCE-MODEP:: forced hypotheses are attacked immediately
+
+* ENTER-BOOT-STRAP-MODE:: The first millisecond of the Big Bang
+
+* ESCAPE-TO-COMMON-LISP:: escaping to Common Lisp
+
+* EVISCERATE-HIDE-TERMS:: to print (hide ...) as <hidden>
+
+* EXECUTABLE-COUNTERPART:: a rule for computing the value of a function
+
+* EXIT-BOOT-STRAP-MODE:: the end of pre-history
+
+* EXPAND:: hints keyword :EXPAND
+
+* EXTENDED-METAFUNCTIONS:: state and context sensitive metafunctions
+
+* FAILED-FORCING:: how to deal with a proof failure in a forcing round
+
+* FAILURE:: how to deal with a proof failure
+
+* FIND-RULES-OF-RUNE:: find the rules named rune
+
+* FORCE:: identity function used to force a hypothesis
+
+* FORCING-ROUND:: a section of a proof dealing with forced assumptions
+
+* GC$:: invoke the garbage collector
+
+* GCL:: tips on building and using ACL2 based on Gnu Common Lisp
+
+* GENERALIZED-BOOLEANS:: potential soundness issues related to ACL2 predicates
+
+* GOAL-SPEC:: to indicate where a hint is to be used
+
+* GUARD:: restricting the domain of a function
+
+* GUARD-HINTS:: xargs keyword :GUARD-HINTS
+
+* HANDS-OFF:: hints keyword :HANDS-OFF
+
+* HIDE:: hide a term from the rewriter
+
+* HINTS:: advice to the theorem proving process
+
+* I-AM-HERE:: a convenient marker for use with rebuild
+
+* IMMEDIATE-FORCE-MODEP:: when executable counterpart is enabled,
+ forced hypotheses are attacked immediately
+
+* INDUCT:: hints keyword :INDUCT
+
+* KEYWORD-COMMANDS:: how keyword commands are processed
+
+* LAMBDA:: See *Note TERM::.
+
+* LD-ERROR-ACTION:: determines ld's response to an error
+
+* LD-ERROR-TRIPLES:: determines whether a form caused an error during ld
+
+* LD-EVISC-TUPLE:: determines whether ld suppresses details when printing
+
+* LD-KEYWORD-ALIASES:: allows the abbreviation of some keyword commands
+
+* LD-POST-EVAL-PRINT:: determines whether and how ld prints the result of evaluation
+
+* LD-PRE-EVAL-FILTER:: determines which forms ld evaluates
+
+* LD-PRE-EVAL-PRINT:: determines whether ld prints the forms to be eval'd
+
+* LD-PROMPT:: determines the prompt printed by ld
+
+* LD-QUERY-CONTROL-ALIST:: how to default answers to queries
+
+* LD-REDEFINITION-ACTION:: to allow redefinition without undoing
+
+* LD-SKIP-PROOFSP:: how carefully ACL2 processes your commands
+
+* LD-VERBOSE:: determines whether ld prints ``ACL2 Loading ...''
+
+* LEMMA-INSTANCE:: an object denoting an instance of a theorem
+
+* LINEAR-ARITHMETIC:: A description of the linear arithmetic decision procedure
+
+* LOCAL-INCOMPATIBILITY:: when non-local events won't replay in isolation
+
+* LOGICAL-NAME:: a name created by a logical event
+
+* LOOP-STOPPER:: limit application of permutative rewrite rules
+
+* LP:: the Common Lisp entry to ACL2
+
+* MACRO-ARGS:: the formals list of a macro definition
+
+* MEASURE:: xargs keyword :MEASURE
+
+* MODE:: xargs keyword :MODE
+
+* NAME:: syntactic rules on logical names
+
+* NON-EXECUTABLE:: xargs keyword :NON-EXECUTABLE
+
+* NON-LINEAR-ARITHMETIC:: Non-linear Arithmetic
+
+* NONLINEARP:: hints keyword :NONLINEARP
+
+* NORMALIZE:: xargs keyword :NORMALIZE
+
+* NU-REWRITER:: rewriting NTH/UPDATE-NTH expressions
+
+* OBDD:: ordered binary decision diagrams with rewriting
+
+* ORDINALS:: ordinals in ACL2
+
+* OTF-FLG:: pushing all the initial subgoals
+
+* PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS:: re-defining undone defpkgs
+
+* PRINT-DOC-START-COLUMN:: printing the one-liner
+
+* PROMPT:: the prompt printed by ld
+
+* PROOF-OF-WELL-FOUNDEDNESS:: a proof that o< is well-founded on o-ps
+
+* PSEUDO-TERMP:: a predicate for recognizing term-like s-expressions
+
+* REDEF:: a common way to set ld-redefinition-action
+
+* REDEF!:: system hacker's redefinition command
+
+* REDEFINED-NAMES:: to collect the names that have been redefined
+
+* REDUNDANT-EVENTS:: allowing a name to be introduced ``twice''
+
+* RESTRICT:: hints keyword :RESTRICT
+
+* REWRITE-STACK-LIMIT:: limiting the stack depth of the ACL2 rewriter
+
+* SAVING-AND-RESTORING:: saving and restoring your logical state
+
+* SHOW-BODIES:: show the potential definition bodies
+
+* SIGNATURE:: how to specify the arity of a constrained function
+
+* SIMPLE:: :definition and :rewrite rules used in preprocessing
+
+* SPECIOUS-SIMPLIFICATION:: nonproductive proof steps
+
+* STATE:: the von Neumannesque ACL2 state object
+
+* STOBJS:: xargs keyword :STOBJS
+
+* SUBVERSIVE-INDUCTIONS:: why we restrict encapsulated recursive functions
+
+* SUBVERSIVE-RECURSIONS:: why we restrict encapsulated recursive functions
+
+* SYNTAX:: the syntax of ACL2 is that of Common Lisp
+
+* SYNTAXP:: attach a heuristic filter on a :rewrite, :meta, or :linear rule
+
+* TERM:: the three senses of well-formed ACL2 expressions or formulas
+
+* TERM-ORDER:: the ordering relation on terms used by ACL2
+
+* THE-METHOD:: how to find proofs
+
+* TTAGS-SEEN:: list some declared trust tags (ttags)
+
+* TTREE:: tag trees
+
+* TYPE-SET:: how type information is encoded in ACL2
+
+* UNTRANSLATE:: See *Note USER-DEFINED-FUNCTIONS-TABLE::.
+
+* USE:: hints keyword :USE
+
+* USING-COMPUTED-HINTS:: how to use computed hints
+
+* USING-COMPUTED-HINTS-1:: Driving Home the Basics
+
+* USING-COMPUTED-HINTS-2:: One Hint to Every Top-Level Goal in a Forcing Round
+
+* USING-COMPUTED-HINTS-3:: Hints as a Function of the Goal (not its Name)
+
+* USING-COMPUTED-HINTS-4:: Computing the Hints
+
+* USING-COMPUTED-HINTS-5:: Debugging Computed Hints
+
+* USING-COMPUTED-HINTS-6:: Using the computed-hint-replacement feature
+
+* USING-COMPUTED-HINTS-7:: Using the stable-under-simplificationp flag
+
+* USING-COMPUTED-HINTS-8:: Some Final Comments
+
+* VERSION:: ACL2 Version Number
+
+* WHY-BRR:: an explanation of why ACL2 has an explicit brr mode
+
+* WORLD:: ACL2 property lists and the ACL2 logical data base
+
+* WORMHOLE:: ld without state --- a short-cut to a parallel universe
+
+* WORMHOLE-P:: predicate to determine if you are inside a wormhole
+
+* XARGS:: giving hints to defun
+
+Perhaps as the system matures this section will become more structured.
+
+
+File: acl2-doc-emacs.info,  Node: ABORT!,  Next: ACCUMULATED-PERSISTENCE,  Prev: MISCELLANEOUS,  Up: MISCELLANEOUS
+
+ABORT!    to return to the top-level of ACL2's command loop
+
+When (abort!) is evaluated inside of ACL2's command loop, the current
+computation is aborted and control returns to the top of the command
+loop, exactly as though the user had interrupted and aborted the
+current computation.
+
+Logically speaking, (abort!) = nil.  But imagine that it is defined in
+such a way that it causes a stack overflow or other resource exhaustion
+when called.
+
+
+File: acl2-doc-emacs.info,  Node: ACCUMULATED-PERSISTENCE,  Next: ACKNOWLEDGMENTS,  Prev: ABORT!,  Up: MISCELLANEOUS
+
+ACCUMULATED-PERSISTENCE    to get statistics on which runes are being tried
+
+     Useful Forms:
+     (accumulated-persistence t)             ; activate statistics gathering
+     
+     (show-accumulated-persistence :frames)  ; display statistics ordered by
+     (show-accumulated-persistence :tries)   ; frames built, times tried,
+     (show-accumulated-persistence :ratio)   ; or their ratio
+     
+     (accumulated-persistence nil)           ; deactivate
+
+Generally speaking, the more ACL2 knows, the slower it runs.  That is
+because the search space grows with the number of alternative rules.
+Often, the system tries to apply rules that you have forgotten were
+even there, if you knew about them in the first place!
+"Accumulated-persistence" is a statistic (originally developed for
+Nqthm) that helps you identify the rules that are causing ACL2's search
+space to explode.
+
+Accumulated persistence tracking can be turned on or off.  It is
+generally off.  When on, the system runs about two times slower than
+otherwise!  But some useful numbers are collected.  When it is turned
+on, by
+
+     ACL2 !>(accumulated-persistence t)
+
+an accumulation site is initialized and henceforth data about which
+rules are being tried is accumulated into that site.  That accumulated
+data can be displayed with show-accumulated-persistence, as described
+in detail below.  When accumulated persistence is turned off, with
+(accumulated-persistence nil), the accumulation site is wiped out and
+the data in it is lost.
+
+The "accumulated persistence" of a rune is the number of runes the
+system has attempted to apply (since accumulated persistence was last
+activated) while the given rune was being tried.
+
+Consider a :rewrite rule named rune.  For simplicity, let us imagine
+that rune is tried only once in the period during which accumulated
+persistence is being monitored.  Recall that to apply a rewrite rule we
+must match the left-hand side of the conclusion to some term we are
+trying to rewrite, establish the hypotheses of rune by rewriting, and,
+if successful, then rewrite the right-hand side of the conclusion.  We
+say rune is "being tried" from the time we have matched its left-hand
+side to the time we have either abandoned the attempt or finished
+rewriting its right-hand side.  (By "match" we mean to include any
+loop-stopper requirement; see *note LOOP-STOPPER::.)  During that
+period of time other rules might be tried, e.g., to establish the
+hypotheses.  The rules tried while rune is being tried are "billed" to
+rune in the sense that they are being considered here only because of
+the demands of rune.  Thus, if no other rules are tried during that
+period, the accumulated persistence of rune is 1 -- we "bill" rune once
+for its own application attempt.  If, on the other hand, we tried 10
+rules on behalf of that application of rune, then rune's accumulated
+persistence would be 11.
+
+One way to envision accumulated persistence is to imagine that every
+time a rune is tried it is pushed onto a stack.  The rules tried on
+behalf of a given application of a rune are thus pushed and popped on
+the stack above that rune.  A lot of work might be done on its behalf
+-- the stack above the rune grows and shrinks repeatedly as the search
+continues for a way to use the rune.  All the while, the rune itself
+"persists" in the stack, until we finish with the attempt to apply it,
+at which time we pop it off.  The accumulated persistence of a rune is
+thus the number of stack frames built while the given rune was on the
+stack.
+
+Note that accumulated persistence is not concerned with whether the
+attempt to apply a rune is successful.  Each of the rules tried on its
+behalf might have failed and the attempt to apply the rune might have
+also failed.  The ACL2 proof script would make no mention of the rune
+or the rules tried on its behalf because they did not contribute to the
+proof.  But time was spent pursuing the possible application of the
+rune and accumulated persistence is a measure of that time.
+
+A high accumulated persistence might come about in two extreme ways.
+One is that the rule causes a great deal of work every time it is
+tried.  The other is that the rule is "cheap" but is tried very often.
+We therefore keep track of the number of times each rule is tried as
+well as its persistence.  The ratio between the two is the average
+amount of work done on behalf of the rule each time it is tried.
+
+When the accumulated persistence totals are displayed by the function
+show-accumulated-persistence we sort them so that the most expensive
+runes are shown first.  We can sort according to one of three keys:
+
+     :frames - the number of frames built on behalf of the rune
+     :tries  - the number of times the rune was tried
+     :ratio  - frames built per try
+
+The key simply determines the order in which the information is
+presented.  If no argument is supplied to show-accumulated-persistence,
+:frames is used.
+
+Note that a rune with high accumulated persistence may not actually be
+the "culprit."  For example, suppose rune1 is reported to have a :ratio
+of 101, meaning that on the average a hundred and one frames were built
+each time rune1 was tried.  Suppose rune2 has a :ratio of 100.  It
+could be that the attempt to apply rune1 resulted in the attempted
+application of rune2 and no other rune.  Thus, in some sense, rune1 is
+"cheap" and rune2 is the "culprit" even though it costs less than rune1.
+
+Users are encouraged to think about other meters we could install in
+ACL2 to help diagnose performance problems.
+
+
+File: acl2-doc-emacs.info,  Node: ACKNOWLEDGMENTS,  Next: ACL2-COUNT,  Prev: ACCUMULATED-PERSISTENCE,  Up: MISCELLANEOUS
+
+ACKNOWLEDGMENTS    some contributors to the well-being of ACL2
+
+The development of ACL2 was initially made possible by funding from the
+U. S. Department of Defense, including ARPA and ONR.  We thank all the
+organizations that have contributed support, including the following (in
+alphabetical order).
+
+     o AMD, for providing significant time over several years for Matt
+     Kaufmann to carry out ACL2 research, support, and development
+     o Computational Logic, Inc. and its president, Don Good, where the
+     first eight years of ACL2 development occurred
+     o DARPA
+     o Digital Equipment Corporation
+     o EDS, which provided some time for Matt Kaufmann's ACL2 work
+     1998-1999
+     o IBM
+     o NSF
+     o ONR
+     o Rockwell Collins
+     o SRC
+     o Sun Microsystems
+     o University of Texas at Austin (in particular support to J Moore
+     through the Admiral B. R.  Inman Chair of Computing Theory)
+
+ACL2 was started in August, 1989 by Boyer and Moore working together.
+They co-authored the first versions of axioms.lisp and basis.lisp, with
+Boyer taking the lead in the formalization of "state" and the most
+primitive io functions.  Boyer also had a significant hand in the
+development of the early versions of the files interface-raw.lisp and
+translate.lisp.  For several years, Moore alone was responsible for
+developing the ACL2 system code, though he consulted often with both
+Boyer and Kaufmann.  In August, 1993, Kaufmann became jointly
+responsible with Moore for developing the system.  Boyer has continued
+to provide valuable consulting on an informal basis.
+
+Bishop Brock was the heaviest early user of ACL2, and provided many
+suggestions for improvements.  In particular, the :cases and :restrict
+hints were his idea; he developed an early version of congruence-based
+reasoning for Nqthm; and he helped in the development of some early
+books about arithmetic.  In a demonstration of his courage and faith in
+us, he pushed for Computational Logic, Inc., to agree to the Motorola
+CAP contract - which required formalizing a commercial DSP in the
+untested ACL2 - and moved to Scottsdale, AZ, to do the work with the
+Motorola design team.  His demonstration of ACL2's utility was an
+inspiration, even to those of us designing ACL2.
+
+John Cowles also helped in the development of some early books about
+arithmetic, and also provided valuable feedback and bug reports.
+
+Other early users of ACL2 at Computational Logic, Inc. helped influence
+its development.  In particular, Warren Hunt helped with the port to
+Macintosh Common Lisp, and Art Flatau and Mike Smith provided useful
+general feedback.
+
+Mike Smith helped develop the Emacs portion of the implementation of
+proof trees.
+
+Bill Schelter made some enhancements to akcl (now gcl) that helped to
+enhance ACL2 performance in that Common Lisp implementation, and more
+generally, responded helpfully to our bug reports.  Camm Maguire has
+since provided wonderful gcl support, and has created a Debian package
+for ACL2 built on GCL.  We are also grateful to developers of other
+Common Lisp implementations.
+
+Kent Pitman helped in our interaction with the ANSI Common Lisp
+standardization committee, X3J13.
+
+John Cowles helped with the port to Windows (98) by answering questions
+and running tests.
+
+Ruben Gamboa created a modification of ACL2 to allow reasoning about
+the real numbers using non-standard analysis.  His work has been
+incorporated into the ACL2 distribution; see *note REAL::.
+
+Rob Sumners has made numerous useful suggestions.  In particular, he
+has designed and implemented improvements for stobjs and been key in
+our development of locally-bound stobjs; see *note NOTE-2-6::.
+
+Robert Krug has designed and implemented many changes in the vicinity
+of the linear arithmetic package and its connection to type-set and
+rewrite.  He was also instrumental in the development of
+extended-metafunctions.
+
+Pete Manolios has made numerous useful suggestions.  In particular, Pete
+helped us to organize the first workshop and was a wonderful equal
+partner with the two of us (Kaufmann and Moore) in producing the books
+that arose from that workshop.  Pete and his student, Daron Vroon,
+provided the current implementation of ordinals.
+
+We also thank the contributors to the ACL2 workshops for some suggested
+improvements and for the extensive collection of publicly distributed
+benchmark problems.  And we thank participants at the ACL2 seminar at
+the University of Texas for useful feedback.
+
+_Regarding the documentation:_
+
+     Bill Young wrote significant portions of the ACL2-TUTORIAL section
+     of the ACL2 documentation, an important task for which we are
+     grateful.  He, Bishop Brock, Rich Cohen, and Noah Friedman read
+     over considerable amounts of the documentation, and made many
+     useful comments.  Others, particularly Bill Bevier and John
+     Cowles, have also made useful comments on the documentation.
+
+     Art Flatau helped develop the ACL2 markup language and translators
+     from that language to Texinfo and HTML.  Michael "Bogo" Bogomolny
+     created a search engine, beginning with Version  2.6, and for that
+     purpose modified the HTML translator to create one file per topic
+     (a good idea in any case).
+
+     Laura Lawless provided many hours of help in marking up appropriate
+     parts of the documentation in typewriter font.
+
+     Noah Friedman developed an Emacs tool that helped us insert
+     "invisible links" into the documentation, which improve the
+     usability of that documentation under HTML readers such as Mosaic.
+
+     Richard Stallman contributed a texinfo patch, to be found in the
+     file doc/texinfo.tex.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-COUNT,  Next: ACL2-CUSTOMIZATION,  Prev: ACKNOWLEDGMENTS,  Up: MISCELLANEOUS
+
+ACL2-COUNT    a commonly used measure for justifying recursion
+
+(Acl2-count x) returns a nonnegative integer that indicates the "size"
+of its argument x.
+
+All characters and symbols have acl2-count 0.  The acl2-count of a
+string is the number of characters in it, i.e., its length.  The
+acl2-count of a cons is one greater than the sum of the acl2-counts of
+the car and cdr.  The acl2-count of an integer is its absolute value.
+The acl2-count of a rational is the sum of the acl2-counts of the
+numerator and denominator.  The acl2-count of a complex rational is one
+greater than the sum of the acl2-counts of the real and imaginary parts.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-CUSTOMIZATION,  Next: APROPOS,  Prev: ACL2-COUNT,  Up: MISCELLANEOUS
+
+ACL2-CUSTOMIZATION    file of initial commands for ACL2 to run at startup
+
+The file "acl2-customization.lisp" is automatically loaded, via ld, the
+first time lp is called in an ACL2 session, provided such a file exists
+on the current directory.  Except for the fact that this ld command is
+not typed explicitly by you, it is a standard ld command, with one
+exception:  any settings of ld specials are remembered once this call
+of ld has completed.  For example, suppose that you start your
+customization file with (set-ld-skip-proofsp t state), so that proofs
+are skipped as it is loaded with ld.  Then the ld special
+ld-skip-proofsp will remain t after the ld has completed, causing
+proofs to be skipped in your ACL2 session, unless your customization
+file sets this variable back to nil, say with (set-ld-skip-proofsp nil
+state).
+
+The customization file "acl2-customization.lisp" actually resides on
+the connected book directory; see *note CBD::.  Except, if that file
+does not exist, then ACL2 looks for "acl2-customization.lisp" on your
+home directory.  If ACL2 does not find that file either, then no
+customization occurs and lp enters the standard ACL2 read-eval-print
+loop.
+
+If the customization file exists, it is loaded with ld using the usual
+default values for the ld specials (see *note LD::).  Thus, if an error
+is encountered, no subsequent forms in the file will be evaluated.
+
+To create a customization file it is recommended that you first give it
+a name other than "acl2-customization.lisp" so that ACL2 does not try
+to include it prematurely when you next enter lp.  Then, while in the
+uncustomized lp, explicitly invoke ld on your evolving (but renamed)
+customization file until all forms are successfully evaluated.  The
+same procedure is recommended if for some reason ACL2 cannot
+successfully evaluate all forms in your customization file:  rename
+your customization file so that ACL2 does not try to ld it
+automatically and then debug the new file by explicit calls to ld.
+
+When you have created a file that can be loaded with ld without error
+and that you wish to be your customization file, name it
+"acl2-customization.lisp" and put it on the current directory or in
+your home directory.  The first time after starting up ACL2 that you
+invoke (lp), ACL2 will automatically load the "acl2-customization.lisp"
+file from the cbd (see *note CBD::) if there is one, and otherwise will
+load it from your home directory.
+
+Note that if you certify a book after the (automatic) loading of an
+acl2-customization file, the forms in that file *will be part of the*
+*portcullis* of the books you certify!  That is, the forms in your
+customization file at certification time will be loaded whenever
+anybody uses the books you are certifying.  Since customization files
+generally contain idiosyncratic commands, you may not want yours to be
+part of the books you create for others.  Thus, if you have a
+customization file then you may want to invoke :ubt 1 before certifying
+any books.
+
+The conventions concerning ACL2 customization are liable to change as
+we get more experience with the interaction between customization,
+certification of books for others, and routine undoing.  For example,
+at the moment it is regarded as a *feature* of customization that it
+can be undone but it might be regarded as a bug if you accidentally
+undo your customization.
+
+
+File: acl2-doc-emacs.info,  Node: APROPOS,  Next: ARRAYS,  Prev: ACL2-CUSTOMIZATION,  Up: MISCELLANEOUS
+
+APROPOS    searching :doc and :more-doc text
+
+NOTE:  The :docs command only makes sense at the terminal.
+
+     Example:
+     :Docs "compile" will find all documented topics mentioning the
+     string "compile"
+
+When the :docs command is given a stringp argument it searches the text
+produced by :doc and :more-doc and lists all the documented topics
+whose text contains the given string.  For purposes of this string
+matching we ignore distinctions of case and the amount and kind (but
+not presence) of white space.  We also treat hyphen as whitespace.
+

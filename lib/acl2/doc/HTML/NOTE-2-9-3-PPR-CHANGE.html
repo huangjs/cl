@@ -1,0 +1,313 @@
+<html>
+<head><title>NOTE-2-9-3-PPR-CHANGE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-9-3-PPR-CHANGE</h3>change in pretty-printing for ACL2 Version_2.9.3
+<pre>Major Section:  <a href="NOTE-2-9-3.html">NOTE-2-9-3</a>
+</pre><p>
+
+We have improved pretty-printing in ACL2 Version_2.9.3 to handle keywords a
+little differently.  To see a discussion of the basics of this change,
+see <a href="NOTE-2-9-3.html">note-2-9-3</a>.  In this note we describe it in considerable detail.
+<p>
+Those who wish to understand the ACL2 pretty-printer's implementation can now
+find considerably more comments on it in the source code.  In this note, we
+do not focus on the implementation.  Rather, we motivate the change and show
+how the improved prettyprinter performs.<p>
+
+Why do we want better keyword handling?  Imagine a macro that builds a new
+state from an old state by changing the values in the affected fields,
+leaving everything else unchanged.  One could write
+
+<pre>
+(modify th s :key1 val1 :key2 val2 :key3 val3)
+</pre>
+
+where the three keys identify fields in the state.<p>
+
+To make it easier to read new concrete states, we may have a function that
+prints them ``relative'' to a given base state, expressing the new state as a
+modification of the given base state.  So we may find ourselves
+prettyprinting modify forms like that above.<p>
+
+The previous prettyprinter will sometimes print the form above as follows.
+
+<pre>
+(modify th s :key1
+        val1
+        :key2 val2 :key3 val3)
+</pre>
+
+This can be unpleasant to read, because of the way <code>:key1</code> and <code>val1</code> are
+separated.  Here is an example of the old prettyprinter and the new one, both
+printing an expression from the ACL2 source code in a width of 40:
+
+<pre>
+Old:
+(ADD-TO-TAG-TREE
+ 'ASSUMPTION
+ (MAKE
+  ASSUMPTION :TYPE-ALIST TYPE-ALIST
+  :TERM TERM :REWRITTENP REWRITTENP
+  :IMMEDIATEP IMMEDIATEP :ASSUMNOTES
+  (LIST
+   (MAKE
+        ASSUMNOTE :CL-ID
+        NIL :RUNE RUNE :TARGET TARGET)))
+ TTREE)<p>
+
+New:
+(ADD-TO-TAG-TREE
+     'ASSUMPTION
+     (MAKE ASSUMPTION
+           :TYPE-ALIST TYPE-ALIST
+           :TERM TERM
+           :REWRITTENP REWRITTENP
+           :IMMEDIATEP IMMEDIATEP
+           :ASSUMNOTES
+           (LIST (MAKE ASSUMNOTE
+                       :CL-ID NIL
+                       :RUNE RUNE
+                       :TARGET TARGET)))
+     TTREE)
+</pre>
+
+Basically the change we made forces the prettyprinter to print each <code>:key</code>
+on a new line unless they all fit on a single line.  So we would now get
+either
+
+<pre>
+(modify th s :key1 val1 :key2 :val2 :key3 val3)
+</pre>
+
+or
+
+<pre>
+(modify th s
+        :key1 val1
+        :key2 val2
+        :key3 val3)
+</pre>
+
+Furthermore, we fixed it so that if <code>val1</code> (say) is a big s-expression we
+may still print it on the same line as its key.  The old prettyprinter
+enforced the rule that if you wanted to print <code>(foo a b)</code> and <code>b</code> gets
+broken up into several lines, then it has to start on a new line.  Thus,
+we'd never print
+
+<pre>
+(foo a (bbb
+        (mum x)))
+</pre>
+
+but would print instead
+
+<pre>
+(foo a
+     (bbb
+      (mum x)))
+</pre>
+
+Now, if a is a keyword, we can print the first way.<p>
+
+So here are some nice examples of prettyprinted keyword forms.  All of these
+are printed for a page of width 40.
+
+<pre>
+&lt;--            40 chars               -&gt;
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<p>
+
+(MODIFY TH S :KEY1 V1 :KEY2 V2)<p>
+
+(MODIFY TH S :KEY1 V1 :KEY2 V2 :KEY3 V3)<p>
+
+(MODIFY TH S1                               ; Because of the extra char
+        :KEY1 V1                            ; in S1 the flat size exceeds
+        :KEY2 V2                            ; 40 and we break it.
+        :KEY3 V3)
+</pre>
+
+The old ppr would have printed this as:
+
+<pre>
+(MODIFY
+     TH S1 :KEY1 V1 :KEY2 V2 :KEY3 V3)
+</pre>
+
+Returning to new examples:
+
+<pre>
+&lt;--            40 chars               -&gt;
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<p>
+
+(MODIFY TH S
+        :KEY1 (IF (IF X Y Z) AAAA BBBB)
+        :KEY2 VAL2
+        :KEY3 VAL3)
+</pre>
+
+Now we extend <code>AAAA</code> and <code>BBBB</code> by one char each, so it would overflow
+the right margin if printed as above, and we get:
+
+<pre>
+&lt;--            40 chars               -&gt;
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<p>
+
+(MODIFY
+     TH S
+     :KEY1 (IF (IF X Y Z) AAAAX BBBBX)
+     :KEY2 VAL2
+     :KEY3 VAL3)
+</pre>
+
+If we make these names even longer we force the value off the line containing
+<code>:key1</code>:
+
+<pre>
+(MODIFY
+     TH S
+     :KEY1
+     (IF (IF X Y Z) AAAAXXXXX BBBBXXXXX)
+     :KEY2 VAL2
+     :KEY3 VAL3)
+</pre>
+
+Here are some examples from the ACL2 source code, printed in 40 characters:
+
+<pre>
+(DEFTHM
+ ALPHORDER-ANTI-SYMMETRIC
+ (IMPLIES (AND (NOT (CONSP X))
+               (NOT (CONSP Y))
+               (ALPHORDER X Y)
+               (ALPHORDER Y X))
+          (EQUAL X Y))
+ :HINTS
+ (("Goal"
+   :IN-THEORY
+   (UNION-THEORIES
+    '(STRING&lt; SYMBOL-&lt;)
+    (DISABLE
+       CODE-CHAR-CHAR-CODE-IS-IDENTITY))
+   :USE
+   ((:INSTANCE SYMBOL-EQUALITY (S1 X)
+               (S2 Y))
+    (:INSTANCE BAD-ATOM&lt;=-ANTISYMMETRIC)
+    (:INSTANCE
+         CODE-CHAR-CHAR-CODE-IS-IDENTITY
+         (C Y))
+    (:INSTANCE
+         CODE-CHAR-CHAR-CODE-IS-IDENTITY
+         (C X)))))
+ :RULE-CLASSES
+ ((:FORWARD-CHAINING
+   :COROLLARY
+   (IMPLIES
+      (AND (ALPHORDER X Y)
+           (NOT (CONSP X))
+           (NOT (CONSP Y)))
+      (IFF (ALPHORDER Y X) (EQUAL X Y)))
+   :HINTS
+   (("Goal"
+     :IN-THEORY (DISABLE ALPHORDER))))))
+</pre>
+
+Here is that same one, printed in a width of 60.
+
+<pre>
+(DEFTHM
+ ALPHORDER-ANTI-SYMMETRIC
+ (IMPLIES (AND (NOT (CONSP X))
+               (NOT (CONSP Y))
+               (ALPHORDER X Y)
+               (ALPHORDER Y X))
+          (EQUAL X Y))
+ :HINTS
+ (("Goal"
+     :IN-THEORY
+     (UNION-THEORIES
+          '(STRING&lt; SYMBOL-&lt;)
+          (DISABLE CODE-CHAR-CHAR-CODE-IS-IDENTITY))
+     :USE ((:INSTANCE SYMBOL-EQUALITY (S1 X)
+                      (S2 Y))
+           (:INSTANCE BAD-ATOM&lt;=-ANTISYMMETRIC)
+           (:INSTANCE CODE-CHAR-CHAR-CODE-IS-IDENTITY (C Y))
+           (:INSTANCE CODE-CHAR-CHAR-CODE-IS-IDENTITY
+                      (C X)))))
+ :RULE-CLASSES
+ ((:FORWARD-CHAINING
+      :COROLLARY (IMPLIES (AND (ALPHORDER X Y)
+                               (NOT (CONSP X))
+                               (NOT (CONSP Y)))
+                          (IFF (ALPHORDER Y X) (EQUAL X Y)))
+      :HINTS (("Goal" :IN-THEORY (DISABLE ALPHORDER))))))
+</pre>
+
+Just for comparison, here is the above printed in 60 columns by the old
+prettyprinter.
+
+<pre>
+(DEFTHM
+ ALPHORDER-ANTI-SYMMETRIC
+ (IMPLIES (AND (NOT (CONSP X))
+               (NOT (CONSP Y))
+               (ALPHORDER X Y)
+               (ALPHORDER Y X))
+          (EQUAL X Y))
+ :HINTS
+ (("Goal" :IN-THEORY
+          (UNION-THEORIES
+               '(STRING&lt; SYMBOL-&lt;)
+               (DISABLE CODE-CHAR-CHAR-CODE-IS-IDENTITY))
+          :USE
+          ((:INSTANCE SYMBOL-EQUALITY (S1 X)
+                      (S2 Y))
+           (:INSTANCE BAD-ATOM&lt;=-ANTISYMMETRIC)
+           (:INSTANCE CODE-CHAR-CHAR-CODE-IS-IDENTITY (C Y))
+           (:INSTANCE CODE-CHAR-CHAR-CODE-IS-IDENTITY
+                      (C X)))))
+ :RULE-CLASSES
+ ((:FORWARD-CHAINING
+       :COROLLARY
+       (IMPLIES (AND (ALPHORDER X Y)
+                     (NOT (CONSP X))
+                     (NOT (CONSP Y)))
+                (IFF (ALPHORDER Y X) (EQUAL X Y)))
+       :HINTS
+       (("Goal" :IN-THEORY (DISABLE ALPHORDER))))))
+</pre>
+<p>
+
+Of course, given that you cannot tell for sure whether the keywords you're
+seeing are part of a keyword/value parameter list or part of some constant
+containing random keywords, the prettyprinter can't solve the problem
+perfectly.  We just tried to make it work nicely on well-formed keyword/value
+parameter lists.<p>
+
+For example, here is a form printed by the each prettyprinter.
+
+<pre>
+Old:
+(MEMBER
+ X
+ '(:MONDAY
+      :MON :TUESDAY :TUES :WEDNESDAY
+      :WED :THURSDAY :THURS :FRIDAY
+      :FRI :SATURDAY :SAT :SUNDAY :SUN))<p>
+
+New:
+(MEMBER X
+        '(:MONDAY :MON
+                  :TUESDAY :TUES
+                  :WEDNESDAY :WED
+                  :THURSDAY :THURS
+                  :FRIDAY :FRI
+                  :SATURDAY :SAT
+                  :SUNDAY :SUN))
+</pre>
+<p>
+
+The new way is not how one would print it by hand!  But then, neither is the
+old way.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

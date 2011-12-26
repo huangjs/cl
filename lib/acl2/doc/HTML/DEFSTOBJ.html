@@ -1,0 +1,390 @@
+<html>
+<head><title>DEFSTOBJ.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFSTOBJ</h2>define a new single-threaded object 
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(defstobj st
+          (reg :type (array (unsigned-byte 31) (8))
+               :initially 0)
+          (p-c :type (unsigned-byte 31) 
+               :initially 555)
+          halt                  ; = (halt :type t :initially nil)
+          (mem :type (array (unsigned-byte 31) (64))
+               :initially 0 :resizable t))<p>
+
+General Form:
+(defstobj name 
+          (field1 :type type1 :initially val1 :resizable b1)
+          ...
+          (fieldk :type typek :initially valk :resizable bk)
+          :renaming alist
+          :doc doc-string
+          :inline inline-flag)
+</pre>
+
+where <code>name</code> is a new symbol, each <code>fieldi</code> is a symbol, each
+<code>typei</code> is either a <code><a href="TYPE-SPEC.html">type-spec</a></code> or <code>(ARRAY</code> <code><a href="TYPE-SPEC.html">type-spec</a></code> <code>(max))</code>,
+each <code>vali</code> is an object satisfying <code>typei</code>, and each <code>bi</code> is <code>t</code> or <code>nil</code>.
+Each pair <code>:initially vali</code> and <code>:resizable bi</code> may be omitted; more
+on this below.  The <code>alist</code> argument is optional and allows the user
+to override the default function names introduced by this event.
+The <code><a href="DOC-STRING.html">doc-string</a></code> is also optional.  The <code>inline-flag</code> Boolean argument
+is also optional and declares to ACL2 that the generated access and update
+functions for the stobj should be implemented as macros under the hood (which
+has the effect of inlining the function calls).  We describe further
+restrictions on the <code>fieldi</code>, <code>typei</code>, <code>vali</code>, and on
+<code>alist</code> below.  We recommend that you read about
+single-threaded objects (stobjs) in ACL2 before proceeding;
+see <a href="STOBJ.html">stobj</a>.<p>
+
+The effect of this event is to introduce a new single-threaded
+object (i.e., a ``<a href="STOBJ.html">stobj</a>''), named <code>name</code>, and the associated
+recognizers, creator, accessors, updaters, constants, and, for
+fields of <code>ARRAY</code> type, length and resize functions.
+
+<p>
+<em>The Single-Threaded Object Introduced</em><p>
+
+The <code>defstobj</code> event effectively introduces a new global
+variable, named <code>name</code>, which has as its initial logical value
+a list of <code>k</code> elements, where <code>k</code> is the number of ``field
+descriptors'' provided.  The elements are listed in the same order
+in which the field descriptors appear.  If the <code>:type</code> of a field
+is <code>(ARRAY type-spec (max))</code> then the corresponding element of
+the stobj is initially a list of length <code>max</code> containing the value,
+<code>val</code>, specified by <code>:initially val</code>.  Otherwise, the <code>:type</code>
+of the field is a <code><a href="TYPE-SPEC.html">type-spec</a></code> and the corresponding element of
+the stobj is the specified initial value <code>val</code>.  (The actual
+representation of the stobj in the underlying Lisp may be quite
+different; see <a href="STOBJ-EXAMPLE-2.html">stobj-example-2</a>.  For the moment we
+focus entirely on the logical aspects of the object.)<p>
+
+In addition, the <code>defstobj</code> event introduces functions for
+recognizing and creating the stobj and for recognizing, accessing,
+and updating its fields.  For fields of <code>ARRAY</code> type, length and
+resize functions are also introduced.  Constants are introduced that
+correspond to the accessor functions.<p>
+
+<em>Restrictions on the Field Descriptions in Defstobj</em><p>
+
+Each field descriptor is of the form:
+
+<pre>
+(fieldi :TYPE typei :INITIALLY vali)
+</pre>
+
+Note that the type and initial value are given in ``keyword
+argument'' format and may be given in either order.  The <code>typei</code>
+and <code>vali</code> ``arguments'' are not evaluated.  If omitted, the type
+defaults to <code>t</code> (unrestricted) and the initial value defaults to
+<code>nil</code>.<p>
+
+Each <code>typei</code> must be either a <code><a href="TYPE-SPEC.html">type-spec</a></code> or else a list of
+the form <code>(ARRAY type-spec (max))</code>.  The latter forms are said to
+be ``array types.''  Examples of legal <code>typei</code> are:
+
+<pre>
+(INTEGERP 0 31)
+(SIGNED-BYTE 31)
+(ARRAY (SIGNED-BYTE 31) (16))
+</pre>
+<p>
+
+The <code>typei</code> describes the objects which are expected to occupy
+the given field.  Those objects in <code>fieldi</code> should satisfy
+<code>typei</code>.  We are more precise below about what we mean by
+``expected.''  We first present the restrictions on <code>typei</code> and
+<code>vali</code>.<p>
+
+Non-Array Types<p>
+
+When <code>typei</code> is a <code><a href="TYPE-SPEC.html">type-spec</a></code> it restricts the contents,
+<code>x</code>, of <code>fieldi</code> according to the ``meaning'' formula given in
+the table for <code><a href="TYPE-SPEC.html">type-spec</a></code>.  For example, the first <code>typei</code>
+above restricts the field to be an integer between 0 and 31,
+inclusive.  The second restricts the field to be an integer between
+-2^30 and (2^30)-1, inclusive.<p>
+
+The initial value, <code>vali</code>, of a field description may be any ACL2
+object but must satisfy <code>typei</code>.  Note that <code>vali</code> is not a
+form to be evaluated but an object.  A form that evaluates to
+<code>vali</code> could be written <code>'vali</code>, but <code>defstobj</code> does not
+expect you to write the quote mark.  For example, the field
+description
+
+<pre>
+(days-off :initially (saturday sunday))
+</pre>
+
+describes a field named <code>days-off</code> whose initial value is the list
+consisting of the two symbols <code>SATURDAY</code> and <code>SUNDAY</code>.  In
+particular, the initial value is NOT obtained by applying the
+function <code>saturday</code> to the variable <code>sunday</code>!  Had we written
+
+<pre>
+(days-off :initially '(saturday sunday))
+</pre>
+
+it would be equivalent to writing
+
+<pre>
+(days-off :initially (quote (saturday sunday)))
+</pre>
+
+which would initialize the field to a list of length two, whose first
+element is the symbol <code>quote</code> and whose second element is a list
+containing the symbols <code>saturday</code> and <code>sunday</code>.<p>
+
+Array Types<p>
+
+When <code>typei</code> is of the form <code>(ARRAY type-spec (max))</code>, the
+field is supposed to be a list of items, initially of length <code>max</code>,
+each of which satisfies the indicated <code>type-spec</code>.  <code>Max</code> must be a
+non-negative integer less than (2^28)-1.  We discuss this limitation
+below. Thus,
+
+<pre>
+(ARRAY (SIGNED-BYTE 31) (16))
+</pre>
+
+restricts the field to be a list of integers, initially of length
+16, where each integer in the list is a <code>(SIGNED-BYTE 31)</code>.  We
+sometimes call such a list an ``array'' (because it is represented
+as an array in the underlying Common Lisp).  The elements of an
+array field are indexed by position, starting at 0.  Thus, the
+maximum legal index of an array field is <code>max</code>-1.<p>
+
+Note that the <code>ARRAY</code> type requires that the <code>max</code> be enclosed
+in parentheses.  This makes ACL2's notation consistent with the
+Common Lisp convention of describing the (multi-)dimensionality of
+arrays.  But ACL2 currently supports only single dimensional arrays
+in stobjs.<p>
+
+For array fields, the initial value <code>vali</code> must be an object satisfying
+the <code><a href="TYPE-SPEC.html">type-spec</a></code> of the <code>ARRAY</code> description.  The initial value
+of the field is a list of <code>max</code> repetitions of <code>vali</code>.<p>
+
+Array fields can be ``resized,'' that is, their lengths can be
+changed, if <code>:resizable t</code> is supplied as shown in the example and
+General Form above.  The new length must satisfy the same
+restriction as does <code>max</code>, as described above.  Each array field in a
+<code>defstobj</code> event gives rise to a length function, which gives the
+length of the field, and a resize function, which modifies the
+length of the field if <code>:resizable t</code> was supplied with the field when
+the <code>defstobj</code> was introduced and otherwise causes an error.<p>
+
+Array resizing is relatively slow, so we recommend using it somewhat
+sparingly.<p>
+
+<em>The Default Function Names</em><p>
+
+To recap, in
+
+<pre>
+(defstobj name 
+          (field1 :type type1 :initially val1)
+          ...
+          (fieldk :type typek :initially valk)                
+          :renaming alist
+          :doc doc-string
+          :inline inline-flag)
+</pre>
+
+<code>name</code> must be a new symbol, each <code>fieldi</code> must be a symbol,
+each <code>typei</code> must be a <code><a href="TYPE-SPEC.html">type-spec</a></code> or <code>(ARRAY type-spec (max))</code>,
+and each <code>vali</code> must be an object satisfying <code>typei</code>.<p>
+
+Roughly speaking, for each <code>fieldi</code>, a <code>defstobj</code> introduces a
+recognizer function, an accessor function, and an updater function.
+The accessor function, for example, takes the stobj and returns the
+indicated component; the updater takes a new component value and the
+stobj and return a new stobj with the component replaced by the new
+value.  But that summary is inaccurate for array fields.<p>
+
+The accessor function for an array field does not take the stobj
+and return the indicated component array, which is a list of length
+<code>max</code>.  Instead, it takes an additional index argument and
+returns the indicated element of the array component.  Similarly,
+the updater function for an array field takes an index, a new
+value, and the stobj, and returns a new stobj with the indicated
+element replaced by the new value.<p>
+
+These functions -- the recognizer, accessor, and updater, and also
+length and resize functions in the case of array fields -- have
+``default names.''  The default names depend on the field name,
+<code>fieldi</code>, and on whether the field is an array field or not.  For
+clarity, suppose <code>fieldi</code> is named <code>c</code>. The default names are
+shown below in calls, which also indicate the arities of the
+functions.  In the expressions, we use <code>x</code> as the object to be
+recognized by field recognizers, <code>i</code> as an array index, <code>v</code> as
+the ``new value'' to be installed by an updater, and <code>name</code> as the
+single-threaded object.<p>
+
+
+<pre>
+                 non-array field        array field
+recognizer         (cP x)                (cP x)
+accessor           (c name)              (cI i name)
+updater            (UPDATE-c v name)     (UPDATE-cI i v name)
+length                                   (c-LENGTH name)
+resize                                   (RESIZE-c k name)
+</pre>
+<p>
+
+Finally, a recognizer and a creator for the entire single-threaded
+object are introduced.  The creator returns the initial stobj, but
+may only be used in limited contexts; see <a href="WITH-LOCAL-STOBJ.html">with-local-stobj</a>.  If
+the single-threaded object is named <code>name</code>, then the default names
+and arities are as shown below.
+
+<pre>
+top recognizer     (nameP x)
+creator            (CREATE-name)
+</pre>
+<p>
+
+For example, the event
+
+<pre>
+(DEFSTOBJ $S
+  (X :TYPE INTEGER :INITIALLY 0)
+  (A :TYPE (ARRAY (INTEGER 0 9) (3)) :INITIALLY 9))
+</pre>
+
+introduces a stobj named <code>$S</code>.  The stobj has two fields, <code>X</code> and
+<code>A</code>.  The <code>A</code> field is an array.  The <code>X</code> field contains an
+integer and is initially 0.  The <code>A</code> field contains a list of
+integers, each between 0 and 9, inclusively.  Initially, each of the
+three elements of the <code>A</code> field is 9.<p>
+
+This event introduces the following sequence of definitions:
+
+<pre>
+(DEFUN XP (X) ...)               ; recognizer for X field
+(DEFUN AP (X) ...)               ; recognizer of A field
+(DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+(DEFUN CREATE-$S () ...)         ; creator for stobj $S
+(DEFUN X ($S) ...)               ; accessor for X field
+(DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+(DEFUN A-LENGTH ($S) ...)        ; length of A field
+(DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+(DEFUN AI (I $S) ...)            ; accessor for A field at index I
+(DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+</pre>
+<p>
+
+<em>Avoiding the Default Function Names</em><p>
+
+If you do not like the default names listed above you may use the
+optional <code>:renaming</code> alist to substitute names of your own
+choosing.  Each element of <code>alist</code> should be of the form
+<code>(fn1 fn2)</code>, where <code>fn1</code> is a default name and <code>fn2</code> is your choice
+for that name.<p>
+
+For example
+
+<pre>
+(DEFSTOBJ $S
+  (X :TYPE INTEGER :INITIALLY 0)
+  (A :TYPE (ARRAY (INTEGER 0 9) (3)) :INITIALLY 9)
+  :renaming ((X XACCESSOR) (CREATE-$S MAKE$S)))
+</pre>
+
+introduces the following definitions   
+
+<pre>
+(DEFUN XP (X) ...)               ; recognizer for X field
+(DEFUN AP (X) ...)               ; recognizer of A field
+(DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+(DEFUN MAKE$S () ...)            ; creator for stobj $S
+(DEFUN XACCESSOR ($S) ...)       ; accessor for X field
+(DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+(DEFUN A-LENGTH ($S) ...)        ; length of A field
+(DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+(DEFUN AI (I $S) ...)            ; accessor for A field at index I
+(DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+</pre>
+
+Note that even though the renaming alist substitutes ``<code>XACCESSOR</code>''
+for ``<code>X</code>'' the updater for the <code>X</code> field is still called
+``<code>UPDATE-X</code>.''  That is because the renaming is applied to the
+default function names, not to the field descriptors in the
+event.<p>
+
+Use of the <code>:renaming</code> alist may be necessary to avoid name
+clashes between the default names and and pre-existing function
+symbols.<p>
+
+<em>Constants</em><p>
+
+<code>Defstobj</code> events also introduce constant definitions
+(see <a href="DEFCONST.html">defconst</a>).  One constant is introduced for each accessor
+function by prefixing and suffixing a `<code>*</code>' character on the function
+name.  The value of that constant is the position of the field being
+accessed.  For example, if the accessor functions are <code>a</code>, <code>b</code>, and <code>c</code>,
+in that order, then the following constant definitions are introduced.
+
+<pre>
+(defconst *a* 0)
+(defconst *b* 1)
+(defconst *c* 2)
+</pre>
+
+These constants are used for certain calls of <code><a href="NTH.html">nth</a></code> and <code><a href="UPDATE-NTH.html">update-nth</a></code>
+that are displayed to the user in proof output.  For example, for
+stobj <code>st</code> with accessor functions <code>a</code>, <code>b</code>, and <code>c</code>, in that order, the
+term <code>(nth '2 st)</code> would be printed during a proof as <code>(nth *c* st)</code>.
+Also see <a href="TERM.html">term</a>, in particular the discussion there of untranslated
+terms, and see <a href="NTH-ALIASES-TABLE.html">nth-aliases-table</a>.<p>
+
+<em>Inspecting the Effects of a Defstobj</em><p>
+
+Because the stobj functions are introduced as ``sub-events'' of the
+<code>defstobj</code> the history commands <code>:</code><code><a href="PE.html">pe</a></code> and <code>:</code><code><a href="PC.html">pc</a></code>
+will not print the definitions of these functions but will print
+the superior <code>defstobj</code> event.  To see the definitions of these
+functions use the history command <code>:</code><code><a href="PCB_bang_.html">pcb!</a></code>.<p>
+
+To see an s-expression containing the definitions what constitute the raw
+Lisp implementation of the event, evaluate the form
+
+<pre>
+(nth 4 (global-val 'cltl-command (w state)))
+</pre>
+
+<em>immediately after</em> the <code>defstobj</code> event has been processed.<p>
+
+A <code>defstobj</code> is considered redundant only if the name, field descriptors,
+renaming alist, and inline flag are identical to a previously executed
+<code>defstobj</code>.  Note that a redundant <code>defstobj</code> does not reset the
+<a href="STOBJ.html">stobj</a> fields to their initial values.<p>
+
+<em>Inlining and Performance</em><p>
+
+The <code>:inline</code> keyword argument controls whether or not accessor, updater,
+and length functions are inlined (as macros under the hood, in raw Lisp).  If
+<code>:inline t</code> is provided then these are inlined; otherwise they are not.
+The advantage of inlining is potentially better performance; there have been
+contrived examples, doing essentially nothing except accessing and updating
+array fields, where inlining reduced the time by a factor of 10 or more; and
+inlining has sped up realistic examples by a factor of at least 2.  Inlining
+may get within a factor of 2 of C execution times for such contrived
+examples, and within a few percent of C execution times on realistic
+examples.<p>
+
+A drawback to inlining is that redefinition may not work as expected, much as
+redefinition may not work as expected for macros: defined functions that call
+a macro, or inlined stobj function, will not see a subsequent redefinition of
+the macro or inlined function.  Another drawback to inlining is that because
+inlined functions are implemented as macros in raw Lisp, tracing
+(see <a href="TRACE$.html">trace$</a>) will not show their calls.  These drawbacks are avoided by
+default, but the user who is not concerned about them is advised to specify
+<code>:inline t</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

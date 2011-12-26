@@ -1,0 +1,139 @@
+<html>
+<head><title>DEFUN-MODE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFUN-MODE</h2>determines whether a function definition is a logical act
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Two ``<a href="DEFUN-MODE.html">defun-mode</a>s'' are supported, <code>:</code><code><a href="PROGRAM.html">program</a></code> and <code>:</code><code><a href="LOGIC.html">logic</a></code>.  Roughly
+speaking, <code>:</code><code><a href="PROGRAM.html">program</a></code> mode allows you to prototype a function for
+execution without any proof burdens, while <code>:</code><code><a href="LOGIC.html">logic</a></code> mode allows you to
+add a new definitional axiom to the logic.  The system comes up in
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode.  Execution of functions whose <a href="DEFUN-MODE.html">defun-mode</a> is <code>:</code><code><a href="PROGRAM.html">program</a></code>
+may render ACL2 unsound!  See <a href="DEFUN-MODE-CAVEAT.html">defun-mode-caveat</a>.
+<p>
+When you define a function in the ACL2 logic, that function can be
+run on concrete data.  But it is also possible to reason deductively
+about the function because each definition extends the underlying
+logic with a definitional axiom.  To ensure that the logic is sound
+after the addition of this axiom, certain restrictions have to be
+met, namely that the recursion terminates.  This can be quite
+challenging.<p>
+
+Because ACL2 is a <a href="PROGRAMMING.html">programming</a> language, you often may wish simply to
+program in ACL2.  For example, you may wish to define your system
+and test it, without any logical burden.  Or, you may wish to define
+``utility'' functions -- functions that are executed to help manage
+the task of building your system but functions whose logical
+properties are of no immediate concern.  Such functions might be
+used to generate test data or help interpret the results of tests.
+They might create files or explore the ACL2 data base.  The
+termination arguments for such functions are an unnecessary burden
+provided no axioms about the functions are ever used in deductions.<p>
+
+Thus, ACL2 introduces the idea of the ``<a href="DEFUN-MODE.html">defun-mode</a>'' of a function.
+The <code>:mode</code> keyword of <code><a href="DEFUN.html">defun</a></code>'s <code><a href="DECLARE.html">declare</a></code> <code>xarg</code> allows you to
+specify the <a href="DEFUN-MODE.html">defun-mode</a> of a given definition.  If no <code>:mode</code>
+keyword is supplied, the default <a href="DEFUN-MODE.html">defun-mode</a> is used;
+see <a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a>.<p>
+
+There are two <a href="DEFUN-MODE.html">defun-mode</a>s, each of which is written as a keyword:<p>
+
+<code>:</code><code><a href="PROGRAM.html">program</a></code> -- logically undefined but executable outside deductive
+contexts.<p>
+
+<code>:</code><code><a href="LOGIC.html">logic</a></code> -- axiomatically defined as per the ACL2 definitional
+principle.<p>
+
+It is possible to change the <a href="DEFUN-MODE.html">defun-mode</a> of a function from <code>:</code><code><a href="PROGRAM.html">program</a></code>
+to <code>:</code><code><a href="LOGIC.html">logic</a></code>.  We discuss this below.<p>
+
+We think of functions having <code>:</code><code><a href="PROGRAM.html">program</a></code> mode as ``dangerous''
+functions, while functions having <code>:</code><code><a href="LOGIC.html">logic</a></code> mode are ``safe.''  The
+only requirement enforced on <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions is the
+syntactic one:  each definition must be well-formed ACL2.  Naively
+speaking, if a <code>:</code><code><a href="PROGRAM.html">program</a></code> mode function fails to terminate then no
+harm is done because no axiom is added (so inconsistency is avoided)
+and some invocations of the function may simply never return.  This
+simplistic justification of <code>:</code><code><a href="PROGRAM.html">program</a></code> mode execution is faulty
+because it ignores the damage that might be caused by
+``mis-guarded'' functions.  See <a href="DEFUN-MODE-CAVEAT.html">defun-mode-caveat</a>.<p>
+
+We therefore implicitly describe an imagined implementation of
+<a href="DEFUN-MODE.html">defun-mode</a>s that is safe and, we think, effective.  But please
+see <a href="DEFUN-MODE-CAVEAT.html">defun-mode-caveat</a>.<p>
+
+The default <a href="DEFUN-MODE.html">defun-mode</a> is <code>:</code><code><a href="LOGIC.html">logic</a></code>.  This means that when you <code><a href="DEFUN.html">defun</a></code> a
+function the system will try to prove termination.  If you wish to
+introduce a function of a different <a href="DEFUN-MODE.html">defun-mode</a> use the <code>:mode</code> <code><a href="XARGS.html">xargs</a></code>
+keyword.  Below we show <code>fact</code> introduced as a function in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode.
+
+<pre>
+(defun fact (n)
+  (declare (xargs :mode :program))
+  (if (or (not (integerp n)) (= n 0))
+      1
+    (* n (fact (1- n)))))
+</pre>
+
+No axiom is added to the logic as a result of this definition.  By
+introducing <code>fact</code> in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode we avoid the burden of a
+termination proof, while still having the option of executing the
+function.  For example, you can type
+
+<pre>
+ACL2 !&gt;(fact 3)
+</pre>
+
+and get the answer <code>6</code>.  If you type <code>(fact -1)</code> you will get a hard
+lisp error due to ``infinite recursion.''<p>
+
+However, the ACL2 theorem prover knows no axioms about <code>fact</code>.  In
+particular, if the term <code>(fact 3)</code> arises in a proof, the theorem
+prover is unable to deduce that it is <code>6</code>.  From the perspective of
+the theorem prover it is as though <code>fact</code> were an undefined
+function symbol of arity <code>1</code>.  Thus, modulo certain important
+issues (see <a href="DEFUN-MODE-CAVEAT.html">defun-mode-caveat</a>), the introduction of this
+function in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode does not imperil the soundness of the
+system -- despite the fact that the termination argument for <code>fact</code>
+was omitted -- because nothing of interest can be proved about
+<code>fact</code>.  Indeed, we do not allow <code>fact</code> to be used in logical
+contexts such as conjectures submitted for proof.<p>
+
+It is possible to convert a function from <code>:</code><code><a href="PROGRAM.html">program</a></code> mode to
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode at the cost of proving that it is admissible.  This can
+be done by invoking
+
+<pre>
+(verify-termination fact)
+</pre>
+
+which is equivalent to submitting the <code><a href="DEFUN.html">defun</a></code> of <code>fact</code>, again, but
+in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode.
+
+<pre>
+(defun fact (n)
+  (declare (xargs :mode :logic))
+  (if (or (not (integerp n)) (= n 0))
+      1
+    (* n (fact (1- n)))))
+</pre>
+
+This particular event will fail because the termination argument requires
+that <code>n</code> be nonnegative.  A repaired <code><a href="DEFUN.html">defun</a></code>, for example with <code><a href="=.html">=</a></code>
+replaced by <code><a href="_lt_=.html">&lt;=</a></code>, will succeed, and an axiom about <code>fact</code> will
+henceforth be available.<p>
+
+Technically, <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> submits a redefinition of the
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode function.  This is permitted, even when
+<code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> is <code>nil</code>, because the new definition is
+identical to the old (except for its <code>:mode</code> and, possibly, other
+non-logical properties).<p>
+
+See <a href="GUARD.html">guard</a> for a discussion of how to restrict the execution of
+functions.  <a href="GUARD.html">Guard</a>s may be ``verified'' for functions in <code>:</code><code><a href="LOGIC.html">logic</a></code>
+mode; see <a href="VERIFY-GUARDS.html">verify-guards</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

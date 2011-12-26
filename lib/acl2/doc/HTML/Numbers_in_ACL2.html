@@ -1,0 +1,62 @@
+<html>
+<head><title>Numbers_in_ACL2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>Numbers in ACL2</h2>
+<p>
+The numbers in ACL2 can be partitioned into the following subtypes:
+ 
+<pre>
+ Rationals
+  Integers
+   Positive integers                <code>3</code>
+   Zero                             <code>0</code>
+   Negative Integers                <code>-3</code>
+  Non-Integral Rationals
+   Positive Non-Integral Rationals  <code>19/3</code>
+   Negative Non-Integral Rationals  <code>-22/7</code>
+ Complex Rational Numbers           <code>#c(3 5/2) ; = 3+(5/2)i</code>
+ </pre>
+<p>
+
+ Signed integer constants are usually written (as illustrated above)
+ as sequences of decimal digits, possibly preceded by <code>+</code> or <code>-</code>.
+ Decimal points are not allowed.  Integers may be written in binary,
+ as in <code>#b1011</code> (= 23) and <code>#b-111</code> (= -7).  Octal may also be
+ used, <code>#o-777</code> = -511.  Non-integral rationals are written as a
+ signed decimal integer and an unsigned decimal integer, separated by
+ a slash.  Complex rationals are written as #c(rpart ipart) where
+ rpart and ipart are rationals.<p>
+
+ Of course, 4/2 = 2/1 = 2 (i.e., not every rational written with a slash
+ is a non-integer).  Similarly, #c(4/2 0) = #c(2 0) = 2.<p>
+
+ The common arithmetic functions and relations are denoted by <code>+</code>,
+ <code>-</code>, <code>*</code>, <code>/</code>, <code>=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> and <code>&gt;=</code>.  However there
+ are many others, e.g., <code>floor</code>, <code>ceiling</code>, and <code>lognot</code>.  We
+ suggest you see <a href="PROGRAMMING.html">programming</a> <a href="A_Tiny_Warning_Sign.html"><img src=twarning.gif></a> where we list all of the primitive
+ ACL2 functions.  Alternatively, see any Common Lisp language
+ documentation.<p>
+
+ The primitive predicates for recognizing numbers are illustrated
+ below.  The following ACL2 function will classify an object, x,
+ according to its numeric subtype, or else return 'NaN (not a
+ number).  We show it this way just to illustrate programming in
+ ACL2.<p>
+
+ 
+<pre>
+ (defun classify-number (x)
+   (cond ((rationalp x)
+          (cond ((integerp x)
+                 (cond ((&lt; 0 x) 'positive-integer)
+                       ((= 0 x) 'zero)
+                       (t 'negative-integer)))
+                ((&lt; 0 x) 'positive-non-integral-rational)
+                (t 'negative-non-integral-rational)))
+         ((complex-rationalp x) 'complex-rational)
+         (t 'NaN)))
+ </pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

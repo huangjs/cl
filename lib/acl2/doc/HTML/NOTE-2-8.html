@@ -1,0 +1,221 @@
+<html>
+<head><title>NOTE-2-8.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-8</h2>ACL2 Version  2.8 (March, 2004) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+BRIEF SUMMARY.<p>
+
+The Version_2.8 notes are divided into the indicated subtopics.  Here we give
+only a brief summary of just a few of the major new features and changes that
+seem most likely to impact existing proofs.  Not included in this brief
+summary, but included in the subtopics, are descriptions of many improvements
+(including bug fixes and new functionality) that should not get in the way of
+existing proof efforts.  In the description below we also omit discussion of
+changes that will become clear by way of error messages if they affect you.<p>
+
+In particular, please see <a href="NOTE-2-8-NEW-FUNCTIONALITY.html">note-2-8-new-functionality</a> for discussion of a
+number of new features that you may find useful.<p>
+
+Acknowledgements and elaboration, as well as other changes, can be found in
+the subtopics listed below.<p>
+
+o Some of the bug fixes (see <a href="NOTE-2-8-BUG-FIXES.html">note-2-8-bug-fixes</a>):
+<blockquote><p>
+
++ Some soundness bugs were fixed.<p>
+
++ The handling of free variables in hypotheses (see <a href="FREE-VARIABLES.html">free-variables</a>) of
+rewrite and linear rules had a bug that prevented some proofs from going
+through.  Now that this bug has been fixed, you may find some proofs running
+much more slowly than before.  You can use <code><a href="ACCUMULATED-PERSISTENCE.html">accumulated-persistence</a></code> and
+<code><a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a></code> to remedy this situation;
+see <a href="NOTE-2-8-BUG-FIXES.html">note-2-8-bug-fixes</a> for details.<p>
+
++ The <a href="DEFAULT-HINTS.html">default-hints</a> in the current logical <a href="WORLD.html">world</a> are no longer
+ignored by <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.<p>
+
++ Forms violating guard-checking such as <code>(defconst *silly* (car 3))</code> are
+now allowed in <a href="BOOKS.html">books</a>.</blockquote>
+<p>
+
+o Some of the new functionality (see <a href="NOTE-2-8-NEW-FUNCTIONALITY.html">note-2-8-new-functionality</a>):
+<blockquote><p>
+
++ WARNING: You may find that <code>control-d</code> (in emacs,
+<code>control-c control-d</code>) can throw you completely out of Lisp where it had
+not formerly done so.<p>
+
++ ACL2 now starts up inside the ACL2 loop -- that is, <code>(</code><code><a href="LP.html">LP</a></code><code>)</code> is
+executed automatically -- when built on CLISP or Allegro CL.  This was
+already the case for GCL and CMUCL, and it still is not true for Lispworks.<p>
+
++ See <a href="NOTE-2-8-ORDINALS.html">note-2-8-ordinals</a> for a discussion of a significant change in ordinal
+represtation, and in particular, for how to preserve existing proofs that
+depend on the previous ordinal representation.<p>
+
++ Macros <code><a href="MBE.html">mbe</a></code> (``must be equal''), <code><a href="MBT.html">mbt</a></code> (``must be true''), and
+<code><a href="DEFEXEC.html">defexec</a></code> have been introduced, which allow the user to attach
+alternate executable definitions to functions.<p>
+
++ The user can now control multiple matching for free variables in hypotheses
+for <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules, as has already been supported for
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> and <code>:</code><code><a href="LINEAR.html">linear</a></code> rules.<p>
+
++ It is no longer necessary to specify <code>(set-match-free-error nil)</code> in
+order to avoid errors when a rule with free variables in its hypotheses is
+missing the <code>:match-free</code> field.<p>
+
++ The form <code>(break-on-error)</code> causes, at least for most Lisps, entry into
+the Lisp debugger whenever ACL2 causes an error.<p>
+
++ A new <code><a href="TABLE.html">table</a></code> has been provided so that advanced users can override the
+built-in <code>untranslate</code> functionality.  See <a href="USER-DEFINED-FUNCTIONS-TABLE.html">user-defined-functions-table</a>.<p>
+
++ The <code><a href="PSTACK.html">pstack</a></code> (`process [prover] stack'') mechanism, formerly denoted
+<code>checkpoints</code>, has been improved.  One of these improvements is to show
+actual parameters with <code>(pstack t)</code> rather than formals.<p>
+
++ The <code><a href="DEFSTOBJ.html">defstobj</a></code> event is now allowed to take an <code>:inline</code> argument,
+which can speed up execution.<p>
+
++ Macro <code><a href="CW-GSTACK.html">cw-gstack</a></code> no longer takes arguments for the <code>gstack</code> or
+<code><a href="STATE.html">state</a></code>.  To print terms in full rather than abbreviated:
+<code>(cw-gstack :evisc-tuple nil)</code>.<p>
+
++ The <code><a href="INCLUDE-BOOK.html">include-book</a></code> event now has an additional (optional) keyword,
+<code>:dir</code>.  In particular, <code>(include-book "foo/bar" :dir :system)</code> will
+include the indicated book after prepending the path of the built-in
+<code>books/</code> directory.  You will probably not find <code>:dir :system</code> to be
+useful if you move the executable image or distributed books;
+see <a href="INCLUDE-BOOK.html">include-book</a>, in particular its ``soundness warning''.<p>
+
++ The printing of results in raw mode (see <a href="SET-RAW-MODE.html">set-raw-mode</a>) may now be
+partially controlled by the user:  see <a href="ADD-RAW-ARITY.html">add-raw-arity</a>.<p>
+
++ For those using Unix/Linux <code>make</code>:  A <code>cert.acl2</code> file can contain
+forms to be evaluated before an appropriate <code><a href="CERTIFY-BOOK.html">certify-book</a></code> command is
+invoked automatically (not included in <code>cert.acl2</code>).</blockquote>
+<p>
+
+o Some of the changes in the proof engine (see <a href="NOTE-2-8-PROOFS.html">note-2-8-proofs</a>):
+<blockquote><p>
+
++ ACL2 now prevents certain rewriting loops; see <a href="REWRITE-STACK-LIMIT.html">rewrite-stack-limit</a>.<p>
+
++ Small changes have been made to heuristics for controlling rewriting during
+proofs by induction and in handling certain ``weak'' <a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a>
+rules.<p>
+
++ The handling of free variables in a hypothesis of a <a href="REWRITE.html">rewrite</a> rule
+(see <a href="FREE-VARIABLES.html">free-variables</a>) has been improved in the case that the hypothesis is of
+the form <code>(equiv x y)</code>, where <code>equiv</code> is a known equivalence relation
+(see <a href="EQUIVALENCE.html">equivalence</a>).<p>
+
++ We have modified how the ACL2 simplifier handles the application of a
+defined function symbol to constant arguments, by avoiding the introduction
+of <a href="HIDE.html">hide</a> when evaluation fails if the term can be rewritten.<p>
+
++ The generation of "Goal" for recursive (and mutually-recursive) definitions
+now uses the subsumption/replacement limitation (default 500).
+See <a href="CASE-SPLIT-LIMITATIONS.html">case-split-limitations</a>.<p>
+
++ Default hints now apply to hints given in definitions, not just theorems.
+See <a href="DEFAULT-HINTS.html">default-hints</a>.<p>
+
++ Linear arithmetic now uses the conclusions of <code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules,
+and <code><a href="TYPE-SET.html">type-set</a></code> now uses a small amount of linear reasoning when deciding
+inequalities.</blockquote>
+<p>
+
+o Some of the changes in rules, definitions, and constants
+(see <a href="NOTE-2-8-RULES.html">note-2-8-rules</a>):
+<blockquote><p>
+
++ See the above doc topic.</blockquote>
+<p>
+
+o Guard-related changes are described in see <a href="NOTE-2-8-BUG-FIXES.html">note-2-8-bug-fixes</a>.<p>
+
+o Some of the proof-checker changes (see <a href="NOTE-2-8-PROOF-CHECKER.html">note-2-8-proof-checker</a>):
+<blockquote><p>
+
++ Added new <a href="PROOF-CHECKER.html">proof-checker</a> commands <code>wrap1</code>, <code>wrap</code>, and
+<code>wrap-induct</code>, to combine multiple conjuncts or goals.<p>
+
++ The <code>type-alist</code> command now takes optional arguments that control
+whether or not the governors and/or conclusion are used in computing the
+context.</blockquote>
+<p>
+
+o Some of the system-level changes (see <a href="NOTE-2-8-SYSTEM.html">note-2-8-system</a>):
+<blockquote><p>
+
++ ACL2 now runs on OpenMCL and on MCL 5.0.</blockquote>
+<p>
+
+o Some of the other changes (see <a href="NOTE-2-8-OTHER.html">note-2-8-other</a>):
+<blockquote><p>
+
++ Emacs file <code>emacs/emacs-acl2.el</code> has been updated (see <a href="NOTE-2-8-OTHER.html">note-2-8-other</a>
+for details).<p>
+
++ When <code>:pl</code> is given a term other than a symbol, it will print all rewrite
+rules that match that term.<p>
+
++ A new function, <code><a href="PKG-WITNESS.html">pkg-witness</a></code>, returns a symbol in the given package.<p>
+
++ The list constant <code>*acl2-exports*</code> has been extended.<p>
+
++ A new release of the rtl library has been included: <code>books/rtl/rel4/</code>.
+See the <code>README</code> file in that directory.</blockquote>
+<p>
+
+Again, please proceed to the subtopics for more thorough release notes.<p>
+
+
+<p>
+<ul>
+<li><h3><a href="NOTE-2-8-BUG-FIXES.html">NOTE-2-8-BUG-FIXES</a> -- ACL2 Version  2.8 Notes on Bug Fixes
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-GUARDS.html">NOTE-2-8-GUARDS</a> -- ACL2 Version  2.8 Notes on Guard-related Changes
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-NEW-FUNCTIONALITY.html">NOTE-2-8-NEW-FUNCTIONALITY</a> -- ACL2 Version  2.8 Notes on New Functionality
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-ORDINALS.html">NOTE-2-8-ORDINALS</a> -- ACL2 Version  2.8 Notes on Changes to the Ordinals
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-OTHER.html">NOTE-2-8-OTHER</a> -- ACL2 Version  2.8 Notes on Miscellaneous Changes
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-PROOF-CHECKER.html">NOTE-2-8-PROOF-CHECKER</a> -- ACL2 Version  2.8 Notes on Proof-checker Changes
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-PROOFS.html">NOTE-2-8-PROOFS</a> -- ACL2 Version  2.8 Notes on Changes in Proof Engine
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-RULES.html">NOTE-2-8-RULES</a> -- ACL2 Version  2.8 Notes on Changes in Rules, Definitions, and Constants
+</h3>
+</li>
+
+<li><h3><a href="NOTE-2-8-SYSTEM.html">NOTE-2-8-SYSTEM</a> -- ACL2 Version  2.8 Notes on System-level Changes
+</h3>
+</li>
+
+</ul>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

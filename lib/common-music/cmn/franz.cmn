@@ -1,0 +1,303 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(defun t32 (&rest args)
+  (engorge 
+   (loop for arg in args collect 
+     (if (write-protected arg) 
+	 (note arg (rq 1/8))
+       (progn
+	 (copy (rq 1/8) arg)
+	 arg)))))
+
+(defun t32up (&rest args)
+  (engorge 
+   (loop for arg in args collect 
+     (if (write-protected arg) 
+	 (note arg stem-up (rq 1/8))
+       (progn
+	 (setf (stem-direction arg) :up)
+	 (copy (rq 1/8) arg)
+	 arg)))))
+
+(defun t64 (&rest args)
+  (engorge 
+   (loop for arg in args collect 
+     (if (write-protected arg) 
+	 (note arg (rq 1/16))
+       (progn
+	 (copy (rq 1/16) arg)
+	 arg)))))
+
+(defun t32s (&rest args)
+  (engorge 
+   (loop for arg in args collect 
+     (if (write-protected arg) 
+	 (note arg staccato (rq 1/8))
+       (progn
+	 (copy (rq 1/8) arg)
+	 (add-to-marks arg (list (copy staccato)))
+	 arg)))))
+
+(defun t32sup (&rest args)
+  (engorge 
+   (loop for arg in args collect 
+     (if (write-protected arg) 
+	 (note arg staccato stem-up (rq 1/8))
+       (progn
+	 (setf (stem-direction arg) :up)
+	 (copy (rq 1/8) arg)
+	 (add-to-marks arg (list (copy staccato)))
+	 arg)))))
+
+(cmn (size 12) (old-style-beams t) (note-head-size 1.125) (automatic-line-breaks nil)
+     (staff-separation 2.0) (line-separation 4.0) (system-separation 1.5) (regularize 2)
+ (setf vln (staff (staff-size 0.8) bar treble (key ef-major) (meter 6 8 (meter-size 0))
+		  (en5 e. (begin-slur (slur-curvature .75))) (t32 d5 c5 bn4 d5 c5 an4) 
+		  (g4 e end-slur) eighth-rest (g4 e (begin-slur (slur-curvature .75)))
+		  (bar (dx -.2))
+		  (f5 e begin-tie) (f5 (rq 1/8) end-tie)
+		  (t32 en5 d5 c5 bn4 c5 d5 af4) (g4 e end-slur) eighth-rest (g4 e begin-slur)
+		  (bar (dx -.1))
+		  (g5 q. begin-tie end-slur) (g5 e. end-tie) 
+		  (t32 (g5 begin-slur (diminuendo (duration .5) (dy -.75)))
+		       (f5 end-slur) (f5 begin-slur) (en5 end-slur) (e5 begin-slur) (d5 end-slur))
+		  bar line-mark
+		  (c5 e.) (c5 s begin-slur) (d5 s) (en5 s end-slur) (bn4 e.) (b4 s begin-slur) (c5 s) (d5 s end-slur)
+		  bar
+		  (d5 q. begin-slur) (c5 s no-beam end-slur)
+		  (en4 s begin-beam staccato begin-slur) (e4 s end-slur staccato)
+		  (e4 s begin-slur (crescendo (duration .75) (dy -.25))) (d4 s) (e4 s end-beam end-slur)
+		  bar
+		  sixteenth-rest (chord  (notes c4 f4) e (diminuendo (duration .75)))
+		  (chord (notes c4 f4) s staccato) (chord (notes c4 f4) s) (chord (notes d4 f4) s)
+		  (en4 staccato s no-beam)
+		  (chord (notes g3 g4) e) (chord (notes g4 g3) s)
+		  (chord (notes f4 g3) s crescendo) (chord (notes e4 g3) s)
+		  bar line-mark
+		  (chord (notes an4 g3) e. accent) 
+		  (t32 (g4 begin-slur) (a4 end-slur) (a4 begin-slur) (g4 end-slur) (g4 begin-slur) (f4 end-slur))
+		  (chord (notes g3 en4) s no-beam) 
+		  (chord (notes c4 e4) s staccato begin-slur begin-beam) (chord (notes c4 e4) staccato s end-slur) 
+		  (chord (notes c4 e4) s begin-slur (crescendo (dy -.25) (duration .75))) (chord (notes bn3 f4) s)
+		  (chord (notes bf3 g4) s end-slur end-beam)
+		  bar
+		  sixteenth-rest
+		  (chord (notes an3 an4) e accent)
+		  (chord (notes a3 a4) s) (chord (notes a3 a4) s) 
+		  (chord (notes (bn3 (setf bslur (slur-))) (a4 (setf aslur (slur- (slur-direction :up) (dy .125))))) s) 
+		  (chord (notes (c4 (-slur bslur)) (g4 (-slur aslur))) s no-beam)
+		  (chord (notes g3 g4) e accent)
+		  (chord (notes g3 g4) s) (chord (notes g3 f4) s) (chord (notes g3 en4) s)
+		  bar line-mark
+		  (chord (notes g3 an4) e. accent) 
+		  (t32 (gs4 begin-slur) (a4 end-slur) (a4 begin-slur) (gn4 end-slur) (g4 begin-slur) (f4 end-slur))
+		  (chord (notes g3 en4) s no-beam)
+		  (g4 s staccato begin-slur) (gs4 s staccato) (an4 s staccato) (bf4 s staccato) (bn4 s staccato end-slur)
+		  bar 
+		  (c5 h. begin-tie (crescendo (duration 3)))
+		  bar
+		  (c5 h. end-tie (diminuendo (duration 3)))
+		  bar line-mark
+		  (c5 q. pp (begin-slur (slur-curvature .5))) (b4 q.)
+		  bar
+		  (df5 q.) (c5 q. end-slur)
+		  bar 
+		  (e5 e begin-slur) (c5 e.) (a4 s) (c5 e accent) (b4 q end-slur)
+		  bar line-mark
+		  (e5 e begin-slur) (dn5 s) (e5 s) (c5 s) (a4 s) (c5 e) (b4 q end-slur)
+		  bar 
+		  (c5 q. (begin-slur (slur-curvature 1.0))) (b4 q.)
+		  bar
+		  (e5 q.) (df5 q begin-tie accent) (df5 s end-tie) (c5 s end-slur)
+		  bar))
+ (staff (tied-to vln) treble (meter 6 8 (meter-size 0))
+	(dotted-eighth-rest (scale 0 0) (onset 18))
+	(g3 s stem-down) (g3 s stem-down) (g3 s stem-down))
+ (staff (tied-to vln) treble (meter 6 8 (meter-size 0))
+	(dotted-eighth-rest (scale 0 0) (onset 24))
+	(g3 s stem-down) (g3 s stem-down) (g3 s stem-down))
+ (staff (staff-size .8) bar treble (key ef-major) (meter 6 8 (meter-size 0))
+	quarter-rest (g4 e (begin-slur (slur-curvature .75)))
+	(g5 e.) (t32 f5 en5 d5 c5 bn4 an4)
+	(bar (dx -.2))
+	(g4 e end-slur) eighth-rest (g4 e (begin-slur (slur-curvature .75)))
+	(g5 e.) (t32 an5 g5 en5 f5 d5 e5)
+	(bar (dx -.1))
+	(c5 e end-slur) eighth-rest (en5 e begin-slur crescendo)
+	(an5 e. end-slur) (a5 s staccato (diminuendo (duration .5)))
+	(t32 (a5 begin-slur) (g5 end-slur) (g5 begin-slur) (f5 end-slur))
+	bar
+	(en5 e.) (e5 s begin-slur) (f5 s) (g5 s end-slur)
+	(d5 e.) (d5 s begin-slur) (e5 s) (f5 s end-slur)
+	bar
+	(f5 q. begin-slur) (en5 s end-slur no-beam)
+	(c5 s begin-slur staccato) (c5 s end-slur staccato) (c5 s begin-slur (crescendo (dy -.125) (duration .75)))
+	(bn4 s) (bf4 s end-slur)
+	bar
+	sixteenth-rest (an4 staccato e (diminuendo (dy -.125) (duration .75)))
+	(a4 s staccato) (a4 s begin-slur) (bn4 s end-slur)
+	(c5 s no-beam) (en5 e) (e5 s) (d5 s crescendo) (c5 s)
+	bar
+	(f5 e. accent) (t32 (en5 begin-slur) (f5 end-slur) (f5 begin-slur) (e5 end-slur) (e5 begin-slur) (d5 end-slur))
+	(c5 s no-beam) (c5 s staccato begin-slur) (c5 s staccato end-slur)
+	(c5 s begin-slur (crescendo (duration .75))) (d5 s) (e5 s end-slur)
+	bar
+	sixteenth-rest (f5 e accent) (f5 s) (f5 s) (f5 s begin-slur)
+	(en5 s end-slur no-beam) (e5 e accent) (e5 s begin-slur) (d5 s) (c5 s end-slur)
+	bar
+	(f5 e. accent) (t32 (en5 begin-slur) (f5 end-slur) (f5 begin-slur) (e5 end-slur) (e5 begin-slur) (d5 end-slur))
+	(c5 e) eighth-rest eighth-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar
+	whole-rest
+	bar)
+  (system
+    (setf pno1 (staff treble (key ef-major) (meter 6 8 (meter-size 0))
+		   sixteenth-rest (chord (notes en4 g4) e) (chord (notes en4 g4) e) (chord (notes en4 g4) e)
+		   (chord (notes e4 g4) s begin-slur) 
+		   (chord (notes d4 f4 g4) s) (chord (notes c4 e4 g4) s) (chord (notes d4 f4 g4) s)
+		   (chord (notes e4 g4) s end-slur)
+		   (bar (dx -.2))
+		   sixteenth-rest (chord (notes d4 f4 g4) e) (chord (notes d4 f4 g4) e) 
+		   (chord (notes d4 f4 g4) e) (chord (notes d4 f4 g4) s begin-slur) 
+		   (chord (notes c4 en4 g4) s) (chord (notes bn3 d4 g4) s)
+		   (chord (notes c4 e4 g4) s) (chord (notes d4 f4 g4) s end-slur)
+		   (bar (dx -.1))
+		   sixteenth-rest (chord (notes c4 en4 g4) e (crescendo (duration 1.0)))
+		   (chord (notes c4 e4 g4) e) (chord (notes c4 e4 g4) s) 
+		   sixteenth-rest (chord (notes cs4 e4 an4) s (diminuendo (duration .75))) 
+		   (chord (notes c4 e4 a4) s) 
+		   (chord (notes d4 f4 a4) s)
+		   (chord (notes e4 g4 a4) s)
+		   (chord (notes f4 a4) s)
+		   bar
+		   sixteenth-rest (chord (notes g3 cn4 en4) e)
+		   (chord (notes g3 e4 g4) s) (chord (notes g3 d4 f4) s) (chord (notes g3 c4 e4) s)
+		   sixteenth-rest (chord (notes g3 bn3 d4) e)
+		   (chord (notes g3 d4 f4) s) (chord (notes g3 c4 e4) s)
+		   (chord (notes g3 b3 d4) s)
+		   bar
+		   sixteenth-rest (chord (notes g3 bn3 f4) e)
+		   (chord (notes g3 b3 f4) s) (chord (notes g3 b3 f4) s) (chord (notes g3 b3 f4) s) 
+		   (chord (notes g3 c4 en4) e) eighth-rest (c5 e begin-slur)
+		   bar
+		   (c6 e. end-slur)
+		   (t32up (c6 (begin-slur (dy .1))) (bn5 end-slur) 
+			  (b5 (begin-slur (dy .1))) (c6 end-slur) 
+			  (b5 begin-slur) (an5 end-slur))
+		   (gn5 e stem-up begin-slur) 
+		   (g4 end-slur (begin-octave-up (dy 1.0)) (rq 1/8))
+		   (t32sup a4 bn4 c5 d5 en5 f5 g5)
+		   bar
+		   (bn4 q begin-tie (trill (wavy-line t)))
+		   (t64 (b4 end-tie begin-slur) c5 d5 en5 f5 g5 an5 bn5)
+		   (c6 end-slur e) eighth-rest (c4 e begin-slur)
+		   bar
+		   (c5 accent end-slur e.)
+		   (t32 (d5 begin-slur) (c5 end-slur) (bn4 begin-slur) (c5 end-slur) (c5 begin-slur) (an4 end-slur))
+		   (gn4 e begin-tie) (g4 (rq 1/8) end-tie)
+		   (t32s a4 b4 c5 d5 en5 f5 g5)
+		   bar
+		   (bn4 q begin-tie (accent (dy .25)) (trill (wavy-line t)))
+		   (b4 (rq 1/16) end-tie begin-slur)
+		   (t64 c5 d5 en5 f5 g5 an5 bn5)
+		   (c6 e end-octave-up end-slur)
+		   eighth-rest eighth-rest (bass (scale .8 .8) unjustified (dx -.75))
+		   bar
+		   (en3 s (pp (dy -.5))) (c4 s) (g3 s) (e3 s) (g3 s) (c4 s)
+		   (e3 s) (c4 s) (g3 s) (e3 s) (g3 s) (c4 s)
+		   bar
+		   (en3 s) (c4 s) (g3 s) (e3 s) (g3 s) (c4 s)
+		   (e3 s) (c4 s) (g3 s) (e3 s) (g3 s) (c4 s)
+		   bar
+		   (ef3 s) (c4 s) (af3 s) (e3 s) (a3 s) (c4 s)
+		   (e3 s) (b3 s) (a3 s) (e3 s) (g3 s) (b3 s)
+		   bar
+		   (e3 s) (df4 s) (f3 s) (e3 s) (g3 s) (d4 s)
+		   (e3 s) (c4 s) (a3 s) (e3 s) (a3 s) (c4 s) (treble (scale .8 .8))
+		   bar 
+		   (c4 s) (a4 s) (e4 s) (c4 s) (e4 s) (a4 s)
+		   (ff4 s) (df4 s) (e4 s) (b4 s) (e4 s) (d4 s)
+		   bar
+		   (c4 s) (a4 s) (e4 s) (c4 s) (e4 s) (a4 s)
+		   (ff4 s) (df4 s) (e4 s) (b4 s) (e4 s) (d4 s)
+		   bar
+		   (c4 s) (c5 s) (a4 s) (e4 s) (a4 s) (c5 s)
+		   (e4 s) (b4 s) (a4 s) (e4 s) (g4 s) (b4 s)
+		   bar
+		   (gf4 s) (c5 s) (a4 s) (g4 s) (a4 s) (c5 s)
+		   (ff4 s) (df5 s) (a4 s) (f4 s) (a4 s) (f4 s)
+		   bar))
+
+ (staff (tied-to pno1) treble (key ef-major) (meter 6 8 (meter-size 0))
+	(sixteenth-rest (scale 0 0) (onset 15))
+	(an4 e stem-down (accent (dy -3)))
+	(t32 (a4 begin-slur stem-down) (gs4 end-slur stem-down)
+	     (g4 begin-slur stem-down) (a4 end-slur stem-down)
+	     (gn4 begin-slur stem-down) (f4 end-slur stem-down))
+	(en4 e (staccato (dy .6)) (setf inner-beam (beam-))))
+
+ (staff (dy -.5) brace bar bass (key ef-major) (meter 6 8 (meter-size 0))
+	(c3 e no-beam) (g3 e begin-slur staccato) (g3 e end-slur staccato) 
+	(c3 s no-beam)
+	(g3 s staccato begin-slur) (g3 s staccato) (g3 s staccato) (g3 s staccato) (g3 s staccato end-slur)
+	(bar (dx -.2))
+	(g2 e no-beam) (g3 e begin-slur staccato) (g3 e end-slur staccato) 
+	(g2 s no-beam)
+	(g3 s staccato begin-slur) (g3 s staccato) (g3 s staccato) (g3 s staccato) (g3 s staccato end-slur)
+	(bar (dx -.1))
+	(c3 e) eighth-rest eighth-rest (chord (notes f2 f3) q.)
+	bar
+	(g2 e) eighth-rest eighth-rest (g2 e) eighth-rest eighth-rest 
+	bar
+	(g2 q. begin-slur) (c3 e end-slur) eighth-rest eighth-rest
+	bar
+	(chord (notes c2 c3) s) (sixteenth-rest (scale 0 0)) (quarter-rest (scale 0 0)) 
+	(eighth-rest (scale 0 0)) (c3 e (-beam inner-beam))
+	eighth-rest (treble unjustified (dx -.8) (scale .8 .8))
+	bar
+	(g4 s staccato) (f5 s staccato) (d5 s staccato) (bn4 s staccato) (g4 s staccato) (g5 s staccato) 
+	(en5 e staccato) (bass (scale .8 .8) unjustified (dx -.75)) (c3 e staccato) eighth-rest
+	bar
+	(chord (notes c2 c3) s no-beam)
+	(treble (scale .8 .8) unjustified (dx -.5))
+	(an4 e accent)
+	(t32 (bn4 begin-slur) (a4 end-slur) (gs4 begin-slur) (a4 end-slur) (a4 begin-slur) (f4 end-slur))
+	(en4 e (begin-beam (dy .25)) staccato) (bass (scale .8 .8) unjustified (dx -.75))
+	(c3 e end-beam staccato) eighth-rest
+	bar
+	(g2 s no-beam accent)
+	(treble (scale .8 .8) (dx -.75))
+	(f5 s staccato) (d5 s staccato) (bn4 s staccato) (g4 s staccato) (g5 s staccato) 
+	(en5 e (begin-beam (dy -.25)) staccato) (bass (scale .8 .8) (dx -.75) unjustified) 
+	(c3 e end-beam staccato) eighth-rest
+	bar
+	(chord (notes c3 c2) q) eighth-rest (chord (notes c3 c2) q) eighth-rest 
+	bar
+	(chord (notes bf1 bf2) q) eighth-rest (chord (notes b1 b2) q) eighth-rest 
+	bar
+	(chord (notes a1 a2) q.) (chord (notes a1 a2) q.) 
+	bar
+	(chord (notes a1 a2) q.) (chord (notes a1 a2) q.) 
+	bar
+	(chord (notes a2 a3) q. begin-slur) (chord (notes g3 g2) q. stem-down end-slur) 
+	bar
+	(chord (notes a2 a3) q. begin-slur) (chord (notes g3 g2) q. stem-down end-slur) 
+	bar
+	(chord (notes a3 a2) q.) (chord (notes a3 a2) q.) 
+	bar
+	(chord (notes a3 a2) q.) (chord (notes a3 a2) q.) 
+	bar)))

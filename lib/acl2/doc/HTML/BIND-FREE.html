@@ -1,0 +1,249 @@
+<html>
+<head><title>BIND-FREE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BIND-FREE</h2>to bind free variables of a rewrite or linear rule
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(IMPLIES (AND (RATIONALP LHS)
+              (RATIONALP RHS)
+              (BIND-FREE (FIND-MATCH-IN-PLUS-NESTS LHS RHS) (X)))
+         (EQUAL (EQUAL LHS RHS)
+                (EQUAL (+ (- X) LHS) (+ (- X) RHS))))<p>
+
+(IMPLIES (AND (BIND-FREE 
+                (FIND-RATIONAL-MATCH-IN-TIMES-NESTS LHS RHS MFC STATE)
+                (X))
+              (RATIONALP X)
+              (CASE-SPLIT (NOT (EQUAL X 0))))
+         (EQUAL (&lt; LHS RHS)
+                (IF (&lt; 0 X)
+                    (&lt; (* (/ X) LHS) (* (/ X) RHS))
+                   (&lt; (* (/ X) RHS) (* (/ X) LHS)))))
+</pre>
+
+<p>
+<ul>
+<li><h3><a href="BIND-FREE-EXAMPLES.html">BIND-FREE-EXAMPLES</a> -- examples pertaining to <code><a href="BIND-FREE.html">bind-free</a></code> hypotheses
+</h3>
+</li>
+
+</ul>
+
+General Forms:
+
+<pre>
+(BIND-FREE term var-list)
+(BIND-FREE term t)
+(BIND-FREE term)
+</pre>
+
+A rule which uses a <code>bind-free</code> hypothesis has similarities to both a 
+rule which uses a <code><a href="SYNTAXP.html">syntaxp</a></code> hypothesis and to a <code>:</code><code><a href="META.html">meta</a></code> rule.
+<code>Bind-free</code> is like <code><a href="SYNTAXP.html">syntaxp</a></code>, in that it logically always
+returns <code>t</code> but may affect the application of a <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+or <code>:</code><code><a href="LINEAR.html">linear</a></code> rule when it is called at the top-level of a
+hypothesis.  It is like a <code>:</code><code><a href="META.html">meta</a></code> rule, in that it allows the
+user to perform transformations of terms under progammatic control.<p>
+
+Note that a <code>bind-free</code> hypothesis does not, in general, deal with the
+meaning or semantics or values of the terms, but rather with their
+syntactic forms.  Before attempting to write a rule which uses
+<code>bind-free</code>, the user should be familiar with <code><a href="SYNTAXP.html">syntaxp</a></code> and the
+internal form that ACL2 uses for terms.  This internal form is
+similar to what the user sees, but there are subtle and important
+differences.  <code><a href="TRANS.html">Trans</a></code> can be used to view this internal form.<p>
+
+Just as for a <code><a href="SYNTAXP.html">syntaxp</a></code> hypothesis, there are two types of
+<code>bind-free</code> hypotheses.  The simpler type of <code>bind-free</code>
+hypothesis may be used as the nth hypothesis in a <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+or <code>:</code><code><a href="LINEAR.html">linear</a></code> rule whose <code>:</code><code><a href="COROLLARY.html">corollary</a></code> is
+<code>(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))</code> provided <code>term</code>
+is a term, <code>term</code> contains at least one variable, and every variable
+occuring freely in <code>term</code> occurs freely in <code>lhs</code> or in some <code>hypi</code>,
+<code>i&lt;n</code>.  In addition, <code>term</code> must not use any stobjs.
+(Later below we will describe the second type, an <em>extended</em>
+<code>bind-free</code> hypothesis, which may use <code><a href="STATE.html">state</a></code>.)<p>
+
+We begin our description of <code>bind-free</code> by examining the
+first example above in some detail.<p>
+
+We wish to write a rule which will cancel ``like'' addends from both
+sides of an equality.  Clearly, one could write a series of rules such
+as
+
+<pre>
+(DEFTHM THE-HARD-WAY-2-1
+   (EQUAL (EQUAL (+ A X B)
+                 (+ X C))
+          (EQUAL (+ A B)
+                 (FIX C))))
+</pre>
+
+with one rule for each combination of positions the matching addends
+might be found in (if one knew before-hand the maximum number of
+addends that would appear in a sum).  But there is a better way. 
+(In what follows, we assume the presence of an appropriate set of rules
+for simplifying sums.)<p>
+
+Consider the following definitions and theorem:
+
+<pre>
+(DEFUN INTERSECTION-EQUAL (X Y)
+  (COND ((ENDP X)
+         NIL)
+        ((MEMBER-EQUAL (CAR X) Y)
+         (CONS (CAR X) (INTERSECTION-EQUAL (CDR X) Y)))
+        (T
+         (INTERSECTION-EQUAL (CDR X) Y))))<p>
+
+(DEFUN PLUS-LEAVES (TERM)
+  (IF (EQ (FN-SYMB TERM) 'BINARY-+)
+      (CONS (FARGN TERM 1)
+            (PLUS-LEAVES (FARGN TERM 2)))
+    (LIST TERM)))<p>
+
+(DEFUN FIND-MATCH-IN-PLUS-NESTS (LHS RHS)
+  (IF (AND (EQ (FN-SYMB LHS) 'BINARY-+)
+           (EQ (FN-SYMB RHS) 'BINARY-+))
+      (LET ((COMMON-ADDENDS (INTERSECTION-EQUAL (PLUS-LEAVES LHS)
+                                                (PLUS-LEAVES RHS))))
+        (IF COMMON-ADDENDS
+            (LIST (CONS 'X (CAR COMMON-ADDENDS)))
+          NIL))
+    NIL))<p>
+
+(DEFTHM CANCEL-MATCHING-ADDENDS-EQUAL
+  (IMPLIES (AND (RATIONALP LHS)
+                (RATIONALP RHS)
+                (BIND-FREE (FIND-MATCH-IN-PLUS-NESTS LHS RHS) (X)))
+           (EQUAL (EQUAL LHS RHS)
+                  (EQUAL (+ (- X) LHS) (+ (- X) RHS)))))
+</pre>
+<p>
+
+How is this rule applied to the following term?
+
+<pre>
+(equal (+ 3 (expt a n) (foo a c))
+       (+ (bar b) (expt a n)))
+</pre>
+
+As mentioned above, the internal form of an ACL2 term is not always
+what one sees printed out by ACL2.  In this case, by using <code>:</code><code><a href="TRANS.html">trans</a></code>
+one can see that the term is stored internally as
+
+<pre>
+(equal (binary-+ '3
+                 (binary-+ (expt a n) (foo a c)))
+       (binary-+ (bar b) (expt a n))).
+</pre>
+<p>
+
+When ACL2 attempts to apply <code>cancel-matching-addends-equal</code> to the
+term under discussion, it first forms a substitution that instantiates
+the left-hand side of the conclusion so that it is identical to the
+target term.  This substitution is kept track of by the substitution
+alist:
+
+<pre>
+((LHS . (binary-+ '3
+                   (binary-+ (expt a n) (foo a c))))
+ (RHS . (binary-+ (bar b) (expt a n)))).
+</pre>
+
+ACL2 then attempts to relieve the hypotheses in the order they were
+given. Ordinarily this means that we instantiate each hypothesis
+with our substitution and then attempt to rewrite the resulting
+instance to true.  Thus, in order to relieve the first hypothesis,
+we rewrite:
+
+<pre>
+(RATIONALP (binary-+ '3
+                      (binary-+ (expt a n) (foo a c)))).
+</pre>
+
+Let us assume that the first two hypotheses rewrite to <code>t</code>.  How
+do we relieve the <code>bind-free</code> hypothesis?  Just as for a <code><a href="SYNTAXP.html">syntaxp</a></code>
+hypothesis, ACL2 evaluates <code>(find-match-in-plus-nests lhs rhs)</code>
+in an environment where <code>lhs</code> and <code>rhs</code> are instantiated as determined
+by the substitution.  In this case we evaluate
+
+<pre>
+(FIND-MATCH-IN-PLUS-NESTS '(binary-+ '3
+                                      (binary-+ (expt a n) (foo a c)))
+                          '(binary-+ (bar b) (expt a n))).
+</pre>
+
+Observe that, just as in the case of a <code><a href="SYNTAXP.html">syntaxp</a></code> hypothesis, we
+substitute the quotation of the variables bindings into the term to be
+evaluated.  See <a href="SYNTAXP.html">syntaxp</a> for the reasons for this.  The result of this
+evaluation, <code>((X . (EXPT A N)))</code>, is then used to extend the
+substitution alist:
+
+<pre>
+((X . (EXPT A N))
+ (LHS . (binary-+ '3
+                   (binary-+ (expt a n) (foo a c))))
+ (RHS . (binary-+ (bar b) (expt a n)))),
+</pre>
+
+and this extended substitution determines
+<code>cancel-matching-addends-equal</code>'s result:
+
+<pre>
+(EQUAL (+ (- X) LHS) (+ (- X) RHS))
+==&gt;
+(EQUAL (+ (- (EXPT A N)) 3 (EXPT A N) (FOO A C))
+       (+ (- (EXPT A N)) (BAR B) (EXPT A N))).
+</pre>
+
+Question: What is the internal form of this result?<br>
+
+Hint: Use <code>:</code><code><a href="TRANS.html">trans</a></code>.<p>
+
+When this rule fires, it adds the negation of a common term
+to both sides of the equality by selecting a binding for the
+otherwise-free variable <code>x</code>, under programmatic control.  Note
+that other mechanisms such as the binding of <a href="FREE-VARIABLES.html">free-variables</a>
+may also extend the substitution alist.<p>
+
+Just as for a <code><a href="SYNTAXP.html">syntaxp</a></code> test, a <code>bind-free</code> form signals
+failure by returning <code>nil</code>.  However, while a <code><a href="SYNTAXP.html">syntaxp</a></code> test
+signals success by returning true, a <code>bind-free</code> form signals
+success by returning an alist which is used to extend the current
+substitution alist.  Because of this use of the alist, there are
+several restrictions on it -- in particular the alist must only
+bind variables, these variables must not be already bound by the
+substitution alist, and the variables must be bound to ACL2 terms.
+If <code>term</code> returns an alist and the alist meets these restrictions,
+we append the alist to the substitution alist and use the result as
+the new current substitution alist.  This new current
+substitution alist is then used when we attempt to relieve the next
+hypothesis or, if there are no more, instantiate the right hand side
+of the rule.<p>
+
+There is also a second, optional, <code>var-list</code> argument to a <code>bind-free</code>
+hypothesis.  If provided, it must be either <code>t</code> or a list of variables.  If
+it is not provided, it defaults to <code>t</code>.  If it is a list of variables, this
+second argument is used to place a further restriction on the possible values
+of the alist to be returned by <code>term</code>: any variables bound in the alist
+must be present in the list of variables.  We strongly recommend the use of
+this list of variables, as it allows some consistency checks to be performed
+at the time of the rule's admittance which are not possible otherwise.<p>
+
+An extended <code>bind-free</code> hypothesis is similar to the simple type
+described above, but it uses two additional variables, <code>mfc</code> and <code>state</code>,
+which must not be bound by the left hand side or an earlier hypothesis
+of the rule.  They must be the last two variables mentioned by <code>term</code>:
+first <code>mfc</code>, then <code>state</code>.  These two variables give access to
+the functions <code>mfc-</code>xxx; see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.  As
+described there, <code>mfc</code> is bound to the so-called
+metafunction-context and <code>state</code> to ACL2's <code><a href="STATE.html">state</a></code>.  See <a href="BIND-FREE-EXAMPLES.html">bind-free-examples</a>
+for examples of the use of these extended <code>bind-free</code> hypotheses.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

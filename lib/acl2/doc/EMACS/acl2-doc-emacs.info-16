@@ -1,0 +1,1032 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: ARRAYS,  Next: BACKCHAIN-LIMIT,  Prev: APROPOS,  Up: MISCELLANEOUS
+
+ARRAYS    an introduction to ACL2 arrays
+
+Below we begin a detailed presentation of ACL2 arrays.  ACL2's
+single-threaded objects (see *note STOBJ::) provide a similar
+functionality that is generally more efficient but also more
+restrictive.
+
+Related topics:
+
+* Menu:
+
+* AREF1:: access the elements of a 1-dimensional array
+
+* AREF2:: access the elements of a 2-dimensional array
+
+* ARRAY1P:: recognize a 1-dimensional array
+
+* ARRAY2P:: recognize a 2-dimensional array
+
+* ARRAYS-EXAMPLE:: an example illustrating ACL2 arrays
+
+* ASET1:: set the elements of a 1-dimensional array
+
+* ASET2:: set the elements of a 2-dimensional array
+
+* COMPRESS1:: remove irrelevant pairs from a 1-dimensional array
+
+* COMPRESS2:: remove irrelevant pairs from a 2-dimensional array
+
+* DEFAULT:: return the :default from the header of a 1- or 2-dimensional array
+
+* DIMENSIONS:: return the :dimensions from the header of a 1- or 2-dimensional array
+
+* FLUSH-COMPRESS:: flush the under-the-hood array for the given name
+
+* HEADER:: return the header of a 1- or 2-dimensional array
+
+* MAXIMUM-LENGTH:: return the :maximum-length from the header of an array
+
+* SLOW-ARRAY-WARNING:: a warning issued when arrays are used inefficiently
+
+See *Note ARRAYS-EXAMPLE:: for a brief introduction illustrating the use
+of ACL2 arrays.
+
+ACL2 provides relatively efficient 1- and 2-dimensional arrays.  Arrays
+are awkward to provide efficiently in an applicative language because
+the programmer rightly expects to be able to "modify" an array object
+with the effect of changing the behavior of the element accessing
+function on that object.  This, of course, does not make any sense in
+an applicative setting.  The element accessing function is, after all,
+a function, and its behavior on a given object is immutable.  To
+"modify" an array object in an applicative setting we must actually
+produce a new array object.  Arranging for this to be done efficiently
+is a challenge to the implementors of the language.  In addition, the
+programmer accustomed to the von Neumann view of arrays must learn how
+to use immutable applicative arrays efficiently.
+
+In this note we explain 1-dimensional arrays.  In particular, we
+explain briefly how to create, access, and "modify" them, how they are
+implemented, and how to program with them.  2-dimensional arrays are
+dealt with by analogy.
+
+_The Logical Description of ACL2 Arrays_
+
+An ACL2 1-dimensional array is an object that associates arbitrary
+objects with certain integers, called "indices." Every array has a
+dimension, dim, which is a positive integer.  The indices of an array
+are the consecutive integers from 0 through dim-1.  To obtain the
+object associated with the index i in an array a, one uses (aref1 name
+a i).  Name is a symbol that is irrelevant to the semantics of aref1
+but affects the speed with which it computes.  We will talk more about
+array "names" later.  To produce a new array object that is like a but
+which associates val with index i, one uses (aset1 name a i val).
+
+An ACL2 1-dimensional array is actually an alist.  There is no special
+ACL2 function for creating arrays; they are generally built with the
+standard list processing functions list and cons.  However, there is a
+special ACL2 function, called compress1, for speeding up access to the
+elements of such an alist.  We discuss compress1 later.
+
+One element of the alist must be the "header" of the array.  The header
+of a 1-dimensional array with dimension dim is of the form:
+
+     (:HEADER :DIMENSIONS (dim)
+              :MAXIMUM-LENGTH max
+              :DEFAULT obj ; optional
+              :NAME name   ; optional
+              :ORDER order ; optional values are < (the default), >, or :none
+              ).
+
+Obj may be any object and is called the "default value" of the array.
+Max must be an integer greater than dim.  Name must be a symbol.  The
+:default and :name entries are optional; if :default is omitted, the
+default value is nil.  The function header, when given a name and a 1-
+or 2-dimensional array, returns the header of the array.  The functions
+dimensions, maximum-length, and default are similar and return the
+corresponding fields of the header of the array.  The role of the
+:dimensions field is obvious: it specifies the legal indices into the
+array.  The roles played by the :maximum-length and :default fields are
+described below.
+
+Aside from the header, the other elements of the alist must each be of
+the form (i . val), where i is an integer and 0 <= i < dim, and val is
+an arbitrary object.
+
+The :order field of the header is ignored for 2-dimensional arrays.  For
+1-dimensional arrays, it specifies the order of keys (i, above) when the
+array is compressed with compress1, as described below.  An :order of
+:none specifies no reordering of the alist compress1, and an order of >
+specifies reordering by compress1 so that keys are in descending order.
+Otherwise, the alist is reordered by compress1 so that keys are in
+ascending order.
+
+(Aref1 name a i) is guarded so that name must be a symbol, a must be an
+array and i must be an index into a.  The value of (aref1 name a i) is
+either (cdr (assoc i a)) or else is the default value of a, depending
+on whether there is a pair in a whose car is i.  Note that name is
+irrelevant to the value of an aref1 expression.  You might :pe aref1 to
+see how simple the definition is.
+
+(Aset1 name a i val) is guarded analogously to the aref1 expression.
+The value of the aset1 expression is essentially (cons (cons i val) a).
+Again, name is irrelevant.  Note (aset1 name a i val) is an array, a',
+with the property that (aref1 name a' i) is val and, except for index
+i, all other indices into a' produce the same value as in a.  Note also
+that if a is viewed as an alist (which it is) the pair "binding" i to
+its old value is in a' but "covered up" by the new pair.  Thus, the
+length of an array grows by one when aset1 is done.
+
+Because aset1 covers old values with new ones, an array produced by a
+sequence of aset1 calls may have many irrelevant pairs in it.  The
+function compress1 can remove these irrelevant pairs.  Thus, (compress1
+name a) returns an array that is equivalent (vis-a-vis aref1) to a but
+which may be shorter.  For technical reasons, the alist returned by
+compress1 may also list the pairs in a different order than listed in a.
+
+To prevent arrays from growing excessively long due to repeated aset1
+operations, aset1 actually calls compress1 on the new alist whenever
+the length of the new alist exceeds the :maximum-length entry, max, in
+the header of the array.  See the definition of aset1 (for example by
+using :pe).  This is primarily just a mechanism for freeing up cons
+space consumed while doing aset1 operations.  Note however that this
+compress1 call is replaced by a hard error if the header specifies an
+:order of :none.
+
+This completes the logical description of 1-dimensional arrays.
+2-dimensional arrays are analogous.  The :dimensions entry of the
+header of a 2-dimensional array should be (dim1 dim2).  A pair of
+indices, i and j, is legal iff 0 <= i < dim1 and 0 <= j < dim2.  The
+:maximum-length must be greater than dim1*dim2.  Aref2, aset2, and
+compress2 are like their counterparts but take an additional index
+argument.  Finally, the pairs in a 2-dimensional array are of the form
+((i . j) . val).
+
+_The Implementation of ACL2 Arrays_
+
+Very informally speaking, the function compress1 "creates" an ACL2
+array that provides fast access, while the function aref1 "maintains"
+fast access.  We now describe this informal idea more carefully.
+
+Aref1 is essentially assoc.  If aref1 were implemented naively the time
+taken to access an array element would be linear in the dimension of
+the array and the number of "assignments" to it (the number of aset1
+calls done to create the array from the initial alist).  This is
+intolerable; arrays are "supposed" to provide constant-time access and
+change.
+
+The apparently irrelevant names associated with ACL2 arrays allow us to
+provide constant-time access and change when arrays are used in
+"conventional" ways.  The implementation of arrays makes it clear what
+we mean by "conventional."
+
+Recall that array names are symbols.  Behind the scenes, ACL2
+associates two objects with each ACL2 array name.  The first object is
+called the "semantic value" of the name and is an alist.  The second
+object is called the "raw lisp array" and is a Common Lisp array.
+
+When (compress1 name alist) builds a new alist, a', it sets the
+semantic value of name to that new alist.  Furthermore, it creates a
+Common Lisp array and writes into it all of the index/value pairs of
+a', initializing unassigned indices with the default value.  This array
+becomes the raw lisp array of name.  Compress1 then returns a', the
+semantic value, as its result, as required by the definition of
+compress1.
+
+When (aref1 name a i) is invoked, aref1 first determines whether the
+semantic value of name is a (i.e., is eq to the alist a).  If so, aref1
+can determine the ith element of a by invoking Common Lisp's aref
+function on the raw lisp array associated with name.  Note that no
+linear search of the alist a is required; the operation is done in
+constant time and involves retrieval of two global variables, an eq
+test and jump, and a raw lisp array access.  In fact, an ACL2 array
+access of this sort is about 5 times slower than a C array access.  On
+the other hand, if name has no semantic value or if it is different
+from a, then aref1 determines the answer by linear search of a as
+suggested by the assoc-like definition of aref1.  Thus, aref1 always
+returns the axiomatically specified result.  It returns in constant
+time if the array being accessed is the current semantic value of the
+name used.  The ramifications of this are discussed after we deal with
+aset1.
+
+When (aset1 name a i val) is invoked, aset1 does two conses to create
+the new array.  Call that array a'.  It will be returned as the answer.
+(In this discussion we ignore the case in which aset1 does a
+compress1.)  However, before returning, aset1 determines if name's
+semantic value is a.  If so, it makes the new semantic value of name be
+a' and it smashes the raw lisp array of name with val at index i,
+before returning a' as the result.  Thus, after doing an aset1 and
+obtaining a new semantic value a', all aref1s on that new array will be
+fast.  Any aref1s on the old semantic value, a, will be slow.
+
+To understand the performance implications of this design, consider the
+chronological sequence in which ACL2 (Common Lisp) evaluates
+expressions:  basically inner-most first, left-to-right, call-by-value.
+An array use, such as (aref1 name a i), is "fast" (constant-time) if
+the alist supplied, a, is the value returned by the most recently
+executed compress1 or aset1 on the name supplied.  In the functional
+expression of "conventional" array processing, all uses of an array are
+fast.
+
+The :name field of the header of an array is completely irrelevant.
+Our convention is to store in that field the symbol we mean to use as
+the name of the raw lisp array.  But no ACL2 function inspects :name
+and its primary value is that it allows the user, by inspecting the
+semantic value of the array -- the alist -- to recall the name of the
+raw array that probably holds that value.  We say "probably" since
+there is no enforcement that the alist was compressed under the name in
+the header or that all asets used that name.  Such enforcement would be
+inefficient.
+
+_Some Programming Examples_
+
+In the following examples we will use ACL2 "global variables" to hold
+several arrays.  See *Note @: atsign, and see *note ASSIGN::.
+
+Let the state global variable a be the 1-dimensional compressed array
+of dimension 5 constructed below.
+
+     ACL2 !>(assign a (compress1 'demo
+                                 '((:header :dimensions (5)
+                                            :maximum-length 15
+                                            :default uninitialized
+                                            :name demo)
+                                   (0 . zero))))
+
+Then (aref1 'demo (@ a) 0) is zero and (aref1 'demo (@ a) 1) is
+uninitialized.
+
+Now execute
+
+     ACL2 !>(assign b (aset1 'demo (@ a) 1 'one))
+
+Then (aref1 'demo (@ b) 0) is zero and (aref1 'demo (@ b) 1) is one.
+
+All of the aref1s done so far have been "fast."
+
+Note that we now have two array objects, one in the global variable a
+and one in the global variable b.  B was obtained by assigning to a.
+That assignment does not affect the alist a because this is an
+applicative language.  Thus, (aref1 'demo (@ a) 1) must *still* be
+uninitialized.  And if you execute that expression in ACL2 you will see
+that indeed it is.  However, a rather ugly comment is printed, namely
+that this array access is "slow."  The reason it is slow is that the
+raw lisp array associated with the name demo is the array we are
+calling b.  To access the elements of a, aref1 must now do a linear
+search.  Any reference to a as an array is now "unconventional;" in a
+conventional language like Ada or Common Lisp it would simply be
+impossible to refer to the value of the array before the assignment
+that produced our b.
+
+Now let us define a function that counts how many times a given object,
+x, occurs in an array.  For simplicity, we will pass in the name and
+highest index of the array:
+
+     ACL2 !>(defun cnt (name a i x)
+              (declare (xargs :guard
+                              (and (array1p name a)
+                                   (integerp i)
+                                   (>= i -1)
+                                   (< i (car (dimensions name a))))
+                              :mode :logic
+                              :measure (nfix (+ 1 i))))
+              (cond ((zp (1+ i)) 0) ; return 0 if i is at most -1
+                    ((equal x (aref1 name a i))
+                     (1+ (cnt name a (1- i) x)))
+                    (t (cnt name a (1- i) x))))
+
+To determine how many times zero appears in (@ b) we can execute:
+
+     ACL2 !>(cnt 'demo (@ b) 4 'zero)
+
+The answer is 1.  How many times does uninitialized appear in (@ b)?
+
+     ACL2 !>(cnt 'demo (@ b) 4 'uninitialized)
+
+The answer is 3, because positions 2, 3 and 4 of the array contain that
+default value.
+
+Now imagine that we want to assign 'two to index 2 and then count how
+many times the 2nd element of the array occurs in the array.  This
+specification is actually ambiguous.  In assigning to b we produce a
+new array, which we might call c.  Do we mean to count the occurrences
+in c of the 2nd element of b or the 2nd element of c?  That is, do we
+count the occurrences of uninitialized or the occurrences of two?  If
+we mean the former the correct answer is 2 (positions 3 and 4 are
+uninitialized in c); if we mean the latter, the correct answer is 1
+(there is only one occurrence of two in c).
+
+Below are ACL2 renderings of the two meanings, which we call [former]
+and [latter].  (Warning:  Our description of these examples, and of an
+example [fast former] that follows, assumes that only one of these
+three examples is actually executed; for example, they are not executed
+in sequence.  See "A Word of Warning" below for more about this issue.)
+
+     (cnt 'demo (aset1 'demo (@ b) 2 'two) 4 (aref1 'demo (@ b) 2))  ; [former]
+     
+     (let ((c (aset1 'demo (@ b) 2 'two)))                           ; [latter]
+       (cnt 'demo c 4 (aref1 'demo c 2)))
+
+Note that in [former] we create c in the second argument of the call to
+cnt (although we do not give it a name) and then refer to b in the
+fourth argument.  This is unconventional because the second reference
+to b in [former] is no longer the semantic value of demo.  While ACL2
+computes the correct answer, namely 2, the execution of the aref1
+expression in [former] is done slowly.
+
+A conventional rendering with the same meaning is
+
+     (let ((x (aref1 'demo (@ b) 2)))                           ; [fast former]
+       (cnt 'demo (aset1 'demo (@ b) 2 'two) 4 x))
+
+which fetches the 2nd element of b before creating c by assignment.  It
+is important to understand that [former] and [fast former] mean exactly
+the same thing: both count the number of occurrences of uninitialized
+in c.  Both are legal ACL2 and both compute the same answer, 2.
+Indeed, we can symbolically transform [fast former] into [former]
+merely by substituting the binding of x for x in the body of the let.
+But [fast former] can be evaluated faster than [former] because all of
+the references to demo use the then-current semantic value of demo,
+which is b in the first line and c throughout the execution of the cnt
+in the second line.  [Fast former] is the preferred form, both because
+of its execution speed and its clarity.  If you were writing in a
+conventional language you would have to write something like [fast
+former] because there is no way to refer to the 2nd element of the old
+value of b after smashing b unless it had been saved first.
+
+We turn now to [latter].  It is both clear and efficient.  It creates c
+by assignment to b and then it fetches the 2nd element of c, two, and
+proceeds to count the number of occurrences in c.  The answer is 1.
+[Latter] is a good example of typical ACL2 array manipulation: after
+the assignment to b that creates c, c is used throughout.
+
+It takes a while to get used to this because most of us have grown
+accustomed to the peculiar semantics of arrays in conventional
+languages.  For example, in raw lisp we might have written something
+like the following, treating b as a "global variable":
+
+     (cnt 'demo (aset 'demo b 2 'two) 4 (aref 'demo b 2))
+
+which sort of resembles [former] but actually has the semantics of
+[latter] because the b from which aref fetches the 2nd element is not
+the same b used in the aset!  The array b is destroyed by the aset and
+b henceforth refers to the array produced by the aset, as written more
+clearly in [latter].
+
+A Word of Warning:  Users must exercise care when experimenting with
+[former], [latter] and [fast former].  Suppose you have just created b
+with the assignment shown above,
+
+     ACL2 !>(assign b (aset1 'demo (@ a) 1 'one))
+
+If you then evaluate [former] in ACL2 it will complain that the aref1
+is slow and compute the answer, as discussed.  Then suppose you
+evaluate [latter] in ACL2.  From our discussion you might expect it to
+execute fast -- i.e., issue no complaint.  But in fact you will find
+that it complains repeatedly.  The problem is that the evaluation of
+[former] changed the semantic value of demo so that it is no longer b.
+To try the experiment correctly you must make b be the semantic value
+of demo again before the next example is evaluated.  One way to do that
+is to execute
+
+     ACL2 !>(assign b (compress1 'demo (@ b)))
+
+before each expression.  Because of issues like this it is often hard
+to experiment with ACL2 arrays at the top-level.  We find it easier to
+write functions that use arrays correctly and efficiently than to so
+use them interactively.
+
+This last assignment also illustrates a very common use of compress1.
+While it was introduced as a means of removing irrelevant pairs from an
+array built up by repeated assignments, it is actually most useful as a
+way of insuring fast access to the elements of an array.
+
+Many array processing tasks can be divided into two parts.  During the
+first part the array is built.  During the second part the array is
+used extensively but not modified.  If your programming task can be so
+divided, it might be appropriate to construct the array entirely with
+list processing, thereby saving the cost of maintaining the semantic
+value of the name while few references are being made.  Once the alist
+has stabilized, it might be worthwhile to treat it as an array by
+calling compress1, thereby gaining constant time access to it.
+
+ACL2's theorem prover uses this technique in connection with its
+implementation of the notion of whether a rune is disabled or not.
+Associated with every rune is a unique integer index, called its
+"nume."  When each rule is stored, the corresponding nume is stored as
+a component of the rule.  Theories are lists of runes and membership in
+the "current theory" indicates that the corresponding rule is enabled.
+But these lists are very long and membership is a linear-time
+operation.  So just before a proof begins we map the list of runes in
+the current theory into an alist that pairs the corresponding numes
+with t.  Then we compress this alist into an array.  Thus, given a rule
+we can obtain its nume (because it is a component) and then determine
+in constant time whether it is enabled.  The array is never modified
+during the proof, i.e., aset1 is never used in this example.  From the
+logical perspective this code looks quite odd:  we have replaced a
+linear-time membership test with an apparently linear-time assoc after
+going to the trouble of mapping from a list of runes to an alist of
+numes.  But because the alist of numes is an array, the "apparently
+linear-time assoc" is more apparent than real; the operation is
+constant-time.
+
+
+File: acl2-doc-emacs.info,  Node: AREF1,  Next: AREF2,  Prev: ARRAYS,  Up: ARRAYS
+
+AREF1    access the elements of a 1-dimensional array
+
+     Example Form:
+     (aref1 'delta1 a (+ i k))
+     
+     General Form:
+     (aref1 name alist index)
+
+where name is a symbol, alist is a 1-dimensional array and index is a
+legal index into alist.  This function returns the value associated
+with index in alist, or else the default value of the array.  See *Note
+ARRAYS:: for details.
+
+This function executes in virtually constant time if alist is in fact
+the "semantic value" associated with name (see *note ARRAYS::).  When
+it is not, aref1 must do a linear search through alist.  In that case
+the correct answer is returned but a *slow array* comment is printed to
+the comment window.  See *Note SLOW-ARRAY-WARNING::.
+
+
+File: acl2-doc-emacs.info,  Node: AREF2,  Next: ARRAY1P,  Prev: AREF1,  Up: ARRAYS
+
+AREF2    access the elements of a 2-dimensional array
+
+     Example Form:
+     (aref2 'delta1 a i j)
+     
+     General Form:
+     (aref2 name alist i j)
+
+where name is a symbol, alist is a 2-dimensional array and i and j are
+legal indices into alist.  This function returns the value associated
+with (i . j) in alist, or else the default value of the array.  See
+*Note ARRAYS:: for details.
+
+This function executes in virtually constant time if alist is in fact
+the "semantic value" associated with name (see *note ARRAYS::).  When
+it is not, aref2 must do a linear search through alist.  In that case
+the correct answer is returned but a *slow array* comment is printed to
+the comment window.  See *Note SLOW-ARRAY-WARNING::.
+
+
+File: acl2-doc-emacs.info,  Node: ARRAY1P,  Next: ARRAY2P,  Prev: AREF2,  Up: ARRAYS
+
+ARRAY1P    recognize a 1-dimensional array
+
+     Example Form:
+     (array1p 'delta1 a)
+     
+     General Form:
+     (array1p name alist)
+
+where name and alist are arbitrary objects.  This function returns t if
+alist is a 1-dimensional ACL2 array.  Otherwise it returns nil.  The
+function operates in constant time if alist is the semantic value of
+name.  See *Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: ARRAY2P,  Next: ARRAYS-EXAMPLE,  Prev: ARRAY1P,  Up: ARRAYS
+
+ARRAY2P    recognize a 2-dimensional array
+
+     Example Form:
+     (array2p 'delta1 a)
+     
+     General Form:
+     (array2p name alist)
+
+where name and alist are arbitrary objects.  This function returns t if
+alist is a 2-dimensional ACL2 array.  Otherwise it returns nil.  The
+function operates in constant time if alist is the semantic value of
+name.  See *Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: ARRAYS-EXAMPLE,  Next: ASET1,  Prev: ARRAY2P,  Up: ARRAYS
+
+ARRAYS-EXAMPLE    an example illustrating ACL2 arrays
+
+The example below illustrates the use of ACL2 arrays.  It is not, of
+course, a substitute for the detailed explanations provided elsewhere
+(see *note ARRAYS::, including subtopics).
+
+     ACL2 !>(defun defarray (name size initial-element)
+              (compress1 name
+                         (cons (list :HEADER
+                                     :DIMENSIONS (list size)
+                                     :MAXIMUM-LENGTH (1+ size)
+                                     :DEFAULT initial-element
+                                     :NAME name)
+                               nil)))
+     
+     Since DEFARRAY is non-recursive, its admission is trivial.  We observe
+     that the type of DEFARRAY is described by the theorem
+     (AND (CONSP (DEFARRAY NAME SIZE INITIAL-ELEMENT))
+          (TRUE-LISTP (DEFARRAY NAME SIZE INITIAL-ELEMENT))).
+     We used the :type-prescription rule COMPRESS1.
+     
+     Summary
+     Form:  ( DEFUN DEFARRAY ...)
+     Rules: ((:TYPE-PRESCRIPTION COMPRESS1))
+     Warnings:  None
+     Time:  0.02 seconds (prove: 0.00, print: 0.02, other: 0.00)
+      DEFARRAY
+     ACL2 !>(assign my-ar (defarray 'a1 5 17))
+      ((:HEADER :DIMENSIONS (5)
+                :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+     ACL2 !>(aref1 'a1 (@ my-ar) 3)
+     17
+     ACL2 !>(aref1 'a1 (@ my-ar) 8)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol AREF1,
+     which is
+     (AND (ARRAY1P NAME L) (INTEGERP N) (>= N 0) (< N (CAR (DIMENSIONS NAME L)))),
+     is violated by the arguments in the call (AREF1 'A1 '(#) 8).
+     
+     ACL2 !>(assign my-ar (aset1 'a1 (@ my-ar) 3 'xxx))
+      ((3 . XXX)
+       (:HEADER :DIMENSIONS (5)
+                :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+     ACL2 !>(aref1 'a1 (@ my-ar) 3)
+     XXX
+     ACL2 !>(aset1 'a1 (@ my-ar) 3 'yyy) ; BAD: (@ my-ar) now points to
+                                         ;      an old copy of the array!
+     ((3 . YYY)
+      (3 . XXX)
+      (:HEADER :DIMENSIONS (5)
+               :MAXIMUM-LENGTH 6 :DEFAULT 17 :NAME A1))
+     ACL2 !>(aref1 'a1 (@ my-ar) 3) ; Because of "BAD" above, the array
+                                    ; access is done using assoc rather
+                                    ; than Lisp aref, hence is slower;
+                                    ; but the answer is still correct,
+                                    ; reflecting the value in (@ my-ar),
+                                    ; which was not changed above.
+     
+     
+     **********************************************************
+     Slow Array Access!  A call of AREF1 on an array named
+     A1 is being executed slowly.  See :DOC slow-array-warning
+     **********************************************************
+     
+     XXX
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: ASET1,  Next: ASET2,  Prev: ARRAYS-EXAMPLE,  Up: ARRAYS
+
+ASET1    set the elements of a 1-dimensional array
+
+     Example Form:
+     (aset1 'delta1 a (+ i k) 27)
+     
+     General Form:
+     (aset1 name alist index val)
+
+where name is a symbol, alist is a 1-dimensional array named name,
+index is a legal index into alist, and val is an arbitrary object.  See
+*Note ARRAYS:: for details.  Roughly speaking this function "modifies"
+alist so that the value associated with index is val.  More precisely,
+it returns a new array, alist', of the same name and dimension as alist
+that, under aref1, is everywhere equal to alist except at index where
+the result is val.  That is, (aref1 name alist' i) is (aref1 name alist
+i) for all legal indices i except index, where (aref1 name alist' i) is
+val.
+
+In order to "modify" alist, aset1 conses a new pair onto the front.  If
+the length of the resulting alist exceeds the :maximum-length entry in
+the array header, aset1 compresses the array as with compress1.
+
+It is generally expected that the "semantic value" of name will be
+alist (see *note ARRAYS::).  This function operates in virtually
+constant time whether this condition is true or not (unless the
+compress1 operation is required).  But the value returned by this
+function cannot be used efficiently by subsequent aset1 operations
+unless alist is the semantic value of name when aset1 is executed.
+Thus, if the condition is not true, aset1 prints a *slow array* warning
+to the comment window.  See *Note SLOW-ARRAY-WARNING::.
+
+
+File: acl2-doc-emacs.info,  Node: ASET2,  Next: COMPRESS1,  Prev: ASET1,  Up: ARRAYS
+
+ASET2    set the elements of a 2-dimensional array
+
+     Example Form:
+     (aset2 'delta1 a i j 27)
+     
+     General Form:
+     (aset2 name alist i j val)
+
+where name is a symbol, alist is a 2-dimensional array named name, i
+and j are legal indices into alist, and val is an arbitrary object.
+See *Note ARRAYS:: for details.  Roughly speaking this function
+"modifies" alist so that the value associated with (i . j) is val.
+More precisely, it returns a new array, alist', of the same name and
+dimension as alist that, under aref2, is everywhere equal to alist
+except at (i . j) where the result is val.  That is, (aref2 name alist'
+x y) is (aref2 name alist x y) for all legal indices x y except i and j
+where (aref2 name alist' i j) is val.
+
+In order to "modify" alist, aset2 conses a new pair onto the front.  If
+the length of the resulting alist exceeds the :maximum-length entry in
+the array header, aset2 compresses the array as with compress2.
+
+It is generally expected that the "semantic value" of name will be
+alist (see *note ARRAYS::).  This function operates in virtually
+constant time whether this condition is true or not (unless the
+compress2 operation is required).  But the value returned by this
+function cannot be used efficiently by subsequent aset2 operations
+unless alist is the semantic value of name when aset2 is executed.
+Thus, if the condition is not true, aset2 prints a *slow array* warning
+to the comment window.  See *Note SLOW-ARRAY-WARNING::.
+
+
+File: acl2-doc-emacs.info,  Node: COMPRESS1,  Next: COMPRESS2,  Prev: ASET2,  Up: ARRAYS
+
+COMPRESS1    remove irrelevant pairs from a 1-dimensional array
+
+     Example Form:
+     (compress1 'delta1 a)
+     
+     General Form:
+     (compress1 name alist)
+
+where name is a symbol and alist is a 1-dimensional array named name.
+See *Note ARRAYS:: for details.  Logically speaking, this function
+removes irrelevant pairs from alist, possibly shortening it.  The
+function returns a new array, alist', of the same name and dimension as
+alist, that, under aref1, is everywhere equal to alist.  That is,
+(aref1 name alist' i) is (aref1 name alist i), for all legal indices i.
+Alist' may be shorter than alist and the non-irrelevant pairs may
+occur in a different order than in alist.
+
+Practically speaking, this function plays an important role in the
+efficient implementation of aref1.  In addition to creating the new
+array, alist', compress1 makes that array the "semantic value" of name
+and allocates a raw lisp array to name.  For each legal index, i, that
+raw lisp array contains (aref1 name alist' i) in slot i.  Thus,
+subsequent aref1 operations can be executed in virtually constant time
+provided they are given name and the alist' returned by the most
+recently executed compress1 or aset1 on name.  See *Note ARRAYS::.
+
+In general, compress1 returns an alist whose cdr is an association list
+whose keys are nonnegative integers in ascending order.  However, if the
+header specifies an :order of > then the keys will occur in descending
+order, and if the :order is :none then the keys will not be sorted,
+i.e., compress1 is logically the identity function (though it still
+attaches an array under the hood).
+
+
+File: acl2-doc-emacs.info,  Node: COMPRESS2,  Next: DEFAULT,  Prev: COMPRESS1,  Up: ARRAYS
+
+COMPRESS2    remove irrelevant pairs from a 2-dimensional array
+
+     Example Form:
+     (compress2 'delta1 a)
+     
+     General Form:
+     (compress2 name alist)
+
+where name is a symbol and alist is a 2-dimensional array named name.
+See *Note ARRAYS:: for details.  Logically speaking, this function
+removes irrelevant pairs from alist, possibly shortening it.  The
+function returns a new array, alist', of the same name and dimension as
+alist, that, under aref2, is everywhere equal to alist.  That is,
+(aref2 name alist' i j) is (aref2 name alist i j), for all legal
+indices i and j.  Alist' may be shorter than alist and the
+non-irrelevant pairs may occur in a different order in alist' than in
+alist.
+
+Practically speaking, this function plays an important role in the
+efficient implementation of aref2.  In addition to creating the new
+array, alist', compress2 makes that array the "semantic value" of name
+and allocates a raw lisp array to name.  For all legal indices, i and
+j, that raw lisp array contains (aref2 name alist' i j) in slot i,j.
+Thus, subsequent aref2 operations can be executed in virtually constant
+time provided they are given name and the alist' returned by the most
+recently executed compress2 or aset2 on name.  See *Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: DEFAULT,  Next: DIMENSIONS,  Prev: COMPRESS2,  Up: ARRAYS
+
+DEFAULT    return the :default from the header of a 1- or 2-dimensional array
+
+     Example Form:
+     (default 'delta1 a)
+     
+     General Form:
+     (default name alist)
+
+where name is an arbitrary object and alist is a 1- or 2-dimensional
+array.  This function returns the contents of the :default field of the
+header of alist.  When aref1 or aref2 is used to obtain a value for an
+index (or index pair) not bound in alist, the default value is returned
+instead.  Thus, the array alist may be thought of as having been
+initialized with the default value.  default operates in virtually
+constant time if alist is the semantic value of name.  See *Note
+ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: DIMENSIONS,  Next: FLUSH-COMPRESS,  Prev: DEFAULT,  Up: ARRAYS
+
+DIMENSIONS    return the :dimensions from the header of a 1- or 2-dimensional array
+
+     Example Form:
+     (dimensions 'delta1 a)
+     
+     General Form:
+     (dimensions name alist)
+
+where name is arbitrary and alist is a 1- or 2-dimensional array.  This
+function returns the dimensions list of the array alist.  That list
+will either be of the form (dim1) or (dim1 dim2), depending on whether
+alist is a 1- or 2-dimensional array.  Dim1 and dim2 will be integers
+and each exceed by 1 the maximum legal corresponding index.  Thus, if
+dimensions returns, say, '(100) for an array a named 'delta1, then
+(aref1 'delta1 a 99) is legal but (aref1 'delta1 a 100) violates the
+guards on aref1.  Dimensions operates in virtually constant time if
+alist is the semantic value of name.  See *Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: FLUSH-COMPRESS,  Next: HEADER,  Prev: DIMENSIONS,  Up: ARRAYS
+
+FLUSH-COMPRESS    flush the under-the-hood array for the given name
+
+     Example Form:
+     (flush-compress 'my-array)
+     
+     General Form:
+     (flush-compress name)
+
+where name is a symbol.
+
+Recall that (compress1 nm alist) associates an under-the-hood raw Lisp
+one-dimensional array of name nm with the given association list,
+alist, while (compress2 nm alist) is the analogous function for
+two-dimensional arrays; see *note COMPRESS1:: and see *note
+COMPRESS2::.  The only purpose of flush-compress, which always returns
+nil, is to remove the association of any under-the-hood array with the
+given name, thus eliminating slow array accesses (see *note
+SLOW-ARRAY-WARNING::).  It is not necessary if the return values of
+compress1 and compress2 are always used as the "current" copy of the
+named array, and thus flush-compress should rarely, if ever, be needed
+in user applications.
+
+Nevertheless, we provide the following contrived example to show how
+flush-compress can be used to good effect.  Comments have been added to
+this log to provide explanation.
+
+     ACL2 !>(assign a (compress1 'demo
+                                 '((:header :dimensions (5)
+                                            :maximum-length 15
+                                            :default uninitialized
+                                            :name demo)
+                                   (0 . zero)
+                                   (1 . one))))
+      ((:HEADER :DIMENSIONS (5)
+                :MAXIMUM-LENGTH
+                15 :DEFAULT UNINITIALIZED :NAME DEMO)
+       (0 . ZERO)
+       (1 . ONE))
+     ACL2 !>(aref1 'demo (@ a) 0)
+     ZERO
+     ; As expected, the above evaluation did not cause a slow array warning.  Now
+     ; we associate a different under-the-hood array with the name 'demo.
+     ACL2 !>(compress1 'demo
+                       '((:header :dimensions (5)
+                                  :maximum-length 15
+                                  :default uninitialized
+                                  :name demo)
+                         (0 . zero)))
+     ((:HEADER :DIMENSIONS (5)
+               :MAXIMUM-LENGTH
+               15 :DEFAULT UNINITIALIZED :NAME DEMO)
+      (0 . ZERO))
+     ; The following array access produces a slow array warning because (@ a) is
+     ; no longer associated under-the-hood with the array name 'demo.
+     ACL2 !>(aref1 'demo (@ a) 0)
+     
+     
+     **********************************************************
+     Slow Array Access!  A call of AREF1 on an array named
+     DEMO is being executed slowly.  See :DOC slow-array-warning
+     **********************************************************
+     
+     ZERO
+     ; Now we associate under-the-hood, with array name 'demo, an alist equal to
+     ; (@ a).
+     ACL2 !>(compress1 'demo
+                       '((:header :dimensions (5)
+                                  :maximum-length 15
+                                  :default uninitialized
+                                  :name demo)
+                         (0 . zero)
+                         (1 . one)))
+     ((:HEADER :DIMENSIONS (5)
+               :MAXIMUM-LENGTH
+               15 :DEFAULT UNINITIALIZED :NAME DEMO)
+      (0 . ZERO)
+      (1 . ONE))
+     ; The following array access is still slow, because the under-the-hood array
+     ; is merely associated with a copy of (@ a), not with the actual object
+     ; (@ a).
+     ACL2 !>(aref1 'demo (@ a) 0)
+     
+     
+     **********************************************************
+     Slow Array Access!  A call of AREF1 on an array named
+     DEMO is being executed slowly.  See :DOC slow-array-warning
+     **********************************************************
+     
+     ZERO
+     ; So we might try to fix the problem by recompressing. But this doesn't
+     ; work.  It would work, by the way, if we re-assign a:
+     ; (assign a (compress1 'demo (@ a))).  That is why we usually will not need
+     ; flush-compress.
+     ACL2 !>(compress1 'demo (@ a))
+     ((:HEADER :DIMENSIONS (5)
+               :MAXIMUM-LENGTH
+               15 :DEFAULT UNINITIALIZED :NAME DEMO)
+      (0 . ZERO)
+      (1 . ONE))
+     ACL2 !>(aref1 'demo (@ a) 0)
+     
+     
+     **********************************************************
+     Slow Array Access!  A call of AREF1 on an array named
+     DEMO is being executed slowly.  See :DOC slow-array-warning
+     **********************************************************
+     
+     ZERO
+     ; Finally, we eliminate the warning by calling flush-compress before we call
+     ; compress1.  The call of flush-compress removes any under-the-hood
+     ; association of an array with the name 'demo.  Then the subsequent call of
+     ; compress1 associates the object (@ a) with that name.  (Technical point:
+     ; compress1 always associates the indicated name with the value that it
+     ; returns.  in this case, what compress1 returns is (@ a), because (@ a) is
+     ; already, logically speaking, a compressed array1p (starts with a :header
+     ; and the natural number keys are ordered).
+     ACL2 !>(flush-compress 'demo)
+     NIL
+     ACL2 !>(compress1 'demo (@ a))
+     ((:HEADER :DIMENSIONS (5)
+               :MAXIMUM-LENGTH
+               15 :DEFAULT UNINITIALIZED :NAME DEMO)
+      (0 . ZERO)
+      (1 . ONE))
+     ACL2 !>(aref1 'demo (@ a) 0)
+     ZERO
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: HEADER,  Next: MAXIMUM-LENGTH,  Prev: FLUSH-COMPRESS,  Up: ARRAYS
+
+HEADER    return the header of a 1- or 2-dimensional array
+
+     Example Form:
+     (header 'delta1 a)
+     
+     General Form:
+     (header name alist)
+
+where name is arbitrary and alist is a 1- or 2-dimensional array.  This
+function returns the header of the array alist.  The function operates
+in virtually constant time if alist is the semantic value of name.  See
+*Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: MAXIMUM-LENGTH,  Next: SLOW-ARRAY-WARNING,  Prev: HEADER,  Up: ARRAYS
+
+MAXIMUM-LENGTH    return the :maximum-length from the header of an array
+
+     Example Form:
+     (maximum-length 'delta1 a)
+     
+     General Form:
+     (maximum-length name alist)
+
+where name is an arbitrary object and alist is a 1- or 2-dimensional
+array.  This function returns the contents of the :maximum-length field
+of the header of alist.  Whenever an aset1 or aset2 would cause the
+length of the alist to exceed its maximum length, a compress1 or
+compress2 is done automatically to remove irrelevant pairs from the
+array.  Maximum-length operates in virtually constant time if alist is
+the semantic value of name.  See *Note ARRAYS::.
+
+
+File: acl2-doc-emacs.info,  Node: SLOW-ARRAY-WARNING,  Prev: MAXIMUM-LENGTH,  Up: ARRAYS
+
+SLOW-ARRAY-WARNING    a warning issued when arrays are used inefficiently
+
+If you use ACL2 arrays you may sometimes see a *slow array* warning.
+We here explain what that warning means and some likely "mistakes" it
+may signify.
+
+The discussion in the documentation for arrays defines what we mean by
+the semantic value of a name.  As noted there, behind the scenes ACL2
+maintains the invariant that with some names there is associated a pair
+consisting of an ACL2 array alist, called the semantic value of the
+name, and an equivalent raw lisp array.  Access to ACL2 array elements,
+as in (aref1 name alist i), is executed in constant time when the array
+alist is the semantic value of the name, because we can just use the
+corresponding raw lisp array to obtain the answer.  Aset1 and compress1
+modify the raw lisp array appropriately to maintain the invariant.
+
+If aref1 is called on a name and alist, and the alist is not the
+then-current semantic value of the name, the correct result is computed
+but it requires linear time because the alist must be searched.  When
+this happens, aref1 prints a *slow array* warning message to the
+comment window.  Aset1 behaves similarly because the array it returns
+will cause the *slow array* warning every time it is used.
+
+From the purely logical perspective there is nothing "wrong" about such
+use of arrays and it may be spurious to print a warning message.  But
+because arrays are generally used to achieve efficiency, the *slow
+array* warning often means the user's intentions are not being
+realized.  Sometimes merely performance expectations are not met; but
+the message may mean that the functional behavior of the program is
+different than intended.
+
+Here are some "mistakes" that might cause this behavior.  In the
+following we suppose the message was printed by aset1 about an array
+named name.  Suppose the alist supplied aset1 is alist.
+
+(1) Compress1 was never called on name and alist.  That is, perhaps you
+created an alist that is an array1p and then proceeded to access it
+with aref1 but never gave ACL2 the chance to create a raw lisp array
+for it.  After creating an alist that is intended for use as an array,
+you must do (compress1 name alist) and pass the resulting alist' as the
+array.
+
+(2) Name is misspelled.  Perhaps the array was compressed under the
+name 'delta-1 but accessed under 'delta1?
+
+(3) An aset1 was done to modify alist, producing a new array, alist',
+but you subsequently used alist as an array.  Inspect all (aset1 name
+...) occurrences and make sure that the alist modified is never used
+subsequently (either in that function or any other).  It is good
+practice to adopt the following syntactic style.  Suppose the alist you
+are manipulating is the value of the local variable alist.  Suppose at
+some point in a function definition you wish to modify alist with
+aset1.  Then write
+
+     (let ((alist (aset1 name alist i val))) ...)
+
+and make sure that the subsequent function body is entirely within the
+scope of the let.  Any uses of alist subsequently will refer to the new
+alist and it is impossible to refer to the old alist.  Note that if you
+write
+
+      (foo (let ((alist (aset1 name alist i val))) ...)  ; arg 1
+           (bar alist))                                  ; arg 2
+
+you have broken the rules, because in arg 1 you have modified alist but
+in arg 2 you refer to the old value.  An appropriate rewriting is to
+lift the let out:
+
+      (let ((alist (aset1 name alist alist i val)))
+        (foo ...                                         ; arg 1
+             (bar alist)))                               ; arg 2
+
+Of course, this may not mean the same thing.
+
+(4) A function which takes alist as an argument and modifies it with
+aset1 fails to return the modified version.  This is really the same as
+(3) above, but focuses on function interfaces.  If a function takes an
+array alist as an argument and the function uses aset1 (or a
+subfunction uses aset1, etc.), then the function probably "ought" to
+return the result produced by aset1.  The reasoning is as follows.  If
+the array is passed into the function, then the caller is holding the
+array.  After the function modifies it, the caller's version of the
+array is obsolete.  If the caller is going to make further use of the
+array, it must obtain the latest version, i.e., that produced by the
+function.
+

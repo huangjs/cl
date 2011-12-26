@@ -1,0 +1,107 @@
+<html>
+<head><title>STOBJ-EXAMPLE-2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-2</h2>an example of the use of arrays in single-threaded objects
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+The following event
+
+<pre>
+(defstobj ms
+  (pcn  :type integer                  :initially 0)
+  (mem  :type (array integer (100000)) :initially -1)
+  (code :type t                        :initially nil))
+</pre>
+
+introduces a single-threaded object named <code>ms</code> (which stands for
+``machine state'').  The object has three fields, a <code>pcn</code> or program
+counter, a <code>mem</code> or memory, and a <code>code</code> field.<p>
+
+The <code>mem</code> field is occupied by an object initially of type 
+<code>(array integer (100000))</code>.  Logically speaking, this is a list of
+length <code>100000</code>, each element of which is an integer.  But in the
+underlying implementation of the <code>ms</code> object, this field is occupied
+by a raw Lisp array, initially of size 100000.
+<p>
+You might expect the above <code>defstobj</code> to define the accessor function
+<code>mem</code> and the updater <code>update-mem</code>.  <em>That does not happen!</em>.<p>
+
+The above event defines the accessor function <code>memi</code> and the updater
+<code>update-memi</code>.  These functions do not access/update the <code>mem</code> field of
+the <code>ms</code> object; they access/update the individual elements of the
+array in that field.<p>
+
+In particular, the logical definitions of the two functions are:
+
+<pre>
+(defun memi (i ms)
+  (declare (xargs :guard
+                  (and (msp ms)
+                       (integerp i)
+                       (&lt;= 0 i)
+                       (&lt; i (mem-length ms)))))
+  (nth i (nth 1 ms)))<p>
+
+(defun update-memi (i v ms)
+  (declare (xargs :guard
+                  (and (msp ms)
+                       (integerp i)
+                       (&lt;= 0 i)
+                       (&lt; i (mem-length ms))
+                       (integerp v))))
+  (update-nth-array 1 i v ms))
+</pre>
+<p>
+
+For example, to access the 511th (0-based) memory location of the
+current <code>ms</code> you could evaluate:
+
+<pre>
+ACL2 !&gt;(memi 511 ms)
+-1
+</pre>
+
+The answer is <code>-1</code> initially, because that is the above-specified
+initial value of the elements of the <code>mem</code> array.<p>
+
+To set that element you could do
+
+<pre>
+ACL2 !&gt;(update-memi 511 777 ms)
+&lt;ms&gt;
+ACL2 !&gt;(memi 511 ms)
+777
+</pre>
+<p>
+
+The raw Lisp implementing these two functions is shown below.
+
+<pre>
+(defun memi (i ms)
+  (declare (type (integer 0 268435455) i))
+  (the integer
+       (aref (the (simple-array integer (*))
+                  (svref ms 1))
+             (the (integer 0 268435455) i))))<p>
+
+(defun update-memi (i v ms)
+  (declare (type (integer 0 268435455) i)
+           (type integer v))
+  (progn
+   (setf (aref (the (simple-array integer (*))
+                    (svref ms 1))
+               (the (integer 0 268435455) i))
+         (the integer v))
+   ms))
+</pre>
+<p>
+
+If you want to see the raw Lisp supporting a <code>defstobj</code>, execute the
+<code>defstobj</code> and then evaluate the ACL2 form
+<code>(nth 4 (global-val 'cltl-command (w state)))</code>.<p>
+
+To continue the stobj tour, see <a href="STOBJ-EXAMPLE-3.html">stobj-example-3</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<html>
+<head><title>SET-GUARD-CHECKING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-GUARD-CHECKING</h2>control checking <a href="GUARD.html">guard</a>s during execution of top-level forms
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+Detailed comments about the arguments of this function may be found
+elsewhere: see <a href="GUARD-EVALUATION-TABLE.html">guard-evaluation-table</a>.  Here we provide an introduction to
+the use of <code>set-guard-checking</code>.<p>
+
+New users are encouraged to execute one of the following forms in order to
+avoid evaluation errors due to <a href="GUARD.html">guard</a>s:
+
+<pre>
+(set-guard-checking :none)
+(set-guard-checking nil)
+</pre>
+
+The former avoids all guard-checking on user-defined functions and should
+generally work fine for new users, the only drawback being efficiency loss on
+compute-intensive problems.  All settings other than <code>:none</code> check guards,
+but a value of <code>nil</code> allows evaluation to continue in the logic when guards
+fail (avoiding the raw Lisp definition in that case).<p>
+
+You may put one of the above forms in the <code>"acl2-customization.lisp"</code>
+file in your current directory (see <a href="CBD.html">cbd</a>) or your home directory;
+see <a href="ACL2-CUSTOMIZATION.html">acl2-customization</a>.<p>
+
+Note that <a href="GUARD.html">guard</a>s are not part of the ACL2 logic, and hence new users can
+completely ignore the notion of <a href="GUARD.html">guard</a> (and the rest of this
+documentation section after this paragraph!).  For example, <code>(car 3)</code> and
+<code>nil</code> can be proved equal in the ACL2 logic, as follows, even though the
+<a href="GUARD.html">guard</a> on <code><a href="CAR.html">car</a></code> requires its first argument to be a <code><a href="CONS.html">cons</a></code> pair
+or <code>nil</code>.
+
+<pre>
+(thm (equal (car 3) nil))
+</pre>
+
+Moreover, unless your functions or top-level forms call built-in ACL2
+functions that are defined in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode, the following property
+will hold.
+
+<blockquote>
+Evaluation of <code>(set-guard-checking :none)</code> will allow evaluation of forms
+such as <code>(car 3)</code> to take place without error in the top level loop, not
+only when proving theorems.
+</blockquote>
+<p>
+
+If you feel bold, then you may wish to read the rest of this
+documentation topic; also see <a href="GUARD.html">guard</a>.<p>
+
+See <a href="GUARD-EVALUATION-TABLE.html">guard-evaluation-table</a> for a succinct table, with associated discussion,
+that covers in detail the material presented in the rest of the present
+topic.
+<p>
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  To turn ``<a href="GUARD.html">guard</a> checking on,'' by which we mean
+that <a href="GUARD.html">guard</a>s are checked at runtime, execute the top-level form
+<code>:set-guard-checking t</code>.  To allow guard violations, do
+<code>:set-guard-checking nil</code>, or do <code>:set-guard-checking :none</code> to turn off
+all guard-checking, so that raw Lisp definitions of user-defined functions
+are avoided unless their <a href="GUARD.html">guard</a> is <code>t</code>. The status of guard-checking is
+reflected in the <a href="PROMPT.html">prompt</a>.
+
+<pre>
+ACL2 !&gt;
+</pre>
+
+means <a href="GUARD.html">guard</a> checking is on and
+
+<pre>
+ACL2 &gt;
+</pre>
+
+means <a href="GUARD.html">guard</a> checking is off.  The exclamation mark can be thought of
+as ``barring'' certain computations.  The absence of the mark
+suggests the absence of error messages or unbarred access to the
+logical axioms.  Thus, for example
+
+<pre>
+ACL2 !&gt;(car 'abc)
+</pre>
+
+will signal an error, while
+
+<pre>
+ACL2 &gt;(car 'abc)
+</pre>
+
+will return <code>nil</code>.<p>
+
+We will return at the end of this documentation topic to discuss two other
+values, <code>:all</code> and <code>:nowarn</code>, for <code>:set-guard-checking</code>.  We also note
+that evaluation of built-in <code>:program</code> mode functions always takes place in
+raw Lisp.<p>
+
+Whether <a href="GUARD.html">guard</a>s are checked during evaluation is independent of the
+<code><a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a></code>.  We note this simply because it is easy to
+confuse ``<code>:</code><code><a href="PROGRAM.html">program</a></code> mode'' with ``evaluation in Common Lisp'' and
+thus with ``<a href="GUARD.html">guard</a> checking on;'' and it is easy to confuse
+``<code>:</code><code><a href="LOGIC.html">logic</a></code> mode'' with ``evaluation in the logic'' and with ``<a href="GUARD.html">guard</a>
+checking off.''  But the <code><a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a></code> determines whether
+newly submitted definitions introduce programs or add logical
+axioms.  That mode is independent of whether evaluation checks
+<a href="GUARD.html">guard</a>s or not.  You can operate in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode with runtime <a href="GUARD.html">guard</a>
+checking on or off.  Analogously, you can operate in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode with runtime <a href="GUARD.html">guard</a> checking on or off.<p>
+
+For further discussion on evaluation and guards see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>,
+in particular the exception for safe-mode in the ``Aside'' there.  See <a href="GUARD.html">guard</a>
+for a general discussion of <a href="GUARD.html">guard</a>s.<p>
+
+Now we fulfill our promise above to discuss two other values for
+<code>:set-guard-checking</code>:
+
+<pre>
+:set-guard-checking :nowarn
+:set-guard-checking :all
+</pre>
+
+The meaning of these values is perhaps best described by the following
+example provided by David Rager.
+
+<pre>
+ACL2 !&gt;(defun my-test (expr)
+         (declare (xargs :guard (true-listp expr)
+                         :verify-guards nil))
+         (if (atom expr)
+             expr
+           (cons (my-test (car expr))
+                 (my-test (cdr expr)))))<p>
+
+The admission of MY-TEST is trivial, using the relation O&lt; (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT EXPR).  We could deduce no constraints on the type of MY-
+TEST.  However, in normalizing the definition we used primitive type
+reasoning.<p>
+
+Summary
+Form:  ( DEFUN MY-TEST ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Warnings:  None
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+ MY-TEST
+ACL2 !&gt;(my-test '(a b c))<p>
+
+ACL2 Warning [Guards] in TOP-LEVEL:  Guard-checking will be inhibited
+on recursive calls of the executable counterpart (i.e., in the ACL2
+logic) of MY-TEST.  To check guards on all recursive calls:
+  (set-guard-checking :all)
+To leave behavior unchanged except for inhibiting this message:
+  (set-guard-checking :nowarn)<p>
+
+(A B C)
+ACL2 !&gt;
+</pre>
+
+If you think about evaluation of <code>(my-test '(a b c))</code>, you will see that it
+leads to the recursive call <code>(my-test 'a)</code>, which one might expect to cause
+a guard violation since the symbol <code>a</code> is not a <code><a href="TRUE-LISTP.html">true-listp</a></code>.  However,
+as the warning above explains, we do not by default check guards on recursive
+calls.  The reason is efficiency -- imagine a simple definition with a
+guard that is slow to evaluate.  The values <code>:nowarn</code> and <code>:all</code> for
+<code>:set-guard-checking</code> have been introduced as ways of dealing with the
+above warning.  The value <code>:nowarn</code> simply turns off the warning above.
+The value <code>:all</code> causes all guards to be checked, even on recursive calls
+and even on all calls of non-built-in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions --
+unless, of course, a call is made of a function whose guard has been verified
+(see <a href="VERIFY-GUARDS.html">verify-guards</a>), where the arguments satisfy the guard, in which case
+the corresponding call is made in raw Lisp without subsidiary guard-checking.
+We still say that ``guard-checking is on'' after <code>:set-guard-checking</code> is
+invoked with values <code>t</code>, <code>:nowarn</code>, and <code>:all</code>, otherwise (after value
+<code>nil</code>) we say ``guard-checking is off.<p>
+
+For technical reasons, <code>:all</code> does not have its advertised effect in the
+case of built-in <code>:</code><code><a href="PROGRAM.html">program</a></code>-mode functions.  If you are interested in
+this technical detail, see the comment ``In the boot-strap world...'' in
+source function <code>oneify-cltl-code</code>.<p>
+
+We conclude with a remark about the use of <code>:set-guard-checking</code> for
+experimenting with ACL2 as a logic or as a programming language.  If one
+views ACL2 as a logic, one may wish to use <code>:set-guard-checking :none</code>,
+while if instead one views ACL2 as a functional programming language, one may
+wish to use <code>:set-guard-checking :all</code>.  The following transcript
+illustrates this distinction by way of example.  Specifically, <code>(car 3)</code> is
+equal to <code>nil</code> in the ACL2 logic, but may be viewed as a programming
+error.  The default of <code>:set-guard-checking t</code> is problematic for learning
+ACL2 using <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions, since one can get raw Lisp
+errors.  In the example below, the raw Lisp error occurs because <code>foo</code>
+implicitly has a <a href="GUARD.html">guard</a> of <code>t</code>, hence <code>(foo 3)</code> is evaluated in raw
+Lisp, which leads to a raw Lisp call of c[(car 3)].
+
+<pre>
+ACL2 !&gt;(defun foo (x)
+         (declare (xargs :mode :program)) 
+         (car x))<p>
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+Warnings:  None
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+ FOO
+ACL2 !&gt;(foo 3)
+Error: Attempt to take the car of 3 which is not listp.
+  [condition type: TYPE-ERROR]<p>
+
+Restart actions (select using :continue):
+ 0: Abort entirely from this (lisp) process.
+[Current process: Initial Lisp Listener]
+[1] ACL2(1): [RAW LISP] :pop
+ACL2 !&gt;:set-guard-checking :none<p>
+
+Turning off guard checking entirely.  To allow execution in raw Lisp
+for functions with guards other than T, while continuing to mask guard
+violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.<p>
+
+ACL2 &gt;(foo 3)
+NIL
+ACL2 &gt;:set-guard-checking :all<p>
+
+Turning guard checking on, value :ALL.<p>
+
+ACL2 !&gt;(foo 3)<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+call (CAR 3).  See :DOC wet for how you might be able to get an error
+backtrace.  See :DOC set-guard-checking for information about suppressing
+this check with (set-guard-checking :none), as recommended for new
+users.<p>
+
+ACL2 !&gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

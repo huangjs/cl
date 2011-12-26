@@ -1,0 +1,81 @@
+<html>
+<head><title>NOTE-2-7-SYSTEM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-SYSTEM</h3>ACL2 Version  2.7 Notes on System-level Changes
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+ACL2 now runs (once again) under Lispworks, specifically, Lispworks 4.2.0.
+However, we needed a patch, which presumably will be unnecessary after 4.2.7.
+From Lispworks support:
+
+<blockquote>
+Users with LispWorks4.2.7 should ask us at lisp-support@xanalys.com
+for the transform-if-node patch. It will be helpful if they quote
+(Lisp Support Call #11372) when doing so. Also, they must send a bug
+form generated from their LispWorks image: instructions at
+http://www.lispworks.com/support/bug-report.html.
+</blockquote>
+<p>
+
+File <code>books/Makefile-generic</code> has been improved so that failed attempts to
+certify a book will cause the <code>make</code> to fail.  Previously, an existing
+<code>.cert</code> file was left in place, and that sufficed for the <code>make</code> to be
+considered a success.  Now, the old <code>.cert</code> file is first removed when
+recertification is found to be necessary.<p>
+
+A change has been made to source file <code>acl2.lisp</code> to accommodate GCL 2.4.3.
+(ACL2 Version  2.6 does not work with some versions of GCL 2.4.3.)<p>
+
+The error message has been improved when certain forms are typed to raw Lisp
+and the ACL2 loop has never been entered (with <code>(</code><code><a href="LP.html">LP</a></code><code>)</code>).<p>
+
+The following symbols in the ACL2 package have been made untouchable, meaning
+that they are not available to the user: <code>ev-fncall</code>, <code>ev</code>, <code>ev-lst</code>,
+<code>ev-acl2-unwind-protect</code>, <code>ev-fncall!</code>, and <code>user-stobj-alist-safe</code>.
+The reason is that these functions can not be called safely except under
+certain restrictions.  If you want to call the ACL2 evaluator, consider using
+the built-in system functions <code>trans-eval</code> or simple-translate-and-eval.<p>
+
+CLISP Version_2.30 implements a notion of ``locking'' the "LISP" package
+that is incompatible with building ACL2.  (CLISP Version_2.27 does not appear
+to have had this feature.)  We have gotten around this problem by unlocking
+the "LISP" package in ACL2 images built on such CLISPs.<p>
+
+Automatic proclaiming for GCL, which has (for a long time) been done for
+functions in compiled books, has been improved.  Formerly, the only time a
+non-trivial output type (i.e., other than <code>t</code>) was inferred was when
+macroexpansion produced an explicit call of <code><a href="THE.html">the</a></code>.  Now, <code><a href="IF.html">if</a></code>
+expressions can also generate non-<code>t</code> output types.  Consider the following
+example.
+
+<pre>
+(defmacro the-fixnum (n)
+  (list 'the '(signed-byte 29) n))
+(defmacro 1+f (x)
+  (list 'the-fixnum
+        (list '1+ (list 'the-fixnum x))))
+(defun foo (x)
+  (declare (type (unsigned-byte 27) x))
+  (if (zp x)
+      0
+    (1+f (foo (1-f x)))))
+</pre>
+
+Formerly, the <code>proclaim</code> forms for <code>foo</code>, before and after this
+improvement, are as shown below.
+
+<pre>
+(PROCLAIM '(FTYPE (FUNCTION ((UNSIGNED-BYTE 27)) T) FOO))                ;old
+(PROCLAIM '(FTYPE (FUNCTION ((UNSIGNED-BYTE 27)) (SIGNED-BYTE 29)) FOO)) ;new
+</pre>
+<p>
+
+Compiler info messages sent to error stream were eliminated for CMUCL.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

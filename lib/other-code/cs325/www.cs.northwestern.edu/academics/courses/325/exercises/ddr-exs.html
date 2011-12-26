@@ -1,0 +1,556 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<HEAD>
+   <TITLE>Deductive Retriever Exercises</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Deductive Retriever Exercises</DIV>
+
+<p>There are two sets of exercises here, using 
+<a href="../readings/ddr.html">the simple Deductive Data Retriever</a>:</p>
+
+<ul>
+  <li>Solving logical representation problems:
+    <ul>
+      <li><a href="#use">Overview</a></li>
+      
+      <li>Defining logical rules for <a href="#member">list membership</a></li>
+      
+      <li>Defining logical rules for <a href="#all-different"><code>all-different</code></a></li>
+      
+      <li>Solving <a href="#coloring">the map coloring problem</a> with logic</li>
+      
+      <li>Implementing the Shakey Robot planner:
+        <ul>
+          <li><a href="#shakey-1">Shakey 1.0</a>: 1 box, no locks</li>
+          
+          <li><a href="#shakey-2">Shakey 2.0</a>: 1 box, many locks</li>
+          
+          <li><a href="#shakey-3">Shakey 3.0</a>: many boxes, many locks</li>
+        </ul>
+      </li>
+    </ul>
+  
+  <li>Making the Retriever work better:
+    <ul>
+       <li><a href="#improve">Overview</a></li>
+       
+       <li><a href="#assert-file">Loading a file of assertions</a></li>
+       
+       <li><a href="#loop-catcher">Catching backchaining loops</a></li>
+       
+       <li><a href="#ask-1">Getting one answer at a time</a></li>
+  
+  </li>
+</ul>
+
+<hr>
+<h2><a name="use">Using the Deductive Data Retriever</a></h2>
+
+
+<P>Anyone should be able to work on the logic rule problems.
+<em>Watch out for infinite loops!</em> But changing how the retriever works
+should wait until you're feeling confident about programing very
+recursive code.</p>
+
+<p>These 
+exercises require the following files
+from the C25 library:</P>
+
+<UL>
+   <LI><a href="../programs/ddr.lisp">ddr.lisp</a> -- the code
+   for <a href="../readings/ddr.html">the Deductive Data Retriever</a></li>
+
+   <LI><a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a> -- 
+   the test cases for the Deductive Data Retriever</li>
+   
+   <li><a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a> -- the test cases for these exercises
+</UL>
+
+<P><a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>
+and <a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a>
+define all their tests in the package named <tt>ddr-tests</tt>. The easiest way
+to work on these exercises is to write all your code in the
+<tt>ddr-tests</tt> package, that is, create a file and
+start the file with <tt>(in-package #:ddr-tests)</tt>.</p>
+
+<p><i>Feel free to create new test cases!</i>.</P>
+
+
+
+<h3><a name="member">Exercise: member</a></h3>
+
+<p>Tests: <code>member</code> in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p>Define the predicate <code>(member <em>x l</em>)</code> to return
+true if and only if <em>x</em> is a member of the list <em>l</em>,
+where lists are represented using the same <code>(cons <em>x y</em>)</code>
+functional terms used in the <code>append</code> example
+in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a></p>
+
+
+<h3><a name="all-different">Exercise: all-different</a></h3>
+
+<p>Tests: <code>all-different</code> in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p>We rarely need an "is equal" predicate with a deductive retriever. For example,
+if you want to say some binary relationship always holds for an object
+with itself, just say <code>(relation ?x ?x)</code>, not <code>(<- (relation ?x ?y)
+(equal ?x ?y))</code>.</p>
+
+<p>On the other hand, we do often need an "is different" predicate. For 
+example, in the Monkey and Bananas code in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>,
+we want to the monkey to go to the box only if 
+the monkey's current location is different than the box's
+location.</p>
+
+<p>To make it easier to assert <code>(different x y)</code>,
+the code in the Monkey and Bananas formulation
+in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a> defines
+a forward-chaining rule so that asserting <code>(different x y)</code>
+automatically asserts <code>(different y x)</code>. (Why can't this
+be a backward-chaining rule?)</p>
+
+<p>That forward-chaining rule cuts the number of assertions needed in
+half, but, if we have N objects, we still need to write order(N<sup>2</sup>)
+assertions.</p>
+
+<p>Define a forward-chaining rule for the predicate 
+<code>(all-different <em>list</em>)</code>. <code>all-different</code>
+takes a list represented
+with the <code>(cons x y)</code> functional terms used in the predicates
+<code>append</code> and <code>member</code>, and asserts that every
+item in the list is different from every other item.</p>
+
+
+<h3><a name="coloring">Exercise: Map Coloring</a></h3>
+
+<p>Tests: <code>color-map1</code>, <code>color-map2</code>, and
+<code>color-map3</code>in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p>The map coloring problem has a long history. The problem is simple: given a map
+of various countries bordering each other, color the map using the fewest number
+of colors, such that no countries sharing a border of more than a point
+have the same color. For many years, it had been proven that 5 colors was sufficient for any
+flat map, no matter how complex, and that no map was known that needed more than 4.
+It finally required a computer to generate the complete proof that 4 was enough.</p>
+
+<p>Here are three small maps, one already colored, the others left for you
+to figure out:</p>
+
+<table>
+<tr>
+<td>
+<img src="small-map.gif" alt="small map coloring problem">
+</td><td>
+<img src="medium-map.gif" alt="medium map coloring problem">
+</td><td>
+<img src="large-map.gif" alt="large map coloring problem">
+</td>
+</tr>
+</table>
+
+<p><a href="http://mathforum.org/wagon/fall97/p840.html">Here</a>
+is a more complicated map that Martin Gardner claimed required 5 colors.</p>
+
+<p>You can encode a map coloring problem in logic with:</p>
+
+<ul>
+<li>some assertions about what different colors there are, and</li>
+
+<li>rules (at least one per problem) for a predicate that says whether
+some map coloring is legal for map; the rules
+describe the coloring constraints that have to be satisfied.</li>
+</ul>
+
+<p>Define a KB with the colors red, blue, green and yellow.
+Then define map coloring rules for the predicate 
+<code>(colors-for <em>map a-region-color b-region-color c-region-color...</em>)</code>,
+so that the test cases below pass.
+Note that <code>colors-for</code> is given a different
+number of arguments for each map. This is not a mistake nor
+anything you have to treat specially.
+You can have rules for all three maps at the same time. 
+</p>
+
+<p>Side question: The above maps all have 24 possible solutions.
+Can you come up with a map that doesn't have 24 possible
+solutions?</p>
+
+<h3><a name="shakey-1">Exercise: Shakey 1.0</a></h3>
+
+<p>Tests: <code>shakey-1</code> in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p>Shakey was one of <a href="http://www.ai.sri.com/shakey/">the first intelligent robots in AI</a>.
+Many people worked on many aspects of the system, from computer vision to motion, but
+the part relevant here is <a href="http://www.ai.sri.com/pubs/full.php?id=1104">Cordell Green's application of logic programming
+to the planning problem</a>, details of which can be found in
+<a href="http://www.ai.sri.com/pubs/files/tn004-green69.pdf">"Application of Theorem Proving to Problem Solving."</a>
+This paper does the Monkey and Bananas problem, Towers of Hanoi, and robot planning.</p>
+
+<p>A common problem in early robotic planning was moving boxes from one room to
+another, given information about box locations (current and desired),
+room locations, doors being open or closed, etc. Several kinds
+of information need to be represented:</p>
+
+<ul>
+<li>Unchanging facts, such as how rooms are connected: these
+can be represented as static facts
+in the knowledge base</li>
+
+<li>Facts the robot can change, such as where it is: these
+can be represented in a <em>state</em> structure, as with
+Monkey and Bananas</li>
+
+<li>The problem to be solved: this can be represented
+by describing an initial state and a desired goal state
+</ul>
+
+<p>For this exercise, create a set of facts and rules to allow the
+Retriever to solve simple Shakey problems. Follow the model of
+the Monkey and Bananas example in
+<a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>.</p>
+
+<p>For Version 1.0, assume that Shakey only has to move 1 box from 1 room
+to another, and there are no locked doors. The term for
+representing a state is simply <code>(v1-state <em>robot-location</em>
+<em>box-location</em>)</code>. 
+There are just two
+actions that change state:</p>
+
+<ul>
+<li><code>(MOVE-TO <em>location</em>)</code>: the robot moves to a 
+location, where a location can either be the hall or a room</li>
+
+<li><code>(PUSH-BOX <em>location<sub>1</sub></em> <em>location<sub>2</sub></em>)</code>:
+the robot pushes a box from one location to another.</li>
+</ul>
+
+<p>To keep things simple, ignore the subproblem of finding paths from
+rooms to rooms. Instead, assume that all rooms are connected to the hall,
+so the rules for moving and pushing boxes from
+one room to another are simply:</p>
+
+<ul>
+<li>First move or push the box from the first room to the hall</li>
+
+<li>Then move or push the box to the second room</li>
+</ul>
+
+<p>Use the same <code>PLAN-FOR</code> framework used in the 
+Monkey and Bananas code in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>.
+You should only need to define:</p>
+
+<ul>
+<li>rules for <code>RESULT</code> for what happens to states
+when you move and push boxes</li>
+
+<li>rules for <code>ACTION-FOR</code> for choosing an action, 
+given a current state and a goal state</li>
+</ul>
+
+<p>The <code>ACTION-FOR</code> rules are where you make the robot
+smart enough to avoid getting into endless loops.</p>
+
+<p>Tip: use <a href="#all-different">all-different</a> to quickly say
+that room1, room2 and room3 are all different.</p>
+
+<h3><a name="shakey-2">Exercise: Shakey 2.0</a></h3>
+
+<p>Tests: <code>shakey-2</code> in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p><b>This is the hardest of the three Shakey exercises.</b>
+When Shakey 1.0 is working, extend it to handle locked rooms.
+The robot should be able to unlock a room from the hallway, but not
+from inside the room. A robot can only enter or leave a room, when
+moving or pushing a box, if it's unlocked.</p>
+
+<p>The easiest way to do this is by extending the state to include
+a list of the <b>unlocked</b> rooms. Make a new version of Shakey 1.0, 
+where:</p>
+
+<ul>
+<li>the rules use the state form 
+<code>(v2-state <em>robot-location box-location unlocked-room-list</em>)</code>
+</li>
+
+<li>the rules for selecting <code>MOVE-TO</code>
+and <code>PUSH-BOX</code> require the rooms
+involved to be unlocked
+</li>
+
+<li>rules are added for the action <code>UNLOCK</code>
+which lets a robot in the hall unlock any room, i.e., add
+it the list of unlocked rooms</li>
+</ul>
+
+<p>The test cases start with easy cases, where the room the robot
+needs to enter, is in the unlocked list. The later cases
+start with an empy list of unlocked
+rooms.</p>
+
+<p>Tip: use <a href="#member">member</a> to determine
+if a room is unlocked, i.e., in the list of unlocked rooms.</p>
+
+
+<h3><a name="shakey-3">Exercise: Shakey 3.0</a></h3>
+
+<p>Tests: <code>shakey-3</code> in 
+<a href="../programs/ddr-exs-tests.lisp">ddr-exs-tests.lisp</a></p>
+
+<p>When Shakey 2.0 is working, extend it to handle multiple boxes.
+We will assume that there's at most one box in a room, so
+all we need to do is give a list of the rooms that have a box in them.
+Shakey's goal is to move all such boxes into a destination room.
+</p>
+
+<p>There's not a lot of rules needed to do this.
+Most of the work will still be done by the Shakey 2.0 rules. The trick is to create
+a new state that contains:</p>
+
+<ul>
+<li>the robot's initial location</li>
+
+<li>a list of the rooms with boxes to move, and</li>
+
+<li>a list of the locked rooms, as with Shakey 2.0</li>
+</ul>
+
+<p>Capture this with the state form
+<code>(v3-state <em>robot-location box-room-list unlocked-room-list</em>)</code>
+</p>
+
+<p>The robot is done when <em>box-room-list</em> is empty.
+If the list isn't empty, the robot should</p>
+
+<ul>
+<li>find a plan for
+the first box in the list, using your Shakey 2.0 rules,</li>
+
+<li>find a plan for the remaining rooms</li>
+
+<li>return the combined plan.</li>
+</ul>
+
+<p>To combine plans, use the rules for <code>APPEND</code>
+defined in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>.</p>
+
+
+<a name="improve"></a>
+<hr>
+<h2>Improving the Deductive Data Retriever</h2>
+
+<p>These exercises can make the Retriever less prone to infinite loops,
+though they may also make it run a bit slower.</p>
+
+<p>Do these as "patch files." That is, don't change the code
+in <A HREF="../programs/ddr.lisp">ddr.lisp</A>, but create a new
+file, e.g., <tt>ddr-patch.lisp</tt>. This file
+should be in the <tt>ddr</tt> package and contain only the
+new and changed definitions necessary to
+change the Retriever. That way I can see your changes in one place and
+test them, if necessary, by loading the original <tt>ddr.lisp</tt>
+and your patches.</p>
+
+<p>Make sure all the old tests in 
+<a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>
+continue to work as you modify the retriever, unless the
+modification makes some test inappropriate.</p>
+
+<p>The <A HREF="../admin/grading.html">email rules</A> still apply.
+Use <A HREF="critic.html">the Lisp Critic</A> on your code before
+sending.</P>
+
+
+<a name="assert-file"></a>
+<hr>
+<h3>Exercise: <tt>assert-file</tt></h3>
+
+<p>This one's easy, if you've done the I/O chapter.</p>
+
+<p>Define <tt>(assert-file <em>pathname</em>)</tt> to assert
+every fact and/or rule in the file named by <em>pathname</em>. It
+should return a count of how many items were asserted.</p>
+
+<p><a href="../programs/movies.lisp">movies.lisp</a> is a very large file of movie facts, adapted from
+<a href="http://www.cs.bris.ac.uk/Teaching/Resources/COMS30106/labs/labs0.html">a data file for a Prolog course</a>.
+Test your code on that. It should say that it loaded 2909 items.
+Make sure you've compiled
+<a href="../programs/ddr.lisp">ddr.lisp</a>
+before trying to load this file, otherwise Allegro may never finish!</p>
+
+
+<a name="loop-catcher"></a>
+<hr>
+<h3>Exercise: DDR Loop Catcher</h3>
+
+<p>It's easy to throw the Retriever into an endless loop, e.g.,</p>
+
+<blockquote><pre>> (tell '(<- (married ?x ?y) (married ?y ?x)))
+
+> (tell '(married john mary))
+
+> (ask '(married mary john))</pre></blockquote>
+
+<p>Some common loops can be caught by keeping a stack of current
+goals, and, when adding to this stack, checking to see if the new
+query matches (unifies) with a query on the stack already. If so,
+then you're in trouble, and should quit the search with a failure.</p>
+
+<p>Done correctly, the above example should return an answer
+for both queries, but should return false for the query
+<tt>(ask '(married brad angeline))</tt>.</p>
+
+<a name="ask-1"></a>
+<HR>
+<H3>Exercise: DDR <tt>ask-1</tt></H3>
+
+<p>The goal of this exercise is to make it possible to get
+answers one at a time from the Deductive Retriever, somewhat
+the way the Prolog interpreter works. It should be possible to get 
+one answer and stop, and not pay the
+cost of looking for other answers. This approach
+has two advantages. First, if one answer is sufficient, you can get it
+faster. Second, if a query has an infinite
+number of answers, a particular
+application can ask for the first N answers.</p>
+
+<p>More specifically, you need to</p>
+
+<ul>
+<li>define a new function, <tt>ask-1</tt>, to get answers
+one at a time, and</li>
+<li>redefine <tt>ask</tt> to get all the answers
+that <tt>ask-1</tt> can generate.</li>
+</ul>
+
+<p>The new <tt>ask</tt> should
+still pass all the tests in
+<a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>.</p>
+
+<p>The syntax of <tt>ask-1</tt> is like <tt>ask</tt>, 
+i.e., <tt>(ask-1 <em>query [ form ]</em>)</tt>, except
+that <em>query</em> is also optional. The semantics 
+of <tt>ask-1</tt> is:</p>
+
+<ul>
+<li><tt>(ask-1 <em>query form</em>)</tt>
+returns the first of the answers, if any, that the original
+<tt>(ask <em>query form</em>)</tt> would return.
+</li>
+
+<li>Subsequent calls with no arguments, i.e.,
+<tt>(ask-1)</tt>, return the second, third, ... answers that
+the original <tt>ask</tt> would return.</li>
+</ul>
+
+<p>Here's an example of how <tt>ask-1</tt> should work with
+one of the test knowledge bases in 
+<a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>:</p>
+
+<blockquote><pre>DDR-TESTS 16 > (make-tiger-kb)
+...
+DDR-TESTS 17 > (ask '(can-satisfy-hunger ?x))
+((CAN-SATISFY-HUNGER ANTELOPE) (CAN-SATISFY-HUNGER TIGER))
+
+DDR-TESTS 18 > (ask-1 '(can-satisfy-hunger ?x))
+(CAN-SATISFY-HUNGER ANTELOPE)
+
+DDR-TESTS 19 > (ask-1)
+(CAN-SATISFY-HUNGER TIGER)
+
+DDR-TESTS 20 > (ask-1)
+NIL</pre></blockquote>
+
+<p>As with <tt>ask</tt>, if <em>form</em> is omitted,
+it should
+default to <em>query</em>. If <tt>(ask-1)</tt> is
+evaluated and no previous <em>query</em> has been specified,
+<tt>(ask-1)</tt> should return false.</p>
+
+
+<h4>Approach</h4>
+
+<p>This problem has both a conceptual challenge
+and a software programming challenge.
+The conceptual challenge is how to represent the state of the deductive
+search in a way that supports getting answers pne at a time. The
+programming challenge is how to make as few changes as possible
+to the existing tested Retriever code.
+
+<p>The current code uses a simple uniform recursive logic: explore
+all branches and 
+append all results. This automatically takes care of branches that lead to
+no results or many. But it means that the code has many functions 
+calling other functions recursively, expecting to get lists of
+all answers back. If now only one answer is returned, how can the basic
+logic structure be kept?
+</p>
+
+<p>The answer is <em>generated lists</em>, also known as lazy lists and (in Abelson and Sussman's
+<b>Structure and Interpretation of Computer Programs</b>) streams.
+A generated list is a data structure with list-like operations, analogous to
+<tt>car</tt> and <tt>cdr</tt>, but the elements of a generated list may
+not exist until accessed. That is, the elements may be generate
+on demand.</p>
+
+<p>The 
+<a href="../readings/list-gen.html">glist</a> package 
+defines some basic functions that create and manipulate
+generated lists. Most of these functions are analogous to the
+standard list functions: <tt>gcar</tt>, <tt>gcdr</tt>, <tt>gappend</tt> and so on.
+</p>
+
+<p>Generated lists are not only a natural way to represent a list of solutions that
+should be calculated only when requested. Because generated list functions look
+like regular list functions, converting list code to generated list code is relatively
+straightforward. Instead of consing or appending lists of all answers, you
+<tt>gcons</tt> or <tt>gappend</tt> them. You need to do this both in
+the main code
+and some of the logic extensions, like <tt>match-and</tt>. Do
+not, however, convert <em>all</em> lists to lazy lists. Many
+lists in the Retriever code, e.g., lists of bindings should
+remain normal lists. Only lists that require recursively finding alternatives
+should be converted.</p>
+
+<p>You'll need two top-level global variables where 
+<tt>(ask-1 <em>query form</em>)</tt> can save information for subsequent calls:</p>
+
+<ul>
+<li>a variable to hold the <em>form</em> to instantiate on each answer</li>
+
+<li>a variable to hold the initial generated list for <em>query</em></li>
+</ul>
+
+<p><tt>ask-1</tt> should set these variables when a new <em>query</em> and/or
+<em>form</em> is passed in. <tt>ask-1</tt> should then pop off the next 
+answer from the generated list. <tt>ask</tt> simply calls <tt>ask-1</tt>
+repeatedly until it returns false, and collects all the answers.</p>
+
+<hr>
+<p><a href="http://home.snafu.de/tilman/xenulink.html"><img src=
+"../images/xenu_button.gif" alt="checked with XENU button"></a>
+
+    <a href="http://validator.w3.org/check?uri=referer"><img
+        src="http://www.w3.org/Icons/valid-html401"
+        alt="Valid HTML 4.01 Strict" height="31" width="88"></a>
+  </p>
+
+<p id="closing">Comments? <img src="../images/comments.gif" alt="Comments icon" align=
+"bottom"> Send mail to <a href=
+"mailto:riesbeck@cs.northwestern.edu">Chris Riesbeck</a>.</p>
+
+
+</BODY>
+</HTML>

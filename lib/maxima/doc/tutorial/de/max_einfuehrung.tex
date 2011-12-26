@@ -1,0 +1,1096 @@
+\documentclass[ngerman,12pt]{scrartcl}
+
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+\usepackage{hyperref}
+\usepackage{xspace}
+\usepackage{microtype}
+
+\newcommand*\zB{z.\,B.\xspace}
+\newcommand*\ua{u.\,a.\xspace}
+
+%% make the examples use a smaller fontsize in verbatim env
+\makeatletter
+\def\verbatim@font{\scriptsize\ttfamily
+                   \hyphenchar\font\m@ne
+                   \@noligs}
+\makeatother
+
+\pagestyle{headings}
+
+\title{Einführung in Maxima}
+\author{Robert Glöckner}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\thispagestyle{empty}
+Copyright (C) Robert Glöckner
+
+email (entferne alle Ziffern): 2R4o5b66e7r8t9.G0l5oe55ck8ne5r@6w0eb4.d3e
+
+\vspace{1cm}
+
+{\scriptsize
+This program-documentation is free software-documentation; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program-documentation is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\@. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program-documentation; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+To keep this document short, a link to the text of the GPL-LICENCE (\url{http://www.fsf.org/licenses/gpl.html}).
+
+\vspace{1cm}
+
+Inoffizielle Übersetzung: Diese Programm-Dokumentation ist freie Software. Sie können es unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und/oder modifizieren, entweder gemäß Version 2 der Lizenz oder (nach Ihrer Option) jeder späteren Version.
+Die Veröffentlichung dieser Programm-Dokumentation erfolgt in der Hoffnung, dass es Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FüR EINEN BESTIMMTEN ZWECK\@. Details finden Sie in der GNU General Public License.
+Sie sollten ein Exemplar der GNU General Public License zusammen mit dieser Programm-Dokumentation erhalten haben. Falls nicht, schreiben Sie an die Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA.
+
+Um das Dokument nicht aufzublähen, hier ein Link auf die inoffizielle
+deutsche übersetzung der GPL:\\
+\url{http://www.gnu.de/gpl-ger.html}.
+}
+
+\vspace{1cm}
+
+Ich möchte nur kurz betonen, dass ich selbst Maxima-Anfänger bin und der Text nur auf die Grundlagen der Maxima-Benutzung eingehen kann. Die Beispiele haben keinen tieferen Sinn. Sie dienen lediglich der Darstellung der Möglichkeiten von Maxima.\\
+Für weitere Anregungen bin ich immer dankbar\@.\\
+email (entferne alle Ziffern): 2R4o5b66e7r8t9.G0l5oe55ck8ne5r@6w0eb4.d3e
+
+\vspace{1cm}
+Verbesserungsvorschläge durch: Volker van Nek, Robert Figura.
+
+\newpage
+\section{Einführung}
+
+\subsection{Starten von Maxima}
+
+Maxima\footnote
+{Webseite: \url{http://maxima.sourceforge.net} \\
+Dokumentation: \url{http://maxima.sourceforge.net/docs.shtml} \\
+Referenzhandbuch: \url{http://maxima.sourceforge.net/docs/manual/en/maxima.html}}
+ist ein in Lisp geschriebenes freies Computer-Algebra System. Es ist
+auf verschiedenen Betriebssystemen lauffähig.
+Es gibt mehrere Möglichkeiten das Programm zu verwenden:
+
+\begin{itemize}
+\item auf der Konsole (hierzu \texttt{maxima}, bzw. \texttt{maxima.bat} starten)
+\item eine rudimentäre grafische Oberfläche bietet \texttt{xmaxima} (mitgeliefert)
+\item eine grafische Formelausgabe bietet wxmaxima
+\item für Leute die \LaTeX{} benutzen ist texmacs oder emaxima interessant
+\item für Emacs-Verrückte gibt es einen mitgelieferten maxima und
+  emaxima Modus (Start im Emacs mit M-x maxima oder öffnen einer {.mac} Datei)
+\end{itemize}
+
+Startet man Maxima (auf der Konsole) so erhält man folgende Meldung:
+
+\begin{verbatim}
+Maxima 5.14.0cvs http://maxima.sourceforge.net
+Using Lisp CLISP 2.44 (2008-02-02)
+Distributed under the GNU Public License. See the file COPYING.
+Dedicated to the memory of William Schelter.
+The function bug_report() provides bug reporting information.
+(%i1)
+\end{verbatim}
+
+Es erscheint eine Meldung über die freie Lizenz, die
+Widmung an Prof. W. Schelter (ihm haben wir die freie Version
+von Maxima zu verdanken) und ein sog. Label \texttt{(\%i1)}. Jede Eingabe
+wird mit einer Marke (Label) gekennzeichnet. Marken, welche mit einem
+\texttt{i} beginnen kennzeichnen Benutzereingaben, \texttt{o}-Markierungen kennzeichnen
+Ausgaben des Programms. Der Benutzer sollte dies bei der Namensgebung
+eigener  Variablen oder Funktionen berücksichtigen, um Verwechslungen
+zu vermeiden.
+
+\subsection{Kommandoeingabe}
+
+Kommandos werden entweder mit einem Semikolon  \texttt{;}  oder einem
+\texttt{\$} abgeschlossen.  Es reicht nicht, Return oder Enter zu
+drücken, Maxima wartet auf eines der beiden Zeichen; vorher beginnt
+Maxima nicht mit der Auswertung der Eingabe. Ist das letzte Zeichen
+ein Semikolon, so wird das Ergebnis der Verarbeitung angezeigt, im
+Fall eines Dollarzeichens wird die Anzeige unterdrückt. Dies kann bei
+sehr langen Ergebnissen sinnvoll sein, um die Wartezeit zu reduzieren
+und die Übersicht zu wahren.
+
+Maxima unterscheidet Groß- und Kleinschreibung. Alle eingebauten
+Funktionen und Konstanten sind kleingeschrieben (\texttt{simp},
+\texttt{solve}, \texttt{ode2}, \texttt{sin}, \texttt{cos},
+\texttt{\%e}, \texttt{\%pi}, \texttt{inf}, etc). \texttt{sImP} oder
+\texttt{SIMP} werden von Maxima nicht den eingebauten Funktionen
+zugeordnet. Benutzerfunktionen und -variablen können klein und/oder
+großgeschrieben  werden.
+
+Auf vorangegangene Ergebnisse und Ausdrücke kann mittels \texttt{\%}
+zugegriffen werden. \texttt{\%} bezeichnet das letzte Ergebnis,
+\texttt{\%i13} die 13. Eingabe und \texttt{\%o27} das 27. Ergebnis,
+\texttt{''\%i42} wiederholt die Berechnung der 42. Eingabe,
+\texttt{\%th(2)} ist das vorletzte Ergebnis.
+
+Ausdrücke werden mit \texttt{:} einem Symbol zugewiesen; Funktionen
+können mit \texttt{:=} einem Symbol zugewiesen werden.
+
+\begin{verbatim}
+(%i1) value : 3;
+
+(%o1)                                3
+(%i2) equation : a + 2 = b;
+
+(%o2)                            a + 2 = b
+(%i3) function(x) := x + 3;
+
+(%o3)                      function(x) := x + 3
+(%i4) function(3);
+
+(%o4)                                6
+(%i5) function(b);
+
+(%o5)                              b + 3
+\end{verbatim}
+
+Zuweisungen können mit \texttt{kill} einzeln oder auch insgesamt gelöscht werden.
+\begin{verbatim}
+(%i6) kill(equation);
+
+(%o6)                              done
+(%i7) equation;
+
+(%o7)                            equation
+(%i8) function(3);
+
+(%o8)                                6
+(%i9) kill(all);
+
+(%o0)                                done
+(%i1) function(3);
+
+(%o1)                             function(3)
+(%i2)
+\end{verbatim}
+
+\subsection{Beenden von Maxima}
+
+Zum Abbrechen eines Kommandos drückt man die Tastenkombination
+\texttt{Strg-C} oder \texttt{Strg-G}. Meldet sich der Debugger, so beendet
+man diesen durch Eingabe  von \texttt{Q}.
+Zum Beenden von Maxima gibt man \texttt{quit()} ein (Bemerkung: unter
+\texttt{xmaxima} das Menue benutzen).
+
+
+\subsection{Hilfefunktionen}
+
+Neben den Hilfefunktionen der Benutzerumgebung enthält Maxima eigene
+Hilfefunktionen. Mit \texttt{apropos} kann nach Befehlen bezüglich
+eines Stichwortes gesucht werden. Mit \texttt{describe} können
+detaillierte Befehlsbeschreibungen angezeigt werden:
+
+\begin{verbatim}
+(%i3) apropos('plot);
+(%o3) [plot, plot2d, plot2dopen, plot2d_ps, plot3d, plotheight, plotmode,
+                                           plotting, plot_format, plot_options]
+(%i4) describe("plot");
+\end{verbatim}
+
+Manchmal fragt \texttt{describe} auch nach, welcher Teilbereich
+beschrieben werden soll (hier nur ein kleiner Ausschnitt der
+angezeigten Informationen):
+
+\begin{verbatim}
+ 0: (maxima.info)Plotting.
+ 1: Definitions for Plotting.
+ 2: OPENPLOT_CURVES :Definitions for Plotting.
+ 3: PLOT2D :Definitions for Plotting.
+ 4: PLOT2D_PS :Definitions for Plotting.
+ 5: PLOT3D :Definitions for Plotting.
+ 6: PLOT_OPTIONS :Definitions for Plotting.
+ 7: SET_PLOT_OPTION :Definitions for Plotting.
+Enter n, all, none, or multiple choices eg 1 3 : 5
+Info from file /usr/share/info/maxima.info:PLOT3D (expr,xrange,yrange,...,options,..)
+ -- Function: PLOT3D ([expr1,expr2,expr3],xrange,yrange,...,options,..)
+          plot3d(2^(-u^2+v^2),[u,-5,5],[v,-7,7]);
+     would plot z = 2^(-u^2+v^2) with u and v varying in [-5,5] and
+     [-7,7] respectively, and with u on the x axis, and v on the y axis.
+
+     An example of the second pattern of arguments is
+          plot3d([cos(x)*(3+y*cos(x/2)),sin(x)*(3+y*cos(x/2)),y*sin(x/2)],
+             [x,-%pi,%pi],[y,-1,1],['grid,50,15])
+
+     which will plot a moebius band, parametrized by the 3 expressions
+     given as the first argument to plot3d.  An additional optional
+     argument [grid,50,15] gives the grid number of rectangles in the x
+     direction and y direction.
+....
+\end{verbatim}
+
+Mit der Funktion \texttt{example} können Beispiele zu einigen
+Funktionen von Maxima angezeigt werden (Darstellung hier gekürzt):
+
+\begin{verbatim}
+(%i3) example(integrate);
+
+(%i4) test(f):=block([u],u:integrate(f,x),ratsimp(f-diff(u,x)))
+(%o4) test(f) := block([u], u : integrate(f, x), ratsimp(f - diff(u, x)))
+(%i5) test(sin(x))
+(%o5)                                  0
+(%i6) test(1/(x+1))
+(%o6)                                  0
+(%i7) test(1/(x^2+1))
+(%o7)                                  0
+(%i8) integrate(sin(x)^3,x)
+                                  3
+                               cos (x)
+(%o8)                          ------- - cos(x)
+                                  3
+...
+\end{verbatim}
+
+\subsection{Darstellung der Ergebnisse}
+
+Die Darstellung der Ergebnisse von Maxima ist im Wesentlichen von der
+verwendeten Oberfläche abhängig. Während die Ausgabe auf der Konsole
+und im einfachen Emacs-Modus auf die Darstellung von ASCII Zeichen
+begrenzt ist, zeigen der erweiterte Emacs-Modus, Imaxima, Texmacs und
+WxMaxima die Ergebnisse in grafischer Form an. D.\,h.\@ es werden
+entsprechende Symbole  für $\pi$, $\int$, $\sum$ usw.\@ verwendet.
+Allgemein zeichnen sich die Ausgaben von Maxima durch exakte
+Arithmetik aus:
+
+\begin{verbatim}
+(%i38) 1/11 + 9/11;
+
+                                      10
+(%o38)                                --
+                                      11
+\end{verbatim}
+
+Irrationale Zahlen werden in ihrer symbolischen Form beibehalten (mit
+\texttt{\%} wurde auf das Ergebnis der  letzten Berechnung zugegriffen):
+
+\begin{verbatim}
+(%i39) (sqrt(3) - 1)^4;
+
+                                             4
+(%o39)                          (sqrt(3) - 1)
+(%i40) expand(%);
+
+(%o40)                          28 - 16 sqrt(3)
+\end{verbatim}
+
+Mit \texttt{ev(Ausdruck, numer)} oder kurz: \texttt{Ausdruck, numer}
+oder \texttt{float(Ausdruck)} kann eine Dezimaldarstellung erzwungen
+werden (beachten Sie hier die Referenz auf das vorangegangene Ergebnis
+via \texttt{\%o40}):
+
+\begin{verbatim}
+(%i41) %o40, numer;
+
+(%o41)                         0.28718707889796
+
+(%i5) float(%e);
+
+(%o5)                          2.718281828459045
+\end{verbatim}
+
+Die Voreinstellung der Genauigkeit bei Fließommazahlen beträgt 16
+Stellen. Die Genauigkeit kann beliebig gewählt werden, wenn der
+Zahlentyp \texttt{bfloat} verwendet wird. Die Anzahl der angezeigten
+Stellen wird mit \texttt{fpprec} gesteuert. Man kann dazu
+\texttt{fpprec} nur für die Auswertung einer Zeile setzen, wie dies in
+Zeile \texttt{\%i46} geschieht, oder für alle folgenden Berechnungen,
+wie dies in Zeile \texttt{\%i48} zu sehen ist:
+
+\begin{verbatim}
+(%i45) bfloat(%o40);
+
+(%o45)                       2.871870788979631B-1
+(%i46) bfloat(%o40), fpprec=100;
+
+(%o46) 2.871870788979633035608585359060421289151159390339099511070883287690717#
+294591994067016610118840227891B-1
+(%i47) fpprec;
+
+(%o47)                                16
+(%i48) fpprec : 20;
+
+(%o48)                                20
+(%i49) bfloat(%o40);
+
+(%o49)                     2.8718707889796330358B-1
+(%i50) bfloat(%o40), fpprec=100;
+
+(%o50) 2.871870788979633035608585359060421289151159390339099511070883287690717#
+294591994067016610118840227891B-1
+\end{verbatim}
+
+Die Eingabe von bestimmten Konstanten (\zB $\pi$, \ldots) erfolgt mit
+vorangestelltem \texttt{\%} (\texttt{\%e}, \texttt{\%i}, \texttt{\%pi} \ldots).
+Die Darstellung von Konstanten (\zB $\pi$, \ldots), Operatoren
+($\sum$, $\int$, $\partial$, \ldots) und anderen Symbolen (Klammern,
+Brüche, \ldots) ist abhängig von der gewählten Oberfläche. Im
+Textmodus, der von der Konsole, dem einfachen Emacs-Modus und der
+mitgelieferten xmaxima Oberfläche geboten wird, werden Konstanten mit
+einem \texttt{\%} vorangestellt (\texttt{\%e}, \texttt{\%i},
+\texttt{\%pi} \ldots), Operatoren werden in ASCII-Grafik dargestellt.
+Klammern werden nicht in der Größe expandiert und Brüche mit Hilfe von
+\texttt{-} dargestellt:
+
+\begin{verbatim}
+(%i51) sqrt(-3);
+
+(%o51)                            sqrt(3) %i
+(%i52) exp(5 * a);
+
+                                       5 a
+(%o52)                               %e
+
+(%i54) (%i54) integrate( f(x) , x, 0, inf);
+
+                                  inf
+                                 /
+                                 [
+(%o54)                           I    f(x) dx
+                                 ]
+                                 /
+                                  0
+\end{verbatim}
+
+Die Darstellung im erweiterten Emacs-Modus, in Imaxima und in Texmacs
+ist grafisch, d.\,h.\@ für \texttt{\%pi}, \texttt{\%e}, Integrale,
+Summen, \ldots werden entsprechende Symbole verwendet.
+
+Maxima kann natürlich auch Funktionen plotten. Die Funktion
+\texttt{plot2d([Funktionsliste], [X-Var, Min, Max], [Y-Var, Min,  Max])}
+kann eine Gruppe von Funktionen plotten. Hierzu gibt man die
+Liste von Funktionen in eckigen Klammern und durch Kommas getrennt als
+ersten Parameter an, es folgt eine Liste, welche die abhängige
+Variable und den Plotbereich (x-Achse) angibt. Darüber hinaus gibt es
+noch viele andere Plotmöglichkeiten (\texttt{apropos('plot)},
+\texttt{describe(plot)}).
+
+\begin{verbatim}
+(%i55)  plot2d([sin(x), cos(x)], [x, 0, 5]);
+
+(%i58) apropos('plot);
+
+(%o58) [plot, plot2d, plot2dopen, plot2d_ps, plot3d, plotheight, plotmode,
+                                           plotting, plot_format, plot_options]
+(%i59) (%i59) describe(plot);
+
+ 0: (maxima.info)Plotting.
+ 1: Definitions for Plotting.
+ 2: openplot_curves :Definitions for Plotting.
+ 3: plot2d :Definitions for Plotting.
+ 4: plot2d_ps :Definitions for Plotting.
+ 5: plot3d :Definitions for Plotting.
+ 6: plot_options :Definitions for Plotting.
+ 7: set_plot_option :Definitions for Plotting.
+Enter space-separated numbers, `all' or `none': Enter space-separated numbers, `all' or `none': none
+\end{verbatim}
+
+\section{Rechnen mit Maxima}
+
+\subsection{Operatoren}
+
+Die üblichen arithmetischen Operatoren stehen zur Verfügung:
+
+\begin{itemize}
+\item \texttt{+}  Addition,
+\item \texttt{-} Subtraktion,
+\item \texttt{*} skalare Multiplikation,
+\item \texttt{.} Slalarmultiplikation von Vektoren und Matrix-Multiplikation,
+\item \texttt{/} Division,
+\item \texttt{**} oder \texttt{\^} Potenzfunktion,
+\item \texttt{sqrt()} Wurzelfunktion,
+\item \texttt{exp()} Exponentialfunktion,
+\item \texttt{log()} natürliche Logarithmusfunktion
+\end{itemize}
+
+
+\subsection{Algebra}
+
+Niemand ist vor Leichtsinnsfehlern bei der Umformung oder
+Transformation von algebraischen Ausdrucken gefeit. Hier eignet sich
+Maxima hervorragend  bei der Unterstützung analytischer Berechnungen.
+Dazu ein einfaches Beispiel für die Behandlung von Polynomen. Zunächst
+wird via \texttt{expand} expandiert, anschließend eine Ersetzung vorgenommen,
+danach mittels \texttt{ratsimp} ein gemeinsamer Nenner gesucht und
+anschließend via \texttt{factor} faktorisiert:
+
+\begin{verbatim}
+(%i72) (5*a + 3*a*b )^3;
+
+                                             3
+(%o72)                          (3 a b + 5 a)
+(%i73) expand(%);
+
+                       3  3        3  2        3          3
+(%o73)             27 a  b  + 135 a  b  + 225 a  b + 125 a
+(%i74) %, a=1/x;
+
+                             3        2
+                         27 b    135 b    225 b   125
+(%o74)                   ----- + ------ + ----- + ---
+                           3        3       3      3
+                          x        x       x      x
+(%i75) (%i75) ratsimp(%);
+
+                             3        2
+                         27 b  + 135 b  + 225 b + 125
+(%o75)                   ----------------------------
+                                       3
+                                      x
+(%i76) factor(%);
+
+                                           3
+                                  (3 b + 5)
+(%o76)                            ----------
+                                       3
+                                      x
+\end{verbatim}
+
+\subsection{Lösen von Gleichungssystemen}
+
+Maxima ist in der Lage, exakte Lösungen auch von nichtlinearen
+algebraischen  Gleichungsystemen zu berechnen. Im folgenden Beispiel
+werden 3  Gleichungen nach drei Unbekannten aufgelöst:
+
+\begin{verbatim}
+ (%i77) eq1: a + b + c = 6;
+
+(%o77)                           c + b + a = 6
+(%i78) eq2: a * b + c = 5;
+
+(%o78)                            c + a b = 5
+(%i79) eq3: a + b * c = 7;
+
+(%o79)                            b c + a = 7
+
+(%i93) s: solve([eq1, eq2, eq3], [a, b, c]);
+
+(%o93)          [[a = 1, b = 3, c = 2], [a = 1, b = 2, c = 3]]
+\end{verbatim}
+
+Die Lösung wird in Form einer Liste in eckigen Klammern dargestellt.
+Im Folgenden wird gezeigt, wie auf die Elemente  einer Liste
+zugegriffen werden kann und wie man die  Lösungen in andere
+Gleichungen einsetzt.
+
+\begin{verbatim}
+(%i94) s[1];
+
+(%o94)                       [a = 1, b = 3, c = 2]
+
+(%i95) s[2];
+
+(%o95)                       [a = 1, b = 2, c = 3]
+
+
+(%i98) eq4: a * a + 2 * b * b + c * c;
+
+                                 2      2    2
+(%o98)                          c  + 2 b  + a
+(%i99) eq4, s[1];
+
+(%o99)                                23
+(%i100) eq4, s[2];
+
+(%o100)                               18
+\end{verbatim}
+
+\subsection{Trigonometrische Funktionen}
+
+Es stehen \ua\@ \texttt{tan}, \texttt{sin}, \texttt{cos},
+\texttt{tanh}, \texttt{sinh}, \texttt{cosh} und deren Umkehrfunktionen
+zur Verfügung.
+
+\begin{verbatim}
+(%i102) example(trig);
+
+(%i103) tan(%pi/6)+sin(%pi/12)
+                                  %pi       1
+(%o103)                       sin(---) + -------
+                                  12     sqrt(3)
+(%i104) ev(%,numer)
+(%o104)                       0.83616931429214658
+(%i105) sin(1)
+(%o105)                             sin(1)
+(%i106) ev(sin(1),numer)
+(%o106)                       0.8414709848078965
+(%i107) beta(1/2,2/5)
+                                       1  2
+(%o107)                           beta(-, -)
+                                       2  5
+(%i108) ev(%,numer)
+(%o108)                       3.6790939804058804
+(%i109) diff(atanh(sqrt(x)),x)
+                                       1
+(%o109)                        -----------------
+                               2 (1 - x) sqrt(x)
+(%i110) fpprec:25
+(%i111) sin(5.0B-1)
+(%o111)                  4.794255386042030002732879B-1
+(%i112) cos(x)^2-sin(x)^2
+                                  2         2
+(%o112)                        cos (x) - sin (x)
+(%i113) ev(%,x:%pi/3)
+                                        1
+(%o113)                               - -
+                                        2
+(%i114) diff(%th(2),x)
+(%o114)                        - 4 cos(x) sin(x)
+(%i115) integrate(%th(3),x)
+                          sin(2 x)           sin(2 x)
+                          -------- + x   x - --------
+                             2                  2
+(%o115)                   ------------ - ------------
+                               2              2
+(%i116) expand(%)
+                                   sin(2 x)
+(%o116)                            --------
+                                      2
+\end{verbatim}
+
+Trigonometrische Ausdrücke lassen sich in Maxima leicht manipulieren.
+Die Funktion \texttt{trigexpand} benutzt die
+Summe-der-Winkel-Funktion,  um Argumente innerhalb jeder
+trigonometrischen Funktion so stark wie möglich zu vereinfachen.
+
+\begin{verbatim}
+                                   sin(2 x)
+(%o116)                            --------
+                                      2
+(%i117) trigexpand(%)
+(%o117)                          cos(x) sin(x)
+\end{verbatim}
+
+Die Funktion \texttt{trigreduce}, konvertiert einen Ausdruck in eine
+Form, welche eine Summe von Einzeltermen, bestehend aus jeweils einer
+sin oder cos Funktion ist.
+
+\begin{verbatim}
+(%o117)                          cos(x) sin(x)
+
+(%i118) trigreduce(%)
+                                   sin(2 x)
+(%o118)                            --------
+                                      2
+
+(%i119) sech(x)^2*tanh(x)/coth(x)^2+cosh(x)^2*sech(x)^2*tanh(x)/coth(x)^2
+                                   +sech(x)^2*sinh(x)*tanh(x)/coth(x)^2
+
+            2                          2        2                  2
+        sech (x) sinh(x) tanh(x)   cosh (x) sech (x) tanh(x)   sech (x) tanh(x)
+(%o119) ------------------------ + ------------------------- + ----------------
+                    2                          2                       2
+                coth (x)                   coth (x)                coth (x)
+\end{verbatim}
+
+(\texttt{sech()} ist eine hyperbolische Sekantenfunktion.)
+\texttt{trigsimp} ist eine Vereinfachungsroutine, welche verschiedene
+trigonometrische Funktionen in sin und cos Equivalente umwandelt.
+
+\begin{verbatim}
+(%i120) trigsimp(%)
+
+                           5          4            3
+                       sinh (x) + sinh (x) + 2 sinh (x)
+(%o120)                --------------------------------
+                                       5
+                                   cosh (x)
+\end{verbatim}
+
+\texttt{exponentialize()} transformiert trigonometrische Funktionen in ihre komplexe Exponentialform.
+
+\begin{verbatim}
+(%i121) ev(sin(x),exponentialize)
+                                   %i x     - %i x
+                             %i (%e     - %e      )
+(%o121)                    - ----------------------
+                                       2
+\end{verbatim}
+
+\texttt{taylor(Funktion, Variable, Entwicklungspunkt, Grad)}
+entwickelt Funktionen in ihre Taylorreihe um den angegebenen
+Entwicklungspunkt bis zum vorgegebenen Grad.
+
+\begin{verbatim}
+
+(%i122) taylor(sin(x)/x,x,0,4)
+
+                                  2    4
+                                 x    x
+(%o122)/T/                   1 - -- + --- + . . .
+                                 6    120
+
+(%i123) ev(cos(x)^2-sin(x)^2,sin(x)^2 = 1-cos(x)^2)
+
+                                      2
+(%o123)                          2 cos (x) - 1
+
+(%o123)                              done
+\end{verbatim}
+
+\subsection{Komplexe Zahlen}
+
+\begin{verbatim}
+(%i144) z: a + b * %i;
+
+(%o144)                            %i b + a
+(%i145) z^2;
+
+                                            2
+(%o145)                           (%i b + a)
+(%i146) exp(z);
+
+                                    %i b + a
+(%o146)                           %e
+\end{verbatim}
+
+\texttt{trigrat()} transformiert (komplexe) Exponentialfunktionen in
+entsprechende sin und cos Funktionen um.
+
+\begin{verbatim}
+(%i148) trigrat(exp(z));
+
+                               a            a
+(%o148)                   %i %e  sin(b) + %e  cos(b)
+\end{verbatim}
+
+Komplexe Zahlen lassen sich mit \texttt{imagpart()} und
+\texttt{realpart()} in die entsprechenden Real- und Imaginärteile
+aufspalten:
+
+\begin{verbatim}
+(%i149) imagpart(%);
+
+                                    a
+(%o149)                           %e  sin(b)
+(%i150) realpart(%th(2));
+\end{verbatim}
+
+\subsection{Ableitungen, Grenzwerte, Integrale}
+
+Mit Maxima lassen sich \ua\@ Ableitungen, Integrale,
+Taylorentwicklungen, Grenzwerte sowie exakte Lösungen gewöhnlicher
+Differentialgleichungen berechnen.
+Zunächst definieren wir auf zwei verschiedene Arten ein Symbol f als
+Funktion von x. Beachten Sie die Unterschiede bei der Auswertung der
+Ableitung.
+
+\begin{verbatim}
+(%i129) f : x^3;
+
+                                       3
+(%o129)                               x
+(%i130) diff(f,x);
+
+                                        2
+(%o130)                              3 x
+(%i131) kill(f);
+
+(%o131)                              done
+(%i132) f(x) := x^3;
+
+                                           3
+(%o132)                           f(x) := x
+(%i133) diff(f,x);
+
+(%o133)                                0
+(%i134) diff(f(x),x);
+
+                                        2
+(%o134)                              3 x
+\end{verbatim}
+
+Ein Beispiel für eine Taylorreihenentwicklung und eine Grenzwertberechnung:
+
+\begin{verbatim}
+(%i140) f(x) := sin(x) / x;
+
+                                        sin(x)
+(%o140)                         f(x) := ------
+                                          x
+(%i141) taylor(f(x),x,0,5);
+
+                                  2    4
+                                 x    x
+(%o141)/T/                   1 - -- + --- + . . .
+                                 6    120
+(%i142) limit(f(x),x,0);
+
+(%o142)                                1
+\end{verbatim}
+
+Integrale lassen sich bestimmt und unbestimmt berechnen:
+
+\begin{verbatim}
+(%i109) integrate(%e^x/(2+%e^x),x)
+                                       x
+(%o109)                          log(%e  + 2)
+
+(%i116) integrate(x^(5/4)/(1+x)^(5/2),x,0,inf)
+
+                                       9  1
+(%o116)                           beta(-, -)
+                                       4  4
+\end{verbatim}
+
+\subsection{Lösen von Differentialgleichungen}
+
+Ableitungen, bzw. Differentiale können so eingegeben werden, dass sie
+ausgewertet oder nicht ausgewertet werden.  Das Apostroph wirkt als
+Maskierung und verhindert die Auswertung durch Maxima:
+
+\begin{verbatim}
+(%i9) 'diff (y, x);
+                               dy
+(%o9)                          --
+                               dx
+(%i10) diff (y, x);
+(%o10)                          0
+\end{verbatim}
+
+Zum Lösen von gewöhnlichen Differentialgleichungen stehen folgende
+Funktionen zur Verfügung: \texttt{ode2}, \texttt{ic1}, \texttt{ic2}, \texttt{bc1}, \texttt{bc2}.
+\texttt{ic1}, \texttt{ic2} sind auf Anfangswertaufgaben 1. bzw. 2. Ordnung spezialisiert.
+\texttt{bc1}, \texttt{bc2} sind auf Randwertaufgaben 1. bzw. 2. Ordnungspezialisiert.
+
+\begin{verbatim}
+(%i23) dgl1: -'diff(y,x) * sin(x) + y * cos(x) = 1;
+
+                                             dy
+(%o23)                     cos(x) y - sin(x) -- = 1
+                                             dx
+(%i24) ode2( dgl1, y, x);
+
+                                         1
+(%o24)                     y = sin(x) (------ + %c)
+                                       tan(x)
+(%i25) (%i25) trigsimp(%);
+
+(%o25)                      y = %c sin(x) + cos(x)
+\end{verbatim}
+
+Anfangswertaufgabe: Harmonische Schwingungen \zB eines Pendels
+werden durch folgende Differentialgleichung beschrieben und mittels
+\texttt{ode2} und \texttt{ic2} gelöst:
+
+\begin{verbatim}
+(%i38) dgl2: 'diff(y,x,2) + y = 0;
+
+                                   2
+                                  d y
+(%o38)                            --- + y = 0
+                                    2
+                                  dx
+(%i39) ode2(dgl2, y, x);
+
+(%o39)                    y = %k1 sin(x) + %k2 cos(x)
+(%i40) ic2(%, x=0, y=y0, 'diff(y,x)=0);
+
+(%o40)                           y = cos(x) y0
+\end{verbatim}
+
+Randwertaufgabe: Bei gleichmäßger Belastung, lässt sich die Biegelinie
+eines ruhenden und auf 2 Stützen liegenden Balkens unter bestimmten
+Umständen durch folgende Differentialgleichung beschreiben und mittels
+\texttt{ode2} und \texttt{ic2} lösen:
+
+\begin{verbatim}
+(%i41) dgl3: 'diff(y,x,2) = x -  x^2;
+
+                                  2
+                                 d y        2
+(%o41)                           --- = x - x
+                                   2
+                                 dx
+(%i42) ode2(dgl3, y, x);
+
+                                4      3
+                               x  - 2 x
+(%o42)                   y = - --------- + %k2 x + %k1
+                                  12
+(%i43) bc2(%, x=0, y=0, x=1, y=0);
+
+                                    4      3
+                                   x  - 2 x    x
+(%o43)                       y = - --------- - --
+                                      12       12
+
+(%i45) expand(%);
+
+                                     4    3
+                                    x    x    x
+(%o45)                        y = - -- + -- - --
+                                    12   6    12
+\end{verbatim}
+
+\subsection{Matrizenrechnung}
+
+Mit Maxima lassen sich auch allgemeine Matrizenoperationen durchführen.
+
+\begin{verbatim}
+(%i79) m:matrix([a,0],[b,1])
+                                   [ a  0 ]
+(%o79)                             [      ]
+                                   [ b  1 ]
+(%i80) m^2
+                                   [  2    ]
+                                   [ a   0 ]
+(%o80)                             [       ]
+                                   [  2    ]
+                                   [ b   1 ]
+(%i81) m . m
+                                [    2       ]
+(%o81)                          [   a      0 ]
+                                [            ]
+                                [ a b + b  1 ]
+(%i82) m[1,1]*m
+                                  [  2     ]
+(%o82)                            [ a    0 ]
+                                  [        ]
+                                  [ a b  a ]
+(%i83) 1-%th(2)+%
+                                 [   1    1 ]
+(%o83)                           [          ]
+                                 [ 1 - b  a ]
+(%i84) m^^(-1)
+                                  [  1     ]
+                                  [  -   0 ]
+                                  [  a     ]
+(%o84)                            [        ]
+                                  [   b    ]
+                                  [ - -  1 ]
+                                  [   a    ]
+(%i85) [x,y] . m
+
+(%o85)                         [ b y + a x  y ]
+
+(%i86) matrix([a,b,c],[d,e,f],[g,h,i])
+
+                                  [ a  b  c ]
+                                  [         ]
+(%o86)                            [ d  e  f ]
+                                  [         ]
+                                  [ g  h  i ]
+(%i87) %^^2
+             [              2                                    ]
+             [ c g + b d + a    c h + b e + a b  c i + b f + a c ]
+             [                                                   ]
+(%o87)       [                         2                         ]
+             [ f g + d e + a d  f h + e  + b d   f i + e f + c d ]
+             [                                                   ]
+             [                                    2              ]
+             [ g i + d h + a g  h i + e h + b g  i  + f h + c g  ]
+(%o87)                               done
+\end{verbatim}
+
+Außerdem lassen sich \ua\@ die Determinante, die Inverse, die
+Eigenwerte sowie Eigenvektoren einer Matrix berechnen. Die Matrix darf
+dabei auch symbolische Ausdrücke enthalten. \texttt{eigenvalues(m)}
+hat als Ergebnis eine Liste, bestehend aus 2 Unterlisten. Die erste
+Unterliste enthält die Eigenwerte, die zweite Unterliste die
+entsprechenden Multiplikatoren.
+
+\begin{verbatim}
+(%i60) m : matrix( [1, 0, 0], [0, 2, 0], [0, 0, 3]);
+
+                                  [ 1  0  0 ]
+                                  [         ]
+(%o60)                            [ 0  2  0 ]
+                                  [         ]
+                                  [ 0  0  3 ]
+(%i61) eigenvalues(m);
+
+(%o61)                      [[1, 2, 3], [1, 1, 1]]
+\end{verbatim}
+
+Die Funktion \texttt{eigenvectors} berechnet Eigenwerte, deren
+Multiplikatoren, sowie die Eigenvektoren der gegebenen Matrix. Die
+Ergebnisse werden in Listen bzw. Unterlisten zusammengefasst. Es gibt
+verschiedene Möglichkeiten die Auswertung mit Kommandos wie
+\texttt{nondiagonalizable}, \texttt{hermitianmatrix},
+\texttt{knowneigvals} zu beeinflussen. Diese werden mit
+\texttt{describe(eigenvectors)} beschrieben.
+
+\begin{verbatim}
+(%i62) eigenvectors(m);
+
+(%o62)     [[[1, 2, 3], [1, 1, 1]], [1, 0, 0], [0, 1, 0], [0, 0, 1]]
+(%i71) part( %, 2);
+
+(%o71)                             [1, 0, 0]
+\end{verbatim}
+
+Weiterhin gibt es Funktionen zur Transponierung (\texttt{transpose}),
+Berechnung der Determinante (\texttt{determinant}), Berechnung  des
+charakteristischen Polynomes \texttt{charpoly(Matrix, Variable)} sowie
+zur Berechnung der Inversen (\texttt{invert}). Das  Schlüsselwort
+\texttt{detout} faktorisiert  dabei die Determinante aus der Inversen.
+
+\section{Programmieren in Maxima}
+
+Bis jetzt haben Sie gesehen, wie man Maxima im interaktiven Modus wie
+einen Taschenrechner benutzt. Für Berechnungen, welche wiederholt
+Kommandosequenzen durchlaufen müssen, sind Programme geeigneter.
+Programme werden gewöhnlich in einem Texteditor (Emacs) geschrieben
+und dann mittels batch in Maxima geladen.
+
+Im Folgenden schreiben wir ein kleines Statistik-Münzwurfprogramm zur
+Veranschaulichung. Mit \texttt{block([Lokale Variablen], Kommando1,  Kommando2 \ldots)} wird
+ein Block von Kommandos  definiert. Die lokalen Variablen können auch
+mit Startwerten versehen werden, wie im Folgenden gezeigt wird:
+
+\begin{verbatim}
+(%i13)  muenze_werfen(n) := block([muenze, statistik:[0,0] ], /* Kommentare wie in C/C++ */
+          print("Ich werde die Münze ", n, "mal werfen. 1 = Zahl, 2 = Kopf"),
+          for i: 1 thru n do ( /* eine for schleife, für genauere informationen siehe DO */
+            muenze : random(2) + 1,   /* 1 + Zufallsgenerator von 0 bis 1  */
+          statistik[muenze] : statistik[muenze] + 1 ), /* Array-Indizes beginnen mit EINS! */
+          print("Zahl wurde ", statistik[1], "mal geworfen"),
+          print("Kopf wurde ", statistik[2], "mal geworfen"), n);
+
+(%o13) muenze_werfen(n) := block([muenze, statistik : [0, 0]],
+print("Ich werde die Münze ", n, "mal werfen. 1 = Zahl, 2 = Kopf"),
+for i thru n do (muenze : random(2) + 1,
+statistik       : statistik       + 1),
+         muenze            muenze
+
+print("Zahl wurde ", statistik , "mal geworfen"),
+                              1
+
+print("Kopf wurde ", statistik , "mal geworfen"), n)
+                              2
+(%i14) muenze_werfen(1000);
+
+Ich werde die Münze  1000 mal werfen. 1 = Zahl, 2 = Kopf
+Zahl wurde  485 mal geworfen
+Kopf wurde  515 mal geworfen
+(%o14)                               1000
+\end{verbatim}
+
+Dieselben Ausgaben kann man auch in eine Datei \texttt{daten.txt} umlenken:
+
+\begin{verbatim}
+muenze_werfen(n) := block( [muenze, statistik:[0,0] ], /* Kommentare wie in C/C++ */
+  with_stdout( "Daten.txt",
+    print("Ich werde die Münze ", n, "mal werfen. 1 = Zahl, 2 = Kopf"),
+    for i: 1 thru n do ( /* eine for schleife, für genauere informationen siehe DO */
+      muenze : random(2) + 1,   /* 1 + Zufallsgenerator von 0 bis 1  */
+      statistik[muenze] : statistik[muenze] + 1 ), /* Array-Indizes beginnen mit EINS! */
+    print("Zahl wurde ", statistik[1], "mal geworfen"),
+    print("Kopf wurde ", statistik[2], "mal geworfen")
+  ),
+  n
+);
+\end{verbatim}
+
+\section{Maxima-Funktionen}
+
+Die Referenz befindet sich unter \url{file://doc/html/maxima_toc.html} im
+Installationspfad von Maxima. In Maxima können  Sie Hilfe durch die
+Kommandos \texttt{describe}, \texttt{apropos} und  \texttt{example}
+erhalten. \texttt{apropos(Stichwort)} gibt eine  Liste von eventuell
+geeigneten Kommandos. \texttt{describe(Befehl)} beschreibt  die
+einzelnen Kommandos genauer (evtl.\@ müssen Sie noch eine Auswahl treffen,
+welcher Aspekt genauer beschrieben werden soll) und
+\texttt{example(Befehl)} gibt Beispiele für den jeweiligen Befehl
+(soweit vorhanden) aus.
+
+Ein kleine Auswahl wichtiger und nützlicher Maxima-Funktionen:
+
+\begin{itemize}
+\item \texttt{allroots(a)} Findet alle (allgemein komplexen) Wurzeln
+  einer  Polynomialgleichung.
+\item \texttt{append(a,b)} Fügt Liste b an a an.
+\item \texttt{apropos(a);} Liefert zu einem Stichwort mögliche Befehle/Funktionen.
+\item \texttt{batch(a)} Lädt und startet Programm/File a.
+\item \texttt{bc1, bc2 ( DGL, x=x0, y=y0, x=x1, y=y1)} Lösung einer
+  Randwertaufgabe einer DGL nach Behandlung mit ode2.
+\item \texttt{charpoly(Matrix, Variable)} Berechnet das
+  charakteristische Polynom einer Matrix bzgl.\@ der gegebenen  Variable.
+\item \texttt{coeff(a,b,c)} Koeffizienten von b der Potenz C in Ausdruck a.
+\item \texttt{concat(a,b)} Generiert ein Symbol ab.
+\item \texttt{cons(a,b)} Fügt a in Liste b als erstes Element ein.
+\item \texttt{demoivre(a)} Transformiert alle komplexen Exponentialterme in trigonometrische.
+\item \texttt{denom(a)} Nenner von a.
+\item \texttt{depends(a,b)} Erklärt a als Funktion von b (nützlich für Differentialgleichungen).
+\item \texttt{desolve(a,b)} Versucht ein lineares System a von gew. DGLs
+  nach unbekannten b mittels Laplace-Transformation  zu lösen.
+\item \texttt{describe(a)} Beschreibt einen Befehl oder eine Funktion
+  näher.  Eventuell wird nachgefragt, welcher Aspekt eines Befehls oder
+  einer Befehlsgruppe näher beschrieben  werden soll.
+\item \texttt{determinant(a)} Determinante
+\item \texttt{diff(a,b1,c1,b2,c2,\ldots,bn,cn)} Gemischte partielle Ableitung von a nach $b_i$ der Stufe $c_i$.
+\item \texttt{eigenvalues(a)} Berechnet die Eigenwerte und ihre Multiplikatoren.
+\item \texttt{eigenvectors(a)} Berechnet Eigenvektoren, Eigenwerte und  Multiplikatoren.
+\item \texttt{entermatrix(a,b)} Matrixeingabe
+\item \texttt{ev(a,b1,b2,\ldots,bn)} Berechnet Ausdruck a unter den Annahmen $b_i$
+  (Gleichungen, Zuweisungen, Schlüsselwörter (numer - Zahlenwerte,
+  detout - Matrixinverse ohne Determinante, diff - alle Ableitungen
+  werden ausgeführt). \emph{Nur} bei  direkter Eingabe kann ev weggelassen werden.
+\item \texttt{example(a)} Zeigt Beispiele für die Verwendung eines
+  Befehls oder einer  Funktion an. Nicht für jede Funktion sind Beispiele vorhanden.
+\item \texttt{expand(a)} Algebraische Expansion (Distribution).
+\item \texttt{exponentialize(a)} Transformiert trigonometrische Funktionen in ihre komplexen Exponentialfunktioen.
+\item \texttt{factor(a)} Faktorisiert a.
+\item \texttt{freeof(a,b)} Ergibt wahr, wenn b nicht a enthält.
+\item \texttt{grind(a)} Darstellung einer Variable oder Funktion in einer kompakten Form.
+\item \texttt{ic1, ic2 (dgl, x=x0, y=y0, dy0/dx = y1)} Lösung einer Anfangswertaufgabe einer DGL (nach Behandlung mit ode2).
+\item \texttt{ident(a)} Einheitsmatrix a x a.
+\item \texttt{imagpart(a)} Imaginärteil von a.
+\item \texttt{integrate(a,b)} Berechnungsversuch des unbestimmten Integrals a nach b.
+\item \texttt{integrate(a,b,c,d)} Berechnung des Integrals a nach b in den Grenzen b=c und b=d.
+\item \texttt{invert(a)} Inverse der Matrix a.
+\item \texttt{kill(a)} Vernichtet Variable/Symbol a.
+\item \texttt{limit(a,b,c)} Grenzwertbestimmung des Ausdrucks a für b gegen c.
+\item \texttt{lhs(a)} Linke Seite eines Ausdrucks.
+\item \texttt{loadfile(a)} Lädt eine Datei a und führt sie aus.
+\item \texttt{makelist(a,b,c,d)} Generiert eine Liste von a(b) mit  b=c
+  bis  b=d.
+\item \texttt{map(a,b)} Wendet a auf b an.
+\item \texttt{matrix(a1,a2,\ldots,an)} Generiert eine Matrix aus  Zeilenvektoren.
+\item \texttt{num(a)} Zähler von a.
+\item \texttt{ode2(a,b,c)} Löst gewöhnliche Differentialgleichungen 1.
+  und  2. Ordnung a für b als Funktion von c.
+\item \texttt{part(a,b1,\ldots,bn)} Extrahiert aus a die Teile bi.
+\item \texttt{playback(a)} Zeigt die a letzten Labels an, wird a
+  weggelassen, so  werden alle Zeilen zurückgespielt.
+\item \texttt{print( a1, a2, a3, \ldots )} Zeigt die Auswertung der
+  Ausdrücke  an.
+\item \texttt{ratsimp(a)} Vereinfacht a und gibt einen Quotienten zweier
+  Polynome  zurück.
+\item \texttt{realpart(a)} Realteil von a
+\item \texttt{rhs(a)} Rechte Seite einer Gleichung a.
+\item \texttt{save(a,b1,\ldots,bn)} Generiert eine Datei a (im
+  Standardverzeichnis), welche Variablen, Funktionen oder Arrays bi
+  enthält. So generierte Dateien  lassen sich mit loadfile
+  zurückspielen. Wenn b1  all ist, wird alles bis auf die Labels gespeichert.
+\item \texttt{solve(a,b)} Algebraischer Lösungsversuch für ein
+  Gleichungssystem  oder eine Gleichung a für eine Variable oder eine
+  Liste von  Variablen b. Gleichungen können =0 abkürzen.
+\item \texttt{string(a)} Konvertiert a in Maximas lineare Notation.
+\item \texttt{stringout(a,b1,\ldots,bn)} Generiert eine Datei a im
+  Standardverzeichnis, bestehend aus Symbolen bi. Die Datei ist im
+  Textformat und nicht dazu geeignet von Maxima geladen zu werden. Die
+  Ausdrücke können aber genutzt werden,  um sie in Fortran, Basic oder
+  C-Programmen  zu verwenden.
+\item \texttt{subst(a,b,c)} Ersetzt a für b in c.
+\item \texttt{taylor(a,b,c,d)} Taylorreihenentwicklung von a nach b in
+  Punkt c  bis zur Ordnung d.
+\item \texttt{transpose(a)} Transponiert Matrix a.
+\item \texttt{trigexpand(a)} Eine Vereinfachungsroutine, welche
+  trigonometrische  Winkelsummen nutzt, um einen Ausdruck zu vereinfachen.
+\item \texttt{trigreduce(a)} Eine Vereinfachungsroutine für
+  trigonometrische  Produkte und Potenzen.
+\item \texttt{trigsimp(a)} Eine Vereinfachungsroutine, welche
+  verschiedene  trigonometrische Funktionen in sin und cos Equivalente umwandelt.
+\item \texttt{with\_stdout( Datei, Ausdrücke)} Leitet die Ausgabe der
+  Ausdrücke  in die angegebene Datei um.
+\end{itemize}
+
+\end{document}

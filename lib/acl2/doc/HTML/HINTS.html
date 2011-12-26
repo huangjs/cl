@@ -1,0 +1,426 @@
+<html>
+<head><title>HINTS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>HINTS</h2>advice to the theorem proving process
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+The following :hints value is nonsensical.  Nevertheless, it
+illustrates all of the available hint keywords:<p>
+
+:hints (("Goal"
+         :do-not-induct t
+         :do-not '(generalize fertilize)
+         :expand ((assoc x a) 
+                  :lambdas
+                  (:free (y) (:with member (member y z))))
+         :restrict ((&lt;-trans ((x x) (y (foo x)))))
+         :hands-off (length binary-append)
+         :in-theory (set-difference-theories
+                      (current-theory :here)
+                      '(assoc))
+         :induct (and (nth n a) (nth n b))
+         :use ((:instance assoc-of-append
+                          (x a) (y b) (z c))
+               (:functional-instance
+                 (:instance p-f (x a) (y b))
+                 (p consp)
+                 (f assoc)))
+         :bdd (:vars (c a0 b0 a1 b1) :prove nil :bdd-constructors (cons))
+         :cases ((true-listp a) (consp a))
+         :by (:instance rev-rev (x (cdr z)))
+         :nonlinearp t))
+</pre>
+
+A very common hint is the <code>:use</code> hint, which in general takes as its
+value a list of ``lemma instances'' (see <a href="LEMMA-INSTANCE.html">lemma-instance</a>) but
+which allows a single lemma name as a special case:
+
+<pre>
+:hints (("[1]Subgoal *1/1.2'" :use lemma23))
+</pre>
+<p>
+
+ACL2 also provides ``computed hints'' for the advanced user.
+See <a href="COMPUTED-HINTS.html">computed-hints</a>
+<p>
+Background: <code>Hints</code> are allowed in all <a href="EVENTS.html">events</a> that use the theorem
+prover.  During <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a> there are two different uses of the
+theorem prover: one to prove termination and another to verify the
+<a href="GUARD.html">guard</a>s.  To pass a hint to the theorem prover during termination
+proofs, use the <code>:hints</code> keyword in the <code><a href="DEFUN.html">defun</a></code>'s <code><a href="XARGS.html">xargs</a></code> declaration.  To
+pass a hint to the theorem prover during the <a href="GUARD.html">guard</a> verification of
+<code><a href="DEFUN.html">defun</a></code>, use the <code>:guard-hints</code> keyword in the <code><a href="DEFUN.html">defun</a></code>'s <code><a href="XARGS.html">xargs</a></code>
+declaration.  The <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> event and the <code><a href="DEFTHM.html">defthm</a></code> event also use
+the theorem prover.  To pass hints to them, use the <code>:hints</code> keyword
+argument to the event.
+
+<pre>
+General Form of Common :hints:
+  ((goal-spec :key1 val1 ... :keyn valn)
+   ...
+   (goal-spec :key1 val1 ... :keyn valn))
+</pre>
+
+where <code><a href="GOAL-SPEC.html">goal-spec</a></code> is as described in the documentation for
+<a href="GOAL-SPEC.html">goal-spec</a> and the keys and their respective values are shown
+below with their interpretations.  (We also provide ``computed hints''
+but discuss them separately; see <a href="COMPUTED-HINTS.html">computed-hints</a>.)<p>
+
+<code>:DO-NOT-INDUCT</code><br>
+
+<code>Value</code> is <code>t</code>, <code>name</code> or <code>nil</code>, indicating whether <a href="INDUCTION.html">induction</a> is permitted
+under the specified goal.  If <code>value</code> is <code>t</code>, then the attempt to apply
+<a href="INDUCTION.html">induction</a> to the indicated goal or any subgoal under the indicated
+goal will immediately cause the theorem prover to report <a href="FAILURE.html">failure</a>.
+Thus, the indicated goal must be proved entirely by simplification,
+destructor elimination, and the other ``waterfall'' processes.
+<a href="INDUCTION.html">Induction</a> to prove the indicated goal (or any subgoal) is not
+permitted.  See however the <code>:induct</code> hint below.  If <code>value</code> is a
+symbol other than <code>t</code> or <code>nil</code>, the theorem prover will give a
+``bye'' to any subgoal that would otherwise be attacked with
+induction.  This will cause the theorem prover to fail eventually
+but will collect the necessary subgoals.  If <code>value</code> is <code>nil</code>, this
+hint means <a href="INDUCTION.html">induction</a> is permitted.  Since that is the default,
+there is no reason to use the value <code>nil</code>.<p>
+
+<code>:DO-NOT</code><br>
+
+<code>Value</code> is a term having at most the single free variable <code><a href="WORLD.html">world</a></code>, which
+when evaluated (with <code><a href="WORLD.html">world</a></code> bound to the current ACL2 logical <a href="WORLD.html">world</a>)
+produces a list of symbols that is a subset of the list
+
+<pre>
+(preprocess ;propositional logic, simple rules
+ simplify   ;as above plus rewriting, linear arithmetic
+ eliminate-destructors
+ fertilize  ;use of equalities
+ generalize
+ eliminate-irrelevance).
+</pre>
+
+The hint indicates that the ``processes'' named should not be used
+at or below the goal in question.  Thus, to prevent generalization
+and fertilization, say, include the hint
+
+<pre>
+:do-not '(generalize fertilize)
+</pre>
+
+If <code>value</code> is a single symbol, as in
+
+<pre>
+:do-not generalize,
+</pre>
+
+it is taken to be <code>'(value)</code>.<p>
+
+<code>:EXPAND</code><br>
+
+<code>Value</code> is a true list of terms, each of which is of one of the forms
+<code>(let ((v1 t1)...) b)</code> or <code>(fn t1 ... tn)</code>, where <code>fn</code> is a defined
+function symbol with formals <code>v1, ..., vn,</code> and <code>body</code> <code>b</code>.  Such a
+term is said to be ``expandable:'' it can be replaced by the result of
+substituting the <code>ti</code>'s for the <code>vi</code>'s in <code>b</code>.  The terms listed in the
+<code>:expand</code> hint are expanded when they are encountered by the simplifier
+while working on the specified goal or any of its subgoals.  We permit
+<code>value</code> to be a single such term instead of a singleton list.  <strong>Notes</strong>:
+(1) Allowed are ``terms'' of the form
+<code>(:free (var1 var2 ...  varn) pattern)</code> where the indicated variables are
+distinct and <code>pattern</code> is a term.  Such ``terms'' indicate that we consider
+the indicated variables to be instantiatable, in the following sense:
+whenever the simplifier encounters a term that can be obtained from
+<code>pattern</code> by instantiating the variables <code>(var1 var2 ...  varn)</code>, then it
+expands that term.  (2) Also allowed are ``terms'' of the form
+<code>(:with name term)</code>, where <code>name</code> is a function symbol, a macro name that
+denotes a function symbol (see <a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a>), or a <a href="RUNE.html">rune</a>.  The
+corresponding rule of class <code>:rewrite</code>, which is often a <a href="DEFINITION.html">definition</a>
+rule but need not be, is then used in place of the current body for the
+function symbol of <code>term</code>; see <a href="SHOW-BODIES.html">show-bodies</a> and see <a href="SET-BODY.html">set-body</a>.  If the rule
+is of the form <code>(implies hyp (equiv lhs rhs))</code>, then after matching <code>lhs</code>
+to the current term in a context that is maintaining equivalence relation
+<code>equiv</code>, ACL2 will replace the current term with
+<code>(if hyp rhs (hide term))</code>, or just <code>rhs</code> if the rule is just
+<code>(equal lhs rhs)</code>.  (3) A combination of both <code>:free</code> and <code>:with</code>, as
+described above, is legal.  (4) The term <code>:LAMBDAS</code> is treated specially.
+It denotes the list of all lambda applications (i.e., <code><a href="LET.html">let</a></code> expressions)
+encountered during the proof.  Conceptually, this use of <code>:LAMBDAS</code> tells
+ACL2 to treat lambda applications as a notation for substitutions, rather
+than as function calls whose opening is subject to the ACL2 rewriter's
+heuristics (specifically, not allowing lambda applications to open when they
+introduce ``too many'' if terms).<p>
+
+<code>:HANDS-OFF</code><br>
+
+<code>Value</code> is a true list of function symbols or lambda expressions,
+indicating that under the specified goal applications of these
+functions are not to be rewritten.  <code>Value</code> may also be a single
+function symbol or lambda expression instead of a list.<p>
+
+<code>:</code><code><a href="IN-THEORY.html">IN-THEORY</a></code><br>
+
+<code>Value</code> is a ``theory expression,'' i.e., a term having at most the
+single free variable <code><a href="WORLD.html">world</a></code> which when evaluated (with <code><a href="WORLD.html">world</a></code> bound to
+the current ACL2 logical world (see <a href="WORLD.html">world</a>)) will produce a
+theory to use as the current theory for the goal specified.
+See <a href="THEORIES.html">theories</a>.<p>
+
+Note that an <code>:</code><code><a href="IN-THEORY.html">IN-THEORY</a></code> hint will always be evaluated relative to
+the current ACL2 logical <a href="WORLD.html">world</a>, not relative to the theory of a previous
+goal.  Consider the following example.
+
+<pre>
+(defthm prop
+  (p (f (g x)))
+  :hints (("Goal"      :in-theory (disable f))
+          ("Subgoal 3" :in-theory (enable  g))))
+</pre>
+
+Consider in particular the theory in effect at <code>Subgoal 3</code>.  This
+call of the <code><a href="ENABLE.html">enable</a></code> macro enables <code>g</code> relative to the
+<code><a href="CURRENT-THEORY.html">current-theory</a></code> of the current logical <a href="WORLD.html">world</a>, <em>not</em> relative to
+the theory produced by the hint at <code>Goal</code>.  Thus, the <code><a href="DISABLE.html">disable</a></code> of
+<code>f</code> on behalf of the hint at <code>Goal</code> will be lost at <code>Subgoal 3</code>, and
+<code>f</code> will be enabled at <code>Subgoal 3</code> if was enabled globally when <code>prop</code>
+was submitted.<p>
+
+<code>:INDUCT</code><br>
+
+<code>Value</code> is either <code>t</code> or a term containing at least one recursively
+defined function symbol.  If <code>t</code>, this hint indicates that the system
+should proceed to apply its <a href="INDUCTION.html">induction</a> heuristic to the specified goal
+(without trying simplification, etc.).  If <code>value</code> is of the form
+<code>(f x1 ... xk)</code>, where <code>f</code> is a recursively defined function and <code>x1</code>
+through <code>xk</code> are distinct variables, then the system is to induct according
+to the <a href="INDUCTION.html">induction</a> scheme that was stored for <code>f</code>.  For example, for the
+hint <code>:induct (true-listp x)</code>, ACL2 will assume that the goal holds for
+<code>(cdr x)</code> when proving the induction step because <code><a href="TRUE-LISTP.html">true-listp</a></code> recurs
+on the <code><a href="CDR.html">cdr</a></code>.  More generally, if <code>value</code> is a term other than <code>t</code>,
+then not only should the system apply induction immediately, but it should
+analyze <code>value</code> rather than the goal to generate its <a href="INDUCTION.html">induction</a> scheme.
+Merging and the other <a href="INDUCTION.html">induction</a> heuristics are applied.  Thus, if
+<code>value</code> contains several mergeable <a href="INDUCTION.html">induction</a>s, the ``best'' will be
+created and chosen.  E.g., the <code>:induct</code> hint
+
+<pre>
+ (and (nth i a) (nth j a))
+</pre>
+
+suggests simultaneous <a href="INDUCTION.html">induction</a> on <code>i</code>, <code>j</code>, and <code>a</code>.<p>
+
+If both an <code>:induct</code> and a <code>:do-not-induct</code> hint are supplied for a
+given goal then the indicated <a href="INDUCTION.html">induction</a> is applied to the goal and
+the <code>:do-not-induct</code> hint is inherited by all subgoals generated.<p>
+
+<code>:USE</code><br>
+
+<code>Value</code> is a <a href="LEMMA-INSTANCE.html">lemma-instance</a> or a true list of <a href="LEMMA-INSTANCE.html">lemma-instance</a>s,
+indicating that the propositions denoted by the instances be added
+as hypotheses to the specified goal.  See <a href="LEMMA-INSTANCE.html">lemma-instance</a>.  Note
+that <code>:use</code> makes the given instances available as ordinary hypotheses
+of the formula to be proved.  The <code>:instance</code> form of a <a href="LEMMA-INSTANCE.html">lemma-instance</a>
+permits you to instantiate the free variables of previously proved
+theorems any way you wish; but it is up to you to provide the
+appropriate instantiations because once the instances are added as
+hypotheses their variables are no longer instantiable.  These new
+hypotheses participate fully in all subsequent rewriting, etc.  If
+the goal in question is in fact an instance of a previously proved
+theorem, you may wish to use <code>:by</code> below.  Note that <a href="THEORIES.html">theories</a> may be
+helpful when employing <code>:use</code> hints; see <a href="MINIMAL-THEORY.html">minimal-theory</a>.<p>
+
+<code>:</code><a href="BDD.html">BDD</a><br>
+
+This hint indicates that ordered binary decision diagrams (BDDs)
+with rewriting are to be used to prove or simplify the goal.
+See <a href="BDD.html">bdd</a> for an introduction to the ACL2 BDD algorithm.<p>
+
+<code>Value</code> is a list of even length, such that every other element,
+starting with the first, is one of the keywords <code>:vars</code>,
+<code>:bdd-constructors</code>, <code>:prove</code>, or <code>:literal</code>.  Each keyword that
+is supplied should be followed by a value of the appropriate form,
+as shown below; for others, a default is used.  Although <code>:vars</code>
+must always be supplied, we expect that most users will be content
+with the defaults used for the other values.<p>
+
+<code>:vars</code> -- A list of ACL2 variables, which are to be treated as
+Boolean variables.  The prover must be able to check, using trivial
+reasoning (see <a href="TYPE-SET.html">type-set</a>), that each of these variables is
+Boolean in the context of the current goal.  Note that the prover
+will use very simple heuristics to order any variables that do not
+occur in <code>:vars</code> (so that they are ``greater than'' the variables
+that do occur in <code>:vars</code>), and these heuristics are often far from
+optimal.  In addition, any variables not listed may fail to be
+assumed Boolean by the prover, which is likely to seriously impede
+the effectiveness of ACL2's BDD algorithm.  Thus, users are
+encouraged <em>not</em> to rely on the default order, but to supply a
+list of variables instead.  Finally, it is allowed to use a value of
+<code>t</code> for <code>vars</code>.  This means the same as a <code>nil</code> value, except
+that the BDD algorithm is directed to fail unless it can guarantee
+that all variables in the input term are known to be Boolean (in a
+sense discussed elsewhere; see <a href="BDD-ALGORITHM.html">bdd-algorithm</a>).<p>
+
+<code>:literal</code> -- An indication of which part of the current goal
+should receive BDD processing.  Possible values are:
+
+<pre>
+  :all     treat entire goal as a single literal (the default)
+  :conc    process the conclusion
+  n        process the hypothesis with index n (1, 2, ...)
+</pre>
+<p>
+
+<code>:bdd-constructors</code> -- When supplied, this value should be a
+list of function symbols in the current ACL2 <a href="WORLD.html">world</a>; it is
+<code>(cons)</code> by default, unless <code>:bdd-constructors</code> has a value in
+the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> by default, in which case that value is
+the default.  We expect that most users will be content with the
+default.  See <a href="BDD-ALGORITHM.html">bdd-algorithm</a> for information about how this
+value is used.<p>
+
+<code>:prove</code> -- When supplied, this value should be <code>t</code> or <code>nil</code>; it
+is <code>t</code> by default.  When the goal is not proved and this value is
+<code>t</code>, the entire proof will abort.  Use the value <code>nil</code> if you are
+happy to the proof to go on with the simplified term.<p>
+
+<code>:CASES</code><br>
+
+<code>Value</code> is a non-empty list of terms.  For each term in the list, a
+new goal is created from the current goal by assuming that term; and
+also, in essence, one additional new goal is created by assuming all
+the terms in the list false.  We say ``in essence'' because if the
+disjunction of the terms supplied is a tautology, then that final
+goal will be a tautology and hence will in fact never actually be
+created.<p>
+
+<code>:BY</code><br>
+
+<code>Value</code> is a <a href="LEMMA-INSTANCE.html">lemma-instance</a>, <code>nil</code>, or a new event name. If the
+value is a <a href="LEMMA-INSTANCE.html">lemma-instance</a> (see <a href="LEMMA-INSTANCE.html">lemma-instance</a>), then it indicates that
+the goal (when viewed as a clause) is either equal to the proposition denoted
+by the instance, or is subsumed by that proposition when both are viewed as
+clauses.  To view a formula as a clause, union together the negations of the
+hypotheses and add the conclusion.  For example,
+
+<pre>
+(IMPLIES (AND (h1 t1) (h2 t2)) (c t1))
+</pre>
+
+may be viewed as the clause
+
+<pre>
+{~(h1 t1) ~(h2 t2) (c t1)}.
+</pre>
+
+Clause <code>c1</code> is ``subsumed'' by clause <code>c2</code> iff some instance of <code>c2</code> is a
+subset of <code>c1</code>.  For example, the clause above is subsumed by
+<code>{~(h1 x) (c x)}</code>, which when viewed as a formula is
+<code>(implies (h1 x) (c x))</code>.<p>
+
+If the value is <code>nil</code> or a new name, the prover does not even
+attempt to prove the goal to which this hint is attached.  Instead
+the goal is given a ``bye'', i.e., it is skipped and the proof
+attempt continues as though the goal had been proved.  If the prover
+terminates without error then it reports that the proof would have
+succeeded had the indicated goals been proved and it prints an
+appropriate <a href="DEFTHM.html">defthm</a> form to define each of the <code>:by</code> names.  The
+``name'' <code>nil</code> means ``make up a name.''<p>
+
+The system does not attempt to check the uniqueness of the <code>:by</code> names
+(supplied or made up), since by the time those goals are proved the
+namespace will be cluttered still further.  Therefore, the final
+list of ``appropriate'' <code><a href="DEFTHM.html">defthm</a></code> forms may be impossible to admit
+without some renaming by the user.  If you must invent new names,
+remember to substitute the new ones for the old ones in the <code>:by</code>
+hints themselves.<p>
+
+<code>:RESTRICT</code><br>
+
+Warning: This is a sophisticated hint, suggested by Bishop Brock, that is
+intended for advanced users.  In particular, <code>:restrict</code> hints are ignored
+by the preprocessor, so you might find it useful to give the hint
+<code>:do-not '(preprocess)</code> when using any <code>:restrict</code> hints, at least if the
+rules in question are abbreviations (see <a href="SIMPLE.html">simple</a>).<p>
+
+<code>Value</code> is an association list.  Its members are of the form
+<code>(x subst1 subst2 ...)</code>, where: <code>x</code> is either (1) a <a href="RUNE.html">rune</a> whose
+<code><a href="CAR.html">car</a></code> is <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="DEFINITION.html">definition</a></code> or (2) an event name
+corresponding to one or more such <a href="RUNE.html">rune</a>s; and <code>(subst1 subst2 ...)</code> is
+a non-empty list of substitutions, i.e., of association lists pairing
+variables with terms.  First consider the case that <code>x</code> is a
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="DEFINITION.html">definition</a></code> <a href="RUNE.html">rune</a>.  Recall that without
+this hint, the rule named <code>x</code> is used by matching its left-hand side (call
+it <code>lhs</code>) against the term currently being considered by the rewriter, that
+is, by attempting to find a substitution <code>s</code> such that the instantiation of
+<code>lhs</code> using <code>s</code> is equal to that term.  If however the <code>:restrict</code> hint
+contains <code>(x subst1 subst2 ...)</code>, then this behavior will be modified by
+restricting <code>s</code> so that it must extend <code>subst1</code>; and if there is no such
+<code>s</code>, then <code>s</code> is restricted so that it must extend <code>subst2</code>; and so on,
+until the list of substitutions is exhausted.  If no such <code>s</code> is found,
+then the rewrite or definition rule named <code>x</code> is not applied to that term.
+Finally, if <code>x</code> is an event name corresponding to one or more
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="DEFINITION.html">definition</a></code> <a href="RUNE.html">rune</a>s (that is, <code>x</code> is the
+``base symbol'' of such <a href="RUNE.html">rune</a>s; see <a href="RUNE.html">rune</a>), say <a href="RUNE.html">rune</a>s <code>r1</code>,
+... <code>rn</code>, then the meaning is the same except that
+<code>(x subst1 subst2 ...)</code> is replaced by <code>(ri subst1 subst2 ...)</code> for each
+<code>i</code>.  Once this replacement is complete, the hint may not contain two
+members whose <code><a href="CAR.html">car</a></code> is the same <a href="RUNE.html">rune</a>.<p>
+
+Note that the substitutions in <code>:restrict</code> hints refer to the
+variables actually appearing in the goals, not to the variables
+appearing in the rule being restricted.<p>
+
+Here is an example, supplied by Bishop Brock.  Suppose that the
+database includes the following rewrite rule, which is probably kept
+<a href="DISABLE.html">disable</a>d.  (We ignore the question of how to prove this rule.)
+
+<pre>
+cancel-&lt;-*$free:
+(implies (and (rationalp x)
+              (rationalp y)
+              (rationalp z))
+         (equal (&lt; y z)
+                (if (&lt; x 0)
+                    (&gt; (* x y) (* x z))
+                  (if (&gt; x 0)
+                      (&lt; (* x y) (* x z))
+                    (hide (&lt; y z))))))
+</pre>
+
+Then ACL2 can prove the following theorem (unless other rules get in
+the way), essentially by multiplying both sides by <code>x</code>.
+
+<pre>
+(thm
+  (implies (and (rationalp x)
+                (&lt; 1 x))
+           (&lt; (/ x) 1))
+  :hints
+  (("Goal"
+    :in-theory (enable cancel-&lt;-*$free)
+    :restrict ((cancel-&lt;-*$free ((x x) (y (/ x)) (z 1)))))))
+</pre>
+
+The <code>:restrict</code> hint above says that the variables <code>x</code>, <code>y</code>, and <code>z</code> in the
+rewrite rule <code>cancel-&lt;-*$free</code> above should be instantiated
+respectively by <code>x</code>, <code>(/ x)</code>, and <code>1</code>.  Thus <code>(&lt; y z)</code> becomes <code>(&lt; (/ x) 1)</code>,
+and this inequality is replaced by the corresponding instance of the
+right-hand-side of <code>cancel-&lt;-*$free</code>.  Since the current conjecture
+assumes <code>(&lt; 1 x)</code>, that instance of the right-hand side simplifies to
+
+<pre>
+(&lt; (* x (/ x)) (* x 1))
+</pre>
+
+which in turn simplifies to <code>(&lt; 1 x)</code>, a hypothesis in the present
+theorem.<p>
+
+<code>:NONLINEARP</code><br>
+
+<code>Value</code> is <code>t</code> or <code>nil</code>, indicating whether <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>
+is active.  The default value is <code>nil</code>.  See <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

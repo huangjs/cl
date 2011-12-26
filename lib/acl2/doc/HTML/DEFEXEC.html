@@ -1,0 +1,207 @@
+<html>
+<head><title>DEFEXEC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFEXEC</h2>attach a terminating executable function to a definition
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+Suppose you define a function <code>(fn x)</code> with a <a href="GUARD.html">guard</a> of
+<code>(good-input-p x)</code>, and you know that when the guard holds, the measure
+decreases on each recursive call.  Unfortunately, the definitional principle
+(see <a href="DEFUN.html">defun</a>) ignores the guard.  For example, if the definition has the form
+
+<pre>
+(defun fn (x)
+  (declare (xargs :guard (good-input-p x)))
+  (if (not-done-yet x)
+      (... (fn (destr x)) ...)
+    ...))
+</pre>
+
+then in order to admit this definition, ACL2 must prove the appropriate
+formula asserting that <code>(destr x)</code> is ``smaller than'' <code>x</code> under the
+assumption <code>(not-done-yet x)</code> but without the assumption
+<code>(good-input-p x)</code>, even if <code>(not-done-yet x)</code> is true.  In essence, it
+may be necessary to submit instead the following definition. 
+
+<pre>
+(defun fn (x)
+  (declare (xargs :guard (good-input-p x)))
+  (if (good-input-p x)
+      (if (not-done-yet x)
+          (... (fn (destr x)) ...)
+        ...)
+    nil)
+</pre>
+
+But it is unfortunate that when calls of <code>fn</code> are evaluated, for example
+when <code>fn</code> is applied to an explicit constant during a proof, then a call of
+<code>good-input-p</code> must now be evaluated on each recursive call.<p>
+
+Fortunately, <code>defexec</code> provides a way to keep the execution efficient.  For
+the example above we could use the following form.
+
+<pre>
+(defexec fn (x)
+  (declare (xargs :guard (good-input-p x)))
+  (mbe :logic (if (good-input-p x)
+                  (if (not-done-yet x)
+                      (... (fn (destr x)) ...)
+                    ...)
+                nil)
+       :exec  (if (not-done-yet x)
+                  (... (fn (destr x)) ...)
+                ...)))
+</pre>
+
+Here ``<code><a href="MBE.html">mbe</a></code>'' stands for ``must-be-equal'' and, roughly speaking, its
+call above is logically equal to the <code>:logic</code> form but is evaluated using
+the <code>:exec</code> form when the guard holds.  See <a href="MBE.html">mbe</a>.  The effect is thus to
+define <code>fn</code> as shown in the <code><a href="DEFUN.html">defun</a></code> form above, but to cause execution
+of <code>fn</code> using the <code>:exec</code> body.  The use of <code>defexec</code> instead of
+<code><a href="DEFUN.html">defun</a></code> in the example above causes a termination proof to be performed,
+in order to guarantee that evaluation always theoretically terminates, even
+when using the <code>:exec</code> form for evaluation.
+
+<pre>
+Example:<p>
+
+; Some of the keyword arguments in the declarations below are irrelevant or
+; unnecessary, but they serve to illustrate their use.<p>
+
+(defexec f (x)
+  (declare (xargs :measure (+ 15 (acl2-count x))
+                  :hints (("Goal" :in-theory (disable nth)))
+                  :guard-hints (("Goal" :in-theory (disable last)))
+                  :guard (and (integerp x) (&lt;= 0 x) (&lt; x 25)))
+           (exec-xargs
+                  :test (and (integerp x) (&lt;= 0 x))
+                  :default-value 'undef ; defaults to nil
+                  :measure (nfix x)
+                  :well-founded-relation o&lt;))
+  (mbe :logic (if (zp x)
+                  1
+                (* x (f (- x 1))))
+       :exec  (if (= x 0)
+                  1
+                (* x (f (- x 1))))))
+</pre>
+
+The above example macroexpands to the following.
+
+<pre>
+(ENCAPSULATE ()
+ (LOCAL
+  (ENCAPSULATE ()
+   (SET-IGNORE-OK T)
+   (SET-IRRELEVANT-FORMALS-OK T)
+   (LOCAL (DEFUN F (X)
+            (DECLARE
+             (XARGS :VERIFY-GUARDS NIL
+                    :HINTS (("Goal" :IN-THEORY (DISABLE NTH)))
+                    :MEASURE (NFIX X)
+                    :WELL-FOUNDED-RELATION O&lt;))
+            (IF (AND (INTEGERP X) (&lt;= 0 X))
+                (IF (= X 0) 1 (* X (F (- X 1))))
+                'UNDEF)))
+   (LOCAL (DEFTHM F-GUARD-IMPLIES-TEST
+            (IMPLIES (AND (INTEGERP X) (&lt;= 0 X) (&lt; X 25))
+                     (AND (INTEGERP X) (&lt;= 0 X)))
+            :RULE-CLASSES NIL))))
+ (DEFUN F (X)
+   (DECLARE (XARGS :MEASURE (+ 15 (ACL2-COUNT X))
+                   :HINTS (("Goal" :IN-THEORY (DISABLE NTH)))
+                   :GUARD-HINTS (("Goal" :IN-THEORY (DISABLE LAST)))
+                   :GUARD (AND (INTEGERP X) (&lt;= 0 X) (&lt; X 25))))
+   (MBE :LOGIC
+        (IF (ZP X) 1 (* X (F (- X 1))))
+        :EXEC
+        (IF (= X 0) 1 (* X (F (- X 1)))))))
+</pre>
+
+Notice that in the example above, the <code>:</code><code><a href="HINTS.html">hints</a></code> in the <code><a href="LOCAL.html">local</a></code>
+definition of <code>F</code> are inherited from the <code>:hints</code> in the <code><a href="XARGS.html">xargs</a></code> of
+the <code>defexec</code> form.  We discuss such inheritance below.
+
+<pre>
+General Form:
+(defexec fn (var1 ... varn) doc-string dcl ... dcl
+  (mbe :LOGIC logic-body
+       :EXEC  exec-body))
+</pre>
+
+where the syntax is identical to the syntax of <code><a href="DEFUN.html">defun</a></code> where the body is
+a call of <code>mbe</code>, with the exceptions described below.  Thus, <code>fn</code> is the
+symbol you wish to define and is a new symbolic name and <code>(var1 ... varn)</code>
+is its list of formal parameters (see <a href="NAME.html">name</a>).  The first exception is that at
+least one <code>dcl</code> (i.e., <code><a href="DECLARE.html">declare</a></code> form) must specify a <code>:guard</code>,
+<code>guard</code>.  The second exception is that one of the <code>dcl</code>s is allowed to
+contain an element of the form <code>(exec-xargs ...)</code>.  The <code>exec-xargs</code>
+form, if present, must specify a non-empty <code><a href="KEYWORD-VALUE-LISTP.html">keyword-value-listp</a></code> each of
+whose keys is one of <code>:test</code>, <code>:default-value</code>, or one of the standard
+<code><a href="XARGS.html">xargs</a></code> keys of <code>:measure</code>, <code>:well-founded-relation</code>, <code>:hints</code>, or
+<code>:stobjs</code>.  Any of these four standard <code>xargs</code> keys that is present in an
+<code>xargs</code> of some <code>dcl</code> but is not specified in the (possibly nonexistent)
+<code>exec-xargs</code> form is considered to be specified in the <code>exec-xargs</code> form,
+as illustrated in the example above for <code>:hints</code>.  (So for example, if you
+want <code>:hints</code> in the final, non-local definition but not in the local
+definition, then specify the <code>:hints</code> in the <code>xargs</code> but specify
+<code>:hints nil</code> in the <code>exec-xargs</code>.)  If <code>:test</code> is specified and not
+<code>nil</code>, let <code>test</code> be its value; otherwise let <code>test</code> default to
+<code>guard</code>.  If <code>:default-value</code> is specified, let <code>default-value</code> be its
+value; else <code>default-value</code> is <code>nil</code>.  <code>Default-value</code> should have the
+same <a href="SIGNATURE.html">signature</a> as <code>exec-body</code>; otherwise the <code>defexec</code> form will
+fail to be admitted.<p>
+
+The above General Form's macroexpansion is of the form
+<code>(PROGN encap final-def)</code>, where <code>encap</code> and <code>final-def</code> are as
+follows.  <code>Final-def</code> is simply the result of removing the <code>exec-xargs</code>
+declaration (if any) from its <code><a href="DECLARE.html">declare</a></code> form, and is the result of
+evaluating the given <code>defexec</code> form, since <code>encap</code> is of the following
+form.
+
+<pre>
+; encap
+(ENCAPSULATE ()
+  (set-ignore-ok t)             ; harmless for proving termination
+  (set-irrelevant-formals-ok t) ; harmless for proving termination
+  (local local-def)
+  (local local-thm))
+</pre>
+
+The purpose of <code>encap</code> is to ensure the the executable version of <code>name</code>
+terminates on all arguments.  Thus, <code>local-def</code> and <code>local-thm</code> are as
+follows, where the <code>xargs</code> of the <code><a href="DECLARE.html">declare</a></code> form are the result of
+adding <code>:VERIFY-GUARDS NIL</code> to the result of removing the <code>:test</code> and
+(optional) <code>:default-value</code> from the <code>exec-xargs</code>.
+
+<pre>
+; local-def
+(DEFUN fn formals
+  (DECLARE (XARGS :VERIFY-GUARDS NIL ...))
+  (IF test
+      exec-body
+    default-value))<p>
+
+; local-thm
+(DEFTHM fn-EXEC-GUARD-HOLDS
+  (IMPLIES guard test)
+  :RULE-CLASSES NIL)
+</pre>
+
+We claim that if the above <code>local-def</code> and <code>local-thm</code> are admitted, then
+all evaluations of calls of <code>fn</code> terminate.  The concern is that the use
+of <code><a href="MBE.html">mbe</a></code> in <code>final-def</code> allows for the use of <code>exec-body</code> for a call
+of <code>fn</code>, as well as for subsequent recursive calls, when <code>guard</code> holds
+and assuming that the guards have been verified for <code>final-def</code>.  However,
+by <code>local-thm</code> we can conclude in this case that <code>test</code> holds, in which
+case the call of <code>fn</code> may be viewed as a call of the version of <code>fn</code>
+defined in <code>local-def</code>.  Moreover, since guards have been verified for
+<code>final-def</code>, then guards hold for subsequent evaluation of <code>exec-body</code>,
+and in particular for recursive calls of <code>fn</code>, which can thus continue to
+be viewed as calls using <code>local=def</code>.
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

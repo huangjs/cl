@@ -1,0 +1,171 @@
+<html>
+<head><title>DEFCHOOSE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFCHOOSE</h2>define a Skolem (witnessing) function
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defchoose choose-x-for-p-and-q (x) (y z)
+  (and (p x y z)
+       (q x y z)))<p>
+
+(defchoose choose-x-for-p-and-q x (y z) ; equivalent to the above
+  (and (p x y z)
+       (q x y z)))<p>
+
+; The following is as above, but strengthens the axiom added to pick a sort
+; of canonical witness, as described below.
+(defchoose choose-x-for-p-and-q x (y z)
+  (and (p x y z)
+       (q x y z))
+  :strengthen t)<p>
+
+(defchoose choose-x-and-y-for-p-and-q (x y) (z)
+  (and (p x y z)
+       (q x y z)))
+<p>
+<ul>
+<li><h3><a href="CONSERVATIVITY-OF-DEFCHOOSE.html">CONSERVATIVITY-OF-DEFCHOOSE</a> -- proof of conservativity of <code><a href="DEFCHOOSE.html">defchoose</a></code>
+</h3>
+</li>
+
+</ul>
+
+General Form:
+(defchoose fn 
+           (bound-var1 ... bound-varn)
+           (free-var1 ... free-vark)
+           body
+           :doc doc-string
+           :strengthen b),
+</pre>
+
+where <code>fn</code> is the symbol you wish to define and is a new symbolic
+name (see <a href="NAME.html">name</a>), <code>(bound-var1 ... bound-varn)</code> is a list of
+distinct `bound' variables (see below), <code>(free-var1 ... free-vark)</code>
+is the list of formal parameters of <code>fn</code> and is disjoint from the
+bound variables, and <code>body</code> is a term.  The use of <code>lambda-list</code>
+keywords (such as <code>&amp;optional</code>) is not allowed.  The <a href="DOCUMENTATION.html">documentation</a>
+string argument, <code>:doc doc-string</code>, is optional; for a description of the
+form of <code>doc-string</code> see <a href="DOC-STRING.html">doc-string</a>.  The <code>:strengthen</code> keyword argument
+is optional; if supplied, it must be <code>t</code> or <code>nil</code>.<p>
+
+The system treats <code>fn</code> very much as though it were declared in the
+<a href="SIGNATURE.html">signature</a> of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> event, with a single axiom exported as
+described below.  If you supply a <code>:use</code> hint (see <a href="HINTS.html">hints</a>), <code>:use fn</code>, it
+will refer to that axiom.  No rule (of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or otherwise;
+see <a href="RULE-CLASSES.html">rule-classes</a>) is created for <code>fn</code>.<p>
+
+<code>Defchoose</code> is only executed in <a href="DEFUN-MODE.html">defun-mode</a> <code>:</code><code><a href="LOGIC.html">logic</a></code>;
+see <a href="DEFUN-MODE.html">defun-mode</a>.  Also see <a href="DEFUN-SK.html">defun-sk</a>.<p>
+
+In the most common case, where there is only one bound variable, it is
+permissible to omit the enclosing parentheses on that variable.  The effect
+is the same whether or not those parentheses are omitted.  We describe this
+case first, where there is only one bound variable, and then address the
+other case.  Both cases are discussed assuming <code>:strengthen</code> is <code>nil</code>,
+which is the default.  We deal with the case <code>:strengthen t</code> at the end.<p>
+
+The effect of the form
+
+<pre>
+(defchoose fn bound-var (free-var1 ... free-vark)
+  body)
+</pre>
+
+is to introduce a new function symbol, <code>fn</code>, with formal parameters
+<code>(free-var1 ... free-vark)</code>.  Now consider the following axiom, which
+states that <code>fn</code> picks a value of <code>bound-var</code> so that the body will be
+true, if such a value exists:
+
+<pre>
+(1)   (implies body
+               (let ((bound-var (fn free-var1 ... free-vark)))
+                 body))
+</pre>
+
+This axiom is ``clearly conservative'' under the conditions expressed above:
+the function <code>fn</code> simply picks out a ``witnessing'' value of <code>bound-var</code>
+if there is one.  For a rigorous statement and proof of this conservativity
+claim, see <a href="CONSERVATIVITY-OF-DEFCHOOSE.html">conservativity-of-defchoose</a>.<p>
+
+Next consider the case that there is more than one bound variable, i.e.,
+there is more than one bound-var in the following.
+
+<pre>
+(defchoose fn 
+           (bound-var1 ... bound-varn)
+           (free-var1 ... free-vark)
+           body)
+</pre>
+
+Then <code>fn</code> returns a multiple value with <code>n</code> componenets, and formula (1)
+above is expressed using <code><a href="MV-LET.html">mv-let</a></code> as follows:
+
+<pre>
+(implies body
+         (mv-let (bound-var1 ... bound-varn)
+                 (fn free-var1 ... free-vark)
+                 body))
+</pre>
+<p>
+
+We now discuss the case that <code>:strengthen t</code> is supplied.  For simplicity
+we return to our first example, with a single free variable, <code>y</code>.  The idea
+is that if we pick the ``smallest'' witnessing <code>bound-var</code> for two
+different free variables <code>y</code> and <code>y1</code>, then either those two witnesses
+are the same, or else one is less than the other, in which case the smaller
+one is a witness for its free variable but not for the other.  (See comments
+in source function <code>defchoose-constraint-extra</code> for more details.)  Below,
+<code>body1</code> is the result of replacing <code>y</code> by <code>y1</code> in <code>body</code>.
+
+<pre>
+(2)   (or (equal (fn y) (fn y1))
+          (let ((bound-var (fn y)))
+            (and body
+                 (not body1)))
+          (let ((bound-var (fn y1)))
+            (and body1
+                 (not body))))
+</pre>
+
+An important application of this additional axiom is to be able to define a
+``fixing'' function that picks a canonical representative of each equivalence
+class, for a given equivalence relation.  The following events illustrate
+this point.
+
+<pre>
+(encapsulate
+ ((equiv (x y) t))
+ (local (defun equiv (x y) (equal x y)))
+ (defequiv equiv))<p>
+
+(defchoose efix (x) (y)
+  (equiv x y)
+  :strengthen t)<p>
+
+(defthm equiv-implies-equal-efix-1
+  (implies (equiv y y1)
+           (equal (efix y) (efix y1)))
+  :hints (("Goal" :use efix))
+  :rule-classes (:congruence))<p>
+
+(defthm efix-fixes
+  (equiv (efix x) x)
+  :hints (("Goal" :use ((:instance efix (y x))))))
+</pre>
+<p>
+
+If there is more than one bound variable, then (2) is modified in complete
+analogy to (1) to use <code><a href="MV-LET.html">mv-let</a></code> in place of <code><a href="LET.html">let</a></code>.<p>
+
+Comment for logicians:  As we point out in the documentation for
+<code><a href="DEFUN-SK.html">defun-sk</a></code>, <code>defchoose</code> is ``appropriate,'' by which we mean that
+it is conservative, even in the presence of <code>epsilon-0</code> induction.
+For a proof, See <a href="CONSERVATIVITY-OF-DEFCHOOSE.html">conservativity-of-defchoose</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

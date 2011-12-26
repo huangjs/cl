@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+<HEAD>
+   <TITLE>Chapter 9 Notes</TITLE>
+<link href="../../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../../index.html" target=_top>
+<IMG SRC="../../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Chapter 9 Notes</DIV>
+
+<H3>Page 146</H3>
+
+<P>The claim that <CODE>=</CODE> is less strict than <CODE>eql</CODE>
+is not strictly true, strictly speaking. <CODE>=</CODE> requires
+numeric arguments, <CODE>eql</CODE> doesn't.</P>
+
+<P>This finickiness though means that you should always use
+<CODE>=</CODE> if you're dealing with numbers. If you use
+<CODE>eql</CODE> or <CODE>equal</CODE>, you'll let bad non-numeric
+values propagate longer. Catch bad values as early as possible.</P>
+
+<H3>Page 153</H3>
+
+<P>The application is really neat and the code is mostly excellent,
+<I>except</I> for the abundance of
+<A HREF="../../readings/lisp-style.html#anonymous">anonymous constants</A>.</P>
+
+<H3>Page 156</H3>
+
+<P><CODE>defsphere</CODE> is a poor name. <CODE>defxxxx</CODE> names
+are usually for macros, but this is a normal function.
+<CODE>create-sphere</CODE> or <CODE>new-sphere</CODE> would be better.
+</P>
+
+<P><CODE>intersect</CODE> is a poor name because it's very similar to
+<CODE>intersection</CODE>, a Common Lisp function for intersecting
+sets.</P>
+
+<P>More importantly, this is a good example of code that should be
+either <a href="chap9-data-driven.html">data-driven</a> or 
+<a href="chap9-oo.html">object-oriented</a>. Consider what would happen if
+we wanted to define a new kind of object, say a cube. We would have
+to change the definition of <CODE>intersect</CODE> to</P>
+
+<PRE>(defun intersect (s pt xr yr zr)
+  (funcall (typecase s
+              (sphere #'sphere-intersect)
+              (cube #'cube-intersect))
+           s pt xr yr zr))</PRE>
+
+<P>That's easy. But where does this definition belong? It clearly
+doesn't belong in the sphere definition file any more, nor does it
+belong in the cube file. We need a new file where
+<CODE>intersect</CODE> is defined. That file depends on each of the
+object definition files. And every time we define a new kind of
+object, we will have to redefine <CODE>intersect</CODE> in this file.
+</P>
+
+<P>The <a href="chap9-data-driven.html">data-driven</a> and 
+<a href="chap9-oo.html">object-oriented</a> versions turn this dependency
+around. In both versions, each object file depends on the file that
+defines the <CODE>intersect</CODE> method. New object files can be
+created freely, without ever changing the <CODE>intersect</CODE>
+file.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+</BODY>
+</HTML>

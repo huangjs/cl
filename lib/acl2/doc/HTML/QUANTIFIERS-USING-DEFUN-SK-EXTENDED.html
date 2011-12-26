@@ -1,0 +1,82 @@
+<html>
+<head><title>QUANTIFIERS-USING-DEFUN-SK-EXTENDED.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>QUANTIFIERS-USING-DEFUN-SK-EXTENDED</h4>quantification example with details
+<pre>Major Section:  <a href="QUANTIFIERS.html">QUANTIFIERS</a>
+</pre><p>
+
+See <a href="QUANTIFIERS-USING-DEFUN-SK.html">quantifiers-using-defun-sk</a> for the context of this example.
+<p>
+
+<pre>
+(in-package "ACL2")<p>
+
+; We prove that if every member A of each of two lists satisfies the
+; predicate (P A), then this holds of their append; and, conversely.<p>
+
+; Here is a solution using explicit quantification.<p>
+
+(defstub p (x) t)<p>
+
+(defun-sk forall-p (x)
+  (forall a (implies (member a x)
+                     (p a))))<p>
+
+; The defun-sk above introduces the following axioms.  The idea is that
+; (FORALL-P-WITNESS X) picks a counterexample to (forall-p x) if there is one.<p>
+
+#|
+(DEFUN FORALL-P (X)
+  (LET ((A (FORALL-P-WITNESS X)))
+       (IMPLIES (MEMBER A X) (P A))))<p>
+
+(DEFTHM FORALL-P-NECC
+  (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
+           (NOT (FORALL-P X)))
+  :HINTS (("Goal" :USE FORALL-P-WITNESS)))
+|#<p>
+
+; The following lemma seems critical.<p>
+
+(defthm member-append
+  (iff (member a (append x1 x2))
+       (or (member a x1) (member a x2))))<p>
+
+; The proof of forall-p-append seems to go out to lunch, so we break into
+; directions as shown below.<p>
+
+(defthm forall-p-append-forward
+  (implies (forall-p (append x1 x2))
+           (and (forall-p x1) (forall-p x2)))
+  :hints (("Goal" ; ``should'' disable forall-p-necc, but no need
+           :use
+           ((:instance forall-p-necc
+                       (x (append x1 x2))
+                       (a (forall-p-witness x1)))
+            (:instance forall-p-necc
+                       (x (append x1 x2))
+                       (a (forall-p-witness x2)))))))<p>
+
+(defthm forall-p-append-reverse
+  (implies (and (forall-p x1) (forall-p x2))
+           (forall-p (append x1 x2)))
+  :hints (("Goal"
+           :use
+           ((:instance forall-p-necc
+                       (x x1)
+                       (a (forall-p-witness (append x1 x2))))
+            (:instance forall-p-necc
+                       (x x2)
+                       (a (forall-p-witness (append x1 x2))))))))<p>
+
+(defthm forall-p-append
+  (equal (forall-p (append x1 x2))
+         (and (forall-p x1) (forall-p x2)))
+  :hints (("Goal" :use (forall-p-append-forward
+                        forall-p-append-reverse))))<p>
+
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

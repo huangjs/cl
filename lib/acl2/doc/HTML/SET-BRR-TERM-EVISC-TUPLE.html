@@ -1,0 +1,44 @@
+<html>
+<head><title>SET-BRR-TERM-EVISC-TUPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-BRR-TERM-EVISC-TUPLE</h2>controls printing of terms inside the <a href="BREAK-REWRITE.html">break-rewrite</a> loop
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+This macro controls printing of terms inside the break-rewrite loop
+(see <a href="BREAK-REWRITE.html">break-rewrite</a>).
+
+<pre>
+Examples:
+(set-brr-term-evisc-tuple nil) ; default (inside brr)
+(set-brr-term-evisc-tuple '(nil 3 4 nil))
+</pre>
+
+The first of the examples above restores the break-rewrite state to one in
+which terms are printed in full.  The second sets the print-level to 3 and
+the print-length to 4, to replace substructures deeper than 3 by ``#'' and
+those longer than 4 by ``...''; see see <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a> for information about
+the shape of the argument of this macro, which is evaluated.
+<p>
+This macro can be executed either inside a break from break-rewrite, or at
+the top level.  Its effect will persist, except potentially when you execute
+``#.'' to exit break-rewrite.<p>
+
+Here is an example showing the effect of this macro.
+
+<pre>
+1 ACL2 &gt;:unify-subst
+     X : (CONS A
+               (CONS B
+                     (CONS C
+                           (CONS D (CONS E (CONS F (CONS G 'NIL)))))))
+1 ACL2 &gt;(set-brr-term-evisc-tuple (evisc-tuple 3 4 nil nil))
+&lt;state&gt;
+1 ACL2 &gt;:unify-subst
+     X : (CONS A (CONS B (CONS C #)))
+1 ACL2 &gt;
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

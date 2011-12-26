@@ -1,0 +1,59 @@
+<html>
+<head><title>LD-QUERY-CONTROL-ALIST.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-QUERY-CONTROL-ALIST</h2>how to default answers to queries
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Ld-query-control-alist</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor
+is <code>(ld-query-control-alist state)</code> and the updater is
+<code>(set-ld-query-control-alist val state)</code>.  Roughly speaking,
+<code>ld-query-control-alist</code> is either <code>nil</code> (meaning all queries should be
+interactive), <code>t</code> (meaning all should default to the first accepted
+response), or an alist that pairs query ids to keyword responses.
+The alist may end in either <code>t</code> or <code>nil</code>, indicating the default value
+for all ids not listed explicitly.  Formally, the
+<code>ld-query-control-alist</code> must satisfy <code>ld-query-control-alistp</code>.  The
+initial <code>ld-query-control-alist</code> is <code>nil</code>, which means all queries are
+handled interactively.
+<p>
+When an ACL2 query is raised, a unique identifying symbol is printed
+in parentheses after the word ``Query''.  This symbol, called the
+``query id,'' can be used in conjunction with <code>ld-query-control-alist</code>
+to prevent the query from being handled interactively.  By ``handled
+interactively'' we mean that the query is printed to <code><a href="_star_STANDARD-CO_star_.html">*standard-co*</a></code>
+and a response is read from <code><a href="_star_STANDARD-OI_star_.html">*standard-oi*</a></code>.  The alist can be used to
+obtain a ``default value'' for each query id.  If this value is <code>nil</code>,
+then the query is handled interactively.  In all other cases, the
+system handles the query without interaction (although text may be
+printed to <code><a href="STANDARD-CO.html">standard-co</a></code> to make it appear that an interaction has
+occurred; see below).  If the default value is <code>t</code>, the system acts as
+though the user responded to the query by typing the first response
+listed among the acceptable responses.  If the default value is
+neither <code>nil</code> nor <code>t</code>, then it must be a keyword and one of the
+acceptable responses.  In that case, the system acts as though the
+user responded with the given keyword.<p>
+
+Next, we discuss how the <code>ld-query-control-alist</code> assigns a default
+value to each query id.  It assigns each id the first value paired
+with the id in the alist, or, if no such pair appears in the alist,
+it assigns the final <code><a href="CDR.html">cdr</a></code> of the alist as the value.  Thus, <code>nil</code>
+assigns all ids <code>nil</code>.  <code>T</code> assigns all ids <code>t</code>.
+<code>'((:filter . nil) (:sysdef . :n) . t)</code> assigns <code>nil</code> to the
+<code>:filter</code> query, <code>:n</code> to the <code>:sysdef</code> query, and <code>t</code> to all
+others.<p>
+
+It remains only to discuss how the system prints text when the
+default value is not <code>nil</code>, i.e., when the query is handled without
+interaction.  In fact, it is allowed to pair a query id with a
+singleton list containing a keyword, rather than a keyword, and this
+indicates that no printing is to be done.  Thus for the example
+above, <code>:sysdef</code> queries would be handled noninteractively, with
+printing done to simulate the interaction.  But if we change the
+example so that <code>:sysdef</code> is paired with <code>(:n)</code>, i.e., if
+<code>ld-query-control-alist</code> is <code>'((:filter . nil) (:sysdef :n) . t)</code>, then
+no such printing would take place for <code>sysdef</code> queries.  Instead, the
+default value of <code>:n</code> would be assigned ``quietly''.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

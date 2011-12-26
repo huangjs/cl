@@ -1,0 +1,52 @@
+<html>
+<head><title>INVISIBLE-FNS-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INVISIBLE-FNS-TABLE</h2>functions that are invisible to the <a href="LOOP-STOPPER.html">loop-stopper</a> algorithm
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+ACL2 !&gt;(invisible-fns-table (w state))
+((binary-+ unary--)
+ (binary-* unary-/)
+ (unary-- unary--)
+ (unary-/ unary-/))
+</pre>
+
+Among other things, the setting above has the effect of making <code><a href="UNARY--.html">unary--</a></code>
+``invisible'' for the purposes of applying permutative <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+rules to <code><a href="BINARY-+.html">binary-+</a></code> trees.  Also see <a href="ADD-INVISIBLE-FNS.html">add-invisible-fns</a>,
+see <a href="REMOVE-INVISIBLE-FNS.html">remove-invisible-fns</a>, and see <a href="SET-INVISIBLE-FNS-TABLE.html">set-invisible-fns-table</a>.<p>
+
+See <a href="TABLE.html">table</a> for a general discussion of tables.
+<p>
+The ``invisible functions <a href="TABLE.html">table</a>'' is an alist with elements of the following
+form, where <code>fn</code> is a function symbol and the <code>ufni</code> are unary function
+symbols in the current ACL2 <a href="WORLD.html">world</a>, and <code>k</code> is at least 1.
+
+<pre>
+(fn ufn1 ufn2 ... ufnk)
+</pre>
+<p>
+
+This <a href="TABLE.html">table</a> thus associates with certain function symbols, e.g., <code>fn</code>
+above, a set of unary functions, e.g., the <code>ufni</code> above.  The <code>ufni</code>
+associated with <code>fn</code> in the invisible functions table are said to be
+``invisible with respect to <code>fn</code>.''  If <code>fn</code> is not the <code><a href="CAR.html">car</a></code> of any
+pair in the <code>alist</code>, then no function is invisible for it.  Thus for
+example, setting the invisible functions alist to <code>nil</code> completely
+eliminates the consideration of invisibility.<p>
+
+The notion of invisibility is involved in the use of the
+<code>:</code><code><a href="LOOP-STOPPER.html">loop-stopper</a></code> field of <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules to prevent the indefinite
+application of permutative rewrite rules.  Roughly speaking, if
+rewrite rules are being used to permute <code>arg</code> and (ufni arg) inside of
+a nest of <code>fn</code> calls, and <code>ufni</code> is invisible with respect to <code>fn</code>, then
+<code>arg</code> and <code>(ufni arg)</code> are considered to have the same ``weight'' and
+will be permuted so as to end up as adjacent tips in the <code>fn</code> nest.
+See <a href="LOOP-STOPPER.html">loop-stopper</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

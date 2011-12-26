@@ -1,0 +1,61 @@
+<html>
+<head><title>REFINEMENT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REFINEMENT</h2>record that one equivalence relation refines another
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:refinement</code> rule might be built is:
+
+<pre>
+Example:
+(implies (bag-equal x y) (set-equal y x)).
+</pre>
+
+Also see <a href="DEFREFINEMENT.html">defrefinement</a>.
+<p>
+
+<pre>
+General Form:
+(implies (equiv1 x y) (equiv2 x y))
+</pre>
+
+<code>Equiv1</code> and <code>equiv2</code> must be known equivalence relations.  The effect
+of such a rule is to record that <code>equiv1</code> is a refinement of <code>equiv2</code>.
+This means that <code>equiv1</code> <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules may be used while trying to
+maintain <code>equiv2</code>.  See <a href="EQUIVALENCE.html">equivalence</a> for a general discussion of
+the issues.<p>
+
+The macro form <code>(defrefinement equiv1 equiv2)</code> is an abbreviation for
+a <code><a href="DEFTHM.html">defthm</a></code> of rule-class <code>:refinement</code> that establishes that <code>equiv1</code> is a
+refinement of <code>equiv2</code>.  See <a href="DEFREFINEMENT.html">defrefinement</a>.<p>
+
+Suppose we have the <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule
+
+<pre>
+(bag-equal (append a b) (append b a))
+</pre>
+
+which states that <code><a href="APPEND.html">append</a></code> is commutative modulo bag-equality.
+Suppose further we have established that bag-equality refines
+set-equality.  Then when we are simplifying <code><a href="APPEND.html">append</a></code> expressions while
+maintaining set-equality we use <code><a href="APPEND.html">append</a></code>'s commutativity property,
+even though it was proved for bag-equality.<p>
+
+Equality is known to be a refinement of all equivalence relations.
+The transitive closure of the refinement relation is maintained, so
+if <code>set-equality</code>, say, is shown to be a refinement of some third
+sense of equivalence, then <code>bag-equality</code> will automatially be known
+as a refinement of that third equivalence.<p>
+
+<code>:refinement</code> lemmas cannot be disabled.  That is, once one
+equivalence relation has been shown to be a refinement of another,
+there is no way to prevent the system from using that information.
+Of course, individual <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules can be disabled.<p>
+
+More will be written about this as we develop the techniques.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

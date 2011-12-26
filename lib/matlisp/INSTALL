@@ -1,0 +1,110 @@
+-*- Mode: text -*-
+Requirements:
+=============
+Either CMUCL (version 18b), SBCL (version 0.8.5) or 
+Allegro CL (version 5.0 or later) is required.
+
+* Allegro CL: Matlisp should compile on Linux, Solaris, Windows.
+              In particular, Matlisp relies on the foreign
+	      function interface of Allegro CL.
+
+* CMU CL: Matlisp should compile on Linux, Solaris.
+          In particular, Matlisp relies on the foreign function
+          interface of CMU CL and the built-in type 
+          kernel::complex-double-float.
+
+* SBCL: Matlisp should compile on Linux and MacOS X
+        In particular, Matlisp relies on the foreign function
+        interface of SBCL.
+        
+        
+
+An immediate goal is to make Matlisp available for CLISP -- another 
+free Common Lisp implementation that is supported on a wider range of 
+platforms than CMUCL, SBCL and AllegroCL. 
+
+
+Linux/Unix Installation:
+========================
+
+One of the design goals of Matlisp was to ensure the consistency of 
+installation.  Matlisp is currently distributed as source code and the 
+user must do a compilation.  A great deal of effort was put into a 
+configure script that determines machine parameters, system libraries 
+and without bothering the user. 
+
+The installation follows in a few easy steps: 
+                         
+1. Download the Matlisp sources from http://matlisp.sourceforge.net
+2. Unpack the source file
+
+	gunzip matlisp.tgz 
+	tar -vxf matlisp.tar
+
+3. Change to that directory 
+
+	cd matlisp
+
+4. Configure the system.
+   o If you're using Allegro CL, specify --with-lisp=acl.
+   o If you're using CMU CL, specify --with-lisp=cmucl
+   o If you're using SBCL, specify --with-lisp=sbcl
+   o Give the name of the Lisp executable via --with-lisp-exec=<name>
+   o Run configure:
+
+   ./configure --with-lisp=<lisp> --with-lisp-exec=<exec> --prefix=`pwd`
+
+   If you are not using g77 to compile, you may want to specify the
+   Fortran flags.  For example, to build with Sun's Fortran compiler
+   this can be used (from bash):
+
+   ./configure --with-f77=f77 -with-fflags='-g -O -KPIC' ...
+
+5. Build the Fortran and Lisp files
+
+	make
+                         
+Due to some possible bugs, be sure to check that the LAPACK file
+dlamch is compiled without optimization.  When it is compiled with
+optimization, geev may fail in strange ways.
+
+That's all there is to it.  In order for this to work, configure must 
+be able to detect a Fortran compiler and a C compiler in your path.  
+This is usually the case.  If configure fails you should contact your 
+system administrator.
+
+In addition, if you use some other Fortran compiler besides g77 or
+Sun's f77, you may run into difficulties.  Assumptions are made on the
+calling Fortran conventions and if the compiler doesn't match those
+assumptions, there will be problems.  Please let us know if you have
+such a Fortran compiler.
+
+For higher performance you may consider using optimized BLAS/LAPACK
+libraries that may be available for your system.  For example,
+the file lib/lazy-loader.lisp contains sample code that would
+use the ATLAS (http://www.netlib.org/atlas) replacement library
+for BLAS.
+
+If you want to build Matlisp with ATLAS, you may configure with the
+option --with-atlas=<libpath> to enable ATLAS support.  You need to
+specify the full path to where the ATLAS libraries are located.  The
+libraries themselves must be named liblapack, libf77blas, libatlas,
+and libcblas.  If other names are used, you'll have to manually change
+lazy-loader.lisp after configuring.
+
+MS Windows installation:
+========================
+
+1. Download the Matlisp sources from http://matlisp.sourceforge.net
+2. Unpack the source file
+3. From within Allegro CL:
+
+	(load "start.lisp")
+
+That should be all.  The precompiled BLAS/LAPACK libraries were obtained
+from http://www.che.chalmers.se/~agris/Programming/clapack/clapack.html
+
+Unfortunately, we currently do not support the functions FFT, IFFT
+which rely on DFFTPACK for MSWindows.
+
+Enjoy!

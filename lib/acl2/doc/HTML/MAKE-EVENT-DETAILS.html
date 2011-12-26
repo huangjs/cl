@@ -1,0 +1,197 @@
+<html>
+<head><title>MAKE-EVENT-DETAILS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>MAKE-EVENT-DETAILS</h3>details on <code><a href="MAKE-EVENT.html">make-event</a></code> expansion
+<pre>Major Section:  <a href="MAKE-EVENT.html">MAKE-EVENT</a>
+</pre><p>
+
+The normal user of <code>make-event</code> can probably ignore this section, but we
+include it for completeness.  We assume that the reader has read and
+understood the basic documentation for <code>make-event</code> (see <a href="MAKE-EVENT.html">make-event</a>), but
+we begin below with a summary of expansion.
+<p>
+<strong>Introduction</strong><p>
+
+Here is a summary of how we handle expansion involving <code>make-event</code> forms.<p>
+
+<code>(make-event form :check-expansion nil)</code><p>
+
+This shows the <code>:check-expansion</code> default of <code>nil</code>, and is typical user
+input.  We compute the expansion <code>exp</code> of <code>form</code>, which is the expansion
+of the original <code>make-event</code> expression and is evaluated in place of that
+expression.<p>
+
+<code>(make-event form :check-expansion t)</code><p>
+
+The user presumably wants it checked that the expansion doesn't change in the
+future, in particular during <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  If the expansion of
+<code>form</code> is <code>exp</code>, then we will evaluate <code>exp</code> to obtain the value as
+before, but this time we record that the expansion of the original
+<code>make-event</code> expression is <code>(make-event form :check-expansion exp)</code>
+rather than simply <code>exp</code>.<p>
+
+<code>(make-event form :check-expansion exp) ; exp a cons</code><p>
+
+This is generated for the case that <code>:check-expansion</code> is <code>t</code>, as
+explained above.  Evaluation is handled as described in that above case,
+except here we check that the expansion result is the given <code>exp</code>.
+(Actually, the user is also allowed supply such a form.)  The original
+<code>make-event</code> expression does not undergo any expansion (intuitively, it
+expands to itself).<p>
+
+Now let us take a look at how we expand <code><a href="PROGN.html">progn</a></code> forms (<code><a href="ENCAPSULATE.html">encapsulate</a></code>
+is handled similarly).<p>
+
+<code>(progn ... (make-event form :check-expansion nil) ...)</code><p>
+
+The expansion is obtained by replacing the <code>make-event</code> form as follows.
+Let <code>exp</code> be the expansion of <code>form</code>,  Then replace the above
+<code>make-event</code> form, which we denote as <code>F</code>, by
+<code>(record-expansion F exp)</code>.  Here, <code>record-expansion</code> is a macro that
+returns its second argument.<p>
+
+<code>(progn ... (make-event form :check-expansion t) ...)</code><p>
+
+The expansion is of the form <code>(record-expansion F exp)</code> as in the <code>nil</code>
+case above, except that this time <code>exp</code> is
+<code>(make-event form :check-expansion exp')</code>, where <code>exp'</code> is the expansion
+of <code>form</code>.<p>
+
+<code>(progn ... (make-event form :check-expansion exp) ...) ; exp a cons</code><p>
+
+No expansion takes place unless expansion takes place for at least one of the
+other subforms of the <code>progn</code>, in which case each such form <code>F</code> is
+replaced by <code>(record-expansion F exp)</code> where <code>exp</code> is the expansion of
+<code>F</code>.<p>
+
+<strong>Detailed semantics</strong><p>
+
+In our explanation of the semantics of <code>make-event</code>, we assume familiarity
+with the notion of ``embedded event form'' (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).<p>
+
+Let's say that the ``actual embedded event form'' corresponding to a given
+form is the underlying call of an ACL2 event: that is, <code><a href="LOCAL.html">LOCAL</a></code>s are
+dropped when <code>ld-skip-proofsp</code> is <code>'include-book</code>, and macros are
+expanded away, thus leaving us with a <code><a href="PROGN.html">progn</a></code>, a <code><a href="MAKE-EVENT.html">make-event</a></code>, or an
+event form (possibly <code><a href="ENCAPSULATE.html">encapsulate</a></code>), any of which might have surrounding
+<code><a href="LOCAL.html">local</a></code>, <code><a href="SKIP-PROOFS.html">skip-proofs</a></code>, or <code><a href="WITH-OUTPUT.html">with-output</a></code> calls.<p>
+
+Thus, such an actual embedded event form can be viewed as having the form
+<code>(rebuild-expansion wrappers base-form)</code> where <code>base-form</code> is a
+<code>progn</code>, a <code>make-event</code>, or an event form (possibly <code>encapsulate</code>), and
+<code>wrappers</code> are (as in ACL2 source function <code>destructure-expansion</code>) the
+result of successively removing the event form from the result of
+macroexpansion, leaving a sequence of <code>(local)</code>, <code>(skip-proofs)</code>, and
+<code>(with-output ...)</code> forms.  In this case we say that the form
+``destructures into'' the indicated <code>wrappers</code> and <code>base-form</code>, and that
+it can be ``rebuilt from'' those <code>wrappers</code> and <code>base-form</code>.<p>
+
+Elsewhere we define the notion of the ``expansion result'' from an evaluation
+(see <a href="MAKE-EVENT.html">make-event</a>), and we mention that when expansion concludes, the ACL2
+logical <a href="WORLD.html">world</a> and most of the <code>state</code> are restored to their
+pre-expansion values.  Specifically, after evaluation of the argument of
+<code>make-event</code> (even if it is aborted), the ACL2 logical world is restored to
+its pre-evaluation value, as are all state global variables in the list
+*<code>protected-state-globals-for-make-event*</code>.  Thus, assignments to
+user-defined state globals (see <a href="ASSIGN.html">assign</a>) do persist after expansion, since
+they are not in that list.<p>
+
+We recursively define the combination of evaluation and expansion of an
+embedded event form, as follows.  We also simultaneously define the notion of
+``expansion takes place,'' which is assumed to propagate upward (in a sense
+that will be obvious), such that if no expansion takes place, then the
+expansion of the given form is considered to be itself.  It is useful to keep
+in mind a goal that we will consider later: Every <code>make-event</code> subterm of
+an expansion result has a <code>:check-expansion</code> field that is a <code><a href="CONSP.html">consp</a></code>,
+where for this purpose <code>make-event</code> is viewed as a macro that returns its
+<code>:check-expansion</code> field.  (Implementation note: The latest expansion of a
+<code>make-event</code>, <code>progn</code>, or <code>encapsulate</code> is stored in state global
+<code>'last-make-event-expansion</code>, except that if no expansion has taken place
+for that form then <code>'last-make-event-expansion</code> has value <code>nil</code>.)
+<blockquote><p>
+
+If the given form is not an embedded event form, then simply cause a soft
+error, <code>(mv erp val state)</code> where <code>erp</code> is not <code>nil</code>.  Otherwise:<p>
+
+If the evaluation of the given form does not take place (presumably because
+<code><a href="LOCAL.html">local</a></code> events are being skipped), then no expansion takes place.
+Otherwise:<p>
+
+Let <code>x</code> be the actual embedded event form corresponding to the given
+form, which destructures into wrappers <code>W</code> and base-form <code>B</code>.  Then the
+original form is evaluated by evaluating <code>x</code>, and its expansion is as
+follows.<p>
+
+If <code>B</code> is <code>(make-event form :check-expansion val)</code>, then expansion
+takes place if and only if <code>val</code> is not a <code>consp</code> and no error occurs,
+as now described.  Let <code>R</code> be the expansion result from protected
+evaluation of <code>form</code>, if there is no error.  <code>R</code> must be an embedded
+event form, or it is an error.  Then evaluate/expand <code>R</code>, where if
+<code>val</code> is not <code>nil</code> then state global <code>'ld-skip-proofsp</code> is
+initialized to <code>nil</code>.  (This initialization is important so that
+subsequent expansions are checked in a corresponding environment, i.e.,
+where proofs are turned on in both the original and subsquent
+environments.)  It is an error if this evaluation causes an error.
+Otherwise, the evaluation yields a value, which is the result of evaluation
+of the original <code>make-event</code> expression, as well as an expansion,
+<code>E_R</code>.  Let <code>E</code> be rebuilt from <code>W</code> and <code>E_R</code>.  The expansion of
+the original form is <code>E</code> if <code>val</code> is <code>nil</code>, and otherwise is the
+result of replacing the original form's <code>:check-expansion</code> field with
+<code>E</code>, with the added requirement that if <code>val</code> is not <code>t</code> (thus, a
+<code>consp</code>) then <code>E</code> must equal <code>val</code> or else we cause an error.<p>
+
+If <code>B</code> is either <code>(progn form1 form2 ...)</code> or
+<code>(encapsulate sigs form1 form2 ...)</code>, then after evaluating <code>B</code>, the
+expansion of the original form is the result of rebuilding from <code>B</code>, with
+wrappers <code>W</code>, after replacing each <code>formi</code> in <code>B</code> for which expansion
+takes place by <code>(record-expansion formi formi')</code>, where <code>formi'</code> is the
+expansion of <code>formi</code>.  Note that these expansions are determined as the
+<code>formi</code> are evaluated in sequence (where in the case of <code>encapsulate</code>,
+this determination occurs only during the first pass).  Except, if no
+expansion takes place for any <code>formi</code>, then the expansion of the original
+form is itself.<p>
+
+Otherwise, the expansion of the original form is itself.<p>
+
+</blockquote>
+Similarly to the <code><a href="PROGN.html">progn</a></code> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> cases above, book
+certification causes a book to replaced by its so-called ``book expansion.''
+There, each event <code>ev</code> for which expansion took place during the proof pass of
+certification -- say, producing <code>ev'</code> -- is replaced by
+<code>(record-expansion ev ev')</code>.<p>
+
+Implementation Note. The book expansion is actually implemented by way of the
+<code>:expansion-alist</code> field of its <a href="CERTIFICATE.html">certificate</a>, which associates 0-based
+positions of top-level forms in the book (not including the initial
+<code><a href="IN-PACKAGE.html">in-package</a></code> form) with their expansions.  Thus, the book's source file
+is not overwritten; rather, the certificate's expansion-alist is applied when
+the book is included or compiled.  End of Implementation Note.<p>
+
+It is straightforward by computational induction to see that for any
+expansion of an embedded event form, every <code>make-event</code> sub-event has a
+<code><a href="CONSP.html">consp</a></code> <code>:check-expansion</code> field.  Here, by ``sub-event'' we mean to
+expand macros; and we also mean to traverse <code>progn</code> and <code>encapsulate</code>
+forms as well as <code>:check-expansion</code> fields of <code>make-event</code> forms.  Thus,
+we will only see <code>make-event</code> forms with <code>consp</code> <code>:check-expansion</code>
+fields in the course of <code>include-book</code> forms, the second pass of
+<code>encapsulate</code> forms, and raw Lisp.  This fact guarantees that an event form
+will always be treated as its original expansion.<p>
+
+<strong>A note on ttags</strong><p>
+
+See <a href="DEFTTAG.html">defttag</a> for documentation of the notion of ``trust tag'' (``ttag'').
+Here, we simply observe that if an event <code>(defttag tag-name)</code> for
+non-<code>nil</code> <code>tag-name</code> is admitted during the expansion phase of a
+<code>make-event</code> form, then although a ``<code>TTAG NOTE</code>'' will be printed to
+standard output, and moreover <code>tag-name</code> must be an allowed tag
+(see <a href="DEFTTAG.html">defttag</a>), nevertheless such expansion will not cause <code>tag-name</code> to be
+recorded once the expansion is complete.  That is, there will be no lingering
+effect of this <code>defttag</code> form after the <code>make-event</code> expansion is
+complete; no certificate written will be affected (where we are certifying a
+book), and the set of allowed ttags will not be affected.  So for example, if
+this <code>make-event</code> form is in the top-level loop and subsequently we certify
+or include a book, then <code>tag-name</code> will not be associated with the
+top-level loop by this <code>make-event</code> form.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

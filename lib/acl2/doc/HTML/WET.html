@@ -1,0 +1,116 @@
+<html>
+<head><title>WET.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WET</h2>evaluate a form and print subsequent error trace
+<pre>Major Section:  <a href="TRACE.html">TRACE</a>
+</pre><p>
+
+NOTE:  This feature is onlyh available if you are using GCL, Allegro CL, or
+CLISP.
+
+<pre>
+Examples:
+(wet (bar 3))            ; evaluate (bar 3) and print backtrace upon error
+(wet (bar 3) nil)        ; as above, but avoid hiding the structure of bar
+(wet (bar 3) (evisc-tuple 3 5 nil nil))
+                         ; as above, but hiding the structure of bar up to
+                         ; level 3 and length 5
+(wet (bar 3) :fns (f g)) ; as above but only include calls of f, g
+<p>
+General Forms (all but the first argument may be omitted):
+(wet form
+     evisc-tuple ; optional, and evaluated
+     :fns  (f1 f2 ... fk)
+     :omit (g1 g2 ... gk))
+</pre>
+
+where <code>form</code> is an arbitrary ACL2 form and the <code>fi</code> are function symbols
+whose calls are to appear in the backtrace if the evaluation of <code>form</code>
+aborts.  Generally, <code>wet</code> will hide parts of large structures that it
+prints out, but this can be avoided by supplying a value of <code>nil</code> for
+<code>evisc-tuple</code>.<p>
+
+More generally, the <code>evisc-tuple</code> argument, which is evaluated, can be
+supplied to specify the print-level and print-length for the resulting
+backtrace; see <a href="LD-EVISC-TUPLE.html">ld-evisc-tuple</a>.<p>
+
+If the value of <code>:fns</code> is <code>nil</code> or not supplied, then calls of all
+functions appear in the backtrace, with the exception of built-in functions
+that are either in the main Lisp package or are in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode.
+(In particular, all user-defined functions appear.)  The above description is
+modified if <code>:omit</code> is supplied, in which case calls of the specified
+function symbols are removed from the backtrace.<p>
+
+The following example illustrates the use of <code>wet</code>, which stands for
+``<code><a href="WITH-ERROR-TRACE.html">with-error-trace</a></code>''.  We omit uninteresting output from this example.
+
+<pre>
+ACL2 !&gt;(defun foo (x) (car x))
+ ...
+ FOO
+ACL2 !&gt;(defun bar (x) (foo x))
+ ...
+ BAR
+ACL2 !&gt;(bar 3)<p>
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+call (CAR 3).  To see a trace of calls leading up to this violation,
+execute (wet &lt;form&gt;) where &lt;form&gt; is the form you submitted to the
+ACL2 loop.  See :DOC wet for how to get an error backtrace.<p>
+
+ACL2 !&gt;(wet (bar 3))<p>
+
+
+ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+CAR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+in the call (CAR 3).  (Backtrace is below.)<p>
+
+1&gt; (ACL2_*1*_ACL2::BAR 3)
+  2&gt; (ACL2_*1*_ACL2::FOO 3)<p>
+
+ACL2 !&gt;(wet (bar 3) :fns (foo))<p>
+
+<p>
+
+ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+CAR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+in the call (CAR 3).  (Backtrace is below.)<p>
+
+1&gt; (ACL2_*1*_ACL2::FOO 3)<p>
+
+ACL2 !&gt;
+</pre>
+
+Notice that because guards were not verified, the so-called
+<a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a> functions are evaluated for <code>foo</code> and
+<code>bar</code>.  These can be identified with package names beginning with the
+string "ACL2_*1*_".<p>
+
+See <a href="TRACE$.html">trace$</a> for a general tracing utility.<p>
+
+NOTES:<p>
+
+1. Recursive calls of <a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a> functions will not
+generally be traced.<p>
+
+2. In the (probably rare) event of a hard Lisp error, you will have to exit
+the Lisp break before seeing the backtrace.<p>
+
+3. <code>Wet</code> always untraces all functions before it installs the traces it
+needs, and it leaves all functions untraced when it completes.  If existing
+functions were traced then you will need to re-execute <code><a href="TRACE$.html">trace$</a></code> in order
+to re-install tracing on those functions after <code>wet</code> is called on any form.<p>
+
+4. <code>Wet</code> returns an error triple <code>(mv error-p value state)</code>, where
+<code>value</code> is a print representation of the value returned by the form given
+to <code>wet</code>.  Presumably <code>value</code> is not particularly important anyhow, as
+the intended use of <code>wet</code> is for the case that an error occurred in
+evaluation of a form.<p>
+
+5. As mentioned above, functions in the main Lisp package (i.e., those built
+into Common Lisp) will not be traced by <code>wet</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

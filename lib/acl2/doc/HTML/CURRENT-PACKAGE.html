@@ -1,0 +1,54 @@
+<html>
+<head><title>CURRENT-PACKAGE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CURRENT-PACKAGE</h2>the package used for reading and printing
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Current-package</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor is
+<code>(current-package state)</code> and the updater is
+<code>(set-current-package val state)</code>, or more conventionally,
+<code>(in-package val)</code>.  The value of <code>current-package</code> is actually
+the string that names the package.  (Common Lisp's ``package''
+objects do not exist in ACL2.)  The current package must be known to
+ACL2, i.e., it must be one of the initial packages or a package
+defined with <code><a href="DEFPKG.html">defpkg</a></code> by the user.
+<p>
+When printing symbols, the package prefix is displayed if it is not
+the <code>current-package</code> and may be optionally displayed otherwise.
+Thus, if <code>current-package</code> is <code>"ACL2"</code> then the symbol <code>'ACL2::SYMB</code> may
+be printed as <code>SYMB</code> or <code>ACL2::SYMB</code>, while <code>'MY-PKG::SYMB</code> must be
+printed as <code>MY-PKG::SYMB</code>.  But if <code>current-package</code> is <code>"MY-PKG"</code> then
+the former symbol must be printed as <code>ACL2::SYMB</code> while the latter may
+be printed as <code>SYMB</code>.<p>
+
+In Common Lisp, <code>current-package</code> also affects how objects are read
+from character streams.  Roughly speaking, read and print are
+inverses if the <code>current-package</code> is fixed, so reading from a stream
+produced by printing an object must produce an equal object.<p>
+
+In ACL2, the situation is more complicated because we never read
+objects from character streams, we only read them from object
+``streams'' (channels).  Logically speaking, the objects in such a
+channel are fixed regardless of the setting of <code>current-package</code>.
+However, our host file systems do not support the idea of Lisp
+object files and instead only support character files.  So when you
+open an object input channel to a given (character file) we must
+somehow convert it to a list of ACL2 objects.  This is done by a
+<i>deus ex machina</i> (``a person or thing that appears or is introduced
+suddenly and unexpectedly and provides a contrived solution to an
+apparently insoluble difficulty,'' Webster's Ninth New Collegiate
+Dictionary).  Roughly speaking, the <i>deus ex machina</i> determines what
+sequence of calls to <code>read-object</code> will occur in the future and what
+the <code>current-package</code> will be during each of those calls, and then
+produces a channel containing the sequence of objects produced by an
+analogous sequence of Common Lisp reads with <code>*current-package*</code> bound
+appropriately for each.<p>
+
+A simple rule suffices to make sane file <a href="IO.html">io</a> possible:  before you
+read an object from an object channel to a file created by printing
+to a character channel, make sure the <code>current-package</code> at read-time
+is the same as it was at print-time.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

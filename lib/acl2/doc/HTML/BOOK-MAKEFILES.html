@@ -1,0 +1,160 @@
+<html>
+<head><title>BOOK-MAKEFILES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BOOK-MAKEFILES</h2>makefile support provided with the ACL2 distribution
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+This topic describes the ACL2 methodology for using makefiles to assist in
+the automation of the certification of collections of ACL2 <a href="BOOKS.html">books</a>.  We
+assume here a familiarity with Unix/Linux <code>make</code>.  We also assume that you
+are using GNU <code>make</code> rather than some other flavor of <code>make</code>.
+<p>
+ACL2's regression suite is run using <code>Makefile</code>s that include
+<code>books/Makefile-generic</code>.  You can look at existing <code>Makefile</code>s to
+understand how to create your own <code>Makefile</code>s.  Here are the seven steps to
+follow to create a <code>Makefile</code> for a directory that contains books to be
+certified, and certify them using that <code>Makefile</code>.  Below these steps we
+conclude with discussion of other capabilties provided by
+<code>books/Makefile-generic</code>.<p>
+
+1. Include the file <code>books/Makefile-generic</code>.  For example, if you look at
+<code>books/misc/Makefile</code> then you'll see that it starts with this line:
+
+<pre>
+include ../Makefile-generic
+</pre>
+
+Note that <code>../</code> should be replaced by the appropriate path to
+<code>books/Makefile-generic</code>.  AND PLEASE NOTE:  This <code>include</code> line should
+precede the lines mentioned below.<p>
+
+2. Define the <code>ACL2</code> variable.  For example, file
+<code>books/arithmetic-3/pass1/Makefile</code> starts as follows.
+
+<pre>
+include ../../Makefile-generic
+ACL2 = ../../../saved_acl2
+</pre>
+
+Note that you will need to provide the appropriate path to your ACL2
+executable.<p>
+
+3. (Optional; usually skipped.)  Set the <code>INHIBIT</code> variable if you want to
+see more than the summary output.  For example, if you want to see the same
+output as you would normally see at the terminal, put this line in your
+Makefile after the <code>include</code> and <code>ACL2</code> lines.
+
+<pre>
+INHIBIT = (assign inhibit-output-lst (list (quote proof-tree)))
+</pre>
+
+For other values to use for <code>INHIBIT</code>, see <a href="SET-INHIBIT-OUTPUT-LST.html">set-inhibit-output-lst</a> and see
+the original setting of <code>INHIBIT</code> in <code>books/Makefile-generic</code>.<p>
+
+4. Specify the books to be certified.  If every file with extension <code>.lisp</code>
+is a book that you want to certify, you can skip this step.  Otherwise, put a
+line in your <code>Makefile</code> after the ones above that specifies the books to be
+certified.  The following example, from
+<code>books/finite-set-theory/osets/Makefile</code>, should make this clear.
+
+<pre>
+BOOKS = computed-hints fast instance map membership outer primitives \
+        quantify set-order sets sort
+</pre>
+  <p>
+
+5. Create <code>.acl2</code> files for books that are to be certified in other than
+the initial ACL2 world (see <a href="PORTCULLIS.html">portcullis</a>).  For example, if you look in
+<code>books/arithmetic/equalities.acl2</code> you will see <code><a href="DEFPKG.html">defpkg</a></code> forms followed
+by a <code><a href="CERTIFY-BOOK.html">certify-book</a></code> command, because it was determined that <code><a href="DEFPKG.html">defpkg</a></code>
+forms were necessary in the certification world in order to certify the
+<code>equalities</code> book.  In general, for each <code>&lt;book-name&gt;.lisp</code> whose
+certification requires a non-initial certification world, you will need a
+corresponding <code>&lt;book-name&gt;.acl2</code> file that ends with the appropriate
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> command.  Of course, you can also use <code>.acl2</code> files with
+initial certification worlds, for example if you want to pass optional
+arguments to <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.<p>
+
+You also have the option of creating a file <code>cert.acl2</code> that has a special
+role.  When file <code>&lt;book-name&gt;.lisp</code> is certified, if there is no file
+<code>&lt;book-name&gt;.acl2</code> but there is a file <code>cert.acl2</code>, then <code>cert.acl2</code>
+will be used as <code>&lt;book-name&gt;.acl2</code> would have been used, as described in
+the preceding paragraph, except that the appropriate <code><a href="CERTIFY-BOOK.html">certify-book</a></code>
+command will be generated automatically -- no <code>certify-book</code> command
+should occur in <code>cert.acl2</code>.<p>
+
+It is actually allowed to put raw lisp forms in a <code>.acl2</code> file (presumably
+preceded by <code>:q</code> or <code>(value :q)</code> and followed by <code>(lp)</code>).  But this is
+not recommended; we make no guarantees about certification performed any time
+after raw Lisp has been entered in the ACL2 session.<p>
+
+6. Run the following command:
+
+<pre>
+make dependencies
+</pre>
+
+This will generate dependency information.  If you try it in <code>books/misc/</code>,
+the result should agree with what you find in <code>books/misc/Makefile</code>.  If
+you run this in the directory you are developing, you will want to insert the
+output at the end of your <code>Makefile</code>.<p>
+
+7. Run <code>make</code>.  This will generate a <code>&lt;book-name&gt;.out</code> file for each
+<code>&lt;book-name&gt;.lisp</code> file being certified, which is the result of redirecting
+ACL2's standard output.  Note that <code>make</code> will stop at the first failure,
+but you can use <code>make -i</code> to force make to continue past failures.  You can
+also use the <code>-j</code> option to speed things up if you have a multi-core
+machine.<p>
+
+That concludes the basic instructions for creating a <code>Makefile</code> in a
+directory including books.  Here are some other capabilities offered by
+<code>books/Makefile-subdirs</code>.<p>
+
+<strong>Subdirectory support.</strong>  There is support for the case that there are no
+books in the current directory, but there are subdirectories that include
+books (or themselves have no books but contain subdirectories with books,
+etc.)  For example, file <code>books/arithmetic-3/Makefile</code> has the following
+contents.
+
+<pre>
+DIRS = pass1 bind-free floor-mod
+include ../Makefile-subdirs
+</pre>
+
+This indicates that we are to run <code>make</code> in subdirectories <code>pass1/</code>,
+<code>bind-free/</code>, and <code>floor-mod</code> of the current directory
+(namely, <code>books/arithmetic-3/</code>).  Use <code>Makefile-psubdirs</code> instead of
+<code>Makefile-subdirs</code> if certitification of a book in a subdirectory never
+depends on certification of a book in a different subdirectory, because then
+<code>make</code>'s <code>-j</code> option can allow subdirectories to be processed in
+parallel.<p>
+
+<strong>Cleaning up.</strong>  We note that there is a <code>clean</code> target.  Thus,
+
+<pre>
+make clean
+</pre>
+
+will remove all <code>.cert</code> files, files resulting from compilation, and other
+``junk''; see the full list under ``<code>clean:</code>'' in
+<code>books/Makefile-generic</code>.<p>
+
+<strong>Compilation support.</strong>  Finally, <code>books/Makefile-generic</code> provides
+support for compiling books that are already certified.  For example, suppose
+that you have certified books in GCL, resulting in compiled files with the
+<code>.o</code> extension.  Now suppose you would like to compile the books for
+Allegro Common Lisp, whose compiled files have the <code>.fasl</code> extension.  The
+following command will work if you have included <code>books/Makefile-generic</code>
+in your <code>Makefile</code>.
+
+<pre>
+make fasl
+</pre>
+
+In general, the compiled file extension for a Lisp supported by ACL2 will be
+a target name for building compiled files for all your books (after
+certifying the books, if not already up-to-date on certification).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<html>
+<head><title>MACRO-ARGS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MACRO-ARGS</h2>the formals list of a macro definition
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(x y z)
+(x y z &amp;optional max (base '10 basep))
+(x y &amp;rest rst)
+(x y &amp;key max base)
+(&amp;whole sexpr x y)
+</pre>
+
+<p>
+The ``lambda-list'' of a macro definition may include simple formal
+parameter names as well as appropriate uses of the following
+<code>lambda</code>-list keywords from CLTL (pp. 60 and 145), respecting the
+order shown:
+
+<pre>
+  &amp;whole,
+  &amp;optional,
+  &amp;rest,
+  &amp;body,
+  &amp;key, and
+  &amp;allow-other-keys.
+</pre>
+
+ACL2 does not support <code>&amp;aux</code> and <code>&amp;environment</code>.  In addition, we make
+the following restrictions:
+<blockquote><p>
+
+(1) initialization forms in <code>&amp;optional</code> and <code>&amp;key</code> specifiers must be
+quoted values;<p>
+
+(2) <code>&amp;allow-other-keys</code> may only be used once, as the last specifier; and<p>
+
+(3) destructuring is not allowed.<p>
+
+</blockquote>
+You are encouraged to experiment with the macro facility.  One way
+to do so is to define a macro that does nothing but return the
+quotation of its arguments, e.g.,
+
+<pre>
+(defmacro demo (x y &amp;optional opt &amp;key key1 key2)
+  (list 'quote (list x y opt key1 key2)))
+</pre>
+
+You may then execute the macro on some sample forms, e.g.,
+
+<pre>
+  term                         value
+(demo 1 2)                (1 2 NIL NIL NIL)
+(demo 1 2 3)              (1 2 3 NIL NIL)
+(demo 1 2 :key1 3)        error:  non-even key/value arglist
+                          (because :key1 is used as opt)
+(demo 1 2 3 :key2 5)      (1 2 3 NIL 5)
+</pre>
+
+In particular, Common Lisp specifies that if you use both <code>&amp;rest</code> and
+<code>&amp;key</code>, then both will be bound using the same list of arguments.  The
+following example should serve to illustrate how this works.
+
+<pre>
+ACL2 !&gt;(defmacro foo (&amp;rest args &amp;key k1 k2 k3)
+         (list 'quote (list args k1 k2 k3)))<p>
+
+Summary
+Form:  ( DEFMACRO FOO ...)
+Rules: NIL
+Warnings:  None
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ FOO
+ACL2 !&gt;(foo :k1 3 :k2 4 :k3 5)
+((:K1 3 :K2 4 :K3 5) 3 4 5)
+ACL2 !&gt;(foo :k1 3 :k2 4)
+((:K1 3 :K2 4) 3 4 NIL)
+ACL2 !&gt;
+</pre>
+<p>
+
+Also see <a href="TRANS.html">trans</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

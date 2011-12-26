@@ -1,0 +1,89 @@
+<html>
+<head><title>WITH-LOCAL-STOBJ.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WITH-LOCAL-STOBJ</h2>locally bind a single-threaded object
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+See <a href="STOBJ.html">stobj</a> for an introduction to single-threaded objects.
+
+<pre>
+Example Form:
+(with-local-stobj
+ st
+ (mv-let (result st)
+         (compute-with-st x st)
+         result))
+</pre>
+
+<code>With-local-stobj</code> can be thought of as a macro, where the example
+form above expands as follows.
+
+<pre>
+(mv-let (result st)
+        (let ((st (create-st)))
+          (compute-with-st x st))
+        (declare (ignore st))
+        result)
+</pre>
+
+However, ACL2 expects you to use <code>with-local-stobj</code>, not its
+expansion.  More precisely, stobj creator functions are not allowed
+except (implicitly) via <code>with-local-stobj</code> and in logic-only
+situations (like theorems and hints).  Moreover, neither
+<code>with-local-stobj</code> nor its expansions are legal when typed directly at
+the top-level loop.
+<p>
+
+<pre>
+General Forms:
+(with-local-stobj stobj-name mv-let-form)
+(with-local-stobj stobj-name mv-let-form creator-name)
+</pre>
+
+where <code>stobj-name</code> is the name of a <a href="STOBJ.html">stobj</a> other than <code><a href="STATE.html">state</a></code>,
+<code>mv-let-form</code> is a call of <code><a href="MV-LET.html">mv-let</a></code>, and if <code>creator-name</code> is supplied
+then it should be the  name of the creator function for <code>stobj-name</code>;
+see <a href="DEFSTOBJ.html">defstobj</a>.  For the example form above, its expansion would
+use <code>creator-name</code>, if supplied, in place of <code>create-st</code>.<p>
+
+<code>With-local-stobj</code> can be useful when a stobj is used to memoize
+intermediate results during a computation, yet it is desired not to
+make the <code>stobj</code> a formal parameter for the function and its
+callers.<p>
+
+ACL2 can reason about these ``local stobjs,'' and in particular
+about stobj creator functions.  For technical reasons, ACL2 will not
+allow you to enable the <code>:EXECUTABLE-COUNTERPART</code> <a href="RUNE.html">rune</a> of a stobj
+creator function.<p>
+
+Finally, here is a small example concocted ino rder to illustrate that
+<code>with-local-stobj</code> calls can be nested.
+
+<pre>
+(defstobj st fld1)<p>
+
+(defun foo ()
+  (with-local-stobj
+   st ; Let us call this the ``outer binding of st''.
+   (mv-let (val10 val20 st)
+     (let ((st (update-fld1 10 st)))
+       ;; At this point the outer binding of st has fld1 = 10.
+       (let ((result (with-local-stobj
+                      st ; Let us call this the ``inner binding of st''.
+                      (mv-let (val st)
+                        (let ((st (update-fld1 20 st)))
+                          ;; Now fld1 = 20 for the inner binding of st.
+                          (mv (fld1 st) st))
+                        val))))
+         ;; So result has been bound to 20 above, but here we are once again
+         ;; looking at the outer binding of st, where fld1 is still 10.
+         (mv (fld1 st) result st)))
+     (mv val10 val20))))<p>
+
+(thm (equal (foo) (mv 10 20))) ; succeeds
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

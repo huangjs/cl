@@ -1,0 +1,169 @@
+<html>
+<head><title>NOTE-2-7-NEW-FUNCTIONALITY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-NEW-FUNCTIONALITY</h3>ACL2 Version  2.7 Notes on New Functionality
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+ACL2 now has a more powerful technique for relieving a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> or
+<code>:</code><code><a href="LINEAR.html">linear</a></code> rule's hypothesis that contains free variables.  A new
+<a href="DOCUMENTATION.html">documentation</a> section has been written describing the handling free
+variables in rules; see <a href="FREE-VARIABLES.html">free-variables</a>.  In brief, the primary change is
+that when a free-variable match for the current hypothesis fails to allow
+subsequent hypotheses to be relieved, then additional matches may be
+attempted until they have all been tried.  Also see <a href="RULE-CLASSES.html">rule-classes</a> (discussion
+of <code>:match-free</code>).  Also see <a href="SET-MATCH-FREE-ERROR.html">set-match-free-error</a>,
+see <a href="SET-MATCH-FREE-DEFAULT.html">set-match-free-default</a>, and see <a href="ADD-MATCH-FREE-OVERRIDE.html">add-match-free-override</a> for interfaces
+provided to the user for controlling the way ACL2 deals with free variables
+in hypotheses.  We thank Rob Sumners for several helpful discussions about
+the designs of those interfaces, as well as Eric Smith and Robert Krug for
+helpful related discussions.  Robert Krug also found a performance bug in a
+preliminary version, for which we are grateful.<p>
+
+WARNING: Book certification attempts may take much longer now that, by
+default, ACL2 looks for more free variable matches (see paragraph just
+above).  You can get the old behavior by inserting the form
+
+<pre>
+(set-match-free-default :once)
+</pre>
+
+just after the initial <code><a href="IN-PACKAGE.html">in-package</a></code> form.  However, rules from included
+books that have free variables can still slow down certification.  This can
+be fixed by inserting
+
+<pre>
+(add-match-free-override :once t)
+</pre>
+
+before the first event in the file that generates a proof.<p>
+
+<a href="FORWARD-CHAINING.html">Forward-chaining</a> has been made more powerful in the presence of free
+variables (see <a href="FREE-VARIABLES.html">free-variables</a>), thanks to a contribution by Erik Reeber.
+Both before and now, when an attempt is made to relieve (prove) a hypothesis
+of a <code>:forward-chaining</code> rule in the case that at least one variable in
+that hypothesis is not yet bound, ACL2 looks in the current context for an
+instance of that hypothesis.  If it finds one, then it binds the unbound
+variables and continues to the next hyopothesis.  What is new is that ACL2
+can now looks for multiple instances of that hypothesis.  Consider the
+following example; an explanation is below.
+
+<pre>
+(encapsulate (((op * *) =&gt; *))
+             (local (defun op (x y) (&lt; x y)))
+             (defthm transitivity-of-op
+               (implies (and (op x y) (op y z)) (op x z))
+               :rule-classes :forward-chaining))<p>
+
+; fails in Version_2.6; succeeds in in Version_2.7
+(thm (implies (and (op a b) (op b c) (op b e)) (op a c)))
+</pre>
+
+Before Version_2.7, the proof of the <code>thm</code> above fails.  When the
+<code>:forward-chaining</code> rule <code>transitivity-of-op</code> binds <code>x</code> to <code>a</code> and
+<code>y</code> to <code>b</code>, it then looks for an instance of <code>(op y z)</code> in the current
+context, with <code>y</code> bound to <code>b</code> but <code>z</code> unbound.  It happens to find
+<code>(op b e)</code> before <code>(op b c)</code>, and it then adds <code>(op a e)</code> to the
+context.  But starting with Version_2.7, it continues to look for additional
+instances and finds <code>(op b c)</code> in the context as well, chaining forward to
+<code>(op a c)</code> and thus proving the theorem.<p>
+
+A new macro, <code><a href="BIND-FREE.html">bind-free</a></code>, provides a simple way to get much or most of
+the power of <a href="META.html">meta</a>functions.  Thanks to Eric Smith for coming up with the
+idea and to Robert Krug for providing an implementation (which we modified
+only very slightly) and documentation. See <a href="BIND-FREE.html">bind-free</a> and
+see <a href="BIND-FREE-EXAMPLES.html">bind-free-examples</a>.<p>
+
+With the addition of <code><a href="BIND-FREE.html">bind-free</a></code> (mentioned above), <code><a href="SYNTAXP.html">syntaxp</a></code> has
+become a macro, although that change should be transparent to the user.  More
+importantly, the argument of <code>syntaxp</code> may now refer to variables <code>mfc</code>
+and <code>state</code>, giving <code>syntaxp</code> some of the power of extended metafunctions;
+see <a href="SYNTAXP.html">syntaxp</a> and see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.  Thanks to Robert Krug for
+implementing that extension.  Also, the argument of <code><a href="SYNTAXP.html">syntaxp</a></code> may now
+include calls of <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  See <a href="SYNTAXP.html">syntaxp</a> and
+see <a href="SYNTAXP-EXAMPLES.html">syntaxp-examples</a> (thanks to Robert Krug for updating the former and
+creating the latter documentation).<p>
+
+The linear-arithmetic decision procedure (see <a href="LINEAR-ARITHMETIC.html">linear-arithmetic</a>) has now
+been extended so that ACL2 can reason about non-linear arithmetic as well
+(see <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a> for how to turn on this feature).  We thank
+Robert Krug for the initial implementation of this, and Eric Smith for finding
+a couple of bugs in it.<p>
+
+Some <code><a href="TRACE.html">trace</a></code> utilities have been made available in the ACL2 loop.
+<blockquote><p>
+
+o Function <code><a href="TRACE$.html">trace$</a></code> (and also <code><a href="UNTRACE$.html">untrace$</a></code>) calls the corresponding
+underlying Lisp routine <code>trace</code> (and <code>untrace</code>), which however continues
+(as it has for some time) to be enhanced for GCL and Allegro CL.<p>
+
+o Macro <code><a href="OPEN-TRACE-FILE.html">open-trace-file</a></code> causes trace output to go to a specified
+file.  Macro <code><a href="CLOSE-TRACE-FILE.html">close-trace-file</a></code> causes trace output to go to the
+screen (which is the default).<p>
+
+o Macro <code><a href="WITH-ERROR-TRACE.html">with-error-trace</a></code> (or, <code><a href="WET.html">wet</a></code> for short) causes a backtrace
+to be written out for many failures, including guard violations.  See <a href="TRACE.html">trace</a>,
+see <a href="TRACE$.html">trace$</a>, and see <a href="WET.html">wet</a>.<p>
+
+</blockquote>
+<p>
+
+A new <code><a href="THEORY.html">theory</a></code>, <code><a href="MINIMAL-THEORY.html">minimal-theory</a></code> has been provided (see <a href="THEORIES.html">theories</a>).
+It can be particularly useful for speeding up proofs involving <code>:use</code>
+<a href="HINTS.html">hints</a>.<p>
+
+New <code><a href="EVENTS.html">events</a></code> <code><a href="DEFUND.html">defund</a></code> and <code><a href="DEFTHMD.html">defthmd</a></code> behave exactly like
+<code><a href="DEFUN.html">defun</a></code> and <code><a href="DEFTHM.html">defthm</a></code>, respectively, except that these new events
+disable the new name.<p>
+
+The new macro <code><a href="WITH-OUTPUT.html">with-output</a></code> can be used to suppress output that would
+normally result from evaluation of a form.<p>
+
+The form <code>(</code><code><a href="PSTACK.html">pstack</a></code><code>)</code> can give the user an idea of what the
+prover has been up to during a proof, or after a user-aborted proof.
+Moreover, by evaluating <code>(verbose-pstack t)</code> (see <a href="VERBOSE-PSTACK.html">verbose-pstack</a>)
+one can get <a href="TRACE.html">trace</a>-like information about prover functions, including
+time summaries, printed to the screen during a proof.  Thanks to Bill Legato
+and Robert Krug for initiating this work and to Robert for providing some
+initial implementation.<p>
+
+The new command <code>:</code><code><a href="COMP-GCL.html">comp-gcl</a></code> is identical in functionality, except
+that it always leaves <code>.c</code> and <code>.h</code> files when compiling in GCL.  Thanks
+to Rob Sumners and Vernon Austel for suggesting such a capability.<p>
+
+The macro <code><a href="E_slash_D.html">e/d</a></code> provides a convenient way to <code><a href="ENABLE.html">enable</a></code> some rules and
+<code><a href="DISABLE.html">disable</a></code> others.  It was formerly in a book supplied with the
+distribution, <code>books/ihs/ihs-init.lisp</code>, written by Bishop Brock (who we
+thank for providing this useful macro).<p>
+
+New distributed books include those in <code>books/ordinals/</code>,
+<code>books/rtl/rel3/</code>, and <code>books/misc/simplify-defuns.lisp</code> (which is
+documented in <code>books/misc/simplify-defuns.txt</code>).<p>
+
+The <code>:expand</code> hint now accepts a special value, <code>:LAMBDAS</code>, that tells
+the ACL2 rewriter to expand all lambda applications (<code><a href="LET.html">let</a></code> expressions).
+See <a href="HINTS.html">hints</a>.<p>
+
+A new function <code><a href="ZPF.html">zpf</a></code> has been added as fast test against 0 for
+nonnegative fixnums.<p>
+
+A new macro <code><a href="GC$.html">gc$</a></code> allows the user to call the garbage collector of the
+underlying Common Lisp.  Thanks to Rob Sumners for suggesting this feature.<p>
+
+It is now possible to <code><a href="MONITOR.html">monitor</a></code> <a href="SIMPLE.html">simple</a> (abbreviation) rules.
+However, as a warning explains, they are still not considered monitored
+during preprocessing; see <a href="MONITOR.html">monitor</a>.  Thanks to Robert Krug for providing this
+improvement.<p>
+
+The second argument of <code><a href="CERTIFY-BOOK.html">certify-book</a></code>, if supplied, formerly had to be
+either <code>t</code> or a non-negative integer.  Now it can be the symbol <code>?</code>, in
+the <code>ACL2</code> package, indicating that the usual check should be suppressed on
+the number of commands that have been executed to create the world in which
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> was called.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-7.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-7</h2>Using the <code>stable-under-simplificationp</code> flag
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+A problem with the example in <a href="USING-COMPUTED-HINTS-6.html">using-computed-hints-6</a> is that
+exactly one simplification occurs between each (effective) firing
+of the hint.  Much more commonly we wish to fire a hint once
+a subgoal has become stable under simplification.<p>
+
+A classic example of this is when we are dealing with an interpreter
+for some state machine.  We typically do not want the ``step''
+function to open up on the symbolic representation of a state until
+that state has been maximally simplified.  We will illustrate with
+a simple state machine. <p>
+
+Let us start by defining the step function, <code>stp</code>, and the
+corresponding <code>run</code> function that applies it a given number of times.
+
+<pre>
+(defun stp (s)
+  (+ 1 s))<p>
+
+(defun run (s n)
+  (if (zp n)
+      s
+      (run (stp s) (- n 1))))
+</pre>
+
+The step function here is trivial:  a state is just a number and the
+step function increments it.  In this example we will not be interested
+in the theorems we prove but in how we prove them.  The formula we will
+focus on is
+
+<pre>
+(thm (equal (run s 7) xxx))
+</pre>
+
+This is not a theorem, of course.  But we want to test our advice
+on non-theorems because we do not want the advice to work only
+for proofs that succeed.  (In the past, we gave advice about
+using computed hints and that advice caused the theorem prover to
+run forever when given formulas that it couldn't prove -- but
+most of the time the system is presented with formulas it cannot
+prove!)<p>
+
+Furthermore, without some kind of additional rules, the <code>(run s 7)</code>
+expression in the conjecture above will not expand at all, because ACL2's
+heuristics do not approve.<p>
+
+In fact, we do not want to take chances that <code>run</code> will be
+expanded -- we want to control its expansion completely.
+Therefore, disable <code>run</code>.<p>
+
+
+<pre>
+(in-theory (disable run))
+</pre>
+<p>
+
+Now, what do we want?  (That is always a good question to ask!)  We want
+<code>(run s 7)</code> to expand ``slowly.''  In particular, we want it to expand
+once, to <code>(run (stp s) 6)</code>.  Then we want the <code>stp</code> to be expanded and
+fully simplified before the <code>run</code> expression is expanded again.  That is,
+we want to force the expansion of <code>run</code> whenever the goal is stable under
+simplification.  This is sometimes called ``staged simplification.''<p>
+
+We can achieve staged simplification for any given function symbol by
+defining the functions shown below and then using a simple computed hint:<p>
+
+
+<pre>
+(thm (equal (run s 7) xxx)
+     :hints ((stage run)))
+</pre>
+<p>
+
+By inspecting how <code>stage</code> is defined you can see how to extend it,
+but we explain as we go.  To experiment, you can just paste the
+definitions (and defmacro) below into your ACL2 shell and then
+try the <code>thm</code> command.<p>
+
+First, define this pair of mutually recursive functions.
+<code>Find-first-call</code> finds the first call of the function symbol <code>fn</code>
+in a given term.
+ 
+
+<pre>
+(mutual-recursion
+ (defun find-first-call (fn term)
+ ; Find the first call of fn in term.
+  (cond ((variablep term) nil)
+        ((fquotep term) nil)
+        ((equal (ffn-symb term) fn)
+         term)
+        (t (find-first-call-lst fn (fargs term)))))
+ (defun find-first-call-lst (fn lst)
+ ; Find the first call of fn in a list of terms.
+  (cond ((endp lst) nil)
+        (t (or (find-first-call fn (car lst))
+               (find-first-call-lst fn (cdr lst)))))))
+</pre>
+<p>
+
+We will arrange for the computed hint to generate an <code>:EXPAND</code>
+hint for the first call of <code>fn</code>, whenever the goal becomes
+stable under simplification.  If no call is found, the
+hint will do nothing.  To make sure the hint will not loop
+indefinitely (for example, by forcing <code>fn</code> to expand only to
+have the rewriter ``fold'' it back up again), we will provide
+the hint with a bound that stops it after some number of
+iterations.  Here is the basic function that creates the
+<code>expand</code> hint and replaces itself to count down.<p>
+
+
+<pre>
+(defun stage1 (fn max clause flg)
+; If the clause is stable under simplification and there is a call of
+; fn in it, expand it.  But don't do it more than max times.
+ (let ((temp (and flg
+                  (find-first-call-lst fn clause))))
+   (if temp
+       (if (zp max)
+           (cw "~%~%HINT PROBLEM:  The maximum repetition count of ~
+                your STAGE hint been reached without eliminating ~
+                all of the calls of ~x0.  You could supply a larger ~
+                count with the optional second argument to STAGE ~
+                (which defaults to 100).  But think about what is ~
+                happening! Is each stage permanently eliminating a ~
+                call of ~x0?~%~%"
+               fn)
+         `(:computed-hint-replacement
+            ((stage1 ',fn ,(- max 1)
+                     clause
+                     stable-under-simplificationp))
+           :expand (,temp)))
+     nil)))
+</pre>
+<p>
+
+Suppose that when <code>stage1</code> is called, <code>fn</code> is the function we want to
+expand, <code>max</code> is the maximum number of iterations of this expansion,
+<code>clause</code> is the current goal clause, and <code>flg</code> is the value of the
+<code>stable-under-simplificationp</code> flag.  Then if <code>clause</code> is stable and we
+can find a call of <code>fn</code> in it, we ask whether <code>max</code> is exhausted.  If
+so, we print an ``error message'' to the comment window with <code><a href="CW.html">cw</a></code> and
+return <code>nil</code> (the value of <code>cw</code>).  That <code>nil</code> means the hint does
+nothing.  But if <code>max</code> is not yet exhausted, we return a new hint.  As
+you can see above, the hint replaces itself with another <code>stage1</code> hint
+with the same <code>fn</code> and a decremented <code>max</code> to be applied to the new
+<code>clause</code> and the then-current value of <code>stable-under-simplificationp</code>.
+The hint also contains an <code>:expand</code> directive for the call of <code>fn</code>
+found.<p>
+
+Thus, if the computed hint was:<p>
+
+
+<pre>
+(stage1 'run 5 clause stable-under-simplificationp)
+</pre>
+<p>
+
+and <code>(run s 7)</code> occurs in the clause, then it will 
+generate<p>
+
+
+<pre>
+(:computed-hint-replacement
+  ((stage1 'run 4 clause stable-under-simplificationp))
+ :expand ((run s 7)))
+</pre>
+
+which will in turn replace the old <code>stage1</code> hint with
+the new one and will apply <code>:expand ((run s 7))</code> to
+the current goal.<p>
+
+We can make this more convenient by defining the macro:
+
+<pre>
+(defmacro stage (fn &amp;optional (max '100))
+ `(stage1 ',fn ,max clause stable-under-simplificationp))
+</pre>
+
+Note that the macro allows us to either provide the maximum
+bound or let it default to 100.<p>
+
+Henceforth, we can type
+
+<pre>
+(thm (equal (run s 7) xxx)
+     :hints ((stage run)))
+</pre>
+
+to stage the opening of <code>run</code> up to 100 times, or we can write
+
+<pre>
+(thm (equal (run s 7) xxx)
+     :hints ((stage run 5)))
+</pre>
+
+to stage it only 5 times.  In the latter example, the system
+with print a ``error message'' after the fifth expansion.  <p>
+
+Note that if we executed
+
+<pre>
+(set-default-hints '((stage run)))
+</pre>
+
+then we could attack all theorems (involving <code>run</code>) with
+staged simplification (up to bound 100), without typing an
+explicit hint.
+
+<pre>
+(thm (equal (run s 7) xxx))
+</pre>
+<p>
+
+Using techniques similar to those above we have implemented
+``priority phased simplification'' and provided it as a book.  See
+<code>books/misc/priorities.lisp</code>.  This is an idea suggested by Pete
+Manolios, by which priorities may be assigned to rules and then the
+simplifier simplifies each subgoal maximally under the rules of a
+given priority before enabling the rules of the next priority level.
+The book above documents both how we implement it with computed
+hints and how to use it.<p>
+
+Here is another example of using the <code>stable-under-simplificationp</code> flag to
+delay certain actions.  It defines a default hint, see <a href="DEFAULT-HINTS.html">DEFAULT-HINTS</a>,
+which will enable <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a> on precisely those goals
+which are stable-under-simplificationp.  It also uses the <code>HISTORY</code> and
+<code>PSPV</code> variables to determine when toggling <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a> is
+appropriate.  These variables are documented only in the source code.  If
+you start using these variables extensively, please contact the developers
+of ACL2 or Robert Krug (<code>rkrug@cs.utexas.edu</code>) and let us know how we can
+help.<p>
+
+
+<pre>
+(defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
+  (cond (stable-under-simplificationp
+         (if (not (access rewrite-constant
+                          (access prove-spec-var pspv :rewrite-constant)
+                          :nonlinearp))
+             '(:computed-hint-replacement t
+               :nonlinearp t)
+           nil))
+        ((access rewrite-constant
+                 (access prove-spec-var pspv :rewrite-constant)
+                 :nonlinearp)
+         (if (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE))
+             '(:computed-hint-replacement t
+               :nonlinearp nil)
+           nil))
+        (t
+         nil)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

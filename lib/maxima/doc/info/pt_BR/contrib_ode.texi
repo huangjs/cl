@@ -1,0 +1,500 @@
+@c Language: Brazilian Portuguese, Encoding: iso-8859-1
+@c /contrib_ode.texi/1.5/Sat Jun  2 00:13:11 2007//
+@menu
+* Introdu@value{cedilha}@~{a}o a contrib_ode::
+* Fun@value{cedilha}@~{o}es e Vari@'{a}veis Definidas para contrib_ode::
+* Possibilidades de melhorias em contrib_ode::
+* Casos de teste para contrib_ode::
+* Refer@^{e}ncias bibliogr@'{a}ficas para contrib_ode::
+@end menu
+
+@node Introdu@value{cedilha}@~{a}o a contrib_ode, Fun@value{cedilha}@~{o}es e Vari@'{a}veis Definidas para contrib_ode, contrib_ode, contrib_ode
+
+@section Introdu@value{cedilha}@~{a}o a contrib_ode 
+
+O resolvedor de equa@value{cedilha}@~{o}es diferenciais ordin@'{a}rias (EDO) do MAXIMA, o @code{ode2}, resolve
+EDO's elementares de primeira e segunda ordem.  A fun@value{cedilha}@~{a}o
+@code{contrib_ode} extende @code{ode2} com m@'{e}todos adicionais para EDO's lineares
+e EDO's n@~{a}o lineares de primeira ordem e EDO's lineares homog@^{e}neas de segunda ordem.  
+O c@'{o}digo est@'{a} ainda em desenvolvimemto e a seq@"{u}@^{e}ncia de chamada da fun@value{cedilha}@~{a}o pode mudar
+em futuras vers@~{o}es.  Uma vez que o c@'{o}digo estiver estabilizado essa fun@value{cedilha}@~{a}o pode ser
+movida do diret@'{o}rio contrib e integrada dentro do MAXIMA.
+
+Esse pacote deve torna-se dispon@'{i}vel para uso com o comando @code{load('contrib_ode)}
+em primeiro lugar.
+
+A conven@value{cedilha}@~{a}o de chamada para @code{contrib_ode} @'{e} id@^{e}ntica a @code{ode2}.  
+Toma
+tr@^{e}s argumentos: uma EDO (somente o lado esquerdo precisa ser fornecido se o
+lado direito for 0), a vari@'{a}vel dependente, e a vari@'{a}vel
+independente.  Quando @code{contrib_ode} obtiver sucesso, retorna uma lista de solu@value{cedilha}@~{o}es.
+
+A forma de retorno da lista de solu@value{cedilha}@~{a}o difere de @code{ode2}.
+Como equa@value{cedilha}@~{o}es n@~{a}o lineares podem ter m@'{u}ltiplas solu@value{cedilha}@~{o}es, 
+@code{contrib_ode} retorna uma lista de solu@value{cedilha}@~{o}es.  Cada solu@value{cedilha}@~{a}o pode
+ter v@'{a}rias formas:
+@itemize @bullet
+@item
+uma solu@value{cedilha}@~{a}o expl@'{i}cita para a vari@'{a}vel dependente,
+
+@item
+uma solu@value{cedilha}@~{a}o impl@'{i}cita para a vari@'{a}vel dependente,
+
+@item
+uma solu@value{cedilha}@~{a}o param@'{e}trica em termos de vari@'{a}vel %t, ou
+
+@item
+uma transfrma@value{cedilha}@~{a}o em outra EDO na vari@'{a}vel %u.
+
+@end itemize
+
+@code{%c} @'{e} usado para representar a constante de integra@value{cedilha}@~{a}o para equa@value{cedilha}@~{o}es de primeira ordem.
+@code{%k1} e @code{%k2} s@~{a}o constantes para equa@value{cedilha}@~{o}es de segunda ordem.  
+Se @code{contrib_ode}
+n@~{a}o puder obter uma solu@value{cedilha}@~{a}o por qualquer raz@~{a}o, @code{false} @'{e} retornado, ap@'{o}s
+talvez mostrar uma mensagem de erro.
+
+Isso @'{e} necess@'{a}rio para retornar uma lista de solu@value{cedilha}@~{o}es, como mesmo EDO's de primeira
+ordem n@~{a}o lineares podem ter solu@value{cedilha}@~{o}es multiplas.  Por exemplo:
+
+@c ===beg===
+@c load('contrib_ode)$
+@c eqn:x*'diff(y,x)^2-(1+x*y)*'diff(y,x)+y=0;
+@c contrib_ode(eqn,y,x);
+@c method;
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) eqn:x*'diff(y,x)^2-(1+x*y)*'diff(y,x)+y=0;
+
+                    dy 2             dy
+(%o2)            x (--)  - (x y + 1) -- + y = 0
+                    dx               dx
+(%i3) contrib_ode(eqn,y,x);
+
+                                             x
+(%o3)             [y = log(x) + %c, y = %c %e ]
+(%i4) method;
+
+(%o4)                        factor
+@end example
+
+EDO's n@~{a}o lineares podem ter solu@value{cedilha}@~{o}es singulares sem constantes de
+integra@value{cedilha}@~{a}o, como na segunda solu@value{cedilha}@~{a}o do seguinte exemplo:
+
+@c ===beg===
+@c load('contrib_ode)$
+@c eqn:'diff(y,x)^2+x*'diff(y,x)-y=0;
+@c contrib_ode(eqn,y,x);
+@c method;
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) eqn:'diff(y,x)^2+x*'diff(y,x)-y=0;
+
+                       dy 2     dy
+(%o2)                 (--)  + x -- - y = 0
+                       dx       dx
+(%i3) contrib_ode(eqn,y,x);
+
+                                           2
+                                 2        x
+(%o3)              [y = %c x + %c , y = - --]
+                                          4
+(%i4) method;
+
+(%o4)                       clairault
+@end example
+
+
+A seguinte EDO possui duas solu@value{cedilha}@~{o}es param@'{e}tricas em termos da vari@'{a}vel
+fict@'{i}cia %t.  Nesse caso as solu@value{cedilha}@~{o}es param@'{e}tricaspodem ser manipuladas
+para fornecer solu@value{cedilha}@~{o}es expl@'{i}citas.
+
+@c ===beg===
+@c load('contrib_ode)$
+@c eqn:'diff(y,x)=(x+y)^2;
+@c contrib_ode(eqn,y,x);
+@c method;
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) eqn:'diff(y,x)=(x+y)^2;
+
+                          dy          2
+(%o2)                     -- = (y + x)
+                          dx
+(%i3) contrib_ode(eqn,y,x);
+
+(%o3) [[x = %c - atan(sqrt(%t)), y = - x - sqrt(%t)], 
+                     [x = atan(sqrt(%t)) + %c, y = sqrt(%t) - x]]
+(%i4) method;
+
+(%o4)                       lagrange
+@end example
+
+O seguinte exemplo (Kamke 1.112) demonstra uma solu@value{cedilha}@~{a}o impl@'{i}cita.
+
+@c ===beg===
+@c load('contrib_ode)$
+@c assume(x>0,y>0);
+@c eqn:x*'diff(y,x)-x*sqrt(y^2+x^2)-y;
+@c contrib_ode(eqn,y,x);
+@c method;
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) assume(x>0,y>0);
+
+(%o2)                    [x > 0, y > 0]
+(%i3) eqn:x*'diff(y,x)-x*sqrt(y^2+x^2)-y;
+
+                     dy           2    2
+(%o3)              x -- - x sqrt(y  + x ) - y
+                     dx
+(%i4) contrib_ode(eqn,y,x);
+
+                                  y
+(%o4)                  [x - asinh(-) = %c]
+                                  x
+(%i5) method;
+
+(%o5)                          lie
+@end example
+
+ 
+
+A seguinte equa@value{cedilha}@~{a}o de Riccati @'{e} transformada em uma EDO linear
+de segunda ordem na vari@'{a}vel %u.  MAXIMA n@~{a}o est@'{a} apto a
+resolver a nova EDO, de forma que essa nova EDO @'{e} retornada sem avalia@value{cedilha}@~{a}o.
+@c ===beg===
+@c load('contrib_ode)$
+@c eqn:x^2*'diff(y,x)=a+b*x^n+c*x^2*y^2;
+@c contrib_ode(eqn,y,x);
+@c method;
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) eqn:x^2*'diff(y,x)=a+b*x^n+c*x^2*y^2;
+
+                    2 dy      2  2      n
+(%o2)              x  -- = c x  y  + b x  + a
+                      dx
+(%i3) contrib_ode(eqn,y,x);
+
+               d%u
+               ---                            2
+               dx        2     n - 2   a     d %u
+(%o3)  [[y = - ----, %u c  (b x      + --) + ---- c = 0]]
+               %u c                     2      2
+                                       x     dx
+(%i4) method;
+
+(%o4)                        riccati
+@end example
+
+
+Para EDO's de primeira ordem @code{contrib_ode} chama @code{ode2}.  @code{ode2} tenta ent@~{a}o os
+seguintes m@'{e}todos: fatora@value{cedilha}@~{a}o, Clairault, Lagrange, Riccati,
+Abel e os m@'{e}todos de simetria de Lie.  O m@'{e}todo de Lie n@~{a}o @'{e} tentado
+sobre equa@value{cedilha}@~{o}es de Abel se o m@'{e}todo de Abel falhar, mas @'{e} tendado
+se o m@'{e}todo de Riccati uma EDO de segunda ordem n@~{a}o resolvida.
+
+Para EDO's de segunda ordem @code{contrib_ode} chama @code{ode2} e em seguida @code{odelin}.
+
+Rastros extensivos de depura@value{cedilha}@~{a}o mensagens s@~{a}o mostradas se o comando
+@code{put('contrib_ode,true,'verbose)} for executado.
+
+@node Fun@value{cedilha}@~{o}es e Vari@'{a}veis Definidas para contrib_ode, Possibilidades de melhorias em contrib_ode, Introdu@value{cedilha}@~{a}o a contrib_ode, contrib_ode
+@section Fun@value{cedilha}@~{o}es e Vari@'{a}veis Definidas para contrib_ode
+
+@deffn {Fun@value{cedilha}@~{a}o} contrib_ode (@var{eqn}, @var{y}, @var{x})
+
+Retorna uma lista de solu@value{cedilha}@~{o}es da EDO @var{eqn} com
+vari@'{a}vel independente @var{x} e vari@'{a}vel dependente @var{y}.
+
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} odelin (@var{eqn}, @var{y}, @var{x})
+
+@code{odelin} resolve EDO's lineares homog@^{e}neas de primeira e 
+segunda ordem com
+vari@'{a}vel independente @var{x} e vari@'{a}vel dependente @var{y}.  
+@code{odelin} retorna um conjunto solu@value{cedilha}@~{a}o fundamental da EDO.
+
+para EDO's de segunda ordem, @code{odelin} usa um m@'{e}todo, devido a Bronstein
+e Lafaille, que busca por solu@value{cedilha}@~{o}es em termos de fun@value{cedilha}@~{o}es 
+especiais dadas. 
+
+@c ===beg===
+@c load('contrib_ode)$
+@c odelin(x*(x+1)*'diff(y,x,2)+(x+5)*'diff(y,x,1)+(-4)*y,y,x);
+@c ===end===
+@example
+(%i1) load('contrib_ode);
+
+(%i2) odelin(x*(x+1)*'diff(y,x,2)+(x+5)*'diff(y,x,1)+(-4)*y,y,x);
+...trying factor method
+...solving 7 equations in 4 variables
+...trying the Bessel solver
+...solving 1 equations in 2 variables
+...trying the F01 solver
+...solving 1 equations in 3 variables
+...trying the spherodial wave solver
+...solving 1 equations in 4 variables
+...trying the square root Bessel solver
+...solving 1 equations in 2 variables
+...trying the 2F1 solver
+...solving 9 equations in 5 variables
+       gauss_a(- 6, - 2, - 3, - x)  gauss_b(- 6, - 2, - 3, - x)
+(%o2) @{---------------------------, ---------------------------@}
+                    4                            4
+                   x                            x
+
+@end example
+
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} ode_check (@var{eqn}, @var{sol})
+
+Retorna o valor da EDO @var{eqn} ap@'{o}s substituir uma
+poss@'{i}vel solu@value{cedilha}@~{a}o @var{sol}.  O valor @'{e} igual a
+zero se @var{sol} for uma solu@value{cedilha}@~{a}o of @var{eqn}.
+
+@c ===beg===
+@c load('contrib_ode)$
+@c eqn:'diff(y,x,2)+(a*x+b)*y;
+@c ans:[y = bessel_y(1/3,2*(a*x+b)^(3/2)/(3*a))*%k2*sqrt(a*x+b)
+@c          +bessel_j(1/3,2*(a*x+b)^(3/2)/(3*a))*%k1*sqrt(a*x+b)];
+@c ode_check(eqn,ans[1]);
+@c ===end===
+@example
+(%i1) load('contrib_ode)$
+
+(%i2) eqn:'diff(y,x,2)+(a*x+b)*y;
+
+                         2
+                        d y
+(%o2)                   --- + (a x + b) y
+                          2
+                        dx
+(%i3) ans:[y = bessel_y(1/3,2*(a*x+b)^(3/2)/(3*a))*%k2*sqrt(a*x+b)
+         +bessel_j(1/3,2*(a*x+b)^(3/2)/(3*a))*%k1*sqrt(a*x+b)];
+
+                                  3/2
+                    1  2 (a x + b)
+(%o3) [y = bessel_y(-, --------------) %k2 sqrt(a x + b)
+                    3       3 a
+                                          3/2
+                            1  2 (a x + b)
+                 + bessel_j(-, --------------) %k1 sqrt(a x + b)]
+                            3       3 a
+(%i4) ode_check(eqn,ans[1]);
+
+(%o4)                           0
+@end example
+
+@end deffn
+
+@defvr {Vari@'{a}vel global} @code{method}
+
+A vari@'{a}vel @code{method} @'{e} escolhida para o m@'{e}todo que resolver com sucesso
+uma dada EDO.
+
+@end defvr
+
+@defvr {Vari@'{a}vel} @code{%c}
+
+@code{%c} @'{e} a constante de integra@value{cedilha}@~{a}o para EDO's de primeira ordem.
+
+@end defvr
+
+@defvr {Vari@'{a}vel} @code{%k1}
+
+@code{%k1} @'{e} a primeira constante de integra@value{cedilha}@~{a}o para EDO's de segunda ordem.
+
+@end defvr
+
+@defvr {Vari@'{a}vel} @code{%k2}
+
+@code{%k2} @'{e} a segunda constante de integra@value{cedilha}@~{a}o para EDO's de segunda ordem.
+
+@end defvr
+
+@deffn {Fun@value{cedilha}@~{a}o} gauss_a (@var{a}, @var{b}, @var{c}, @var{x})
+
+@code{gauss_a(a,b,c,x)} e @code{gauss_b(a,b,c,x)} s@~{a}o fun@value{cedilha}@~{o}es
+hipergeom@'{e}tricas 2F1.  Elas represetnam quaisquer duas solu@value{cedilha}@~{o}es
+independentes da equa@value{cedilha}@~{a}o diferencial hipergeom@'{e}trica
+@code{x(1-x) diff(y,x,2) + [c-(a+b+1)x diff(y,x) - aby = 0} (A&S 15.5.1).  
+
+O @'{u}nico uso dessas fun@value{cedilha}@~{o}es @'{e} em solu@value{cedilha}@~{o}es de EDO's retornadas por
+@code{odelin} e @code{contrib_ode}.  A defini@value{cedilha}@~{a}o e o uso dessas
+fun@value{cedilha}@~{o}es pode mudar em futuras vers@~{o}es do maxima.
+
+Veja tamb@'{e}m @code{gauss_b}, @code{dgauss_a} e @code{gauss_b}.
+
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} gauss_b (@var{a}, @var{b}, @var{c}, @var{x})
+Veja @code{gauss_a}.
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} dgauss_a (@var{a}, @var{b}, @var{c}, @var{x})
+A derivada em rela@value{cedilha}@~{a}o a x de @code{gauss_a(a,b,c,x)}.
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} dgauss_b (@var{a}, @var{b}, @var{c}, @var{x})
+A derivada em rela@value{cedilha}@~{a}o a x de @code{gauss_b(a,b,c,x)}.
+@end deffn
+
+
+@deffn {Fun@value{cedilha}@~{a}o} kummer_m (@var{a}, @var{b}, @var{x})
+
+A fun@value{cedilha}@~{a}o  M de Kummer, como definida em Abramowitz e Stegun,
+@i{Handbook of Mathematical Functions}, Section 13.1.2.
+
+O @'{u}nico uso dessas fun@value{cedilha}@~{o}es @'{e} em solu@value{cedilha}@~{o}es de EDO's retornadas por
+@code{odelin} e @code{contrib_ode}.  A defini@value{cedilha}@~{a}o e o uso dessas
+fun@value{cedilha}@~{o}es pode mudar em futuras vers@~{o}es do maxima.
+
+Veja tamb@'{e}m @code{kummer_u}, @code{dkummer_m} e @code{dkummer_u}.
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} kummer_u (@var{a}, @var{b}, @var{x})
+
+A fun@value{cedilha}@~{a}o U de Kummer, como definida em Abramowitz e Stegun,
+@i{Handbook of Mathematical Functions}, Section 13.1.3.
+
+Veja @code{kummer_m}.
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} dkummer_m (@var{a}, @var{b}, @var{x})
+A derivada com rela@value{cedilha}@~{a}o a x de @code{kummer_m(a,b,x)}.
+@end deffn
+
+@deffn {Fun@value{cedilha}@~{a}o} dkummer_u (@var{a}, @var{b}, @var{x})
+A derivada com rela@value{cedilha}@~{a}o a x de  @code{kummer_u(a,b,x)}.
+@end deffn
+
+
+
+@node Possibilidades de melhorias em contrib_ode, Casos de teste para contrib_ode, Fun@value{cedilha}@~{o}es e Vari@'{a}veis Definidas para contrib_ode, contrib_ode
+@section Possibilidades de melhorias em contrib_ode
+
+
+Essas rotinas aida est@~{a}o sendo aperfei@value{cedilha}oadas.  @'{E} necess@'{a}rio ainda:
+
+@itemize @bullet
+
+@item
+Extender o m@'{e}todo FACTOR @code{ode1_factor} para trabalhar com ra@'{i}zes multiplas.
+
+@item
+Extender o m@'{e}todo FACTOR  @code{ode1_factor} para tentar resolver fatores
+  de mais alta ordem.  Atualmente somente tenta resolver fatores lineares.
+
+@item
+Corrigir a rotina de LAGRANGE @code{ode1_lagrange} para preferira@'{i}zes reais a
+  ra@'{i}zes complexas.
+
+@item
+Aumentar a quantidade de m@'{e}todos adicionais para equa@value{cedilha}@~{o}es de Riccati.
+
+@item
+Melhorar a detec@value{cedilha}@~{a}o de equa@value{cedilha}@~{o}es de Abel do segundo tipo.  O modelo
+  existente de coincid@^{e}ncia @'{e} fraco.
+
+@item
+Trabalho sobre a rotina do grupo de simetria de Lie @code{ode1_lie}.  Existem poucos por@'{e}m
+  grandes problemas com essa rotina: algumas partes precisam de implementa@value{cedilha}@~{a}o; alguns casos de teste
+  parecem executar indefinidamente; outros casos de teste abortam inesplicavelmente; outros ainda retorna "solu@value{cedilha}@~{o}es"
+  muito complexas.  Seria surpreendente se estivesse pronto para se liberar uma vers@~{a}o est@'{a}vel.
+
+@item
+Adicionar mais casos de teste.
+
+@end itemize
+
+@node Casos de teste para contrib_ode, Refer@^{e}ncias bibliogr@'{a}ficas para contrib_ode, Possibilidades de melhorias em contrib_ode, contrib_ode
+@section Casos de teste para contrib_ode
+
+
+Asrotinas foram tesadas sobre aproximadamente mil casos de teste
+por Murphy,
+Kamke, Zwillinger e outros.  Esses testes est@~{a}o inclu@'{i}dos no subdiret@'{o}rio de testes.
+
+@itemize @bullet
+@item
+A rotina de Clairault @code{ode1_clairault} encontra todas as solu@value{cedilha}@~{o}es conhecidas,
+  incluindo solu@value{cedilha}@~{o}es singulares, das equa@value{cedilha}@~{o}es de Clairault em Murphy e
+  Kamke.
+
+@item
+As outras rotinas muitas vezes retornam uma solu@value{cedilha}@~{a}o simples quando existem
+  multiplas solu@value{cedilha}@~{o}es.
+
+@item
+Algumas das "solu@value{cedilha}@~{o}es" de @code{ode1_lie} s@~{a}o extremamente complexas e
+  imposs@'{i}veis de verificar.
+
+@item
+Existe algumas interrup@value{cedilha}@~{o}es inexplic@'{a}vies de execu@value{cedilha}@~{a}o.
+
+@end itemize
+
+@node Refer@^{e}ncias bibliogr@'{a}ficas para contrib_ode, ,Casos de teste para contrib_ode, contrib_ode
+@section Refer@^{e}ncias bibliogr@'{a}ficas para contrib_ode
+
+
+@enumerate
+@item
+E Kamke, Differentialgleichungen Losungsmethoden und Losungen, Vol 1,
+    Geest & Portig, Leipzig, 1961
+
+@item
+G M Murphy, Ordinary Differential Equations and Their Solutions,
+    Van Nostrand, New York, 1960
+
+@item
+D Zwillinger, Handbook of Differential Equations, 3rd edition,
+    Academic Press, 1998
+
+@item
+F Schwarz, Symmetry Analysis of Abel's Equation, Studies in
+    Applied Mathematics, 100:269-294 (1998)
+
+@item
+F Schwarz, Algorithmic Solution of Abel's Equation,
+    Computing 61, 39-49 (1998)
+
+@item
+E. S. Cheb-Terrab, A. D. Roche, Symmetries and First Order
+    EDO Patterns, Computer Physics Communications 113 (1998), p 239.
+    (http://lie.uwaterloo.ca/papers/ode_vii.pdf)
+
+@item
+E. S. Cheb-Terrab, T. Koloknikov,  First Order EDO's,
+    Symmetries and Linear Transformations, European Journal of
+    Applied Mathematics, Vol. 14, No. 2, pp. 231-246 (2003).
+    (http://arxiv.org/abs/math-ph/0007023)
+    (http://lie.uwaterloo.ca/papers/ode_iv.pdf)
+
+@item
+G W Bluman, S C Anco, Symmetry and Integration Methods for
+    Differential Equations, Springer, (2002)
+
+@item 
+M Bronstein, S Lafaille,
+Solutions of linear ordinary equa@value{cedilha}@~{o}es diferenciais in terms
+of special functions,
+Proceedings of ISSAC 2002, Lille, ACM Press, 23-28. 
+(http://www-sop.inria.fr/cafe/Manuel.Bronstein/publications/issac2002.pdf)
+
+
+@end enumerate

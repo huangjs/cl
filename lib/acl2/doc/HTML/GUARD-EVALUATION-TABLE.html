@@ -1,0 +1,116 @@
+<html>
+<head><title>GUARD-EVALUATION-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARD-EVALUATION-TABLE</h3>a table that shows combinations of <a href="DEFUN-MODE.html">defun-mode</a>s and <a href="GUARD.html">guard</a>-checking
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+See <a href="SET-GUARD-CHECKING.html">set-guard-checking</a> for an introduction to the topic discussed here.  Also
+see <a href="GUARD.html">guard</a> for a general discussion of guards, and
+see <a href="GUARD-EVALUATION-EXAMPLES-SCRIPT.html">guard-evaluation-examples-script</a> for a script that illustrates
+combinations presented below.<p>
+
+The table below illustrates the interaction of the <a href="DEFUN-MODE.html">defun-mode</a> with the
+value supplied to <code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code>.  The first row considers
+functions defined in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode; the other two consider
+functions defined in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode.  The columns correspond to four
+values of state global <code>'guard-checking-on</code>, as supplied to
+<code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code>.  (A fifth value, <code>:nowarn</code>, is similar to <code>t</code>
+but suppresses warnings encountered with <code>t</code> (as explained in those warning
+messages), and is not considered here.)  During proofs,
+<code>'guard-checking-on</code> is set to <code>nil</code> regardless of how this variable has
+been set in the top-level loop.<p>
+
+Below this table, we make some comments about its entries, ordered by row and
+then by column.  For example, when we refer to ``b2'' we are discussing the
+execution of a <code>:</code><code><a href="LOGIC.html">logic</a></code> mode function whose guards have not been
+verified, after having executed <code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> :all</code>.<p>
+
+
+<pre>
+   guard-checking-on:  (1)t      (2):all   (3):none   (4)nil<p>
+
+ (a) :program             a1        a2        a3        a4
+ (b) guards not verified  b1        b2        b3        b4
+ (c) guards verified      c1        c2        c3        c4
+</pre>
+<p>
+
+a1. Check the <a href="GUARD.html">guard</a> upon entry, then use the raw Lisp code if the guard
+checks (else cause an error).  This is a common setting when one wants a
+little guard checking but also wants the efficiency of raw Lisp.  But note
+that you can get raw Lisp errors.  For example, if you make the definition
+<code>(defun foo (x) (car x))</code> in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode and execute
+<code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> t</code>, and then execute <code>(foo 3)</code>, you will
+likely get an error from the call <code>(car 3)</code> made in raw Lisp.<p>
+
+a2. For built-in (predefined) functions, see a1 instead.  Otherwise:<br>
+
+Check the <a href="GUARD.html">guard</a>, without exception.  Thus, we never run the raw Lisp
+code in this case.  This can be useful when testing <code>:</code><code><a href="PROGRAM.html">program</a></code> mode
+functions, but you may want to run <code>:</code><code><a href="COMP.html">comp</a></code><code> t</code> or at least
+<code>:</code><code><a href="COMP.html">comp</a></code><code> :exec</code> in this case, so that the execution is done using
+compiled code.<p>
+
+a3. For built-in (predefined) functions, see a4 instead.  Otherwise:<br>
+
+Do not check the <a href="GUARD.html">guard</a>.  For <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions, we never
+run the raw Lisp code in this case; so if you care about efficiency, see the
+comment in a2 above about <code>:</code><code><a href="COMP.html">comp</a></code>.  This combination is useful if you
+are using ACL2 as a programming language and do not want to prove theorems
+about your functions or suffer <a href="GUARD.html">guard</a> violations.  In this case, you can
+forget about any connection between ACL2 and Common Lisp.<p>
+
+a4. Run the raw Lisp code without checking <a href="GUARD.html">guard</a>s at all.  Thus, for
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions, the <code>nil</code> setting is often preferable to
+the <code>:none</code> setting because you get the efficiency of raw Lisp execution.
+However, with <code>nil</code> you can therefore get hard Lisp errors as in a1 above.<p>
+
+b1. Guards are checked at the top-level, though not at self-recursive calls.
+We never run the raw Lisp code in this case; guards would need to be verified
+first.<p>
+
+b2. Unlike the <code>t</code> setting, guards are checked even on self-recursive
+calls.  But like the <code>t</code> setting, we do not run the raw Lisp code.  Use
+this setting if you want guards checked on each recursive call in spite of
+the cost of doing so.<p>
+
+b3, b4. Execution avoids the raw Lisp code and never checks guards.  The
+<code>nil</code> and <code>:none</code> settings behave the same in this case (i.e., for
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions whose guards have not been verified).<p>
+
+c1, c2. Guards are checked.  If the checks pass, evaluation takes place using
+the raw Lisp code.  If the checks fail, we get a guard violation.  Either
+way, we do not execute ``in the logic''; we only execute using the raw Lisp
+code.  Note that <code>t</code> and <code>:all</code> behave the same in this case, (i.e. for
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions whose <a href="GUARD.html">guard</a>s have been verified).<p>
+
+c3, c4. For the <code>:none</code> and <code>nil</code> settings, <code>:</code><code><a href="LOGIC.html">logic</a></code> mode
+functions whose guards have been verified will never cause guard violations.
+However, with <code>nil</code>, guards are still checked: if the check succeeds, then
+evaluation is done using the raw Lisp code, and if not, it is done by the
+``logic'' code, including self-recursive calls (though unlike the <code>t</code> case,
+we will not see a warning about this).  But with <code>:none</code>, no guard checking
+is done, so the only time the raw Lisp code will be executed is when the
+guard is <code>t</code> (so that no evaluation is necessary).  Thus, if you use
+<code>:none</code> and you want a function <code>(foo x)</code> with guard <code>(g x)</code> to execute
+using raw Lisp code, you can write a ``wrapper'' function with a guard of
+<code>t</code>:
+
+<pre>
+(defun foo-wrap (x)
+  (if (g x)
+      (foo x)
+    'do-not-case))
+</pre>
+
+If you want the speed of executing raw Lisp code and you have non-trivial
+guards on functions that you want to call at the top-level, use <code>nil</code>
+rather than <code>:none</code>.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

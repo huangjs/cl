@@ -1,0 +1,46 @@
+<html>
+<head><title>INTERN.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>INTERN</h2>create a new symbol in a given package
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+<code>(intern symbol-name symbol-package-name)</code> returns a symbol with
+the given <code><a href="SYMBOL-NAME.html">symbol-name</a></code> and the given <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code>.  We
+restrict Common Lisp's <code>intern</code> so that the second argument is
+either the symbol *main-lisp-package-name*, the value of that
+constant, or is one of "ACL2", "ACL2-INPUT-CHANNEL",
+"ACL2-OUTPUT-CHANNEL", or "KEYWORD".  To avoid that restriction,
+see <a href="INTERN$.html">intern$</a>.
+<p>
+In ACL2 <code>intern</code> is actually implemented as a macro that expands to
+a call of a similar function whose second argument is a symbol.
+Invoke <code>:pe intern</code> to see the definition, or
+see <a href="INTERN-IN-PACKAGE-OF-SYMBOL.html">intern-in-package-of-symbol</a>.<p>
+
+To see why is <code>intern</code> so restricted consider
+<code>(intern "X" "P")</code>.  In particular, is it a symbol and if so,
+what is its <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code>?  One is tempted to say ``yes, it
+is a symbol in the package <code>"P"</code>.''  But if package <code>"P"</code> has
+not yet been defined, that would be premature because the imports to
+the package are unknown.  For example, if <code>"P"</code> were introduced
+with
+
+<pre>
+(defpkg "P" '(LISP::X)) 
+</pre>
+
+then in Common Lisp <code>(symbol-package-name (intern "X" "P"))</code> returns
+<code>"LISP"</code>.<p>
+
+The obvious restriction on <code>intern</code> is that its second argument be
+the name of a package known to ACL2.  We cannot express such a
+restriction (except, for example, by limiting it to those packages
+known at some fixed time, as we do).  Instead, we provide
+<code><a href="INTERN-IN-PACKAGE-OF-SYMBOL.html">intern-in-package-of-symbol</a></code> which requires a ``witness symbol''
+for the package instead of the package.  The witness symbol is any
+symbol (expressible in ACL2) and uniquely specifies a package
+necessarily known to ACL2.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

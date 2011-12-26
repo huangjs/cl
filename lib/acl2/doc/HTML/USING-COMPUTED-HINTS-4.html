@@ -1,0 +1,159 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-4.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-4</h2>Computing the Hints
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+So far we have used computed hints only to compute when a fixed set
+of keys and values are to be used as a hint.  But computed hints
+can, of course, compute the set of keys and values.  You might, for
+example, write a hint that recognizes when a clause ``ought'' to be
+provable by a <code>:BDD</code> hint and generate the appropriate hint.  You
+might build in a set of useful lemmas and check to see if the clause
+is proveable <code>:BY</code> one of them.  You can keep all function symbols
+disabled and use computed hints to compute which ones you want to
+<code>:EXPAND</code>.  In general, you can write a theorem prover for use in
+your hints, provided you can get it do its job by directing our
+theorem prover.<p>
+
+Suppose for example we wish to find every occurrence of an instance
+of <code>(SWAP x)</code> and provide the corresponding instance of
+<code>ALL-SWAPS-HAVE-THE-PROPERTY</code>.  Obviously, we must explore the
+clause looking for instances of <code>(SWAP x)</code> and build the
+appropriate instances of the lemma.  We could do this in many
+different ways, but below we show a general purpose set of utilities
+for doing it.  The functions are not defined in ACL2 but could be
+defined as shown.<p>
+
+Our plan is:  (1) Find all instances of a given pattern (term) in a
+clause, obtaining a set of substitutions.  (2) Build a set of
+<code>:instance</code> expressions for a given lemma name and set of
+substitutions.  (3) Generate a <code>:use</code> hint for those instances when
+instances are found.<p>
+
+The pair of functions below find all instances of a given pattern
+term in either a term or a list of terms.  The functions each return
+a list of substitutions, each substitution accounting for one of the
+matches of pat to a subterm.  At this level in ACL2 substitutions
+are lists of pairs of the form <code>(var . term)</code>.  All terms mentioned
+here are presumed to be in translated form.<p>
+
+The functions take as their third argument a list of substitutions
+accumulated to date and add to it the substitutions produced by
+matching pat to the subterms of the term.  We intend this
+accumulator to be nil initially.  If the returned value is nil, then
+no instances of pat occurred.<p>
+
+
+<pre>
+(mutual-recursion
+ 
+(defun find-all-instances (pat term alists)
+ (declare (xargs :mode :program))
+ (mv-let
+  (instancep alist)
+  (one-way-unify pat term)
+  (let ((alists (if instancep (add-to-set-equal alist alists) alists)))
+    (cond
+     ((variablep term) alists)
+     ((fquotep term) alists)
+     ((flambdap (ffn-symb term))
+      (find-all-instances pat
+                          (lambda-body (ffn-symb term))
+                          (find-all-instances-list pat (fargs term) alists)))
+     (t (find-all-instances-list pat (fargs term) alists))))))<p>
+
+(defun find-all-instances-list (pat list-of-terms alists)
+ (declare (xargs :mode :program))
+ (cond
+  ((null list-of-terms) alists)
+  (t (find-all-instances pat
+                         (car list-of-terms)
+                         (find-all-instances-list pat
+                                                  (cdr list-of-terms)
+                                                  alists))))))
+</pre>
+<p>
+
+We now turn our attention to converting a list of substitutions into
+a list of lemma instances, each of the form
+
+<pre>
+(:INSTANCE name (var1 term1) ... (vark termk))
+</pre>
+
+as written in <code>:use</code> hints.  In the code shown above, substitutions
+are lists of pairs of the form <code>(var . term)</code>, but in lemma
+instances we must write ``doublets.''  So here we show how to
+convert from one to the other:
+
+<pre>
+(defun pairs-to-doublets (alist)
+  (declare (xargs :mode :program))
+  (cond ((null alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (pairs-to-doublets (cdr alist))))))
+</pre>
+<p>
+
+Now we can make a list of lemma instances:
+
+<pre>
+(defun make-lemma-instances (name alists)
+  (declare (xargs :mode :program))
+  (cond
+   ((null alists) nil)
+   (t (cons (list* :instance name (pairs-to-doublets (car alists)))
+            (make-lemma-instances name (cdr alists))))))
+</pre>
+<p>
+
+Finally, we can package it all together into a hint function.  The
+function takes a pattern, <code>pat</code>, which must be a translated term,
+the name of a lemma, <code>name</code>, and a clause.  If some instances of
+<code>pat</code> occur in <code>clause</code>, then the corresponding instances of
+<code>name</code> are <code>:USE</code>d in the computed hint.  Otherwise, the hint does
+not apply.
+
+<pre>
+(defun add-corresponding-instances (pat name clause)
+  (declare (xargs :mode :program))
+  (let ((alists (find-all-instances-list pat clause nil)))
+    (cond
+     ((null alists) nil)
+     (t (list :use (make-lemma-instances name alists))))))
+</pre>
+
+The design of this particular hint function makes it important that
+the variables of the pattern be the variables of the named lemma and
+that all of the variables we wish to instantiate occur in the
+pattern.  We could, of course, redesign it to allow ``free
+variables'' or some sort of renaming.<p>
+
+We could now use this hint as shown below:
+
+<pre>
+(defthm ... ...
+  :hints ((add-corresponding-instances
+           '(SWAP x)
+           'ALL-SWAPS-HAVE-THE-PROPERTY
+           clause)))
+</pre>
+
+The effect of the hint above is that any time a clause arises in
+which any instance of <code>(SWAP x)</code> appears, we add the corresponding
+instance of <code>ALL-SWAPS-HAVE-THE-PROPERTY</code>.  So for example, if
+Subgoal *1/3.5 contains the subterm <code>(SWAP (SWAP A))</code> then this
+hint fires and makes the system behave as though the hint:
+
+<pre>
+("Subgoal *1/3.5"
+ :USE ((:INSTANCE ALL-SWAPS-HAVE-THE-PROPERTY (X A))
+       (:INSTANCE ALL-SWAPS-HAVE-THE-PROPERTY (X (SWAP A)))))
+</pre>
+
+had been present.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

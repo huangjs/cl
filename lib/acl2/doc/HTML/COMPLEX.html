@@ -1,0 +1,60 @@
+<html>
+<head><title>COMPLEX.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>COMPLEX</h2>create an ACL2 number
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(complex x 3) ; x + 3i, where i is the principal square root of -1
+(complex x y) ; x + yi
+(complex x 0) ; same as x, for rational numbers x
+<p>
+</pre>
+
+The function <code>complex</code> takes two rational number arguments and
+returns an ACL2 number.  This number will be of type
+<code>(complex rational)</code> [as defined in the Common Lisp language], except
+that if the second argument is zero, then <code>complex</code> returns its first
+argument.  The function <code><a href="COMPLEX-RATIONALP.html">complex-rationalp</a></code> is a recognizer for
+complex rational numbers, i.e. for ACL2 numbers that are not
+rational numbers.<p>
+
+The reader macro <code>#C</code> (which is the same as <code>#c</code>) provides a convenient
+way for typing in complex numbers.  For explicit rational numbers <code>x</code>
+and <code>y</code>, <code>#C(x y)</code> is read to the same value as <code>(complex x y)</code>.<p>
+
+The functions <code><a href="REALPART.html">realpart</a></code> and <code><a href="IMAGPART.html">imagpart</a></code> return the real and imaginary
+parts (respectively) of a complex (possibly rational) number.  So
+for example, <code>(realpart #C(3 4)) = 3</code>, <code>(imagpart #C(3 4)) = 4</code>,
+<code>(realpart 3/4) = 3/4</code>, and <code>(imagpart 3/4) = 0</code>.<p>
+
+The following built-in axiom may be useful for reasoning about complex
+numbers.
+
+<pre>
+(defaxiom complex-definition
+  (implies (and (real/rationalp x)
+                (real/rationalp y))
+           (equal (complex x y)
+                  (+ x (* #c(0 1) y))))
+  :rule-classes nil)
+</pre>
+<p>
+
+A completion axiom that shows what <code>complex</code> returns on arguments
+violating its <a href="GUARD.html">guard</a> (which says that both arguments are rational
+numbers) is the following.
+
+<pre>
+(equal (complex x y)
+       (complex (if (rationalp x) x 0)
+                (if (rationalp y) y 0)))
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

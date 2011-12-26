@@ -1,0 +1,116 @@
+<html>
+<head><title>VERSION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>VERSION</h2>ACL2 Version Number
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+To determine the version number of your copy of ACL2, evaluate the form
+<code>(@ acl2-version)</code>.  The value will be a string.  For example,
+
+<pre>
+ACL2 !&gt;(@ acl2-version)
+"ACL2 Version 3.1"
+</pre>
+
+
+<p>
+The part of the string after <code>"ACL2 Version "</code> is of the form <code>x.y</code> or
+<code>x.y.z</code>, optionally followed by a succession of values in parentheses,
+where <code>x</code>, <code>y</code>, and <code>z</code> are natural numbers.  If <code>z</code> is omitted then
+it is implicitly 0.  We refer to <code>X</code>, <code>y</code>, and <code>z</code> as the ``major'',
+``minor'', and ``incrl'' fields, respectively.  The incrl field is used for
+incremental releases.  The discussion just below assumes that incremental
+releases are not employed at the user's site, i.e., the incrl fields are
+always 0.  We remove this assumption when we discuss incremental releases at
+the end of this documenttation topic.<p>
+
+<a href="BOOKS.html">Books</a> are considered certified only in the same version of ACL2
+in which the certification was done.  The <a href="CERTIFICATE.html">certificate</a> file
+records the version number of the certifying ACL2 and
+<a href="INCLUDE-BOOK.html">include-book</a> considers the book uncertified if that does not
+match the current version number.  Thus, each time we release a new
+version of ACL2, previously certified books should be recertified.<p>
+
+Note that there are over 150 constants in the system, most having to do with
+the fact that ACL2 is coded in ACL2.  Many of these, for example
+<code>*common-lisp-specials-and-constants*</code> and <code>*acl2-exports*</code>, may change
+from version to version, and this can cause unsoundness.  For example, the
+symbol <code>'set-difference-eq</code> was added to <code>*acl2-exports*</code> in Version_2.9,
+so we can certify a book in Version_2.8 containing the following theorem,
+which is false in Version_2.9.
+
+<pre>
+(null (member 'set-difference-eq *acl2-exports*))
+</pre>
+
+Therefore, we need to disallow inclusion of such a book in a Version_2.9
+session, which otherwise would allow us to prove <code>nil</code>.  Furthermore, it is
+possible that from one version of the system to another we might change, say,
+the default values on some system function or otherwise make ``intentional''
+changes to the axioms.  It is even possible one version of the system is
+discovered to be unsound and we release a new version to correct our error.<p>
+
+Therefore we adopted the draconian policy that books are certified
+by a given version of ACL2 and ``must'' be recertified to be used
+in other versions.  We put ``must'' in quotes because in fact, ACL2
+allows a book that was certified in one ACL2 version to be included
+in a later version, using <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  But ACL2 does not allow
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> to succeed when such an <code><a href="INCLUDE-BOOK.html">include-book</a></code> is executed on its
+behalf.  Also, you may experience undesirable behavior if you avoid
+recertification when moving to a different version.  (We try to
+prevent some undesirable behavior by refusing to load the compiled
+code for an uncertified book, but this does not guarantee good
+behavior.)  Hence we recommend that you stick to the draconion
+policy of recertifying books when updating to a new ACL2 version.<p>
+
+The string <code>(@ acl2-version)</code> can contain implementation-specific
+information in addition to the version number.  For example, in
+Macintosh Common Lisp (MCL) <code>(char-code #Newline)</code> is 13, while as
+far as we know, it is 10 in every other Common Lisp.  Our concern is
+that one could certify a book in an MCL-based ACL2 with the theorem
+
+<pre>
+(equal (char-code #Newline) 13)
+</pre>
+
+and then include this book in another Lisp and thereby prove <code>nil</code>.
+So, when a book is certified in an MCL-based ACL2, the book's
+<a href="CERTIFICATE.html">certificate</a> mentions ``MCL'' in its version string.  Moreover,
+<code>(@ acl2-version)</code> similarly mentions ``MCL'' when the ACL2 image has
+been built on top of MCL.  Thus, an attempt to include a book in an
+MCL-based ACL2 that was certified in a non-MCL-based ACL2, or
+vice-versa, will be treated like an attempt to include an
+uncertified book.<p>
+
+<em>Incremental releases.</em><p>
+
+From time to time, so-called ``incremental releases'' of ACL2 are made
+available.  These releases are thoroughly tested on at least two platforms;
+``normal'' releases, on the other hand, are thoroughly tested on many more
+platforms (perhaps a dozen or so) and are accompanied by updates to the ACL2
+home page.  We provide incremental releases in order to provide timely
+updates for ACL2 users who want them, without imposing unnecessary burdens on
+either on the ACL2 implementors or on ACL2 users who prefer to update less
+frequently.  The implementors expect users to update their copies of ACL2
+when normal releases are made available, but not necessarily when incremental
+releases are made available.<p>
+
+Incremental releases are accompanied by a bump in the incrl field of the
+version field, while normal releases are accompanied by a bump in the minor
+or (much less frequently) major field and zeroing out of the incrl field.<p>
+
+Note that LOGICALLY SPEAKING, INCREMENTAL RELEASES ARE FULL-FLEDGE RELEASES.
+However, ACL2 users may wish to experiment with incremental releases without
+recertifying all of their existing ACL2 <a href="BOOKS.html">books</a> (see <a href="CERTIFY-BOOK.html">certify-book</a>).  In
+order to learn how to avoid such recertification, see <a href="SET-TAINTED-OKP.html">set-tainted-okp</a>.  The
+basic idea is that if certification may depend on including books from an
+ACL2 version with a different incrl field, the book's <a href="CERTIFICATE.html">certificate</a> is
+marked with a ``tainted'' version, i.e., a version with <code>"(tainted"</code> as a
+substring.  Subsequent inclusion of any such book is restricted to sessions
+in which the user explicitly invokes <code>(</code><code><a href="SET-TAINTED-OKP.html">set-tainted-okp</a></code><code> t)</code>, which
+is intended as an acknowledgment that including such a book may render the
+ACL2 session unsound.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

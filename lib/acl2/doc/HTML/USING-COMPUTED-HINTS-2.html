@@ -1,0 +1,126 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-2.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-2</h2>One Hint to Every Top-Level Goal in a Forcing Round
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+Suppose the main proof completes with a forcing round on three
+subgoals, "[1]Subgoal 3", "[1]Subgoal 2", and "[1]Subgoal 1".
+Suppose you wish to <code>:use lemma42</code> in all top-level goals of the
+first forcing round.  This can be done supplying the hint
+
+<pre>
+(if test '(:use lemma42) nil),
+</pre>
+
+where <code>test</code> is an expression that returns
+<code>t</code> when <code>ID</code> is one of the clause ids in question.
+
+<pre>
+    goal-spec     (parse-clause-id goal-spec)<p>
+
+"[1]Subgoal 3"        ((1) (3) . 0)
+"[1]Subgoal 2"        ((1) (2) . 0)
+"[1]Subgoal 1"        ((1) (1) . 0)
+</pre>
+
+Recall (see <a href="CLAUSE-IDENTIFIER.html">clause-identifier</a>) that <code>parse-clause-id</code> maps
+from a goal spec to a clause id, so you can use that function on the
+goal specs printed in the failed proof attempt to determine the
+clause ids in question.<p>
+
+So one acceptable <code>test</code> is
+
+<pre>
+(member-equal id '(((1) (3) . 0) 
+                   ((1) (2) . 0)
+                   ((1) (1) . 0)))
+</pre>
+
+or you could use <code>parse-clause-id</code> in your computed hint if you
+don't want to see clause ids in your script:
+
+<pre>
+(or (equal id (parse-clause-id "[1]Subgoal 3"))
+    (equal id (parse-clause-id "[1]Subgoal 2"))
+    (equal id (parse-clause-id "[1]Subgoal 1")))
+</pre>
+
+or you could use the inverse function (see <a href="CLAUSE-IDENTIFIER.html">clause-identifier</a>):
+
+<pre>
+(member-equal (string-for-tilde-@-clause-id-phrase id)
+              '("[1]Subgoal 3"
+                "[1]Subgoal 2"
+                "[1]Subgoal 1"))
+</pre>
+<p>
+
+Recall that what we've shown above are the tests to use in the
+computed hint.  The hint itself is <code>(if test '(:use lemma42) nil)</code>
+or something equivalent like <code>(and test '(:use lemma42))</code>.<p>
+
+The three tests above are all equivalent.  They suffer from the
+problem of requiring the explicit enumeration of all the goal specs
+in the first forcing round.  A change in the script might cause more
+forced subgoals and the ones other than those enumerated would not
+be given the hint.<p>
+
+You could write a test that recognizes all first round top-level
+subgoals no matter how many there are.  Just think of the
+programming problem:  how do I recognize all the clause id's of the
+form <code>((1) (n) . 0)</code>?  Often you can come to this formulation of
+the problem by using <code>parse-clause-id</code> on a few of the candidate
+goal-specs to see the common structure.  A suitable test in this
+case is:
+
+<pre>
+(and (equal (car id) '(1))     ; forcing round 1, top-level (pre-induction)
+     (equal (len (cadr id)) 1) ; Subgoal n (not Subgoal n.i ...)
+     (equal (cddr id) 0))      ; no primes
+</pre>
+<p>
+
+The test above is ``overkill'' because it recognizes precisely the
+clause ids in question.  But recall that once a computed hint is
+used, it is (by default) removed from the hints available to the
+children of the clause.  Thus, we can widen the set of clause ids
+recognized to include all the children without worrying that the
+hint will be applied to those children.<p>
+
+In particular, the following test supplies the hint to every
+top-level goal of the first forcing round:
+
+<pre>
+(equal (car id) '(1))
+</pre>
+
+You might worry that it would also supply the hint to the subgoal
+produced by the hint -- the cases we ruled out by the ``overkill''
+above.  But that doesn't happen since the hint is unavailable to the
+children.  You could even write:
+
+<pre>
+(equal (car (car id)) 1)
+</pre>
+
+which would supply the hint to every goal of the form "[1]Subgoal ..."
+and again, because we see and fire on the top-level goals first, we
+will not fire on, say, "[1]Subgoal *1.3/2", i.e., the id '((1 1 3)
+(2) . 0) even though the test recognizes that id.<p>
+
+Finally, the following test supplies the hint to every top-level goal
+of every forcing round (except the 0th, which is the ``gist'' of the
+proof, not ``really'' a forcing round):
+
+<pre>
+(not (equal (car (car id)) 0))
+</pre>
+<p>
+
+Recall again that in all the examples above we have exhibited the
+<code>test</code> in a computed hint of the form <code>(if test '(:key1 val1 ...) nil)</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

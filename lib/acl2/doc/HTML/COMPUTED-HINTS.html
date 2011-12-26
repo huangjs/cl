@@ -1,0 +1,119 @@
+<html>
+<head><title>COMPUTED-HINTS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>COMPUTED-HINTS</h2>computing advice to the theorem proving process
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+General Form of :hints:
+(hint1 hint2 ... hintk)
+</pre>
+
+Each element, hinti, must be either a common hint or a computed
+hint.
+<p>
+A common hint is of the form
+
+<pre>
+(goal-spec :key1 val1 ... :keyn valn)
+</pre>
+<p>
+
+where <code>goal-spec</code> is as specified in <a href="GOAL-SPEC.html">goal-spec</a> and each
+<code>:keyi</code> and <code>vali</code> is as specified in <a href="HINTS.html">hints</a>.<p>
+
+A computed hint is either a function symbol, <code>fn</code>, of three, four
+or seven arguments or is any term whose only free variables are among
+<code>ID</code>, <code>CLAUSE</code>, <code>WORLD</code>, <code>STABLE-UNDER-SIMPLIFICATIONP</code>,
+<code>HIST</code>, <code>PSPV</code>, and <code>CTX</code>.
+The function symbol case is treated as an abbreviation of the term
+<code>(fn ID CLAUSE WORLD)</code>,
+<code>(fn ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP)</code>, or
+<code>(fn ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP HIST PSPV CTX)</code>
+as appropriate for the arity of <code>fn</code>.  (Note that
+this tells you which argument of <code>fn</code> is which.)  In the discussion 
+below we assume all computed hints are of the term form.  Indeed, we
+almost assume all computed hints are of the 3 and 4 argument forms.
+We only comment briefly on the 7 argument form in
+<a href="USING-COMPUTED-HINTS-8.html">using-computed-hints-8</a>.<p>
+
+The evaluation of the term (in a context in which its variables are
+bound as described below) should be either <code>nil</code>, indicating that
+the hint is not applicable to the clause in question, or else the
+value is an alternating list of <code>:keyi</code> <code>vali</code> ``pairs.''
+Except possibly for the first keyword, the <code>:keyi</code> <code>vali</code> pairs
+should be as specified in <a href="HINTS.html">hints</a>.  That is, those elements of the
+result should be hint settings as you might have typed in a common
+hint.  The first keyword is allowed to be <code>:COMPUTED-HINT-REPLACEMENT</code>.
+Its value should be <code>nil</code>, <code>t</code>, or a list of terms.  If this
+keyword is not present, the default value of <code>nil</code> is provided.<p>
+
+The evaluation of a hint term is done with guard checking turned off
+(see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>); e.g., the form <code>(car 23)</code> in a
+computed hint returns <code>nil</code> as per the axioms.<p>
+
+When a non-<code>nil</code> value is returned, the keyword/value pairs (other
+than the optional <code>:COMPUTED-HINT-REPLACEMENT</code>) are used as the
+hint for the subgoal in question.  Thus, your job as the programmer
+of computed hints is to generate the list of keys and values you
+would have typed had you supplied a common hint for the subgoal. (In
+particular, any theory expressions in it are evaluated with respect
+to the global current-theory, not whatever theory is active at the
+subgoal in question.)  If the generated list of keywords and values
+is illegal, an error will be signaled and the proof attempt will be
+aborted.<p>
+
+The purpose of the <code>:COMPUTED-HINT-REPLACEMENT</code> keyword and its
+value, <code>chr</code>, is to change the list of hints.  If <code>chr</code> is <code>nil</code>,
+then the hint which was applied is removed from the list of hints that
+is passed down to the children of the subgoal in question.  This is
+the default.  If <code>chr</code> is <code>t</code>, then the hint is left in list of
+hints.  This means that the same hint may act on the children of the
+subgoal.  Otherwise, <code>chr</code> must be a list of terms, each of which
+is treated as a computed hint.  The hint which was applied is deleted
+from the list of hints and the hints in <code>chr</code> are added to the list
+of hints passed to the children of the subgoal.  The ability to compute
+new hints and pass them down allows strange and wonderful behavior.<p>
+
+For these purposes, the goals produced by induction and the top-level
+goals of forcing rounds are not considered children; all original hints
+are available to them.<p>
+
+After a computed hint is applied to a goal and before the goal is
+processed, the remaining applicable computed hints are applied.
+For hint settings, such as <code>:USE</code>, that modify the goal, the effect
+of more than one applicable hint just compounds.  But for hint settings,
+such as <code>:IN-THEORY</code> that determine the context of the subsequent
+goal processing, only the last applicable hint is effective.<p>
+
+It remains only to describe the bindings of the four variables.<p>
+
+Suppose the theorem prover is working on some clause, clause, named
+by some <code><a href="GOAL-SPEC.html">goal-spec</a></code>, e.g., "Subgoal *1/2'''" in some logical
+world, world.  Corresponding to the printed <code>goal-spec</code> is an
+internal data structure called a ``clause identifier'' id.
+See <a href="CLAUSE-IDENTIFIER.html">clause-identifier</a>.<p>
+
+In the case of a common hint, the hint applies if the goal-spec of
+the hint is the same as the goal-spec of the clause in question.<p>
+
+In the case of a computed hint, the variable <code>ID</code> is bound to the
+clause id, the variable <code>CLAUSE</code> is bound to the (translated form
+of the) clause, and the variable <code>WORLD</code> is bound to the current
+ACL2 world.  The variable <code>STABLE-UNDER-SIMPLIFICATIONP</code> is bound
+to <code>t</code> or <code>nil</code>.  It is bound to <code>t</code> only if the clause 
+is known to be stable under simplification.  That is, the simplifier
+has been applied to the clause and did not change it.  Such a clause
+is sometimes known as a ``simplification checkpoint.''  It is
+frequently useful to inject hints (e.g., to enable a rule or provide
+a <code>:use</code> hint) only when the goal in question has stabilized.  If
+a hint is provided, the processing of the clause starts over with
+simplification.<p>
+
+For some instruction about how to use computed hints,
+see <a href="USING-COMPUTED-HINTS.html">using-computed-hints</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

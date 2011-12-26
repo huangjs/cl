@@ -1,0 +1,1082 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: DOUBLE-REWRITE,  Next: EMBEDDED-EVENT-FORM,  Prev: DO-NOT-INDUCT,  Up: MISCELLANEOUS
+
+DOUBLE-REWRITE    cause a term to be rewritten twice
+
+Logically, double-rewrite is the identity function: (double-rewrite x)
+is equal to x.  However, the ACL2 rewriter treats calls of
+double-rewrite in the following special manner.  When it encounters a
+term (double-rewrite u), it first rewrites u in the current context,
+and then the rewriter rewrites the result.
+
+Such double-rewriting is rarely necessary, but it can be useful when
+rewriting under non-trivial equivalence relations (see *note
+EQUIVALENCE::).  The following example will illustrate the issue.
+
+     ; Define an equivalence relation.
+     (defun my-equiv (x y)
+       (equal x y))
+     (defequiv my-equiv)
+     
+     ; Define a unary function whose argument is preserved by my-equiv.
+     (defun foo (x)
+       (declare (ignore x))
+       t)
+     (defcong my-equiv equal (foo x) 1)
+     
+     ; Define some other unary functions.
+     (defun g (x) x)
+     (defun h1 (x) x)
+     (defun h2 (x) x)
+     
+     ; Prove some lemmas and then disable the functions above.
+     (defthm lemma-1
+       (my-equiv (h1 x) (h2 x)))
+     (defthm lemma-2
+       (foo (h2 x)))
+     (defthm lemma-3
+       (implies (foo x)
+                (equal (g x) x)))
+     (in-theory (union-theories (theory 'minimal-theory)
+                                '(lemma-1 lemma-2 lemma-3
+                                  my-equiv-implies-equal-foo-1)))
+     
+     ; Attempt to prove a simple theorem that follows ``obviously'' from the
+     ; events above.
+     (thm (equal (g (h1 a)) (h1 a)))
+
+We might expect the proof of this final thm to succeed by the following
+reasoning.  It is immediate from lemma-3 provided we can establish (foo
+(h1 a)).  By the defcong event above, we know that (foo (h1 a)) equals
+(foo (h2 a)) provided (my-equiv (h1 a) (h2 a)); but this is immediate
+from lemma-1.  And finally, (foo (h2 a)) is true by lemma-2.
+
+Unfortunately, the proof fails.  But fortunately, ACL2 gives the
+following useful warning when lemma-3 is submitted:
+
+     ACL2 Warning [Double-rewrite] in ( DEFTHM LEMMA-3 ...):  In the :REWRITE
+     rule generated from LEMMA-3, equivalence relation MY-EQUIV is maintained
+     at one problematic occurrence of variable X in hypothesis (FOO X),
+     but not at any binding occurrence of X.  Consider replacing that occurrence
+     of X in this hypothesis with (DOUBLE-REWRITE X).  See :doc double-
+     rewrite for more information on this issue.
+
+We can follow the warning's advice by changing lemma-3 to the following.
+
+     (defthm lemma-3
+       (implies (foo (double-rewrite x))
+                (equal (g x) x)))
+
+With this change, the proof succeeds for the final thm above.
+
+In practice, it should suffice for users to follow the advice given in
+the "Double-rewrite" warnings, by adding calls of double-rewrite around
+certain variable occurrences.  But this can cause inefficiency in large
+proof efforts.  For that reason, and for completeness,it seems prudent
+to explain more carefully what is going on; and that is what we do for
+the remainder of this documentation topic.  Optionally, also see the
+paper "Double Rewriting for Equivalential Reasoning in ACL2" by Matt
+Kaufmann and J Strother Moore, in the proceedings of the 2006 ACL2
+Workshop.
+
+*Suggesting congruence rules.*
+
+Sometimes the best way to respond to a "Double-rewrite" warning may be
+to prove a congruence rule.  Consider for example this rule.
+
+     (defthm insert-sort-is-id
+       (perm (insert-sort x) x))
+
+Assuming that perm has been identified as an equivalence relation (see
+*note DEFEQUIV::), we will get the following warning.
+
+     ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-SORT-IS-ID ...):
+     In a :REWRITE rule generated from INSERT-SORT-IS-ID, equivalence relation
+     PERM is maintained at one problematic occurrence of variable X in the
+     right-hand side, but not at any binding occurrence of X.  Consider
+     replacing that occurrence of X in the right-hand side with
+     (DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
+     this issue.
+
+The problem is that the second occurrence of x (the right-hand side of
+the rule insert-sort-is-id) is in a context where perm is to be
+maintained, yet in this example, the argument x of insert-sort on the
+left-hand side of that rule is in a context where perm will not be
+maintained.  This can lead one to consider the possibility that perm
+could be maintained in that left-hand side occurrence of x, and if so,
+to prove the following congruence rule.
+
+     (defcong perm perm (insert-sort x) 1)
+
+This will eliminate the above warning for insert-sort-is-id.  More
+important, this defcong event would probably be useful, since it would
+allow rewrite rules with equivalence relation perm to operate on the
+first argument of any call of insert-sort whose context calls for
+maintaining perm.
+
+*Details on double-rewrite.*
+
+The reader who wants these details may first wish to see *note
+EQUIVALENCE:: for relevant review.
+
+The ACL2 rewriter takes a number of contextual arguments, including the
+generated equivalence relation being maintained (see *note
+CONGRUENCE::) and an association list that maps variables to terms.  We
+call the latter alist the unify-subst because it is produced by unifying
+(actually matching) a pattern against a current term; let us explain
+this point by returning to the example above.  Consider what happens
+when the rewriter is given the top-level goal of the thm above.
+
+     (equal (g (h1 a)) (h1 a))
+
+This rewrite is performed with the empty alist (unify-subst), and is
+begun by rewriting the first argument (in that same empty unify-subst):
+
+     (g (h1 a))
+
+Note that the only equivalence relation being maintained at this point
+is equal.  Now, the rewriter notices that the left-hand side of lemma-3,
+which is (g x), matches (g (h1 a)).  The rewriter thus creates a
+unify-subst binding x to (h1 a): ((x . (h1 a))).  It now attempts to
+rewrite the hypothesis of lemma-3 to t under this unify-subst.
+
+Consider what happens now if the hypothesis of lemma-3 is (foo x).  To
+rewrite this hypothesis under a unify-subst of ((x . (h1 a))), it will
+first rewrite x under this unify-subst.  The key observation here is
+that this rewrite takes place simply by returning the value of x in the
+unify-subst, namely (h1 a).  No further rewriting is done!  The
+efficiency of the ACL2 rewriter depends on such caching of previous
+rewriting results.
+
+But suppose that, instead, the hypothesis of lemma-3 is (foo
+(double-rewrite x)).  As before, the rewriter dives to the first
+argument of this call of foo.  But this time the rewriter sees the call
+(double-rewrite x), which it handles as follows.  First, x is rewritten
+as before, yielding (h1 a).  But now, because of the call of
+double-rewrite, the rewriter takes (h1 a) and rewrites it under the
+empty unify-subst.  What's more, because of the defcong event above,
+this rewrite takes place in a context where it suffices to maintain the
+equivalence relation my-equiv.  This allows for the application of
+lemma-1, hence (h1 a) is rewritten (under unify-subst = nil) to (h2 a).
+Popping back up, the rewriter will now rewrite the call of foo to t
+using lemma-2.
+
+The example above explains how the rewriter treats calls of
+double-rewrite, but it may leave the unfortunate impression that the
+user needs to consider each :rewrite or :linear rule carefully, just in
+case a call of double-rewrite may be appropriate.  Fortunately, ACL2
+provides a "[Double-rewrite]" warning to inform the user of just this
+sort of situation.  If you don't see this warning when you submit a
+(:rewrite or :linear) rule, then the issue described here shouldn't
+come up for that rule.  Such warnings may appear for hypotheses or
+right-hand side of a :rewrite rule, and for hypotheses or full
+conclusion (as opposed to just the trigger term) of a :linear rule.
+
+If you do see a "[Double-rewrite]" warning, then should you add the
+indicated call(s) of double-rewrite?  At the time of writing this
+documentation, the answer is not clear.  Early experiments with double
+rewriting suggested that it may be too expensive to call double-rewrite
+in every instance where a warning indicates that there could be an
+advantage to doing so.  And at the time of this writing, the ACL2
+regression suite has about 1900 such warnings (but note that books were
+developed before double-rewrite or the "[Double-rewrite]" warning were
+implemented), which suggests that one can often do fine just ignoring
+such warnings.  However, it seems advisable to go ahead and add the
+calls of double-rewrite indicated by the warnings unless you run across
+efficiency problems caused by doing so.  Of course, if you decide to
+ignore all such warnings you can execute the event:
+(set-inhibit-warnings "Double-rewrite").
+
+Finally, we note that it is generally not necessary to call
+double-rewrite in order to get its effect in the following case, where
+the discussion above might have led one to consider a call of
+double-rewrite: a hypothesis is a variable, or more generally, we are
+considering a variable occurrence that is a branch of the top-level IF
+structure of a hypothesis.  The automatic handling of this case, by a
+form of double rewriting, was instituted in ACL2 Version_2.9 and
+remains in place with the introduction of double-rewrite.  Here is a
+simple illustrative example.  Notice that foo-holds applies to prove
+the final thm below, even without a call of double-rewrite in the
+hypothesis of foo-holds, and that there is no "[Double-rewrite]"
+warning when submitting foo-holds.
+
+     (encapsulate
+      (((foo *) => *)
+       ((bar *) => *))
+     
+      (local (defun foo (x) (declare (ignore x)) t))
+      (local (defun bar (x) (declare (ignore x)) t))
+     
+      (defthm foo-holds
+        (implies x
+                 (equal (foo x) t)))
+      (defthm bar-holds-propositionally
+        (iff (bar x) t)))
+     
+     (thm (foo (bar y)))
+
+
+File: acl2-doc-emacs.info,  Node: EMBEDDED-EVENT-FORM,  Next: ENABLE-FORCING,  Prev: DOUBLE-REWRITE,  Up: MISCELLANEOUS
+
+EMBEDDED-EVENT-FORM    forms that may be embedded in other events
+
+     Examples:
+     (defun hd (x) (if (consp x) (car x) 0))
+     (local (defthm lemma23 ...))
+     (progn (defun fn1 ...)
+            (local (defun fn2 ...))
+            ...)
+     
+     General Form:
+     An embedded event form is a term, x, such that:
+
+     x is a call of an event function other than DEFPKG (see *note
+     EVENTS:: for   a listing of the event functions);
+
+     x is of the form (LOCAL x1) where x1 is an embedded   event form;
+
+     x is of the form (SKIP-PROOFS x1) where x1 is an   embedded event
+     form;
+
+     x is of the form (MAKE-EVENT &), where & is any term   whose
+     expansion is an embedded event (see *note MAKE-EVENT::);
+
+     x is of the form (WITH-OUTPUT ... x1) where x1 is an   embedded
+     event form;
+
+     x is of the form (VALUE-TRIPLE &), where & is any term;
+
+     x is a call of ENCAPSULATE, PROGN, PROGN!, or   INCLUDE-BOOK;
+
+     x macroexpands to one of the forms above; or
+
+     [intended only for the implementation] x is   (RECORD-EXPANSION x1
+     x2), where x1 and x2 are embedded event   forms.
+
+
+An exception: an embedded event form may not set the
+acl2-defaults-table when in the context of local.  Thus for example,
+the form
+
+     (local (table acl2-defaults-table :defun-mode :program))
+
+is not an embedded event form, nor is the form (local (program)), since
+the latter sets the acl2-defaults-table implicitly.  An example at the
+end of the discussion below illustrates why there is this restriction.
+
+Only embedded event forms are allowed in a book after its initial
+in-package form.  See *Note BOOKS::.  However, you may find that
+make-event allows you to get the effect you want for a form that is not
+an embedded event form.  For example, you can put the following into a
+book, which assigns the value 17 to state global variable x:
+
+     (make-event (er-progn (assign x 17)
+                           (value '(value-triple nil)))
+                 :check-expansion t)
+
+When an embedded event is executed while ld-skip-proofsp is
+'include-book, those parts of it inside local forms are ignored.  Thus,
+
+        (progn (defun f1 () 1)
+               (local (defun f2 () 2))
+               (defun f3 () 3))
+
+will define f1, f2, and f3 when ld-skip-proofsp is nil but will define
+only f1 and f3 when ld-skip-proofsp is 'include-book.
+
+_Discussion:_
+
+Encapsulate, progn, and include-book place restrictions on the kinds of
+forms that may be processed.  These restrictions ensure that the
+non-local events are indeed admissible provided that the sequence of
+local and non-local events is admissible when proofs are done, i.e.,
+when ld-skip-proofs is nil.  But progn! places no such restrictions,
+hence is potentially dangerous and should be avoided unless you
+understand the ramifications; so it is illegal unless there is an active
+trust tag (see *note DEFTTAG::).
+
+Local permits the hiding of an event or group of events in the sense
+that local events are processed when we are trying to establish the
+admissibility of a sequence of events embedded in encapsulate forms or
+in books, but are ignored when we are constructing the world produced
+by assuming that sequence.  Thus, for example, a particularly ugly and
+inefficient :rewrite rule might be made local to an encapsulate that
+"exports" a desirable theorem whose proof requires the ugly lemma.
+
+To see why we can't allow just anything in as an embedded event,
+consider allowing the form
+
+     (if (ld-skip-proofsp state)
+         (defun foo () 2)
+         (defun foo () 1))
+
+followed by
+
+     (defthm foo-is-1 (equal (foo) 1)).
+
+When we process the events with ld-skip-proofsp, nil the second defun
+is executed and the defthm succeeds.  But when we process the events
+with ld-skip-proofsp 'include-book, the second defun is executed, so
+that foo no longer has the same definition it did when we proved
+foo-is-1.  Thus, an invalid formula is assumed when we process the
+defthm while skipping proofs.  Thus, the first form above is not a
+legal embedded event form.
+
+If you encounter a situation where these restrictions seem to prevent
+you from doing what you want to do, then you may find make-event to be
+helpful.  See *Note MAKE-EVENT::.
+
+Defpkg is not allowed because it affects how things are read after it
+is executed.  But all the forms embedded in an event are read before
+any are executed.  That is,
+
+     (encapsulate nil
+                  (defpkg "MY-PKG" nil)
+                  (defun foo () 'my-pkg::bar))
+
+makes no sense since my-pkg::bar must have been read before the defpkg
+for "MY-PKG" was executed.
+
+Finally, let us elaborate on the restriction mentioned earlier related
+to the acl2-defaults-table.  Consider the following form.
+
+     (encapsulate
+      ()
+      (local (program))
+      (defun foo (x)
+        (if (equal 0 x)
+            0
+          (1+ (foo (- x))))))
+
+See *Note LOCAL-INCOMPATIBILITY:: for a discussion of how encapsulate
+processes event forms.  Briefly, on the first pass through the events
+the definition of foo will be accepted in defun mode :program, and
+hence accepted.  But on the second pass the form (local (program)) is
+skipped because it is marked as local, and hence foo is accepted in
+defun mode :logic.  Yet, no proof has been performed in order to admit
+foo, and in fact, it is not hard to prove a contradiction from this
+definition!
+
+
+File: acl2-doc-emacs.info,  Node: ENABLE-FORCING,  Next: ENABLE-IMMEDIATE-FORCE-MODEP,  Prev: EMBEDDED-EVENT-FORM,  Up: MISCELLANEOUS
+
+ENABLE-FORCING    to allow forced splits
+
+     General Form:
+     ACL2 !>:enable-forcing    ; allowed forced case splits
+
+See *Note FORCE:: and see *note CASE-SPLIT:: for a discussion of forced
+case splits, which are turned back on by this command.  (See *Note
+DISABLE-FORCING:: for how to turn them off.)
+
+Enable-forcing is actually a macro that enables the executable
+counterpart of the function symbol force; see *note FORCE::.  When you
+want to use hints to turn on forced case splits, use a form such as:
+
+     :in-theory (enable (:executable-counterpart force))
+
+
+File: acl2-doc-emacs.info,  Node: ENABLE-IMMEDIATE-FORCE-MODEP,  Next: ENTER-BOOT-STRAP-MODE,  Prev: ENABLE-FORCING,  Up: MISCELLANEOUS
+
+ENABLE-IMMEDIATE-FORCE-MODEP    forced hypotheses are attacked immediately
+
+     General Form:
+     ACL2 !>:enable-immediate-force-modep
+
+This event causes ACL2 to attack forced hypotheses immediately instead
+of delaying them to the next forcing round.  See *Note
+IMMEDIATE-FORCE-MODEP::.  Or for more basic information, first see
+*note FORCE:: for a discussion of forced case splits.
+
+Enable-immediate-force-modep is a macro that enables the executable
+counterpart of the function symbol immediate-force-modep.  When you
+want to enable this mode in hints, use a form such as:
+
+     :in-theory (enable (:executable-counterpart immediate-force-modep))
+
+
+File: acl2-doc-emacs.info,  Node: ENTER-BOOT-STRAP-MODE,  Next: ESCAPE-TO-COMMON-LISP,  Prev: ENABLE-IMMEDIATE-FORCE-MODEP,  Up: MISCELLANEOUS
+
+ENTER-BOOT-STRAP-MODE    The first millisecond of the Big Bang
+
+ACL2 functions, e.g., if, that show enter-boot-strap-mode as their
+defining command are in fact primitives.  It is impossible for the
+system to display defining axioms about these symbols.
+
+Enter-boot-strap-mode is a Common Lisp function but not an ACL2
+function.  It magically creates from nil an ACL2 property list world
+that lets us start the boot-strapping process.  That is, once
+enter-boot-strap-mode has created its world, it is possible to process
+the defconsts, defuns, and defaxioms, necessary to bring up the rest of
+the system.  Before that world is created, the attempt by ACL2 even to
+translate a defun form, say, would produce an error because defun is
+undefined.
+
+Several ACL2 functions show enter-boot-strap-mode as their defining
+command.  Among them are if, cons, car, and cdr.  These functions are
+characterized by axioms rather than definitional equations -- axioms
+that in most cases are built into our code and hence do not have any
+explicit representation among the rules and formulas in the system.
+
+
+File: acl2-doc-emacs.info,  Node: ESCAPE-TO-COMMON-LISP,  Next: EVISCERATE-HIDE-TERMS,  Prev: ENTER-BOOT-STRAP-MODE,  Up: MISCELLANEOUS
+
+ESCAPE-TO-COMMON-LISP    escaping to Common Lisp
+
+     Example:
+     ACL2 !>:Q
+
+There is no Common Lisp escape feature in the lp.  This is part of the
+price of purity.  To execute a form in Common Lisp as opposed to ACL2,
+exit lp with :q, submit the desired forms to the Common Lisp
+read-eval-print loop, and reenter ACL2 with (lp).
+
+
+File: acl2-doc-emacs.info,  Node: EVISCERATE-HIDE-TERMS,  Next: EXECUTABLE-COUNTERPART,  Prev: ESCAPE-TO-COMMON-LISP,  Up: MISCELLANEOUS
+
+EVISCERATE-HIDE-TERMS    to print (hide ...) as <hidden>
+
+     Example:
+     (assign eviscerate-hide-terms t)
+     (assign eviscerate-hide-terms nil)
+
+Eviscerate-hide-terms is a state global variable whose value is either
+t or nil.  The variable affects how terms are displayed.  If t, terms
+of the form (hide ...) are printed as <hidden>.  Otherwise, they are
+printed normally.
+
+
+File: acl2-doc-emacs.info,  Node: EXECUTABLE-COUNTERPART,  Next: EXIT-BOOT-STRAP-MODE,  Prev: EVISCERATE-HIDE-TERMS,  Up: MISCELLANEOUS
+
+EXECUTABLE-COUNTERPART    a rule for computing the value of a function
+
+     Examples:
+     (:executable-counterpart length)
+
+which may be abbreviated in theories as
+
+     (length)
+
+Every defun introduces at least two rules used by the theorem prover.
+Suppose fn is the name of a defun'd function.  Then (:definition fn) is
+the rune (see *note RUNE::) naming the rule that allows the simplifier
+to replace calls of fn by its instantiated body.
+(:executable-counterpart fn) is the rune for the rule for how to
+evaluate the function on known constants.
+
+When typing theories it is convenient to know that (fn) is a runic
+designator that denotes (:executable-counterpart fn).  See *Note
+THEORIES::.
+
+If (:executable-counterpart fn) is enabled, then when applications of
+fn to known constants are seen by the simplifier they are computed out
+by executing the Common Lisp code for fn (with the appropriate handling
+of guards).  Suppose fact is defined as the factorial function.  If the
+executable counterpart rune of fact, (:executable-counterpart fact), is
+enabled when the simplifier encounters (fact 12), then that term will
+be "immediately" expanded to 479001600.  Note that even if subroutines
+of fn have disabled executable counterparts, fn will call their Lisp
+code nonetheless:  once an executable counterpart function is applied,
+no subsidiary enable checks are made.
+
+Such one-step expansions are sometimes counterproductive because they
+prevent the anticipated application of certain lemmas about the
+subroutines of the expanded function.  Such computed expansions can be
+prevented by disabling the executable counterpart rune of the relevant
+function.  For example, if (:executable-counterpart fact) is disabled,
+(fact 12) will not be expanded by computation.  In this situation,
+(fact 12) may be rewritten to (* 12 (fact 11)), using the rule named
+(:definition fact), provided the system's heuristics permit the
+introduction of the term (fact 11).  Note that lemmas about
+multiplication may then be applicable (while such lemmas would be
+inapplicable to 479001600).  In many proofs it is desirable to disable
+the executable counterpart runes of certain functions to prevent their
+expansion by computation.  See *Note EXECUTABLE-COUNTERPART-THEORY::.
+
+Finally:  What do we do about functions that are "constrained" rather
+than defined, such as the following?  (See *Note ENCAPSULATE::.)
+
+     (encapsulate (((foo *) => *))
+                  (local (defun foo (x) x)))
+
+Does foo have an executable counterpart?  Yes:  since the vast majority
+of functions have sensible executable counterparts, it was decided that
+*all* functions, even such "constrained" ones, have executable
+counterparts.  We essentially "trap" when such calls are inappropriate.
+Thus, consider for example:
+
+     (defun bar (x)
+       (if (rationalp x)
+           (+ x 1)
+         (foo x)))
+
+If the term (bar '3) is encountered by the ACL2 rewriter during a
+proof, and if the :executable-counterpart of bar is enabled, then it
+will be invoked to reduce this term to '4.  However, if the term (bar
+'a) is encountered during a proof, then since 'a is not a rationalp and
+since the :executable-counterpart of foo is only a "trap," then this
+call of the :executable-counterpart of bar will result in a "trap." In
+that case, the rewriter will return the term (hide (bar 'a)) so that it
+never has to go through this process again.  See *Note HIDE::.
+
+
+File: acl2-doc-emacs.info,  Node: EXIT-BOOT-STRAP-MODE,  Next: EXPAND,  Prev: EXECUTABLE-COUNTERPART,  Up: MISCELLANEOUS
+
+EXIT-BOOT-STRAP-MODE    the end of pre-history
+
+Exit-boot-strap-mode is the last step in creating the ACL2 world in
+which the user lives.  It has command number 0.  Commands before it are
+part of the system initialization and extend all the way back to :min.
+Commands after it are those of the user.
+
+Exit-boot-strap-mode is a Common Lisp function but not an ACL2
+function.  It is called when every defconst, defun, etc., in our source
+code has been processed under ACL2 and the world is all but complete.
+exit-boot-strap-mode has only one job: to signal the completion of the
+boot-strapping.
+
+
+File: acl2-doc-emacs.info,  Node: EXPAND,  Next: EXTENDED-METAFUNCTIONS,  Prev: EXIT-BOOT-STRAP-MODE,  Up: MISCELLANEOUS
+
+EXPAND    hints keyword :EXPAND
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: EXTENDED-METAFUNCTIONS,  Next: FAILED-FORCING,  Prev: EXPAND,  Up: MISCELLANEOUS
+
+EXTENDED-METAFUNCTIONS    state and context sensitive metafunctions
+
+     General Form of an Extended :Meta theorem:
+     (implies (and (pseudo-termp x)              ; this hyp is optional
+                   (alistp a)                    ; this hyp is optional
+                   (ev (hyp-fn x mfc state) a))  ; this hyp is optional
+              (equiv (ev x a)
+                     (ev (fn x mfc state) a)))
+
+where the restrictions are as described in the documentation for meta
+and, in addition, mfc and state are distinct variable symbols
+(different also from x and a) and state is literally the symbol STATE.
+A :meta theorem of the above form installs fn as a metatheoretic
+simplifier with hypothesis function hyp-fn, exactly as for vanilla
+metafunctions.  The only difference is that when the metafunctions are
+applied, some contextual information is passed in via the mfc argument
+and the ACL2 state is made available.
+
+See *Note META:: for a discussion of vanilla flavored metafunctions.
+This documentation assumes you are familiar with the simpler situation,
+in particular, how to define a vanilla flavored metafunction, fn, and
+its associated hypothesis metafunction, hyp-fn, and how to state and
+prove metatheorems installing such functions.  Defining extended
+metafunctions requires that you also be familiar with many ACL2
+implementation details.  This documentation is sketchy on these
+details; see the ACL2 source code or email the acl2-help list if you
+need more help.
+
+The metafunction context, mfc, is a list containing many different data
+structures used by various internal ACL2 functions.  We do not document
+the form of mfc.  Your extended metafunction should just take mfc as its
+second formal and pass it into the functions mentioned below.  The ACL2
+state is well-documented (see *note STATE::).  The following
+expressions may be useful in defining extended metafunctions.
+
+(mfc-clause mfc): returns the current goal, in clausal form.  A clause
+is a list of ACL2 terms, implicitly denoting the disjunction of the
+listed terms.  The clause returned by mfc-clause is the clausal form of
+the translation (see *note TRANS::) of the goal or subgoal on which the
+rewriter is working.  When a metafunction calls mfc-clause, the term
+being rewritten by the metafunction either occurs somewhere in this
+clause or, perhaps more commonly, is being rewritten on behalf of some
+lemma to which the rewriter has backchained while trying to rewrite a
+term in the clause.
+
+(mfc-ancestors mfc): returns the current list of the negations of the
+backchaining hypotheses being pursued.  In particular, (null
+(mfc-ancestors mfc)) will be true if and only if the term being
+rewritten is part of the current goal; otherwise, that term is part of a
+hypothesis from a rule currently being considered for use.  Exception:
+An ancestor of the form (:binding-hyp hyp unify-subst) indicates that
+hyp has been encountered as a hypothesis of the form (equal var term)
+or (equiv var (double-rewrite-term)) that binds variable var to the
+result of rewriting term under unify-subst.
+
+(mfc-type-alist mfc): returns the type-alist governing the occurrence of
+the term, x, being rewritten by the metafunction.  A type-alist is an
+association list, each element of which is of the form (term ts .
+ttree).  Such an element means that the term term has the type-set ts.
+The ttree component is probably irrelevant here.  All the terms in the
+type-alist are in translated form (see *note TRANS::).  The ts are
+numbers denoting finite Boolean combinations of ACL2's primitive types
+(see *note TYPE-SET::).  The type-alist includes not only information
+gleaned from the conditions governing the term being rewritten but also
+that gleaned from forward chaining from the (negations of the) other
+literals in the clause returned by mfc-clause.
+
+(w state): returns the ACL2 logical world.
+
+(mfc-ts term mfc state): returns the type-set of term in the current
+context; see *note TYPE-SET::.
+
+(mfc-rw term obj equiv-info mfc state): returns the result of rewriting
+term in the current context, mfc, with objective obj and the
+equivalence relation described by equiv-info.  Obj should be t, nil, or
+?, and describes your objective: try to show that term is true, false,
+or anything.  Equiv-info is either nil, t, a function symbol fn naming
+a known equivalence relation, or a list of congruence rules.  Nil means
+return a term that is equal to term.  T means return a term that is
+propositionally equivalent (i.e., in the iff sense) to term, while fn
+means return a term fn-equivalent to term.  The final case, which is
+intended only for advanced users, allows the specification of generated
+equivalence relations, as supplied to the geneqv argument of rewrite.
+Generally, if you wish to establish that term is true in the current
+context, use the idiom
+
+     (equal (mfc-rw term t t mfc state) *t*)
+
+The constant *t* is set to the internal form of the constant term t,
+i.e., 't.
+
+(mfc-rw+ term alist obj equiv-info mfc state): if alist is nil then
+this is equivalent to (mfc-rw term obj equiv-info mfc state).  However,
+the former takes an argument, alist, that binds variables to terms, and
+returns the result of rewriting term under that alist, where this
+rewriting is as described for mfc-rw above.  The function mfc-rw+ can
+be more efficient than mfc-rw|, because the terms in the binding alist
+have generally already been rewritten, and it can be inefficient to
+rewrite them again.  For example, consider a rewrite rule of the
+following form.
+
+     (implies (and ...
+                   (syntaxp (... (mfc-rw `(bar ,x) ...) ...))
+                   ...)
+              (equal (... x ...) ...))
+
+Here, x is bound in the conclusion to the result of rewriting some term,
+say, tm.  Then the above call of mfc-rw will rewrite tm, which is
+probably unnecessary.  So a preferable form of the rule above may be as
+follows, so that tm is not further rewritten by mfc-rw+.
+
+     (implies (and ...
+                   (syntaxp (... (mfc-rw+ '(bar v) `((v . ,x)) ...) ...))
+                   ...)
+              (equal (... x ...) ...))
+
+However, you may find that the additional rewriting done by mfc-rw is
+useful in some cases.
+
+(mfc-ap term mfc state): returns t or nil according to whether linear
+arithmetic can determine that term is false.  To the cognoscenti:
+returns the contradiction flag produced by linearizing term and adding
+it to the linear-pot-lst.
+
+During the execution of a metafunction by the theorem prover, the
+expressions above compute the results specified.  However, there are no
+axioms about the mfc- function symbols: they are uninterpreted function
+symbols.  Thus, in the proof of the correctness of a metafunction, no
+information is available about the results of these functions.  Thus,
+_these functions can be used for heuristic purposes only._
+
+For example, your metafunction may use these functions to decide
+whether to perform a given transformation, but the transformation must
+be sound regardless of the value that your metafunction returns.  We
+illustrate this below.  It is sometimes possible to use the hypothesis
+metafunction, hyp-fn, to generate a sufficient hypothesis to justify the
+transformation.  The generated hypothesis might have already been
+"proved" internally by your use of mfc-ts or mfc-rw, but the system
+will have to prove it "officially" by relieving it.  We illustrate this
+below also.
+
+We conclude with a script that defines, verifies, and uses several
+extended metafunctions.  This script is based on one provided by Robert
+Krug, who was instrumental in the development of this style of
+metafunction and whose help we gratefully acknowledge.
+
+
+     ; Here is an example.  I will define (foo i j) simply to be (+ i j).
+     ; But I will keep its definition disabled so the theorem prover
+     ; doesn't know that.  Then I will define an extended metafunction
+     ; that reduces (foo i (- i)) to 0 provided i has integer type and the
+     ; expression (< 10 i) occurs as a hypothesis in the clause.
+     
+     ; Note that (foo i (- i)) is 0 in any case.
+     
+     (defun foo (i j) (+ i j))
+     
+     (defevaluator eva eva-lst ((foo i j)
+                                (unary-- i)
+     
+     ; I won't need these two cases until the last example below, but I
+     ; include them now.
+     
+                                (if x y z)
+                                (integerp x)))
+     
+     (set-state-ok t)
+     
+     (defun metafn (x mfc state)
+       (cond
+        ((and (consp x)
+              (equal (car x) 'foo)
+              (equal (caddr x) (list 'unary-- (cadr x))))
+     
+     ; So x is of the form (foo i (- i)).  Now I want to check some other
+     ; conditions.
+     
+         (cond ((and (ts-subsetp (mfc-ts (cadr x) mfc state)
+                                 *ts-integer*)
+                     (member-equal `(NOT (< '10 ,(cadr x)))
+                                   (mfc-clause mfc)))
+                (quote (quote 0)))
+               (t x)))
+        (t x)))
+     
+     (defthm metafn-correct
+       (equal (eva x a) (eva (metafn x mfc state) a))
+       :rule-classes ((:meta :trigger-fns (foo))))
+     
+     (in-theory (disable foo))
+     
+     ; The following will fail because the metafunction won't fire.
+     ; We don't know enough about i.
+     
+     (thm (equal (foo i (- i)) 0))
+     
+     ; Same here.
+     
+     (thm (implies (and (integerp i) (< 0 i)) (equal (foo i (- i)) 0)))
+     
+     ; But this will work.
+     
+     (thm (implies (and (integerp i) (< 10 i))
+                   (equal (foo i (- i)) 0)))
+     
+     ; This won't, because the metafunction looks for (< 10 i) literally,
+     ; not just something that implies it.
+     
+     (thm (implies (and (integerp i) (< 11 i))
+                   (equal (foo i (- i)) 0)))
+     
+     ; Now I will undo the defun of metafn and repeat the exercise, but
+     ; this time check the weaker condition that (< 10 i) is provable
+     ; (by rewriting it) rather than explicitly present.
+     
+     (ubt 'metafn)
+     
+     (defun metafn (x mfc state)
+       (cond
+        ((and (consp x)
+              (equal (car x) 'foo)
+              (equal (caddr x) (list 'unary-- (cadr x))))
+         (cond ((and (ts-subsetp (mfc-ts (cadr x) mfc state)
+                                 *ts-integer*)
+                     (equal (mfc-rw `(< '10 ,(cadr x)) t t mfc state)
+                            *t*))
+     
+     ; The mfc-rw above rewrites (< 10 i) with objective t and iffp t.  The
+     ; objective means the theorem prover will try to establish it.  The
+     ; iffp means the theorem prover can rewrite maintaining propositional
+     ; equivalence instead of strict equality.
+     
+                (quote (quote 0)))
+               (t x)))
+        (t x)))
+     
+     (defthm metafn-correct
+       (equal (eva x a) (eva (metafn x mfc state) a))
+       :rule-classes ((:meta :trigger-fns (foo))))
+     
+     (in-theory (disable foo))
+     
+     ; Now it will prove both:
+     
+     (thm (implies (and (integerp i) (< 10 i))
+                   (equal (foo i (- i)) 0)))
+     
+     (thm (implies (and (integerp i) (< 11 i))
+                   (equal (foo i (- i)) 0)))
+     
+     ; Now I undo the defun of metafn and change the problem entirely.
+     ; This time I will rewrite (integerp (foo i j)) to t.  Note that
+     ; this is true if i and j are integers.  I can check this
+     ; internally, but have to generate a hyp-fn to make it official.
+     
+     (ubt 'metafn)
+     
+     (defun metafn (x mfc state)
+       (cond
+        ((and (consp x)
+              (equal (car x) 'integerp)
+              (consp (cadr x))
+              (equal (car (cadr x)) 'foo))
+     
+     ; So x is (integerp (foo i j)).  Now check that i and j are
+     ; ``probably'' integers.
+     
+         (cond ((and (ts-subsetp (mfc-ts (cadr (cadr x)) mfc state)
+                                 *ts-integer*)
+                     (ts-subsetp (mfc-ts (caddr (cadr x)) mfc state)
+                                 *ts-integer*))
+                *t*)
+               (t x)))
+        (t x)))
+     
+     ; To justify this transformation, I generate the appropriate hyps.
+     
+     (defun hyp-fn (x mfc state)
+     
+       (declare (ignore mfc state))
+     
+     ; The hyp-fn is run only if the metafn produces an answer different
+     ; from its input.  Thus, we know at execution time that x is of the
+     ; form (integerp (foo i j)) and we know that metafn rewrote
+     ; (integerp i) and (integerp j) both to t.  So we just produce their
+     ; conjunction.  Note that we must produce a translated term; we
+     ; cannot use the macro AND and must quote constants!  Sometimes you
+     ; must do tests in the hyp-fn to figure out which case the metafn
+     ; produced, but not in this example.
+     
+                `(if (integerp ,(cadr (cadr x)))
+                     (integerp ,(caddr (cadr x)))
+                     'nil))
+     
+     (defthm metafn-correct
+       (implies (eva (hyp-fn x mfc state) a)
+                (equal (eva x a) (eva (metafn x mfc state) a)))
+       :rule-classes ((:meta :trigger-fns (integerp))))
+     
+     (in-theory (disable foo))
+     
+     ; This will not be proved.
+     
+     (thm (implies (and (rationalp x) (integerp i)) (integerp (foo i j))))
+     
+     ; But this will be.
+     
+     (thm (implies (and (rationalp x)
+                        (integerp i)
+                        (integerp j))
+                   (integerp (foo i j))))
+
+
+File: acl2-doc-emacs.info,  Node: FAILED-FORCING,  Next: FAILURE,  Prev: EXTENDED-METAFUNCTIONS,  Up: MISCELLANEOUS
+
+FAILED-FORCING    how to deal with a proof failure in a forcing round
+
+See *Note FORCING-ROUND:: for a background discussion of the notion of
+forcing rounds.  When a proof fails during a forcing round it means
+that the "gist" of the proof succeeded but some "technical detail"
+failed.  The first question you must ask yourself is whether the forced
+goals are indeed theorems.  We discuss the possibilities below.
+
+If you believe the forced goals are theorems, you should follow the
+usual methodology for "fixing" failed ACL2 proofs, e.g., the
+identification of key lemmas and their timely and proper use as rules.
+See *Note FAILURE:: and see *note PROOF-TREE::.
+
+The rules designed for the goals of forcing rounds are often just what
+is needed to prove the forced hypothesis at the time it is forced.
+Thus, you may find that when the system has been "taught" how to prove
+the goals of the forcing round no forcing round is needed.  This is
+intended as a feature to help structure the discovery of the necessary
+rules.
+
+If a hint must be provided to prove a goal in a forcing round, the
+appropriate "goal specifier" (the string used to identify the goal to
+which the hint is to be applied) is just the text printed on the line
+above the formula, e.g., "[1]Subgoal *1/3"".  See *Note GOAL-SPEC::.
+
+If you solve a forcing problem by giving explicit hints for the goals
+of forcing rounds, you might consider whether you could avoid forcing
+the assumption in the first place by giving those hints in the
+appropriate places of the main proof.  This is one reason that we print
+out the origins of each forced assumption.  An argument against this
+style, however, is that an assumption might be forced in hundreds of
+places in the main goal and proved only once in the forcing round, so
+that by delaying the proof you actually save time.
+
+We now turn to the possibility that some goal in the forcing round is
+not a theorem.
+
+There are two possibilities to consider.  The first is that the
+original theorem has insufficient hypotheses to ensure that all the
+forced hypotheses are in fact always true.  The "fix" in this case is
+to amend the original conjecture so that it has adequate hypotheses.
+
+A more difficult situation can arise and that is when the conjecture
+has sufficient hypotheses but they are not present in the forcing round
+goal.  This can be caused by what we call "premature" forcing.
+
+Because ACL2 rewrites from the inside out, it is possible that it will
+force hypotheses while the context is insufficient to establish them.
+Consider trying to prove (p x (foo x)).  We first rewrite the formula
+in an empty context, i.e., assuming nothing.  Thus, we rewrite (foo x)
+in an empty context.  If rewriting (foo x) forces anything, that forced
+assumption will have to be proved in an empty context.  This will
+likely be impossible.
+
+On the other hand, suppose we did not attack (foo x) until after we had
+expanded p.  We might find that the value of its second argument, (foo
+x), is relevant only in some cases and in those cases we might be able
+to establish the hypotheses forced by (foo x).  Our premature forcing
+is thus seen to be a consequence of our "over eager" rewriting.
+
+Here, just for concreteness, is an example you can try.  In this
+example, (foo x) rewrites to x but has a forced hypothesis of
+(rationalp x).  P does a case split on that very hypothesis and uses
+its second argument only when x is known to be rational.  Thus, the
+hypothesis for the (foo x) rewrite is satisfied.  On the false branch
+of its case split, p simplies to (p1 x) which can be proved under the
+assumption that x is not rational.
+
+     (defun p1 (x) (not (rationalp x)))
+     (defun p (x y)(if (rationalp x) (equal x y) (p1 x)))
+     (defun foo (x) x)
+     (defthm foo-rewrite (implies (force (rationalp x)) (equal (foo x) x)))
+     (in-theory (disable foo))
+
+The attempt then to do (thm (p x (foo x))) forces the unprovable goal
+(rationalp x).
+
+Since all "formulas" are presented to the theorem prover as single
+terms with no hypotheses (e.g., since implies is a function), this
+problem would occur routinely were it not for the fact that the theorem
+prover expands certain "simple" definitions immediately without doing
+anything that can cause a hypothesis to be forced.  See *Note SIMPLE::.
+This does not solve the problem, since it is possible to hide the
+propositional structure arbitrarily deeply.  For example, one could
+define p, above, recursively so that the test that x is rational and
+the subsequent first "real" use of y occurred arbitrarily deeply.
+
+Therefore, the problem remains: what do you do if an impossible goal is
+forced and yet you know that the original conjecture was adequately
+protected by hypotheses?
+
+One alternative is to disable forcing entirely.  See *Note
+DISABLE-FORCING::.  Another is to disable the rule that caused the
+force.
+
+A third alternative is to prove that the negation of the main goal
+implies the forced hypothesis.  For example,
+
+     (defthm not-p-implies-rationalp
+       (implies (not (p x (foo x))) (rationalp x))
+       :rule-classes nil)
+
+Observe that we make no rules from this formula.  Instead, we merely
+:use it in the subgoal where we must establish (rationalp x).
+
+     (thm (p x (foo x))
+          :hints (("Goal" :use not-p-implies-rationalp)))
+
+When we said, above, that (p x (foo x)) is first rewritten in an empty
+context we were misrepresenting the situation slightly.  When we
+rewrite a literal we know what literal we are rewriting and we
+implicitly assume it false.  This assumption is "dangerous" in that it
+can lead us to simplify our goal to nil and give up -- we have even
+seen people make the mistake of assuming the negation of what they
+wished to prove and then via a very complicated series of
+transformations convince themselves that the formula is false.  Because
+of this "tail biting" we make very weak use of the negation of our
+goal.  But the use we make of it is sufficient to establish the forced
+hypothesis above.
+
+A fourth alternative is to weaken your desired theorem so as to make
+explicit the required hypotheses, e.g., to prove
+
+     (defthm rationalp-implies-main
+       (implies (rationalp x) (p x (foo x)))
+       :rule-classes nil)
+
+This of course is unsatisfying because it is not what you originally
+intended.  But all is not lost.  You can now prove your main theorem
+from this one, letting the implies here provide the necessary case
+split.
+
+     (thm (p x (foo x))
+          :hints (("Goal" :use rationalp-implies-main)))
+
+
+File: acl2-doc-emacs.info,  Node: FAILURE,  Next: FIND-RULES-OF-RUNE,  Prev: FAILED-FORCING,  Up: MISCELLANEOUS
+
+FAILURE    how to deal with a proof failure
+
+When ACL2 gives up it does not mean that the submitted conjecture is
+invalid, even if the last formula ACL2 printed in its proof attempt is
+manifestly false.  Since ACL2 sometimes generalizes the goal being
+proved, it is possible it adopted an invalid subgoal as a legitimate
+(but doomed) strategy for proving a valid goal.  Nevertheless,
+conjectures submitted to ACL2 are often invalid and the proof attempt
+often leads the careful reader to the realization that a hypothesis has
+been omitted or that some special case has been forgotten.  It is good
+practice to ask yourself, when you see a proof attempt fail, whether
+the conjecture submitted is actually a theorem.
+
+If you think the conjecture is a theorem, then you must figure out from
+ACL2's output what you know that ACL2 doesn't about the functions in
+the conjecture and how to impart that knowledge to ACL2 in the form of
+rules.  However, see *note PROOF-TREE:: for a utility that may be very
+helpful in locating parts of the failed proof that are of particular
+interest.  See also the book "Computer-Aided Reasoning: An Approach"
+(Kaufmann, Manolios, Moore), as well as the discussion of how to read
+Nqthm proofs and how to use Nqthm rules in "A Computational Logic
+Handbook" by Boyer and Moore (Academic Press, 1988).
+
+If the failure occurred during a forcing round, see *note
+FAILED-FORCING::.
+
+
+File: acl2-doc-emacs.info,  Node: FIND-RULES-OF-RUNE,  Next: FORCE,  Prev: FAILURE,  Up: MISCELLANEOUS
+
+FIND-RULES-OF-RUNE    find the rules named rune
+
+     General Form:
+     (find-rules-of-rune rune wrld)
+
+This function finds all the rules in wrld with :rune rune.  It returns
+a list of rules in their internal form (generally as described by the
+corresponding defrec).  Decyphering these rules is difficult since one
+cannot always look at a rule object and decide what kind of record it
+is without exploiting many system invariants (e.g., that :rewrite runes
+only name rewrite-rules).
+
+At the moment this function returns nil if the rune in question is a
+:refinement rune, because there is no object representing :refinement
+rules.  (:refinement rules cause changes in the 'coarsenings
+properties.)  In addition, if the rune is an :equivalence rune, then
+congruence rules with that rune will be returned -- because
+:equivalence lemmas generate some congruence rules -- but the fact that
+a certain function is now known to be an equivalence relation is not
+represented by any rule object and so no such rule is returned.  (The
+fact that the function is an equivalence relation is encoded entirely
+in its presence as a 'coarsening of equal.)
+

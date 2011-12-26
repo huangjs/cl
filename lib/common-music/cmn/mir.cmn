@@ -1,0 +1,173 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(defun display-beam-staccato (mark note score &optional justifying)
+  (declare (ignore justifying))
+  (let* ((y0 (+ (staff-y0 note) .25 (y1 note))))
+    (cmn-dot score
+	    (+ (x0 note) (x0 mark) (dx mark) (center note) -.05)
+	    (+ y0 (y0 mark) (dy mark)))))
+
+(defvar beam-staccato (make-instance 'write-protected-sundry :name :beam-staccato :mark #'display-beam-staccato))
+(defun beam-staccato (&rest objects) (apply #'mark #'display-beam-staccato :beam-staccato objects))
+
+(defun sup (name &rest args)
+  (apply #'note name s beam-staccato stem-up args))
+
+(defvar mir-font-scaler .4)
+
+(defun ltext (&rest args)
+  (apply #'text  
+	  (font-scaler mir-font-scaler)
+	 (y #'(lambda (mark note score &optional justifying)
+		(- (staff-y0 note) .9)))
+	 (x #'(lambda (mark note score &optional justifying)
+		(+ (x0 note) (if (< (length (letters mark)) 4) 0 -.2))))
+	 args))
+
+
+(cmn (size 13) (staff-separation 2.0) (automatic-line-breaks nil)
+     (prolog #'(lambda (score) (make-ISO-encoded-version score "Times-Roman" "ISO-Times-Roman")))
+  (system bracket
+
+  (setf stf1 (staff bar treble (key g-major) (meter 6 8 (meter-size 0))
+		    (quarter-rest (dy .5)) (eighth-rest (dy .5))
+		    (sup d5) (sup fn5) (sup b5) (sup d6) (sup fn6) (sup b5) bar
+		    (c6 q stem-up) (eighth-rest (dy .5)) (quarter-rest (dy .5))
+		    (eighth-rest (dy .5)) bar whole-rest bar whole-rest bar))
+  (staff (tied-to stf1) (meter 6 8 (meter-size 0))
+	 (whole-rest (dy -.75)) bar (whole-rest (dy -.75)) bar)
+  
+  (setf stf2 (staff bar treble (key g-major) (meter 6 8 (meter-size 0))
+		    whole-rest bar
+		    (sup c4) (sup e4) (sup g4) (sup c5) (sup e5) (sup g5) (c6 stem-up q) (eighth-rest (dy .5)) bar
+		    (sup c4) (sup f4) (sup a4) (sup c5) (sup f5) (sup a5) (c6 stem-up q) (eighth-rest (dy .5)) bar
+		    whole-rest bar))
+  (staff (tied-to stf2) (meter 6 8 (meter-size 0))
+	 (whole-rest (scale 0 0)) bar (whole-rest (dx 1.5) (dy -.5)) bar (whole-rest (dx 1.5) (dy -.5)) bar)
+
+  (setf stf3 (staff bar bass (key g-major) (meter 6 8 (meter-size 0))
+		    (sup d2 (p (dx -.3) (dy 2.25))) (sup d3) (sup f3) (sup a3) (sup d4) (sup d4) (d4 stem-up q) (eighth-rest (dy .5)) bar
+		    whole-rest bar whole-rest bar 
+		    (quarter-rest (dy .5)) (eighth-rest (dy .5)) (sixteenth-rest (dy .5)) 
+		    (sup d3 begin-beam) (sup g3) (sup b3) (sup d4) (sup c4 end-beam) bar))
+  (staff (tied-to stf3) (meter 6 8 (meter-size 0)) (whole-rest (dx 1.0) (dy -.5)) bar 
+	 (whole-rest (scale 0 0)) bar (whole-rest (scale 0 0)) bar 
+	 (whole-rest (dy -.5)) bar)
+
+  (setf stf4 (staff bar treble (meter 6 8 (meter-size 0))
+		    (d5 q. stem-up (begin-tie (tie-direction :up) (tie-curvature .25)))
+		    (d5 e end-tie begin-beam (begin-slur (slur-direction :up)))
+		    (e5 e stem-up end-slur end-beam) (c5 e stem-up no-beam) bar
+		    (c5 q. stem-up) (eighth-rest (dy .5)) (f5 e stem-up begin-beam) (f5 e stem-up end-beam) bar
+		    (d5 h. stem-up) bar
+		    (e5 q stem-up) (c5 e stem-up) (e5 q stem-up) (d5 e stem-up) bar))
+  (staff (tied-to stf4) (treble (scale 0 0)) (meter 6 8 (meter-size 0))
+	 (g4 q. stem-down (begin-tie (tie-direction :down) (tie-curvature .25))) 
+	 (g4 e end-tie (begin-slur (slur-direction :down)) begin-beam)
+	 (c5 e stem-down end-slur end-beam) (c5 e stem-down) bar
+	 (c5 q. stem-down (text "cresc."  (dy -1.25) (font-name "Times-Italic") (font-scaler .5)))
+	 (quarter-rest (dy -.25)) (d5 e stem-down) bar
+	 (g4 h. stem-down (mf ) (diminuendo (onset-offset .25))) bar
+	 (c5 q (p  (dx .25)) stem-down) (c5 e stem-down) (c5 q stem-down) (g4 e stem-down) bar)
+
+  (staff bar treble (key g-major) (meter 6 8 (meter-size 0))
+	 d5 q eighth-rest quarter-rest d6 e bar
+	 (c6 q (text "cresc."  (dy -2.0) (font-name "Times-Italic") (font-scaler .5)))
+	 (c6 e) (e6 e) (c6 e) (a5 e) bar
+	 (g5 e begin-beam (mf )) (f5 e end-beam (begin-diminuendo (dy -.25))) sixteenth-rest (f5 s)
+	 (f5 e) (a5 e) (c6 e end-diminuendo) bar
+	 (b5 q (p (dy .25))) (c6 e) (d6 q) (d5 s) (d5 s) bar)
+
+  (staff brace bar treble (key g-major) (meter 6 8 (meter-size 0))
+	 (chord (notes a3 f4) q. (tremolo (tremolo-slashes 2)))
+	 (chord (notes a3 fn4) s)
+	 (chord (notes a3 f4) s)
+	 (engorge (loop for i from 0 to 3 collect (chord (notes g3 f4) s))) 
+	 bar
+	 (chord (notes g3 e4) s (text "cresc."  (dx .5) (dy -.25) (font-name "Times-Italic") (font-scaler .5)))
+	 (engorge (loop for i from 0 to 4 collect (chord (notes c4 e4) s))) 
+	 (chord (notes c4 e4) q. (tremolo (tremolo-slashes 2)))
+	 bar
+	 (chord (notes c4 d4) q. (mf ) (diminuendo (onset-offset .25) (duration 2.5)) (tremolo (tremolo-slashes 2)))
+	 (chord (notes c4 d4) q. (tremolo (tremolo-slashes 2)))
+	 bar
+	 (chord (notes b3 d4) s p)
+	 (engorge (loop for i from 0 to 2 collect (chord (notes b3 g4) s)))
+	 (engorge (loop for i from 0 to 1 collect (chord (notes g3 g4) s)))
+	 (engorge (loop for i from 0 to 3 collect (chord (notes b3 g4) s)))
+	 (engorge (loop for i from 0 to 1 collect (chord (notes a3 f4) s)))
+	 bar)
+
+  (staff bar alto g-major (meter 6 8 (meter-size 0))
+	 (d4 e. (sfp ) begin-slur) (a3 s end-slur) (f3 s staccato) (a3 s staccato) 
+	 (d3 e) (g3 e.) (g3 s) bar
+	 (c3 q) eighth-rest quarter-rest (c4 e) bar
+	 (c4 e begin-slur (mf ) (diminuendo (dy -.25) (onset-offset .25) (duration 2.75)))
+	 (a3 e) (f3 e) (d3 e) (f3 e) (a3 e end-slur) bar
+	 (g3 e. p) (d4 s) (e4 s) (e4 s) (b3 e. begin-slur) (d4 s end-slur) (c4 e staccato) bar)
+
+  (staff bar treble g-major (meter 6 8 (meter-size 0))
+	 (f4 q (ltext "ein;")) (f4 e (ltext "er")) (fn4 e. no-beam (ltext "liebt"))
+	 (f4 s no-beam (ltext "mich")) (f4 s no-beam (ltext "es")) (f4 s no-beam (ltext "ist")) bar
+	 (e4 q. begin-slur (ltext "klar")) (g4 e begin-beam) (e4 s end-beam end-slur) 
+	 (e4 s no-beam (ltext "ich")) (e4 s no-beam (ltext "wer")) (e4 s no-beam (ltext "de")) bar
+	 (a4 q (text "gl\\374ck" (font-name "ISO-Times-Roman") (font-scaler mir-font-scaler) (dy -1.2)))
+	 (d4 e (ltext "lich,")) dotted-eighth-rest 
+	 (d5 s no-beam (ltext "ich")) (d5 s no-beam (ltext "wer")) (d5 s no-beam (ltext "de")) bar
+	 (d5 e no-beam (text "gl\\374ck" (font-name "ISO-Times-Roman") (font-scaler mir-font-scaler) (dy -1.6)))
+	 (d5 s no-beam (ltext "lich,")) 
+	 (g4 s no-beam (ltext "ich")) (g4 s no-beam (ltext "wer")) (g4 s no-beam (ltext "de"))
+	 (g4 e. begin-slur begin-beam (text "gl\\374ck" (font-name "ISO-Times-Roman") (font-scaler mir-font-scaler) (dy -1.1)))
+	 (b4 s end-beam end-slur) (a4 e no-beam (ltext "lich")) bar)
+
+  (staff bar treble g-major (meter 6 8 (meter-size 0))
+	 (d5 e. no-beam (ltext "schwach")) (a4 s no-beam (ltext "der"))
+	 (f4 s no-beam (ltext "Hoff")) (a4 s no-beam (ltext "nung"))
+	 (d4 s no-beam (ltext "Schein")) (d4 s no-beam (ltext "wei"))
+	 (g4 s no-beam (ltext "schwach")) (g4 s no-beam (ltext "der"))
+	 (g4 s. no-beam (ltext "Hoff")) (g4 (rq 1/8) no-beam (ltext "nung")) bar
+	 (c4 q (ltext "Schein!")) eighth-rest quarter-rest (c5 e (ltext "Sie")) bar
+	 (c5 e begin-beam begin-slur (ltext "liebt")) (a4 e end-beam end-slur)
+	 (f4 e no-beam (ltext "mich")) 
+	 (d4 e begin-beam begin-slur (ltext "es")) (f4 e end-beam end-slur)
+	 (a4 e no-beam (ltext "ist")) bar
+	 (g4 e. no-beam (ltext "klar,")) (d5 s no-beam (ltext "o"))
+	 (e5 s no-beam (ltext "na")) (e5 s no-beam (ltext "men,"))
+	 (b4 e. begin-beam begin-slur (ltext "na")) (d5 s end-beam end-slur)
+	 (c5 e no-beam (ltext "men")) bar)
+
+  (staff bar treble g-major (meter 6 8 (meter-size 0))
+	 whole-rest bar whole-rest bar whole-rest bar whole-rest bar)
+
+  (staff bar bass g-major (meter 6 8 (meter-size 0))
+	 (d3 q (ltext "dein!")) eighth-rest quarter-rest (d4 e (ltext "Ein")) bar
+	 (c4 q (ltext "gu")) (c4 e (ltext "tes"))
+	 (e4 e begin-beam begin-slur (ltext "jun")) (c4 e end-beam end-slur)
+	 (a3 e (ltext "ges")) bar
+	 (g3 e (ltext "Paar") begin-slur) (f3 q end-slur begin-tie) (f3 e end-tie begin-beam begin-slur) (a3 s end-beam end-slur)
+	 sixteenth-rest (c4 e no-beam (ltext "sie")) bar
+	 (b3 q (ltext "wer")) (c4 e (ltext "den")) 
+	 (d4 q (text "gl\\374ck" (font-name "ISO-Times-Roman") (font-scaler mir-font-scaler) (dy -2.25)))
+	 (d3 e (ltext "lich")) bar)
+
+  (setf stfl (staff (dy -1.0) bar bass g-major (meter 6 8 (meter-size 0))
+		    (d4 e. stem-up begin-slur (sfp  (dx -1.0) (dy 2.25)))
+		    (a3 s end-slur stem-up) (f3 s stem-up staccato) (a3 s stem-up staccato)
+		    (d3 e stem-up) (g3 e. stem-up) (g3 s stem-up) bar
+		    (c3 q) (eighth-rest (dy .75)) (quarter-rest (dy .75)) (c4 e stem-up) bar
+		    (c4 e stem-up (begin-slur (slur-direction :up)))
+		    (a3 e stem-up) (f3 e stem-up) (d3 e stem-up) (f3 e stem-up)
+		    (a3 e stem-up end-slur) bar
+		    (g3 e. stem-up) (d4 s stem-up) (e4 s stem-up) (e4 s stem-up)
+		    (b3 e. stem-up (begin-slur (slur-direction :up)))
+		    (d4 s stem-up end-slur) (c4 e stem-up beam-staccato) bar))
+  (staff (tied-to stfl) (bass (scale 0 0)) (meter 6 8 (meter-size 0))
+	 (d3 stem-down q) (eighth-rest (dy -.5)) (quarter-rest (dy -.5)) (g2 e stem-down) bar
+	 (c3 q stem-down (text "cresc."  (dy -1.25) (font-name "Times-Italic") (font-scaler .5)))
+	 (eighth-rest (dy -.5)) (quarter-rest (dy -.5)) (c3 e stem-down) bar
+	 (d3 q stem-down (mf ) (diminuendo (onset-offset .25) (duration 1.75)))
+	 (eighth-rest (dy -.5)) (quarter-rest (dy -.5)) (d3 e stem-down) bar
+	 (g3 q stem-down p) (eighth-rest (dy -.5)) (eighth-rest (dy -.5))
+	 (d3 e begin-beam stem-down) (d3 e end-beam stem-down) bar)
+))
+	 

@@ -1,0 +1,1340 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: SET-ACL2-PRINT-CASE,  Prev: SET-ACL2-PRINT-BASE,  Up: IO
+
+SET-ACL2-PRINT-CASE    control whether symbols are printed in upper case or in lower case
+
+By default, symbols are printed in upper case when vertical bars are
+not required, as specified by Common Lisp.  As with Common Lisp, ACL2
+supports printing in a "downcase" mode, where symbols are printed in
+lower case.  Many printing functions (some details below) print
+characters in lower case for a symbol when the ACL2 state global
+variable print-case has value :downcase and vertical bars are not
+necessary for printing that symbol.  (Thus, this state global functions
+in complete analogy to the Common Lisp global *print-case*.)  The value
+print-case is returned by (acl2-print-case), and may be set using the
+macro set-acl2-print-case (which returns state), as follows.
+
+       :set-acl2-print-case :upcase    ; Default printing
+       (set-acl2-print-case :upcase)   ; Same as above
+       :set-acl2-print-case :downcase  ; Print symbols in lower case when
+                                       ;   vertical bars are not required
+       (set-acl2-print-case :downcase) ; Same as above
+
+The ACL2 user can expect that the :downcase setting will have an effect
+for formatted output (see *note FMT:: and see *note FMS::) when the
+directives are ~p, ~P, ~q, or ~Q, for built-in functions princ$ and
+prin1$, and the ppr family of functions, and _not_ for built-in
+function print-object$.  For other printing functions, the effect of
+:downcase is unspecified.
+
+
+File: acl2-doc-emacs.info,  Node: IRRELEVANT-FORMALS,  Next: KEYWORD-VALUE-LISTP,  Prev: IO,  Up: PROGRAMMING
+
+IRRELEVANT-FORMALS    formals that are used but only insignificantly
+
+Let fn be a function of n arguments.  Let x be the ith formal of fn.
+We say x is "irrelevant in fn" if x is not involved in either the guard
+or the measure for fn, x is used in the body, but the value of (fn
+a1...ai...an) is independent of ai.
+
+The easiest way to define a function with an irrelevant formal is
+simply not to use the formal in the body of the function.  Such formals
+are said to be "ignored" by Common Lisp and a special declaration is
+provided to allow ignored formals.  ACL2 makes a distinction between
+ignored and irrelevant formals.  Note however that if a variable is
+declared ignored or ignorable, then it will not be reported as
+irrelevant.
+
+An example of an irrelevant formal is x in the definition of fact below.
+
+     (defun fact (i x)
+       (declare (xargs :guard (and (integerp i) (<= 0 i))))
+       (if (zerop i) 0 (* i (fact (1- i) (cons i x))))).
+
+Observe that x is only used in recursive calls of fact; it never "gets
+out" into the result.  ACL2 can detect some irrelevant formals by a
+closure analysis on how the formals are used.  For example, if the ith
+formal is only used in the ith argument position of recursive calls,
+then it is irrelevant.  This is how x is used above.
+
+It is possible for a formal to appear only in recursive calls but still
+be relevant.  For example, x is *not* irrelevant below, even though it
+only appears in the recursive call.
+
+     (defun fn (i x) (if (zerop i) 0 (fn x (1- i))))
+
+The key observation above is that while x only appears in a recursive
+call, it appears in an argument position, namely i's, that is relevant.
+(The function above can be admitted with a :guard requiring both
+arguments to be nonnegative integers and the :measure (+ i x).)
+
+Establishing that a formal is irrelevant, in the sense defined above,
+can be an arbitrarily hard problem because it requires theorem proving.
+For example, is x irrelevant below?
+
+     (defun test (i j k x) (if (p i j k) x 0))
+
+Note that the value of (test i j k x) is independent of x -- thus
+making x irrelevant -- precisely if (p i j k) is a theorem.  ACL2's
+syntactic analysis of a definition does not guarantee to notice all
+irrelevant formals.
+
+We regard the presence of irrelevant formals as an indication that
+something is wrong with the definition.  We cause an error on such
+definitions and suggest that you recode the definition so as to
+eliminate the irrelevant formals.  If you must have an irrelevant
+formal, one way to "trick" ACL2 into accepting the definition, without
+slowing down the execution of your function, is to use the formal in an
+irrelevant way in the guard.  For example, to admit fact, above, with
+its irrelevant x one might use
+
+     (defun fact (i x)
+       (declare (xargs :guard (and (integerp i) (<= 0 i) (equal x x))))
+       (if (zerop i) 0 (* i (fact (1- i) (cons i x)))))
+
+For those who really want to turn off this feature, we have provided a
+way to use the acl2-defaults-table for this purpose; see *note
+SET-IRRELEVANT-FORMALS-OK::.
+
+If you need to introduce a function with an irrelevant formal, please
+explain to the authors why this should be allowed.
+
+
+File: acl2-doc-emacs.info,  Node: KEYWORD-VALUE-LISTP,  Next: KEYWORDP,  Prev: IRRELEVANT-FORMALS,  Up: PROGRAMMING
+
+KEYWORD-VALUE-LISTP    recognizer for true lists whose even-position elements are keywords
+
+(keyword-value-listp l) is true if and only if l is a list of even
+length of the form (k1 a1 k2 a2 ... kn an), where each ki is a keyword.
+
+
+File: acl2-doc-emacs.info,  Node: KEYWORDP,  Next: LAST,  Prev: KEYWORD-VALUE-LISTP,  Up: PROGRAMMING
+
+KEYWORDP    recognizer for keywords
+
+(Keywordp x) is true if and only if x is a keyword, i.e., a symbol in
+the "KEYWORD" package.  Such symbols are typically printed using a
+colon (:) followed by the symbol-name of the symbol.
+
+Keywordp has a guard of t.
+
+Keywordp is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LAST,  Next: LEN,  Prev: KEYWORDP,  Up: PROGRAMMING
+
+LAST    the last cons (not element) of a list
+
+(Last l) is the last cons of a list.  Here are examples.
+
+     ACL2 !>(last '(a b . c))
+     (B . C)
+     ACL2 !>(last '(a b c))
+     (C)
+
+(Last l) has a guard of (listp l); thus, l need not be a true-listp.
+
+Last is a Common Lisp function.  See any Common Lisp documentation for
+more information.  Unlike Common Lisp, we do not allow an optional
+second argument for last.
+
+
+File: acl2-doc-emacs.info,  Node: LEN,  Next: LENGTH,  Prev: LAST,  Up: PROGRAMMING
+
+LEN    length of a list
+
+Len returns the length of a list.
+
+A Common Lisp function that is appropriate for both strings and proper
+lists is length; see *note LENGTH::.  The guard for len is t.
+
+(Low-level implementation note.  ACL2 provides a highly-optimized
+implementation of len, which is tail-recursive and fixnum-aware, that
+differs from its simple ACL2 definition.)
+
+
+File: acl2-doc-emacs.info,  Node: LENGTH,  Next: LET,  Prev: LEN,  Up: PROGRAMMING
+
+LENGTH    length of a string or proper list
+
+Length is the function for determining the length of a sequence.  In
+ACL2, the argument is required to be either a true-listp or a string.
+
+Length is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LET,  Next: LET*,  Prev: LENGTH,  Up: PROGRAMMING
+
+LET    binding of lexically scoped (local) variables
+
+     Example LET Form:
+     (let ((x (* x x))
+           (y (* 2 x)))
+      (list x y))
+
+If the form above is executed in an environment in which x has the
+value -2, then the result is '(4 -4).
+
+Let expressions bind variables so that their "local" values, the values
+they have when the "body" of the let is evaluated, are possibly
+different than their "global" values, the values they have in the
+context in which the let expression appears.  In the let expression
+above, the local variables bound by the let are x and y.  They are
+locally bound to the values delivered by the two forms (* x x) and (* 2
+x), respectively, that appear in the "bindings" of the let.  The body
+of the let is (list x y).
+
+Suppose that the let expression above occurs in a context in which x
+has the value -2.  (The global value of y is irrelevant to this
+example.)  For example, one might imagine that the let form above
+occurs as the body of some function, fn, with the formal parameter x
+and we are evaluating (fn -2).
+
+To evaluate the let above in a context in which x is -2, we first
+evaluate the two forms specifying the local values of the variables.
+Thus, (* x x) is evaluated and produces 4 (because x is -2) and (* 2 x)
+is evaluated and produces -4 (because x is -2).  Then x and y are bound
+to these values and the body of the let is evaluated.  Thus, when the
+body, (list x y) is evaluated, x is 4 and y is -4.  Thus, the body
+produces '(4 -4).
+
+Note that the binding of y, which is written after the binding of x and
+which mentions x, nevertheless uses the global value of x, not the new
+local value.  That is, the local variables of the let are bound "in
+parallel" rather than "sequentially." In contrast, if the
+
+     Example LET* Form:
+     (let* ((x (* x x))
+            (y (* 2 x)))
+      (list x y))
+
+is evaluated when the global value of x is -2, then the result is '(4
+8), because the local value of y is computed after x has been bound to
+4.  Let* binds its local variables "sequentially."
+
+     General LET Forms:
+     (let ((var1 term1) ... (varn termn)) body)
+     and
+     (let ((var1 term1) ... (varn termn))
+      (declare ...) ... (declare ...)
+      body)
+
+where the vari are distinct variables, the termi are terms involving
+only variables bound in the environment containing the let, and body is
+a term involving only the vari plus the variables bound in the
+environment containing the let.  Each vari must be used in body or else
+declared ignored.
+
+A let form is evaluated by first evaluating each of the termi,
+obtaining for each a vali.  Then, each vari is bound to the
+corresponding vali and body is evaluated.
+
+Actually, let forms are just abbreviations for certain uses of lambda
+notation.  In particular
+
+     (let ((var1 term1) ... (varn termn)) (declare ...) body)
+
+is equivalent to
+
+     ((lambda (var1 ... varn)
+        (declare ...)
+        body)
+      term1 ... termn).
+
+Let* forms are used when it is desired to bind the vari sequentially,
+i.e., when the local values of preceding varj are to be used in the
+computation of the local value for vari.
+
+     General LET* Forms:
+     (let* ((var1 term1) ... (varn termn)) body)
+     and
+     (let* ((var1 term1) ... (varn termn))
+      (declare (ignore x1 ... xm))
+      body)
+
+where the vari are variables (not necessarily distinct), the termi are
+terms involving only variables bound in the environment containing the
+let* and those varj such that j<i, and body is a term involving only
+the vari plus the variables bound in the environment containing the
+let*.  Each vari must be used either in some subsequent termj or in
+body, except that in the second form above we make an exception when
+vari is among the xk, in which case vari must not be thus used.  Note
+that let* does not permit the inclusion of any declare forms other than
+one as shown above.  In the second general form above, every xk must be
+among the vari, and furthermore, xk may not equal vari and varj for
+distinct i, j.
+
+The first let* above is equivalent to
+
+     (let ((var1 term1))
+      ...
+      (let ((varn termn)) body)...)
+
+Thus, the termi are evaluated successively and after each evaluation
+the corresponding vali is bound to the value of termi.  The second let*
+is similarly expanded, except that each for each vari that is among the
+(x1 ... xm), the form (declare (ignore vari)) is inserted immediately
+after (vari termi).
+
+Each (vari termi) pair in a let or let* form is called a "binding" of
+vari and the vari are called the "local variables" of the let or let*.
+The common use of let and let* is to save the values of certain
+expressions (the termi) so that they may be referenced several times in
+the body without suggesting their recomputation.
+
+Let is part of Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LET*,  Next: LEXORDER,  Prev: LET,  Up: PROGRAMMING
+
+LET*    binding of lexically scoped (local) variables
+
+     Example LET* Forms:
+     (let* ((x (* x x))
+            (y (* 2 x)))
+      (list x y))
+     
+     (let* ((x (* x x))
+            (y (* 2 x))
+            (x (* x y))
+            (a (* x x)))
+      (declare (ignore a))
+      (list x y))
+
+If the forms above are executed in an environment in which x has the
+value -2, then the respective results are '(4 8) and '(32 8).  See
+*Note LET:: for a discussion of both let and let*, or read on for a
+briefer discussion.
+
+The difference between let and let* is that the former binds its local
+variables in parallel while the latter binds them sequentially.  Thus,
+in let*, the term evaluated to produce the local value of one of the
+locally bound variables is permitted to reference any locally bound
+variable occurring earlier in the binding list and the value so
+obtained is the newly computed local value of that variable.  See *Note
+LET::.
+
+In ACL2 at most one declare form may be specified for a let* form, in
+which case it must be of the form (declare (ignore v1 ... vk)) where v1
+through vk are symbols.
+
+Let* is a Common Lisp macro.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: LEXORDER,  Next: LIST,  Prev: LET*,  Up: PROGRAMMING
+
+LEXORDER    total order on ACL2 objects
+
+Lexorder is a non-strict total order, a "less than or equal," on ACL2
+objects.  Also see *note ALPHORDER::, the restriction of lexorder to
+atoms; the notion of "non-strict total order" is defined there.
+
+Lexorder has a guard of t.
+
+For lexorder, an atom and a cons are ordered so that the atom comes
+first, and two conses are ordered so that the one with the recursively
+smaller car comes first, with the cdrs being compared only if the cars
+are equal.   Lexorder compares two atoms by using alphorder.
+
+
+File: acl2-doc-emacs.info,  Node: LIST,  Next: LIST*,  Prev: LEXORDER,  Up: PROGRAMMING
+
+LIST    build a list
+
+List is the macro for building a list of objects.  For example, (list 5
+6 7) returns a list of length 3 whose elements are 5, 6, and 7
+respectively.  Also see *note LIST*::.
+
+List is defined in Common Lisp.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: LIST*,  Next: LISTP,  Prev: LIST,  Up: PROGRAMMING
+
+LIST*    build a list
+
+List* is the Common Lisp macro for building a list of objects from
+given elements and a tail.  For example, (list* 5 6 '(7 8 9)) equals
+the list '(5 6 7 8 9).  Also see *note LIST::.
+
+List* is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: LISTP,  Next: LOGAND,  Prev: LIST*,  Up: PROGRAMMING
+
+LISTP    recognizer for (not necessarily proper) lists
+
+(listp x) is true when x is either a cons pair or is nil.
+
+Listp has no guard, i.e., its guard is t.
+
+Listp is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGAND,  Next: LOGANDC1,  Prev: LISTP,  Up: PROGRAMMING
+
+LOGAND    bitwise logical `and' of zero or more integers
+
+When integers are viewed in their two's complement representation,
+logand returns their bitwise logical `and'.  In ACL2 logand is a macro
+that expands into calls of the binary function binary-logand, except
+that (logand) expands to -1 and (logand x) expands to x.
+
+The guard for binary-logand requires its arguments to be integers.
+Logand is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGANDC1,  Next: LOGANDC2,  Prev: LOGAND,  Up: PROGRAMMING
+
+LOGANDC1    bitwise logical `and' of two ints, complementing the first
+
+When integers are viewed in their two's complement representation,
+logandc1 returns the bitwise logical `and' of the second with the
+bitwise logical `not' of the first.
+
+The guard for logandc1 requires its arguments to be integers.  Logandc1
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGANDC2,  Next: LOGBITP,  Prev: LOGANDC1,  Up: PROGRAMMING
+
+LOGANDC2    bitwise logical `and' of two ints, complementing the second
+
+When integers are viewed in their two's complement representation,
+logandc2 returns the bitwise logical `and' of the first with the
+bitwise logical `not' of the second.
+
+The guard for logandc2 requires its arguments to be integers.  Logandc2
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGBITP,  Next: LOGCOUNT,  Prev: LOGANDC2,  Up: PROGRAMMING
+
+LOGBITP    the ith bit of an integer
+
+For a nonnegative integer i and an integer j, (logbitp i j) is the
+value of the ith bit in the two's complement representation of j.
+
+(Logbitp i j) has a guard that i is a nonnegative integer and j is an
+integer.
+
+Logbitp is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGCOUNT,  Next: LOGEQV,  Prev: LOGBITP,  Up: PROGRAMMING
+
+LOGCOUNT    number of ``on'' bits in a two's complement number
+
+(Logcount x) is the number of "on" bits in the two's complement
+representation of x.
+
+(Logcount x) has a guard of (integerp x).
+
+Logcount is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGEQV,  Next: LOGIOR,  Prev: LOGCOUNT,  Up: PROGRAMMING
+
+LOGEQV    bitwise logical equivalence of zero or more integers
+
+When integers are viewed in their two's complement representation,
+logeqv returns their bitwise logical equivalence.  In ACL2 logeqv is a
+macro that expands into calls of the binary function binary-logeqv,
+except that (logeqv) expands to -1 and (logeqv x) expands to x.
+
+The guard for binary-logeqv requires its arguments to be integers.
+Logeqv is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGIOR,  Next: LOGNAND,  Prev: LOGEQV,  Up: PROGRAMMING
+
+LOGIOR    bitwise logical inclusive or of zero or more integers
+
+When integers are viewed in their two's complement representation,
+logior returns their bitwise logical inclusive or.  In ACL2 logior is a
+macro that expands into calls of the binary function binary-logior,
+except that (logior) expands to 0 and (logior x) expands to x.
+
+The guard for binary-logior requires its arguments to be integers.
+Logior is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGNAND,  Next: LOGNOR,  Prev: LOGIOR,  Up: PROGRAMMING
+
+LOGNAND    bitwise logical `nand' of two integers
+
+When integers are viewed in their two's complement representation,
+lognand returns their bitwise logical `nand'.
+
+The guard for lognand requires its arguments to be integers.  Lognand
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGNOR,  Next: LOGNOT,  Prev: LOGNAND,  Up: PROGRAMMING
+
+LOGNOR    bitwise logical `nor' of two integers
+
+When integers are viewed in their two's complement representation,
+lognor returns the bitwise logical `nor' of the first with the second.
+
+The guard for lognor requires its arguments to be integers.  Lognor is
+defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGNOT,  Next: LOGORC1,  Prev: LOGNOR,  Up: PROGRAMMING
+
+LOGNOT    bitwise not of a two's complement number
+
+(lognot i) is the two's complement bitwise `not' of the integer i.
+
+Lognot is actually defined by coercing its argument to an integer (see
+*note IFIX::), negating the result, and then subtracting 1.
+
+The guard for lognot requires its argument to be an integer.
+
+Lognot is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGORC1,  Next: LOGORC2,  Prev: LOGNOT,  Up: PROGRAMMING
+
+LOGORC1    bitwise logical inclusive or of two ints, complementing the first
+
+When integers are viewed in their two's complement representation,
+logorc1 returns the bitwise logical inclusive or of the second with the
+bitwise logical `not' of the first.
+
+The guard for logorc1 requires its arguments to be integers.  Logorc1
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGORC2,  Next: LOGTEST,  Prev: LOGORC1,  Up: PROGRAMMING
+
+LOGORC2    bitwise logical inclusive or of two ints, complementing the second
+
+When integers are viewed in their two's complement representation,
+logorc2 returns the bitwise logical inclusive or of the first with the
+bitwise logical `not' of the second.
+
+The guard for logorc2 requires its arguments to be integers.  Logorc2
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGTEST,  Next: LOGXOR,  Prev: LOGORC2,  Up: PROGRAMMING
+
+LOGTEST    test if two integers share a `1' bit
+
+When integers x and y are viewed in their two's complement
+representation, (logtest x y) is true if and only if there is some
+position for which both x and y have a `1' bit in that position.
+
+The guard for logtest requires its arguments to be integers.  Logtest
+is defined in Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: LOGXOR,  Next: LOWER-CASE-P,  Prev: LOGTEST,  Up: PROGRAMMING
+
+LOGXOR    bitwise logical exclusive or of zero or more integers
+
+When integers are viewed in their two's complement representation,
+logxor returns their bitwise logical exclusive or.  In ACL2 logxor is a
+macro that expands into calls of the binary function binary-logxor,
+except that (logxor) expands to 0 and (logxor x) expands to x.
+
+The guard for binary-logxor requires its arguments to be integers.
+Logxor is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: LOWER-CASE-P,  Next: MAKE-CHARACTER-LIST,  Prev: LOGXOR,  Up: PROGRAMMING
+
+LOWER-CASE-P    recognizer for lower case characters
+
+(Lower-case-p x) is true if and only if x is a lower case character,
+i.e., a member of the list #A, #B, ..., #Z.
+
+The guard for lower-case-p requires its argument to be a standard
+character (see *note STANDARD-CHAR-P::).
+
+Lower-case-p is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: MAKE-CHARACTER-LIST,  Next: MAKE-LIST,  Prev: LOWER-CASE-P,  Up: PROGRAMMING
+
+MAKE-CHARACTER-LIST    coerce to a list of characters
+
+Non-characters in the given list are coerced to the character with code
+0.
+
+
+File: acl2-doc-emacs.info,  Node: MAKE-LIST,  Next: MAKE-ORD,  Prev: MAKE-CHARACTER-LIST,  Up: PROGRAMMING
+
+MAKE-LIST    make a list of a given size
+
+For a nonnegative integer size, (Make-list size) is a list of elements
+of length size, each of which is initialized to the :initial-element
+(which defaults to nil).
+
+Make-list is a macro in ACL2, defined in terms of a tail recursive
+function make-list-ac whose guard requires size to be a nonnegative
+integer.  Make-list is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: MAKE-ORD,  Next: MAX,  Prev: MAKE-LIST,  Up: PROGRAMMING
+
+MAKE-ORD    a constructor for ordinals.
+
+Make-ord is the ordinal constructor.  Its use is recommended instead of
+using cons to make ordinals.
+
+(make-ord fe fco rst) corresponds to the ordinal (w^fe)fco + rst.  Thus
+the first infinite ordinal, w (omega), is constructed by
+
+     (make-ord 1 1 0)
+
+and, for example, the ordinal (w^2)5 + w2 + 7 is constructed by:
+
+     (make-ord 2 5 (make-ord 1 2 7)) .
+
+The reason make-ord is used rather than cons is that it allows us to
+reason more abstractly about the ordinals, without having to worry
+about the underlying representation.
+
+
+File: acl2-doc-emacs.info,  Node: MAX,  Next: MBE,  Prev: MAKE-ORD,  Up: PROGRAMMING
+
+MAX    the larger of two numbers
+
+(Max x y) is the larger of the numbers x and y.
+
+The guard for max requires its arguments to be rational (real, in
+ACL2(r)) numbers.
+
+Max is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: MBE,  Next: MBT,  Prev: MAX,  Up: PROGRAMMING
+
+MBE    attach code for execution
+
+The macro mbe ("must be equal") can be used in function definitions in
+order to cause evaluation to use alternate code to that provided for the
+logic.  An example is given below.  However, the use of mbe can lead to
+non-terminating computations.  See *Note DEFEXEC::, perhaps after
+reading the present documentation, for a way to guarantee termination
+(at least theoretically).
+
+In the ACL2 logic, (mbe :exec exec-code :logic logic-code) equals
+logic-code; the value of exec-code is ignored.  However, in raw Lisp it
+is the other way around:  this form macroexpands simply to exec-code.
+ACL2's guard verification mechanism ensures that the raw Lisp code is
+only evaluated when appropriate, since the guard proof obligations
+generated for this call of mbe are (equal exec-code logic-code)
+together with the proof obligations from exec-code.  See *Note
+VERIFY-GUARDS:: and, for general discussion of guards, see *note
+GUARD::.
+
+The form (mbe :exec exec-code :logic logic-code) expands in the logic to
+the function call (must-be-equal logic-code exec-code).  The guard for
+(must-be-equal logic exec) is (equal logic exec).  We recommend that
+you use mbe instead of must-be-equal because the use of keywords
+eliminates errors caused by unintentially reversing the order of
+arguments.  The :exec and the :logic code in an mbe call must have the
+same return type; for example, one cannot return (mv * *) while the
+other returns just a single value.  Also, the :exec code may not itself
+contain any calls of mbe (or must-be-equal).
+
+Also see *note MBT::, which stands for "must be true."  You may find it
+more natural to use mbt for certain applications, as described in its
+documentation.
+
+* Menu:
+
+
+Related topics other than immediate subtopics:
+* DEFEXEC:: attach a terminating executable function to a definition
+
+Here is an example of the use of mbe.  Suppose that you want to define
+factorial in the usual recursive manner, as follows.
+
+     (defun fact (n)
+       (if (zp n)
+           1
+         (* n (fact (1- n)))))
+
+But perhaps you want to be able to execute calls of fact on large
+arguments that cause stack overflows, perhaps during proofs.  (This
+isn't a particularly realistic example, but it should serve.)  So,
+instead you can define this tail-recursive version of factorial:
+
+     (defun fact1 (n acc)
+       (declare (xargs :guard (and (integerp n) (>= n 0) (integerp acc))))
+       (if (zp n)
+           acc
+         (fact1 (1- n) (* n acc))))
+
+We are now ready to define fact using mbe.  Our intention is that
+logically, fact is as shown in the first definition above, but that
+fact should be executed by calling fact1.  Notice that we defer guard
+verification, since we are not ready to prove the correspondence
+between fact1 and fact.
+
+     (defun fact (n)
+       (declare (xargs :guard (and (integerp n) (>= n 0))
+                       :verify-guards nil))
+       (mbe :exec  (fact1 n 1)
+            :logic (if (zp n)
+                       1
+                     (* n (fact (1- n))))))
+
+Next, we prove the necessary correspondence lemmas.  Notice the
+inclusion of a standard book to help with the arithmetic reasoning.
+
+     (include-book "books/arithmetic/top-with-meta")
+     
+     (defthm fact1-fact
+       (implies (integerp acc)
+                (equal (fact1 n acc)
+                       (* acc (fact n)))))
+
+We may now do guard verification for fact, which will allow the
+execution of the raw Lisp fact function, where the above mbe call
+expands simply to (fact1 n 1).
+
+     (verify-guards fact)
+
+Now that guards have been verified, a trace of function calls
+illustrates that the evaluation of calls of fact is passed to
+evaluation of calls of fact1.  The outermost call below is of the
+logical function stored for the definition of fact; all the others are
+of actual raw Common Lisp functions.
+
+     ACL2 !>(trace$ fact fact1)
+     NIL
+     ACL2 !>(fact 3)
+     1> (ACL2_*1*_ACL2::FACT 3)
+       2> (FACT 3)
+         3> (FACT1 3 1)
+           4> (FACT1 2 3)
+             5> (FACT1 1 6)
+               6> (FACT1 0 6)
+               <6 (FACT1 6)
+             <5 (FACT1 6)
+           <4 (FACT1 6)
+         <3 (FACT1 6)
+       <2 (FACT 6)
+     <1 (ACL2_*1*_ACL2::FACT 6)
+     6
+     ACL2 !>
+
+You may occasionally get warnings when you compile functions defined
+using mbe.  (For commands that invoke the compiler, see *note COMP:: and
+see *note CERTIFY-BOOK::.)  These can be inhibited by using an ignorable
+declare form.  Here is a simple but illustrative example.  Note that
+the declarations can optionally be separated into two declare forms.
+
+     (defun foo (x y)
+       (declare (ignorable x)
+                (xargs :guard (equal x y)))
+       (mbe :logic x :exec y))
+
+Finally, we observe that when the body of a function contains a term of
+the form (mbe :exec exec-code :logic logic-code), the user is very
+unlikely to see any logical difference than if this were replaced by
+logic-code.  ACL2 takes various steps to ensure this.  For example, the
+proof obligations generated for admitting a function treat the above
+mbe term simply as logic-code.  Function expansion, :use hints,
+:definition rules, and generation of constraints for functional
+instantiation also treat the above mbe call as if were replaced by
+logic-code.
+
+
+File: acl2-doc-emacs.info,  Node: MBT,  Next: MEMBER,  Prev: MBE,  Up: PROGRAMMING
+
+MBT    introduce a test not to be evaluated
+
+The macro mbt ("must be true") can be used in order to add code in
+order to admit function definitions in :logic mode, without paying a
+cost in execution efficiency.  Examples below illustrate its intended
+use.
+
+Semantically, (mbt x) equals x.  However, in raw Lisp (mbt x) ignores x
+entirely, and macroexpands to t.  ACL2's guard verification mechanism
+ensures that the raw Lisp code is only evaluated when appropriate,
+since a guard proof obligation (equal x t) is generated.  See *Note
+VERIFY-GUARDS:: and, for general discussion of guards, see *note
+GUARD::.
+
+Also see *note MBE::, which stands for "must be equal."  Although mbt
+is more natural in many cases, mbe has more general applicability.  In
+fact, (mbt x) is essentially defined to be (mbe :logic x :exec t).
+
+We can illustrate the use of mbt on the following generic example, where
+<g>, <test>, <rec-x>, and <base> are intended to be terms involving
+only the variable x.
+
+     (defun foo (x)
+       (declare (xargs :guard <g>))
+       (if <test>
+           (foo <rec-x>)
+         <base>))
+
+In order to admit this function, ACL2 needs to discharge the proof
+obligation that <rec-x> is smaller than x, namely:
+
+     (implies <test>
+              (o< (acl2-count <rec-x>)
+                   (acl2-count x)))
+
+But suppose we need to know that <g> is true in order to prove this.
+Since <g> is only the guard, it is not part of the logical definition
+of foo.  A solution is to add the guard to the definition of foo, as
+follows.
+
+     (defun foo (x)
+       (declare (xargs :guard <g>))
+       (if (mbt <g>)
+           (if <test>
+               (foo <rec-x>)
+             <base>)
+         nil))
+
+If we do this using <g> rather than (mbt <g>), then evaluation of every
+recursive call of foo will cause the evaluation of (the appropriate
+instance of) <g>.  But since (mbt <g>) expands to t in raw Lisp, then
+once we verify the guards of foo, the evaluations of <g> will be
+avoided (except at the top level, when we check the guard before
+allowing evaluation to take place in Common Lisp).
+
+Other times, the guard isn't the issue, but rather, the problem is that
+a recursive call has an argument that itself is a recursive call.  For
+example, suppose that <rec-x> is of the form (foo <expr>).  There is no
+way we can hope to discharge the termination proof obligation shown
+above.  A standard solution is to add some version of this test:
+
+     (mbt (o< (acl2-count <rec-x>) (acl2-count x)))
+
+Here is a specific example based on one sent by Vernon Austel.
+
+     (defun recurX2 (n)
+       (declare (xargs :guard (and (integerp n) (<= 0 n))
+                       :verify-guards nil))
+       (cond ((zp n) 0)
+             (t (let ((call (recurX2 (1- n))))
+                  (if (mbt (< (acl2-count call) n))
+                      (recurX2 call)
+                    1 ;; this branch is never actually taken
+                    )))))
+     
+     (defthm recurX2-0
+      (equal (recurX2 n) 0))
+     
+     (verify-guards recurX2)
+
+If you (trace$ acl2-count), you will see that evaluation of (recurX2 2)
+causes several calls of acl2-count before the verify-guards.  But this
+evaluation does not call acl2-count after the verify-guards, because
+the ACL2 evaluation mechanism uses raw Lisp to do the evaluation, and
+the form (mbt (< (acl2-count call) n)) macroexpands to t in Common Lisp.
+
+You may occasionally get warnings when you compile functions defined
+using mbt.  (For commands that invoke the compiler, see *note COMP:: and
+see *note CERTIFY-BOOK::.)  These can be inhibited by using an ignorable
+declare form.  Here is a simple but illustrative example.  Note that
+the declarations can optionally be separated into two declare forms.
+
+     (defun foo (x y)
+       (declare (ignorable x)
+                (xargs :guard (equal x t)))
+       (and (mbt x) y))
+
+
+File: acl2-doc-emacs.info,  Node: MEMBER,  Next: MEMBER-EQ,  Prev: MBT,  Up: PROGRAMMING
+
+MEMBER    membership predicate, using eql as test
+
+(Member x l) equals the longest tail of l that begins with x, or else
+nil if no such tail exists.
+
+(Member x l) is provably the same in the ACL2 logic as (member-equal x
+l).  It has a stronger guard than member-equal because uses eql to test
+for whether x is equal to a given member of l.  Its guard requires that
+l is a true list, and moreover, either (eqlablep x) or all members of l
+are eqlablep.  See *Note MEMBER-EQUAL:: and see *note MEMBER-EQ::.
+
+Member is a Common Lisp function.  See any Common Lisp documentation
+for more information.  Since ACL2 functions cannot take keyword
+arguments (though macros can), the ACL2 functions member-equal and
+member-eq are defined to correspond to calls of the Common Lisp
+function member whose keyword argument :test is equal or eq,
+respectively.
+
+
+File: acl2-doc-emacs.info,  Node: MEMBER-EQ,  Next: MEMBER-EQUAL,  Prev: MEMBER,  Up: PROGRAMMING
+
+MEMBER-EQ    membership predicate, using eq as test
+
+(Member-eq x lst) equals the longest tail of lst that begins with x, or
+else nil if no such tail exists.
+
+(Member-eq x lst) is provably the same in the ACL2 logic as (member x
+lst) and (member-equal x lst), but it has a stronger guard because it
+uses eq for a more efficient test for whether x is equal to a given
+member of lst.  Its guard requires that lst is a true list, and
+moreover, either x is a symbol or lst is a list of symbols.  See *Note
+MEMBER-EQUAL:: and see *note MEMBER::.
+
+
+File: acl2-doc-emacs.info,  Node: MEMBER-EQUAL,  Next: MIN,  Prev: MEMBER-EQ,  Up: PROGRAMMING
+
+MEMBER-EQUAL    membership predicate
+
+(Member-equal x lst) equals the longest tail of lst that begins with x,
+or else nil if no such tail exists.
+
+(Member-equal x lst) has a guard of (true-listp lst).  Member-equal has
+the same functionality as the Common Lisp function member, except that
+it uses the equal function to test whether x is the same as each
+successive element of lst.  See *Note MEMBER:: and see *note
+MEMBER-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: MIN,  Next: MINUSP,  Prev: MEMBER-EQUAL,  Up: PROGRAMMING
+
+MIN    the smaller of two numbers
+
+(Min x y) is the smaller of the numbers x and y.
+
+The guard for min requires its arguments to be rational (real, in
+ACL2(r)) numbers.
+
+Min is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: MINUSP,  Next: MOD,  Prev: MIN,  Up: PROGRAMMING
+
+MINUSP    test whether a number is negative
+
+(Minusp x) is true if and only if x < 0.
+
+The guard of minusp requires its argument to be a rational (real, in
+ACL2(r)) number.
+
+Minusp is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: MOD,  Next: MOD-EXPT,  Prev: MINUSP,  Up: PROGRAMMING
+
+MOD    remainder using floor
+
+     ACL2 !>(mod 14 3)
+     2
+     ACL2 !>(mod -14 3)
+     1
+     ACL2 !>(mod 14 -3)
+     -1
+     ACL2 !>(mod -14 -3)
+     -2
+     ACL2 !>(mod -15 -3)
+     0
+     ACL2 !>
+
+(Mod i j) is that number k that (* j (floor i j)) added to k equals i.
+
+The guard for (mod i j) requires that i and j are rational (real, in
+ACL2(r)) numbers and j is non-zero.
+
+Mod is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: MOD-EXPT,  Next: MUST-BE-EQUAL,  Prev: MOD,  Up: PROGRAMMING
+
+MOD-EXPT    exponential function
+
+(mod-expt r i m) is the result of raising the number r to the integer
+power i and then taking the residue mod m.  That is, (mod-expt r i m)
+is equal to (mod (expt r i) m).
+
+The guard for (mod-expt r i m) is that r is a rational number and i is
+an integer; if r is 0 then i is nonnegative; and m is a non-zero
+rational number.
+
+In some implementations (GCL Version 2.7.0 as of this writing), this
+function is highly optimized when r and i are natural numbers, not both
+zero, and m is a positive integer.
+
+
+File: acl2-doc-emacs.info,  Node: MUST-BE-EQUAL,  Next: MV,  Prev: MOD-EXPT,  Up: PROGRAMMING
+
+MUST-BE-EQUAL    attach code for execution
+
+The form (must-be-equal logic exec) evaluates to logic in the ACL2
+logic but evaluates to exec in raw Lisp.  The point is to be able to
+write one definition to reason about logically but another for
+evaluation.  Please see *note MBE:: and see *note MBT:: for appropriate
+macros to use, rather than calling must-be-equal directly, since it is
+easy to commute the arguments of must-be-equal by accident.
+
+The guard for (must-be-equal x y) is (equal x y).
+
+
+File: acl2-doc-emacs.info,  Node: MV,  Next: MV-LET,  Prev: MUST-BE-EQUAL,  Up: PROGRAMMING
+
+MV    returning a multiple value
+
+Mv is the mechanism provided by ACL2 for returning two or more values.
+Logically, (mv x1 x2 ... xn) is the same as (list x1 x2 ... xn), a list
+of the indicated values.  However, ACL2 avoids the cost of building
+this list structure, with the cost that mv may only be used in a
+certain style in definitions:  if a function ever returns using mv
+(either directly, or by calling another function that returns a
+multiple value), then this function must always return the same number
+of values.
+
+For more explanation of the multiple value mechanism, see *note
+MV-LET::.
+
+ACL2 does not support the Common Lisp construct values, whose logical
+meaning seems difficult to characterize.  Mv is the ACL2 analogue of
+that construct.
+
+
+File: acl2-doc-emacs.info,  Node: MV-LET,  Next: MV-NTH,  Prev: MV,  Up: PROGRAMMING
+
+MV-LET    calling multi-valued ACL2 functions
+
+     Example Form:
+     (mv-let (x y z)              ; local variables
+             (mv 1 2 3)           ; multi-valued expression
+             (declare (ignore y)) ; optional declarations
+             (cons x z))          ; body
+
+The form above binds the three "local variables," x, y, and z, to the
+three results returned by the multi-valued expression and then
+evaluates the body.  The result is '(1 . 3).  The second local, y, is
+declared ignored.  The multi-valued expression can be any ACL2
+expression that returns k results, where k is the number of local
+variables listed.  Often however it is simply the application of a
+k-valued function.  Mv-let is the standard way to invoke a multi-valued
+function when the caller must manipulate the vector of results returned.
+
+     General Form:
+     (mv-let (var1 ... vark)
+             term
+             body)
+     or
+     (mv-let (var1 ... vark)
+             term
+             (declare ...) ... (declare ...)
+             body)
+
+where the vari are distinct variables, term is a term that returns k
+results and mentions only variables bound in the environment containing
+the mv-let expression, and body is a term mentioning only the vari and
+variables bound in the environment containing the mv-let.  Each vari
+must occur in body unless it is declared ignored or ignorable in one of
+the optional declare forms, unless this requirement is turned off; see
+*note SET-IGNORE-OK::.  The value of the mv-let term is the result of
+evaluating body in an environment in which the vari are bound, in
+order, to the k results obtained by evaluating term in the environment
+containing the mv-let.
+
+Here is an extended example that illustrates both the definition of a
+multi-valued function and the use of mv-let to call it.  Consider a
+simple binary tree whose interior nodes are conses and whose leaves are
+non-conses.  Suppose we often need to know the number, n, of interior
+nodes of such a tree; the list, syms, of symbols that occur as leaves;
+and the list, ints, of integers that occur as leaves.  (Observe that
+there may be leaves that are neither symbols nor integers.)  Using a
+multi-valued function we can collect all three results in one pass.
+
+Here is the first of two definitions of the desired function.  This
+definition is "primitive recursive" in that it has only one argument
+and that argument is reduced in size on every recursion.
+
+     (defun count-and-collect (x)
+     
+     ; We return three results, (mv n syms ints) as described above.
+     
+       (cond ((atom x)
+     
+     ; X is a leaf.  Thus, there are 0 interior nodes, and depending on
+     ; whether x is a symbol, an integer, or something else, we return
+     ; the list containing x in as the appropriate result.
+     
+              (cond ((symbolp x) (mv 0 (list x) nil))
+                    ((integerp x)(mv 0 nil      (list x)))
+                    (t           (mv 0 nil      nil))))
+             (t
+     
+     ; X is an interior node.  First we process the car, binding n1, syms1, and
+     ; ints1 to the answers.
+     
+                (mv-let (n1 syms1 ints1)
+                        (count-and-collect (car x))
+     
+     ; Next we process the cdr, binding n2, syms2, and ints2.
+     
+                        (mv-let (n2 syms2 ints2)
+                                (count-and-collect (car x))
+     
+     ; Finally, we compute the answer for x from those obtained for its car
+     ; and cdr, remembering to increment the node count by one for x itself.
+     
+                                (mv (1+ (+ n1 n2))
+                                    (append syms1 syms2)
+                                    (append ints1 ints2)))))))
+
+This use of a multiple value to "do several things at once" is very
+common in ACL2.  However, the function above is inefficient because it
+appends syms1 to syms2 and ints1 to ints2, copying the list structures
+of syms1 and ints1 in the process.  By adding "accumulators" to the
+function, we can make the code more efficient.
+
+     (defun count-and-collect1 (x n syms ints)
+       (cond ((atom x)
+              (cond ((symbolp x) (mv n (cons x syms) ints))
+                    ((integerp x) (mv n syms (cons x ints)))
+                    (t (mv n syms ints))))
+             (t (mv-let (n2 syms2 ints2)
+                        (count-and-collect1 (cdr x) (1+ n) syms ints)
+                        (count-and-collect1 (car x) n2 syms2 ints2)))))
+
+We claim that (count-and-collect x) returns the same triple of results
+as (count-and-collect1 x 0 nil nil).  The reader is urged to study this
+claim until convinced that it is true and that the latter method of
+computing the results is more efficient.  One might try proving the
+theorem
+
+     (defthm count-and-collect-theorem
+       (equal (count-and-collect1 x 0 nil nil) (count-and-collect x))).
+
+Hint:  the inductive proof requires attacking a more general theorem.
+
+ACL2 does not support the Common Lisp construct multiple-value-bind,
+whose logical meaning seems difficult to characterize.  Mv-let is the
+ACL2 analogue of that construct.
+
+
+File: acl2-doc-emacs.info,  Node: MV-NTH,  Next: NATP,  Prev: MV-LET,  Up: PROGRAMMING
+
+MV-NTH    the mv-nth element (zero-based) of a list
+
+(Mv-nth n l) is the nth element of l, zero-based.  If n is greater than
+or equal to the length of l, then mv-nth returns nil.
+
+(Mv-nth n l) has a guard that n is a non-negative integer and l is a
+true-listp.
+
+Mv-nth is equivalent to the Common Lisp function nth, but is used by
+ACL2 to access the nth value returned by a multiply valued expression.
+For an example of the use of mv-nth, try
+
+     ACL2 !>:trans1 (mv-let (erp val state)
+                            (read-object ch state)
+                            (value (list erp val)))
+
+
+File: acl2-doc-emacs.info,  Node: NATP,  Next: NFIX,  Prev: MV-NTH,  Up: PROGRAMMING
+
+NATP    a recognizer for the natural numbers
+
+The natural numbers is the set of all non-negative integers,
+{0,1,2,3,...}.  Natp returns t if and only its argument is a   natural
+number, and nil otherwise.  We recommend the file
+books/arithmetic/natp-posp.lisp as a book for reasoning about posp
+and natp.  This book is included in books/arithmetic/top and
+books/arithmetic/top-with-meta.
+
+
+File: acl2-doc-emacs.info,  Node: NFIX,  Next: NINTH,  Prev: NATP,  Up: PROGRAMMING
+
+NFIX    coerce to a natural number
+
+Nfix simply returns any natural number argument unchanged, returning 0
+on an argument that is not a natural number.  Also see *note IFIX::,
+see *note RFIX::, see *note REALFIX::, and see *note FIX:: for
+analogous functions that coerce to an integer, a rational number, a
+real, and a number, respectively.
+
+Nfix has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: NINTH,  Next: NO-DUPLICATESP,  Prev: NFIX,  Up: PROGRAMMING
+
+NINTH    ninth member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: NO-DUPLICATESP,  Next: NO-DUPLICATESP-EQUAL,  Prev: NINTH,  Up: PROGRAMMING
+
+NO-DUPLICATESP    check for duplicates in a list (using eql for equality)
+
+(no-duplicatesp l) is true if and only if no member of l occurs twice
+in l.
+
+(no-duplicatesp l) has a guard of (eqlable-listp l).  Membership is
+tested using member, hence using eql as the test.
+
+
+File: acl2-doc-emacs.info,  Node: NO-DUPLICATESP-EQUAL,  Next: NONNEGATIVE-INTEGER-QUOTIENT,  Prev: NO-DUPLICATESP,  Up: PROGRAMMING
+
+NO-DUPLICATESP-EQUAL    check for duplicates in a list (using equal for equality)
+
+(no-duplicatesp-equal l) is true if and only if no member of l occurs
+twice in l.
+
+(no-duplicatesp-equal l) has a guard of (true-listp l).  Membership is
+tested using member-equal, hence using equal as the test.
+
+
+File: acl2-doc-emacs.info,  Node: NONNEGATIVE-INTEGER-QUOTIENT,  Next: NOT,  Prev: NO-DUPLICATESP-EQUAL,  Up: PROGRAMMING
+
+NONNEGATIVE-INTEGER-QUOTIENT    natural number division function
+
+     Example Forms:
+     (nonnegative-integer-quotient 14 3) ; equals 4
+     (nonnegative-integer-quotient 15 3) ; equals 5
+
+(nonnegative-integer-quotient i j) returns the integer quotient of the
+integers i and (non-zero) j, i.e., the largest k such that (* j k) is
+less than or equal to i.  Also see *note FLOOR::, see *note CEILING::
+and see *note TRUNCATE::, which are derived from this function and
+apply to rational numbers.
+
+The guard of (nonnegative-integer-quotient i j) requires that i is a
+nonnegative integer and j is a positive integer.
+
+
+File: acl2-doc-emacs.info,  Node: NOT,  Next: NTH,  Prev: NONNEGATIVE-INTEGER-QUOTIENT,  Up: PROGRAMMING
+
+NOT    logical negation
+
+Not is the ACL2 negation function.  The negation of nil is t and the
+negation of anything else is nil.
+
+Not is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: NTH,  Next: NTHCDR,  Prev: NOT,  Up: PROGRAMMING
+
+NTH    the nth element (zero-based) of a list
+
+(Nth n l) is the nth element of l, zero-based.  If n is greater than or
+equal to the length of l, then nth returns nil.
+
+(Nth n l) has a guard that n is a non-negative integer and l is a
+true-listp.
+
+Nth is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: NTHCDR,  Next: NULL,  Prev: NTH,  Up: PROGRAMMING
+
+NTHCDR    final segment of a list
+
+(Nthcdr n l) removes the first n elements from the list l.
+
+The following is a theorem.
+
+     (implies (and (integerp n)
+                   (<= 0 n)
+                   (true-listp l))
+              (equal (length (nthcdr n l))
+                     (if (<= n (length l))
+                         (- (length l) n)
+                       0)))
+
+For related functions, see *note TAKE:: and see *note BUTLAST::.
+
+The guard of (nthcdr n l) requires that n is a nonnegative integer and
+l is a true list.
+
+Nthcdr is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: NULL,  Next: NUMERATOR,  Prev: NTHCDR,  Up: PROGRAMMING
+
+NULL    recognizer for the empty list
+
+Null is the function that checks whether its argument is nil.  For
+recursive definitions it is often preferable to test for the end of a
+list using endp instead of null; see *note ENDP::.
+
+Null is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: NUMERATOR,  Next: O-FINP,  Prev: NULL,  Up: PROGRAMMING
+
+NUMERATOR    dividend of a ratio in lowest terms
+
+Completion Axiom:
+
+     (equal (numerator x)
+            (if (rationalp x)
+                (numerator x)
+              0))
+
+Guard for (numerator x):
+
+     (rationalp x)
+

@@ -1,0 +1,76 @@
+<html>
+<head><title>WITH-PROVER-TIME-LIMIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>WITH-PROVER-TIME-LIMIT</h2>limit the time for proofs
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Examples:<p>
+
+; Limit (mini-proveall) to about 1/4 second:
+(with-prover-time-limit 1/4 (mini-proveall))<p>
+
+; Limit (mini-proveall) to about 1/4 second, even if surrounding call of
+; with-prover-time-limit provides for a more restrictive bound:
+(with-prover-time-limit '(1/4) (mini-proveall))<p>
+
+; Limit the indicated theorem to about 1/50 second, and if the proof does not
+; complete or it fails, then put down a label instead.
+(mv-let (erp val state)
+        (with-prover-time-limit
+         1/50
+         (thm (equal (append (append x x) x)
+                     (append x x x))))
+        (if erp
+            (deflabel foo :doc "Attempt failed.")
+          (value (list :succeeded-with val))))
+<p>
+General Form:
+(with-prover-time-limit time form &amp;key loosen-ok)
+</pre>
+
+where <code>time</code> evaluates to a positive rational number or to a list
+containing such, and <code>form</code> is arbitrary.  Logically,
+<code>(with-prover-time-limit time form)</code> is equivalent to <code>form</code>.  However,
+if the runtime for evaluation of <code>form</code> exceeds the value specified by
+<code>time</code>, and if ACL2 notices this fact during a proof, then that proof will
+abort, for example like this:
+
+<pre>
+ACL2 Error in ( DEFTHM PERM-REFLEXIVE ...):  Out of time in rewrite.
+</pre>
+
+If there is already a surrounding call of <code>with-prover-time-limit</code> that has
+set up an expiration time, the present <code>with-prover-time-limit</code> is not
+allowed to push that time further into the future unless the time is
+specified as a list containing a rational rather than as a rational.<p>
+
+If you find that the time limit appears to be implemented too loosely, you
+are encouraged to email an example to the ACL2 implementors with instructions
+on how to observe the undesirable behavior.  This information can probably be
+used to improve ACL2 by the insertion of more checks for expiration of the
+time limit.<p>
+
+The rest of this documentation topic explains the rather subtle logical
+story, and is not necessary for understanding how to use
+<code>with-prover-time-limit</code>.  The ACL2 <code><a href="STATE.html">state</a></code> object logically contains a
+field called the <code>acl2-oracle</code>, which is an arbitrary true list of objects.
+This field can be read by a function called <code>read-acl2-oracle</code>, which
+however is untouchable (see <a href="PUSH-UNTOUCHABLE.html">push-untouchable</a>), meaning that it is cannot be
+called by ACL2 users.  The <code>acl2-oracle</code> field is thus ``secret''.  Our
+claim is that any ACL2 session makes sense for <strong>some</strong> value of
+<code>acl2-oracle</code> in the initial <code>state</code> for that session.  Logically,
+<code>with-prover-time-limit</code> is a no-op, just returning its second value.  But
+under the hood, it provides a ``hint'' for the <code>acl2-oracle</code>, so that
+(logically speaking) when its first element (<code><a href="CAR.html">car</a></code>) is consulted by
+ACL2's prover to see if the time limit has expired, it gets the ``right''
+answer (specifically, either nil if all is well or else a message to print if
+the time limit has expired).  Logically, the <code>acl2-oracle</code> is then
+<code><a href="CDR.html">cdr</a></code>'ed -- that is, its first element is popped off -- so that
+future results from <code>read-acl2-oracle</code> are independent of the one just
+obtained.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

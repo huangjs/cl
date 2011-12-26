@@ -1,0 +1,45 @@
+<html>
+<head><title>ADD-RAW-ARITY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ADD-RAW-ARITY</h3>add arity information for raw mode
+<pre>Major Section:  <a href="SET-RAW-MODE.html">SET-RAW-MODE</a>
+</pre><p>
+
+Technical note: This macro is a no-op, and is not necessary, when ACL2 is
+built with #-acl2-mv-as-values.<p>
+
+Users of raw mode (see <a href="SET-RAW-MODE.html">set-raw-mode</a>) can use arbitrary raw Lisp functions
+that are not known inside the usual ACL2 loop.  In such cases, ACL2 may not
+know how to display a multiple value returned by ACL2's <code><a href="MV.html">mv</a></code> macro.  The
+following example should make this clear.
+
+<pre>
+ACL2 P&gt;(defun foo (x y) (mv y x))
+FOO
+ACL2 P&gt;(foo 3 4)<p>
+
+Note: Unable to compute number of values returned by this evaluation
+because function FOO is not known in the ACL2 logical world.  Presumably
+it was defined in raw Lisp or in raw mode.  Returning the first (perhaps
+only) value for calls of FOO.
+4
+ACL2 P&gt;(add-raw-arity foo 2)
+ RAW-ARITY-ALIST
+ACL2 P&gt;(foo 3 4)
+(4 3)
+ACL2 P&gt;
+</pre>
+
+The first argument of <code>add-raw-arity</code> should be a symbol, representing the
+name of a function, macro, or special form, and the second argument should
+either be a non-negative integer (denoting the number of values returned by
+ACL2) or else the symbol <code>:LAST</code>, meaning that the number of values
+returned by the call is the number of values returned by the last
+argument.
+<p>
+The current arity assignments can be seen by evaluating
+<code>(@ raw-arity-alist)</code>.  See <a href="REMOVE-RAW-ARITY.html">remove-raw-arity</a> for how to undo a call of
+<code>add-raw-arity</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

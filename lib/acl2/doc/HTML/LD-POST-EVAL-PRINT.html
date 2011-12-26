@@ -1,0 +1,62 @@
+<html>
+<head><title>LD-POST-EVAL-PRINT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-POST-EVAL-PRINT</h2>determines whether and how <code><a href="LD.html">ld</a></code> prints the result of evaluation
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+<code>Ld-post-eval-print</code> is an <code><a href="LD.html">ld</a></code> special (see <a href="LD.html">ld</a>).  The accessor is
+<code>(ld-post-eval-print state)</code> and the updater is
+<code>(set-ld-post-eval-print val state)</code>.  <code>Ld-post-eval-print</code> must be
+either <code>t</code>, <code>nil</code>, or <code>:command-conventions</code>.  The initial value of
+<code>ld-post-eval-print</code> is <code>:command-conventions</code>.
+<p>
+The general-purpose ACL2 read-eval-print loop, <code><a href="LD.html">ld</a></code>, reads forms from
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, evaluates them and prints the result to <code><a href="STANDARD-CO.html">standard-co</a></code>.
+However, there are various flags that control <code><a href="LD.html">ld</a></code>'s behavior and
+<code>ld-post-eval-print</code> is one of them.  If this global variable is <code>t</code>, <code><a href="LD.html">ld</a></code>
+prints the result.  In the case of a form that produces a multiple
+value, <code><a href="LD.html">ld</a></code> prints the list containing all the values (which, logically
+speaking, is what the form returned).  If <code>ld-post-eval-print</code> is <code>nil</code>,
+<code><a href="LD.html">ld</a></code> does not print the values.  This is most useful when <code><a href="LD.html">ld</a></code> is used
+to load a previously processed file.<p>
+
+Finally, if <code>ld-post-eval-print</code> is <code>:command-conventions</code> then <code><a href="LD.html">ld</a></code>
+prints the result but treats ``error triples'' specially.  An
+``error triple'' is a result, <code>(mv erp val state)</code>, that consists of
+three values, the third of which is <code><a href="STATE.html">state</a></code>.  Many ACL2 functions use
+such triples to signal errors.  The convention is that if <code>erp</code> (the
+first value) is <code>nil</code>, then the function is returning <code>val</code> (the second
+value) as its conventional single result and possibly side-effecting
+<a href="STATE.html">state</a> (as with some output).  If <code>erp</code> is <code>t</code>, then an error has been
+caused, <code>val</code> is irrelevant and the error message has been printed in
+the returned <a href="STATE.html">state</a>.  Example ACL2 functions that follow this
+convention include <code><a href="DEFUN.html">defun</a></code> and <code><a href="IN-PACKAGE.html">in-package</a></code>.  If such ``error
+producing'' functions are evaluated while <code>ld-post-eval-print</code> is
+set to <code>t</code>, then you would see them producing lists of length 3.  This
+is disconcerting to users accustomed to Common Lisp (where these
+functions produce single results but sometimes cause errors or
+side-effect <a href="STATE.html">state</a>).<p>
+
+When <code>ld-post-eval-print</code> is <code>:command-conventions</code> and a form produces
+an error triple <code>(mv erp val state)</code> as its value, <code><a href="LD.html">ld</a></code> prints nothing
+if <code>erp</code> is non-<code>nil</code> and otherwise <code><a href="LD.html">ld</a></code> prints just <code>val</code>.  Because it is a
+misrepresentation to suggest that just one result was returned, <code><a href="LD.html">ld</a></code>
+prints the value of the global variable <code>'triple-print-prefix</code> before
+printing <code>val</code>.  <code>'triple-print-prefix</code> is initially <code>" "</code>, which means
+that when non-erroneous error triples are being abbreviated to <code>val</code>,
+<code>val</code> appears one space off the left margin instead of on the margin.<p>
+
+In addition, when <code>ld-post-eval-print</code> is <code>:command-conventions</code> and the
+value component of an error triple is the keyword <code>:invisible</code> then <code><a href="LD.html">ld</a></code>
+prints nothing.  This is the way certain commands (e.g., <code>:</code><code><a href="PC.html">pc</a></code>) appear
+to return no value.<p>
+
+By printing nothing when an error has been signalled, <code><a href="LD.html">ld</a></code> makes it
+appear that the error (whose message has already appeared in <a href="STATE.html">state</a>)
+has ``thrown'' the computation back to load without returning a
+value.  By printing just <code>val</code> otherwise, we suppress the fact that
+<a href="STATE.html">state</a> has possibly been changed.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

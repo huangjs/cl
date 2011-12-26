@@ -1,0 +1,101 @@
+<html>
+<head><title>DEFABBREV.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFABBREV</h2>a convenient form of macro definition for simple expansions
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defabbrev snoc (x y) (append y (list x)))
+(defabbrev sq (x) (declare (type (signed-byte 8) x)) (* x x))<p>
+
+General Form:
+(defabbrev name (v1 ... vn) doc-string decl1 ... declk body)
+</pre>
+
+where <code>name</code> is a new function symbol, the <code>vi</code> are distinct
+variable symbols, and <code>body</code> is a term.  The <code>decli</code>, if supplied,
+should be legal <code>declare</code> forms; see <a href="DECLARE.html">declare</a>.  <code>Doc-string</code> is
+an optional <a href="DOCUMENTATION.html">documentation</a> string; see <a href="DOC-STRING.html">doc-string</a>.<p>
+
+Roughly speaking, the <code>defabbrev</code> event is akin to defining
+<code>f</code> so that <code>(f v1 ... vn) = body</code>.  But rather than do this
+by adding a new axiom, <code>defabbrev</code> defines <code>f</code> to be a macro
+so that <code>(f a1 ... an)</code> expands to <code>body</code>, with the ``formals,''
+<code>vi</code>, replaced by the ``actuals,'' <code>ai</code>.
+<p>
+For example, if <code>snoc</code> is defined as shown in the first example
+above, then <code>(snoc (+ i j) temp)</code> is just an abbreviation for
+
+<pre>
+(append temp (list (+ i j))).
+</pre>
+<p>
+
+In order to generate efficiently executable Lisp code,
+the macro that <code>defabbrev</code> introduces uses a <code><a href="LET.html">let</a></code> to
+bind the ``formals'' to the ``actuals.''  Consider the second
+example above.  Logically speaking, <code>(sq (ack i j))</code> is an
+abbreviation for <code>(* (ack i j) (ack i j))</code>.  But in fact
+the macro for <code>sq</code> introduced by <code>defabbrev</code> actually
+arranges for <code>(sq (ack i j))</code> to expand to:
+
+<pre>
+(let ((x (ack i j)))
+  (* x x))
+</pre>
+
+which executes more efficiently than <code>(* (ack i j) (ack i j))</code>.<p>
+
+In the theorem prover, the <code>let</code> above expands to
+
+<pre>
+((lambda (x) (* x x)) (ack i j))
+</pre>
+
+and thence to <code>(* (ack i j) (ack i j))</code>.<p>
+
+It is important to note that the term in <code>body</code> should not contain a
+call of <code>name</code> -- i.e., <code>defabbrev</code> should not be used in place of
+<code>defun</code> when the function is recursive.  ACL2 will not complain when
+the <code>defabbrev</code> form is processed, but instead ACL2 will more than
+likely go into an infinite loop during macroexpansion of any form that
+has a call of <code>name</code>.<p>
+
+It is also important to note that the parameters of any call of a
+macro defined by defabbrev will, as is the case for the parameters
+of a function call, be evaluated before the body is evaluated, since
+this is the evaluation order of <code><a href="LET.html">let</a></code>.  This may lead to some
+errors or unexpected inefficiencies during evaluation if the body
+contains any conditionally evaluted forms like <code>cond</code>, <code>case</code>,
+or <code>if</code>.  Consider the following example.
+
+<pre>
+(defabbrev foo (x y)
+  (if (test x) (bar y) nil))
+</pre>
+
+Notice a typical one-step expansion of a call of <code>foo</code>
+(see <a href="TRANS1.html">trans1</a>):
+
+<pre>
+ACL2 !&gt;:trans1 (foo expr1 expr2)
+ (LET ((X EXPR1) (Y EXPR2))
+      (IF (TEST X) (BAR Y) NIL))
+ACL2 !&gt;
+</pre>
+
+Now imagine that <code>expr2</code> is a complicated expression whose
+evaluation is intended only when the predicate <code>test</code> holds of
+<code>expr1</code>.  The expansion above suggests that <code>expr2</code> will always
+be evaluated by the call <code>(foo expr1 expr2)</code>, which may be
+inefficient (since perhaps we only need that value when <code>test</code> is
+true of <code>expr1</code>).  The evaluation of <code>expr2</code> may even cause an
+error, for example in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode if the expression <code>expr2</code> has
+been constructed in a manner that could cause a guard violation
+unless <code>test</code> holds of <code>expr1</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

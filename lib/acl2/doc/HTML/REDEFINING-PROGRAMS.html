@@ -1,0 +1,138 @@
+<html>
+<head><title>REDEFINING-PROGRAMS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REDEFINING-PROGRAMS</h2>an explanation of why we restrict redefinitions
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+ACL2 does not in general allow the redefinition of functions because
+logical inconsistency can result:  previously stored theorems can be
+rendered invalid if the axioms defining the functions involved are
+changed.  However, to permit prototyping of both <code>:</code><code><a href="PROGRAM.html">program</a></code> and
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode systems, ACL2 permits redefinition if the user has
+accepted logical responsibility for the consequences by setting
+<code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> to an appropriate non-<code>nil</code> value.  The
+refusal of ACL2 to support the unrestricted redefinition of
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions may appear somewhat capricious.  After
+all, what are the logical consequences of changing a definition if
+no axioms are involved?
+<p>
+Three important points should be made before we discuss redefinition
+further.<p>
+
+The first is that ACL2 does support redefinition (of both
+<code>:</code><code><a href="PROGRAM.html">program</a></code> and <code>:</code><code><a href="LOGIC.html">logic</a></code> functions) when
+<code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> is non-<code>nil</code>.<p>
+
+The second is that a ``redefinition'' that does not change the mode,
+formals, guards, type declarations, stobjs, or body of a function
+is considered redundant and is
+permitted even when <code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> is <code>nil</code>.  We
+recognize and permit redundant definitions because it is not
+uncommon for two distinct <a href="BOOKS.html">books</a> to share identical function
+definitions.  When determining whether the body of a function is
+changed by a proposed redefinition, we actually compare the
+untranslated versions of the two bodies.  See <a href="TERM.html">term</a>.  For
+example, redundancy is not recognized if the old body is <code>(list a b)</code>
+and the new body is <code>(cons a (cons b nil))</code>.  We use the
+untranslated bodies because of the difficulty of translating the new
+body in the presence of the old syntactic information, given the
+possibility that the redefinition might attempt to change the
+<a href="SIGNATURE.html">signature</a> of the function, i.e., the number of formals, the
+number of results, or the position of single-threaded objects in either.<p>
+
+The third important point is that a ``redefinition'' that preserves
+the formals, guard, types, stobjs, and body but changes the mode
+from <code>:</code><code><a href="PROGRAM.html">program</a></code> to
+<code>:</code><code><a href="LOGIC.html">logic</a></code> is permitted even when <code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> is
+<code>nil</code>.  That is what <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> does.<p>
+
+This note addresses the temptation to allow redefinition of
+<code>:</code><code><a href="PROGRAM.html">program</a></code> functions in situations other than the three
+described above.  Therefore, suppose <code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> is
+<code>nil</code> and consider the cases.<p>
+
+Case 1.  Suppose the new definition attempts to change the formals
+or more generally the <a href="SIGNATURE.html">signature</a> of the function.  Accepting
+such a redefinition would render ill-formed other <code>:</code><code><a href="PROGRAM.html">program</a></code>
+functions which call the redefined function.  Subsequent attempts to
+evaluate those callers could arbitrarily damage the Common Lisp
+image.  Thus, redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code> functions under these
+circumstances requires the user's active approval, as would be
+sought with <code><a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a></code> <code>'(:query . :overwrite)</code>.<p>
+
+Case 2.  Suppose the new definition attempts to change the body
+(even though it preserves the <a href="SIGNATURE.html">signature</a>).  At one time we
+believed this was acceptable and ACL2 supported the quiet
+redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions in this circumstance.
+However, because such functions can be used in macros and redundancy
+checking is based on untranslated bodies, this turns out to be
+unsound!  (Aside: Perhaps this is not an issue if the function takes
+<code><a href="STATE.html">state</a></code> or a user-defined <a href="STOBJ.html">stobj</a> argument; but we do not further
+consider this distinction.)  Such redefinition is therefore now prohibited.
+We illustrate such an unsoundness below.  Let <code>foo-thm1.lisp</code> be a book
+with the following contents.
+
+<pre>
+(in-package "ACL2")
+(defun p1 (x) (declare (xargs :mode :program)) (list 'if x 't 'nil))
+(defmacro p (x) (p1 x))
+(defun foo (x) (p x))
+(defthm foo-thm1 (iff (foo x) x) :rule-classes nil)
+</pre>
+
+Note that the macro form <code>(p x)</code> translates to <code>(if x t nil)</code>.
+The <code>:</code><code><a href="PROGRAM.html">program</a></code> function <code>p1</code> is used to generate this
+translation.  The function <code>foo</code> is defined so that <code>(foo x)</code> is
+<code>(p x)</code> and a theorem about <code>foo</code> is proved, namely, that <code>(foo x)</code>
+is true iff <code>x</code> is true.<p>
+
+Now let <code>foo-thm2.lisp</code> be a book with the following contents.
+
+<pre>
+(in-package "ACL2")
+(defun p1 (x) (declare (xargs :mode :program)) (list 'if x 'nil 't))
+(defmacro p (x) (p1 x))
+(defun foo (x) (p x))
+(defthm foo-thm2 (iff (foo x) (not x)) :rule-classes nil)
+</pre>
+
+In this book, the <code>:</code><code><a href="PROGRAM.html">program</a></code> function <code>p1</code> is defined so that
+<code>(p x)</code> means just the negation of what it meant in the first book,
+namely, <code>(if x nil t)</code>.  The function <code>foo</code> is defined identically
+-- more precisely, the <i>untranslated</i> body of <code>foo</code> is identical
+in the two <a href="BOOKS.html">books</a>, but because of the difference between the two
+versions of the <code>:</code><code><a href="PROGRAM.html">program</a></code> function <code>p1</code> the axioms
+defining the two <code>foo</code>s are different.  In the second book we prove
+the theorem that <code>(foo x)</code> is true iff <code>x</code> is nil.<p>
+
+Now consider what would happen if the <a href="SIGNATURE.html">signature</a>-preserving
+redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code> functions were permitted and these
+two <a href="BOOKS.html">books</a> were included.  When the second book is included the
+redefinition of <code>p1</code> would be permitted since the <a href="SIGNATURE.html">signature</a> is
+preserved and <code>p1</code> is just a <code>:</code><code><a href="PROGRAM.html">program</a></code>.  But then when the
+redefinition of <code>foo</code> is processed it would be considered redundant
+and thus be permitted.  The result would be a logic in which it was
+possible to prove that <code>(foo x)</code> is equivalent to both <code>x</code> and
+<code>(not x)</code>.  In particular, the following sequence leads to a proof
+of nil:
+
+<pre>
+(include-book "foo-thm1")
+(include-book "foo-thm2")
+(thm nil :hints (("Goal" :use (foo-thm1 foo-thm2))))
+</pre>
+<p>
+
+It might be possible to loosen the restrictions on the redefinition
+of <code>:</code><code><a href="PROGRAM.html">program</a></code> functions by allowing <a href="SIGNATURE.html">signature</a>-preserving
+redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code> functions not involved in macro
+definitions.  Alternatively, we could implement definition
+redundancy checking based on the translated bodies of functions
+(though that is quite problematic).  Barring those two changes, we
+believe it is necessary simply to impose the same restrictions on
+the redefinition of <code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions as we do on
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

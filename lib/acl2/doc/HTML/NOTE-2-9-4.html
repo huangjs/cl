@@ -1,0 +1,338 @@
+<html>
+<head><title>NOTE-2-9-4.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9-4</h2>ACL2 Version  2.9.4 (February, 2006) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Also see <a href="NOTE-2-9-1.html">note-2-9-1</a>, see <a href="NOTE-2-9-2.html">note-2-9-2</a>, and see <a href="NOTE-2-9-3.html">note-2-9-3</a> for other changes
+since the last non-incremental release (Version_2.9).<p>
+
+A soundness bug has been fixed that was due to inadequate checking of
+<code>:</code><code><a href="META.html">meta</a></code> rules in the presence of <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a>.
+Specifically, a <code>local</code> <code><a href="DEFEVALUATOR.html">defevaluator</a></code> event is insufficient for
+supporting a <code>:meta</code> rule (an example is shown in source function
+<code>chk-acceptable-rules</code>).  Thanks to Dave Greve and Jared Davis for bringing
+this bug to our attention, by sending a proof of <code>nil</code> that exploited this
+bug.  The fix is to check legality of <code>:meta</code> rules even when skipping
+proofs during an <code><a href="INCLUDE-BOOK.html">include-book</a></code> event or the second pass of an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> event.<p>
+
+Fixed problem with parallel make for workshop books by adding a dependency
+line to <code>books/workshops/2003/Makefile</code>.<p>
+
+Default hints (see <a href="SET-DEFAULT-HINTS.html">set-default-hints</a>) no longer prevent the use of
+<code>:INSTRUCTIONS</code> (see <a href="PROOF-CHECKER.html">proof-checker</a>).  Thanks to Jared Davis for pointing
+out this problem.<p>
+
+New functions <code><a href="REMOVE-EQ.html">remove-eq</a></code> and <code><a href="REMOVE-EQUAL.html">remove-equal</a></code> have been defined, in
+analogy to <code><a href="REMOVE.html">remove</a></code>.  These two symbols have also been added to
+<code>*acl2-exports*</code>.  Thanks to David Rager for pointing out that
+<code>remove-equal</code> was missing.  Moreover, the definitions of <code>delete1-eq</code>
+and <code>delete1-equal</code> have been eliminated.  Function <code>remove1-eq</code>, now in
+<code>:</code><code><a href="LOGIC.html">logic</a></code> mode in source file <code>axioms.lisp</code>, serves in place of
+<code>delete1-eq</code>, with corresponding new function definitions for <code><a href="REMOVE1.html">remove1</a></code>
+and <code><a href="REMOVE1-EQUAL.html">remove1-equal</a></code>.<p>
+
+The symbol <code><a href="ASSERT$.html">assert$</a></code> has been added to <code>*acl2-exports*</code>.  Thanks to
+Jared Davis for the suggestion.<p>
+
+Added SBCL support.  Thanks to Juho Snellman for significant assistance with
+the port.  Thanks to Bob Boyer for suggesting the use of feature
+<code>:acl2-mv-as-values</code> with SBCL, which can allow thread-level parallelism
+in the underlying lisp; we have done so when feature <code>:sb-thread</code> is
+present.<p>
+
+We have continued to incorporate suggestions for wording improvements in
+documentation and error messages.  Thanks to all who send these suggestions,
+especially to Eric Smith, who has suggested the vast majority of them.<p>
+
+Made a small improvement to errors and warnings caused on behalf of
+<a href="SET-ENFORCE-REDUNDANCY.html">set-enforce-redundancy</a>, to indicate when an event of the same name
+already exists.<p>
+
+Fixed a bug in <code>books/misc/rtl-untranslate.lisp</code> that was causing a guard
+violation when adding a new entry for an existing key.<p>
+
+Fixed a bug in translation to internal form that caused <code><a href="DEFUN-SK.html">defun-sk</a></code> and
+<code><a href="DEFCHOOSE.html">defchoose</a></code> to have difficulties handling ignored variables in <code><a href="LET.html">let</a></code>
+forms.  Thanks to Sandip Ray to bringing this issue to our attention with a
+helpful example.<p>
+
+The form <code>(push :acl2-mv-as-values *features*)</code> has been added in source
+file <code>acl2-init.lisp</code> for SBCL and OpenMCL only, in order to support
+parallel execution (looking to the future...).<p>
+
+Default-hints (see <a href="SET-DEFAULT-HINTS.html">set-default-hints</a>) were being ignored inside the
+<a href="PROOF-CHECKER.html">proof-checker</a>, but no longer.  Thanks to John Erickson for bringing this
+problem to our attention and providing a simple example of it.<p>
+
+Modified the <code>TAGS</code> <code>"make"</code> target (specifically, function
+<code>make-tags</code>) so that it is gracefully skipped if the <code>etags</code> program is
+not found.  Thanks to David Rager for pointing out this issue.<p>
+
+Sandip Ray has re-worked the supporting materials for his ACL2 Workshop 2003
+talk (originally with John Matthews and Mark Tuttle), to run in a few
+minutes.  The result is in <code>workshops/2003/ray-matthews-tuttle/support/</code>
+and is included in the full ACL2 regression suite.  Thanks, Sandip.<p>
+
+Debian releases of ACL2 had created superfluous <code>.cert.final</code> files when
+certifying books.  This has been fixed; thanks to Jared Davis for noticing
+this problem.<p>
+
+Jared Davis has pointed out that ``If you add a <code>:backchain-limit-lst 0</code> to
+a rewrite rule whose hypotheses are all forced, then ACL2 `really assumes them'
+without trying to relieve them right there through rewriting.''  Relevant
+documentation has been added for <code>:backchain-limit-lst</code>; see <a href="RULE-CLASSES.html">rule-classes</a>.<p>
+
+A new version of the rtl library has been included in <code>books/rtl/rel5/</code>.
+Thanks to David Russinoff for contributing hand proofs for the new lemmas,
+and to Matt Kaufmann for carrying out their mechanization.<p>
+
+Fixed a bug in <code><a href="SAVE-EXEC.html">save-exec</a></code> that was failing to set the initial <code>cbd</code>
+according to the current directory when starting up ACL2.  Thanks to Camm
+Maguire for bringing our attention to this problem.<p>
+
+Variables introduced during <code>let*</code> abstraction are now in the current
+package.  Thanks to Jared Davis for suggesting such a change.
+See <a href="SET-LET_star_-ABSTRACTIONP.html">set-let*-abstractionp</a>.<p>
+
+It is now allowed for two definitions to be considered the same from the
+standpoint of redundancy (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>) when one specifies a
+<code>:</code><code><a href="GUARD.html">guard</a></code> of <code>t</code> and the other has no explicit <code>:guard</code> (hence,
+the guard is implicitly <code>t</code>).  Thanks to Jared Davis for bringing this
+issue to our attention.<p>
+
+(For users of <code>emacs/emacs-acl2.el</code>) There have been a few enhancements to
+distributed file <code>emacs/emacs-acl2. el</code> (skip this paragraph if you don't
+use that file):
+
+<blockquote>
+o <code>Control-t q</code> continues to compare windows ignoring whitespace, but now,
+   a prefix argument can be given to control case is also ignored (ignore case if
+   positive, else use case). <p>
+
+o <code>Control-t Control-l</code> has been defined to be similar to <code>Control-t l</code>,
+   except that proofs are skipped and output is suppressed.<p>
+
+o <code>Control-t u</code> has been defined to print, to the shell buffer, a
+  <code>:</code><code><a href="UBT_bang_.html">ubt!</a></code> form for the command containing the cursor.<p>
+
+o Control-t Control-f buries the current buffer.<p>
+
+o <code>Meta-x new-shell</code> now puts the new shell buffer in <code>shell-mode</code>
+  (thanks to David Rager for noticing this issue).</blockquote>
+<p>
+
+Linear arithmetic has been modified so that we do not generate the equality
+<code>(equal term1 term2)</code> from the pair of inequalities <code>(&lt;= term1 term2)</code>
+and <code>(&lt;= term2 term1)</code> in the case that we would have to <code><a href="FORCE.html">force</a></code> both
+<code>term1</code> and <code>term2</code> to be <code><a href="ACL2-NUMBERP.html">acl2-numberp</a></code>s.  Thanks to Dave Greve for
+providing a motivating example and to Robert Krug for providing a fix.<p>
+
+The event <code><a href="DELETE-INCLUDE-BOOK-DIR.html">delete-include-book-dir</a></code> had not been allowed inside
+<a href="BOOKS.html">books</a> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> forms.  This was an oversight, and has been
+fixed.<p>
+
+Sandip Ray has contributed a new library of books to support proofs of
+partial and total correctness of sequential programs based on assertional
+reasoning, in <code>books/symbolic/</code>.  This work is based on the paper
+J. Matthews, J S. Moore, S. Ray, and D. Vroon, ``A Symbolic Simulation
+Approach to Assertional Program Verification,'' currently in draft form.
+In particular, the books include the macro <code>defsimulate</code>, which
+automatically transforms inductive assertion proofs of correctness of
+sequential programs to the corresponding interpreter proofs.  See the
+<code>README</code> in that directory.<p>
+
+We have changed the implementation of <code>:dir :system</code> for <code><a href="LD.html">ld</a></code> and
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>.  This change will not affect you if you build an ACL2
+executable in the normal manner, leaving in place the <code>books/</code> subdirectory
+of the source directory; nor will it affect you if you download a GCL Debian
+binary distribution.  The change is that if environment variable
+<code>ACL2_SYSTEM_BOOKS</code> is set, then it specifies the distributed books
+directory, i.e., the directory determined by <code>:dir :system</code>.  You may find
+it convenient to set this variable in your ACL2 script file (typically,
+<code>saved_acl2</code>).  If it is set when you build ACL2, the generated script for
+running ACL2 will begin by setting <code>ACL2_SYSTEM_BOOKS</code> to that value.
+Thanks to various people who have discussed this issue, in particular Jared
+Davis who sent an email suggesting consideration of the use of an environment
+variable, and to Eric Smith who helped construct this paragraph.  (Note that
+this use of <code>ACL2_SYSTEM_BOOKS</code> replaces the use of <code>ACL2_SRC_BOOKS</code>
+described previously; see <a href="NOTE-2-9-1.html">note-2-9-1</a>.)<p>
+
+ACL2 now automatically deletes files <code>TMP*.lisp</code> created during the build
+process and created by <code>:</code><code><a href="COMP.html">comp</a></code>.  If you want these to be saved,
+evaluate <code>(assign keep-tmp-files t)</code> in the ACL2 loop or in raw Lisp.  The
+<code>clean</code> target for the standard <code>make</code> process for certifying books
+(see <a href="BOOK-MAKEFILES.html">book-makefiles</a>) will however delete all files <code>TMP*.*</code>.<p>
+
+The <code>TMP</code> files discussed just above now generally include the current process
+ID in their names, e.g., <code>TMP@16388@1.lisp</code> instead of <code>TMP1.lisp</code>.
+Thanks to Bob Boyer for suggesting this measure, which will reduce the
+possibility that two different processes will attempt to access the same
+temporary file.<p>
+
+Now, <code>:</code><code><a href="PE.html">pe</a></code> will print the information formerly printed by <code>:pe!</code>,
+slightly enhanced to work for logical names that are strings, not just
+symbols.  Thanks to Warren Hunt for leading us to this change by suggesting
+that <code>:pe nth</code> print the definition of <code><a href="NTH.html">nth</a></code>.<p>
+
+We eliminated spurious warnings that could occur in raw mode in OpenMCL or
+CMUCL when <a href="STOBJ.html">stobj</a>s are present.  We thank Juho Snellman for pointing out
+the relevant bug and appropriate fix.<p>
+
+<code>Mfc-rw</code> now takes a third argument that can specify an arbitrary known
+equivalence relation; see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.  Thanks to Dave Greve for
+discussions suggesting this improvement.<p>
+
+A small modification to a symbol-reading function allows documentation string
+processing on Windows systems that use CR/LF for line breaks.  Thanks to
+William Cook for bringing this issue to our attention.<p>
+
+The documentation has been improved on how to control the printing of ACL2
+terms.  See <a href="USER-DEFINED-FUNCTIONS-TABLE.html">user-defined-functions-table</a>.  Thanks to Sandip Ray for asking a
+question that led to the example presented there.<p>
+
+We fixed an inefficiency that could cause an <code><a href="LD.html">ld</a></code> command to seem to hang
+at its conclusion.  Thanks to Sandip Ray for pointing out this problem.<p>
+
+We checked that ACL2 runs under Lispworks 4.4.5 (last checked before 4.3),
+and have inhibited redefinition warnings.<p>
+
+Two changes have been made on behalf of congruence-based reasoning.  Thanks
+to Dave Greve for examples and discussions that have led to these changes,
+and to Eric Smith and Vernon Austel, who also sent relevant examples.
+
+<blockquote>
+o When a call of the new unary function <code><a href="DOUBLE-REWRITE.html">double-rewrite</a></code> is encountered
+by the rewriter, its argument will be rewritten twice.  This solves certain
+problems encountered in congruence-based rewriting.  Warnings for
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> and <code>:</code><code><a href="LINEAR.html">linear</a></code> rules will suggest when calls of
+<code><a href="DOUBLE-REWRITE.html">double-rewrite</a></code> on variables in hypotheses are likely to be a good idea.
+See <a href="DOUBLE-REWRITE.html">double-rewrite</a>.<p>
+
+o Hypotheses of the form <code>(equiv var (double-rewrite term))</code>, where
+<code>equiv</code> is a known <a href="EQUIVALENCE.html">equivalence</a> relation and <code>var</code> is a free variable
+(see <a href="FREE-VARIABLES.html">free-variables</a>), will bind <code>var</code> to the result of rewriting <code>term</code>
+twice.  Previously, hypotheses of the form <code>(equal var term)</code> would bind a
+free variable <code>var</code>, but the call had to be of <code>equal</code> rather than of an
+arbitrary known equivalence relation.</blockquote>
+<p>
+
+The following improvements were made in support of ACL2 on top of OpenMCL.
+
+<blockquote><p>
+
+o New versions of OpenMCL that do not have <code>:mcl</code> in Lisp variable
+<code>*features*</code> will now work with ACL2.  Thanks to David Rager for bringing
+this issue to our attention.<p>
+
+o Added support for OpenMCL 1.0 for 64-bit DarwinPPC/MacOS X, thanks to
+Robert Krug.<p>
+
+o Fixed tracing in OpenMCL so that the level is reset to 1 even if there has
+been an abort.<p>
+
+o Added support in OpenMCL for <code>WET</code> (see <a href="WET.html">wet</a>).<p>
+
+o Incorporated suggestions from Gary Byers for printing the ``Welcome to
+OpenMCL'' prompt before initially entering the ACL2 loop and, and for setting
+useful environment variable <code>CCL_DEFAULT_DIRECTORY</code> in the ACL2
+script.</blockquote>
+<p>
+
+Fixed a long-standing bug in forward-chaining, where variable-free hypotheses
+were being evaluated even if the <a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a>s of their
+function symbols had been disabled.  Thanks to Eric Smith for bringing this
+bug to our attention by sending a simple example that exhibited the problem.<p>
+
+Improved reporting by the <a href="BREAK-REWRITE.html">break-rewrite</a> utility upon failure to relieve
+hypotheses in the presence of free variables, so that information is shown
+about the attempting bindings.  See <a href="FREE-VARIABLES-EXAMPLES-REWRITE.html">free-variables-examples-rewrite</a>.  Thanks
+to Eric Smith for requesting this improvement.  Also improved the
+<a href="BREAK-REWRITE.html">break-rewrite</a> loop so that terms, in particular from unifying
+substitutions, are printed without hiding subterms by default.  The user can
+control such hiding (``evisceration''); see <a href="SET-BRR-TERM-EVISC-TUPLE.html">set-brr-term-evisc-tuple</a>.<p>
+
+A new directory <code>books/defexec/</code> contains books that illustrate the use of
+<code><a href="MBE.html">mbe</a></code> and <code><a href="DEFEXEC.html">defexec</a></code>.  Thanks to the contributors of those books (see
+the <code>README</code> file in that directory).<p>
+
+The directories <code>books/rtl/rel2</code> and <code>books/rtl/rel3</code> are no longer
+distributed.  They are still available by email request.  (Subdirectory
+<code>rel1/</code> supports some of the optional <code>workshop/</code> books, so it is still
+distributed.)<p>
+
+Added book <code>books/misc/sticky-disable.lisp</code> to manage <a href="THEORIES.html">theories</a> that
+might otherwise be modified adversely by <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  Thanks to Ray
+Richards for a query that led to our development of this tool.<p>
+
+The commands <code>(exit)</code> and <code>(quit)</code> may now be used to quit ACL2 and Lisp
+completely; in fact they macroexpand to calls of the same function as does
+<code><a href="GOOD-BYE.html">good-bye</a></code> (which is now a macro).  Thanks to Jared Davis for suggesting
+the new aliases.  (OpenMCL-only comment:) These all work for OpenMCL even
+inside the ACL2 loop.<p>
+
+The macro <code><a href="WET.html">wet</a></code> now hides structure by default on large expressions.
+However, a new optional argument controls this behavior, for example avoiding
+such hiding if that argument is <code>nil</code>.  See <a href="WET.html">wet</a>.  Thanks to Hanbing Liu for
+pointing out that <code>wet</code> was not helpful for very large terms.<p>
+
+We have fixed a bug in the forward-chaining mechanism that, very rarely,
+could cause a proof to be aborted needlessly with an obscure error message.
+Thanks to Jared Davis for sending us an example that evoked this bug.<p>
+
+Fixed a bug that was causing proof output on behalf of
+<code>:functional-instance</code> to be confusing, because it failed to mention that
+the number of constraints may be different from the number of subgoals
+generated.  Thanks to Robert Krug for pointing out this confusing output.
+The fix also causes the reporting of rules used when silently simplifying the
+constraints to create the subgoals.<p>
+
+Fixed a bug in handling of leading <code>./</code> in pathnames, as in:
+<code>(include-book "./foo")</code>.  Thanks to Jared Davis for bringing this bug to
+our attention.<p>
+
+Made a small fix for handling of free variables of <code>:</code><a href="FORWARD-CHAINING.html">forward-chaining</a>
+rules, which had erroneously acted as though a hypothesis
+<code>(equal var term)</code> can bind the variable <code>var</code>.<p>
+
+A small change has been made for <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rules for
+hypotheses of the form <code>(equal var term)</code>, where c[var] is a free variable
+and no variable of <code>term</code> is free (see <a href="FREE-VARIABLES.html">free-variables</a>).  As with
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> and <code>:</code><code><a href="LINEAR.html">linear</a></code> rules, we now bind <code>var</code> to
+<code>term</code> even if <code>(equal u term)</code> happens to be known in the current
+context for some term <code>u</code>.  Also as with <code>:rewrite</code> and <code>:linear</code>
+rules, similar handling is given to hypotheses
+<code>(equiv var (double-rewrite term))</code> where <code>equiv</code> is a known
+<a href="EQUIVALENCE.html">equivalence</a> relation.<p>
+
+We changed the handling of free variables in hypotheses of <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+rules being handled by the <a href="PROOF-CHECKER.html">proof-checker</a>'s <code>rewrite</code> (<code>r</code>) command,
+in complete analogy to the change described just above for
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rules.<p>
+
+The installation instructions have been updated for obtaining GCL on a
+Macintosh.  Thanks to Robert Krug for supplying this information and to Camm
+Maguire for simplifying the process by eliminating the <code>gettext</code>
+dependency.<p>
+
+The macro <code><a href="COMP.html">comp</a></code> is now an event, so it may be placed in <a href="BOOKS.html">books</a>.<p>
+
+Previously, a <code><a href="SAVE-EXEC.html">save-exec</a></code> call could fail because of file permission
+issues, yet ACL2 (and the underlying Lisp) would quit anyhow.  This has been
+fixed.  Thanks to Peter Dillinger for bringing this problem to our attention.<p>
+
+Jared Davis, with assistance from David Rager, has updated his ordered sets
+library, <code>books/finite-set-theory/osets/</code>.  See file <code>CHANGES.html</code> in
+that directory.<p>
+
+A new function, <code><a href="RESET-KILL-RING.html">reset-kill-ring</a></code>, has been provided for the rare user
+who encounters memory limitations.  See <a href="RESET-KILL-RING.html">reset-kill-ring</a>.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

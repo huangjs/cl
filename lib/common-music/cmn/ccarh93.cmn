@@ -1,0 +1,1211 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+;;; These are some of the examples used in vol9 (1993) of "Computing in Musicology"
+;;;
+;;; The actual code is somewhat brute-force because I was in a bit of a hurry --
+;;;  more elegant ways exist to do most of the local explicit PS code below.
+
+;;; #1 of CCARH 1993 examples -- Donald Aird, "The Good News Service (2nd part)"
+
+(defun explicit-justification (x1 rx) 
+  (make-self-acting :action #'(lambda (ob rst) 
+				(setf (box-x1 ob) x1) 
+				(setf (width ob) rx)) 
+		    :argument nil))
+
+
+(cmn (size 16) (output-file "1.eps") (note-head-size 1.0) (line-separation 4.0) (page-width 7.5) (staff-separation 1.75)
+     (system brace
+	     (staff (bar (measure-number 36 unjustified))
+		    treble  (meter 2 4 invisible)
+		    (g5 h (setf t1 (begin-tie)) (ff (dx -1.25) unjustified) 
+			
+			(grace-notes (a4 s) (gs5 s) (a4 s) (slurred nil) stem-up)
+			(text "A tempo" (font-name "Times-Bold") (font-scaler .5) (dy 1.0) (dx -1.0))
+			(make-instance 'sundry :name :double-slur
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (let* ((y0 (+ (staff-y0 note) -.1))
+							(x0 (+ (box-x0 note) -.5)))
+						   (with-transformation
+						       score 
+						       (scale-matrix (rotate-matrix nil -80) .4 .4)
+						       (+ 4 (* x0 (size score))) 
+						       (+ 4 (* y0 (size score)))
+
+						     ;;  0.00 0.00 moveto
+						     ;;  200.00 30.00 300.00 -30.00 500.00 0 curveto
+						     ;;  275.00 -36.00 225.00 24.00 0 0 curveto stroke
+
+						     (moveto score 0 0)
+						     (curveto score 2 -.4 3 .4 5 0)
+						     (curveto score 2.75 .5 2.25 -.5 0 0)
+						     (fill-in score)))))))
+		    (bar (dx .3))
+
+		    (g5 h (end-tie t1) stem-up)
+		    (chord (notes as4 gs4) stem-down q (onset 2))
+		    (quarter-rest (onset 3) (dy -.5))
+		    
+		    bar
+		    (quarter-rest (text "rall." (font-name "Times-BoldItalic") (font-scaler .6) (dy 1.0)))
+		    (chord (notes cs4 ds4) q (text "dim." (font-name "Times-Italic") (font-scaler .5) (dx -.25) (dy -.8))
+			   (fingering 2 1 (dy .375) (dx .7)))
+
+		    (bar (dx .05))
+		    (chord h 
+			   (setf t1a (begin-tie (dx0 .125) (dx1 -.125) (tie-direction :down)))
+			   (notes cn4 d4 e4)
+			   stem-down (fingering 2 1 1 unjustified (dx -.9) (dy -1.875)))
+		    (quarter-rest (onset 6) (dy .375))
+		    (chord (onset 7) q (note-head :diamond) stem-up
+			   (notes g4 a4 b4) (setf t2a (begin-tie (dx0 .125) (tie-direction :up))))
+		    
+		    (bar (dx .3))
+		    (chord 
+		     (notes c4 d4 e4 g4 a4 b4) (end-tie t2a) (end-tie t1a)
+			   h stem-down (onset 8) (ring- (dx .5) (dy .125) (ring-direction :down)))
+		    (quarter-rest (onset 8) (dy .875))
+		    (eighth-rest (onset 9) (dy .875))
+		    (thirty-second-rest (onset 9.5) (dy .875))
+		    (a4 begin-beam (ppp (dx -.5)) (onset 9.625) 32nd
+			(make-self-acting :action #'(lambda (n arg) 
+						      (setf (fences n) (list 0 0 0 0)) 
+						      (setf (expanders n) (list 0 0 0 0)))))
+		    (b4 (onset 9.75) 32nd
+			(make-self-acting :action #'(lambda (n arg) 
+						      (setf (fences n) (list 0 0 0 0)) 
+						      (setf (expanders n) (list 0 0 0 0)))))
+		    (d5 end-beam (onset 9.875) 32nd stem-up
+			(make-self-acting :action #'(lambda (n arg) 
+						      (setf (fences n) (list 0 0 0 0)) 
+						      (setf (expanders n) (list 0 0 0 0)))))
+		    		    
+		    (bar
+		     (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					    (when (not justifying)
+					      (display (meter 3 8 (dx -.5)) note score justifying)))))
+
+		    (line-break)
+		    (bar (measure-number 41))
+		    (meter 3 8)
+		    (e5 32nd begin-beam) (b4 32nd) (d5 32nd) (e5 32nd end-beam)
+		    (g5 32nd begin-beam) (d5 32nd) (e5 32nd) (g5 32nd end-beam)
+		    (a5 32nd (begin-beam (dy .15))) (e5 32nd) (g5 32nd) (a5 32nd end-beam)
+		    (bar)
+		    (meter 2 4)
+		    (b5 h (setf tc1 (begin-tie (dx0 .25) (dx1 .25))) stem-up (sharp in-parentheses (dx -.1) (dy -.125)))
+		    (a5 h (onset 11.5) (dx .125) (setf tc2 (begin-tie (tie-direction :down)))
+			(make-instance 'sundry :name :half-slur
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (let* ((y0 (+ (staff-y0 note) 1.875))
+							(x0 (+ (box-x0 note) -1.4))
+							(prog (format nil "~% newpath 0 4 80 0 50 arc~% 0 0 80 50 0 arcn~%")))
+						   (with-transformation
+						      score 
+						      (rotate-matrix (scale-matrix nil -.3 .35) 215)
+						      (+ 3 (* x0 (size score))) 
+						      (+ 0 (* y0 (size score)))
+						      (g-send score prog)
+						      (fill-in score)))))))
+
+		    (bar)
+		    (meter 3 8)
+		    (chord (notes (a5 (end-tie tc2)) (b5 (end-tie tc1))) q)
+		    eighth-rest
+		    (note g5 e (f (dy 2.0) (dx -1.25)) (onset 14.5) invisible 
+			  (grace-note (slurred nil) (chord (notes as5 b5) stem-up))
+			  (make-instance 'sundry :name :half-slur
+				       :mark #'(lambda (mark note score &optional justifying)
+						 (when (not justifying)
+						   (let* ((y0 (+ (staff-y0 note) .85))
+							  (x0 (+ (box-x0 note) -.50))
+							  (prog (format nil "~% newpath 0 4 80 0 50 arc~% 0 0 80 50 0 arcn~%")))
+						     (with-transformation
+						      score 
+						      (rotate-matrix (scale-matrix nil -.07 .07) 130)
+						      (+ 0 (* x0 (size score))) 
+						      (+ 0 (* y0 (size score)))
+						      (g-send score prog)
+						      (fill-in score)))))))
+
+		    (bar)
+		    (meter 2 4)
+		    (chord (notes c4 d4 e4 g4 a4 b4) stem-up h (-ring (dy .125) (dx .125))
+			   (text "Ivan Janos" (font-scaler .4) (dx .75) (dy 1.5)))
+		    (interior-double-bar))
+
+	     (staff bar treble (meter 2 4 invisible) 
+		    (a4 h (setf t20 (begin-tie (tie-direction :up))) stem-up) 
+
+		    (bar (dx .3))
+
+		    (a4 h (end-tie t20) stem-down (setf t21 (begin-tie (tie-curvature .4) (tie-direction :down))))
+		    (quarter-rest (onset 2) (dy .5))
+		    (chord (notes gn4 b4) (setf t23 (begin-tie (tie-direction :up)))
+			   stem-up (onset 3) q)
+		    
+		    bar
+		    (chord (notes g4 a4 b4) (end-tie t23) (end-tie t21) (setf t22 (begin-tie (dx0 .125) (dx1 -.125) (tie-direction :up)))
+			   (onset 4) stem-up h)
+		    (d4 h (onset 4) stem-down (setf t27 (begin-tie (tie-direction :down))))
+		    
+		    (bar (dx .05))
+		    (chord (notes g4 a4 b4 d4)
+			   (end-tie t22) (end-tie t27)
+			   h stem-up (onset 6))
+		    
+		    (bar (dx .3))
+		    (a3 h stem-down (grace-notes (slurred nil) (gs3 s) (a3 s) (g3 s)) (ppp (dy -.25) (dx -1.5)) 
+			(ring- (ring-direction :down) (dx .125))
+			(make-instance 'sundry :name :slow-SP-mark
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (let* ((x0 (+ -.25 (x0 note) (vis-dx mark)))
+							(dx (- (box-x1 *cmn-staff*) 1.5 x0))
+							(y0 (+ -2 (staff-y0 note) (vis-dy mark))))
+						   (show score (text "*S.P." (font-name "Times-BoldItalic") (font-scaler .5))
+							 :matrix (translate-matrix score mark x0 y0))
+						   (moveto score (+ x0 1.25) y0)
+						   (rlineto score dx .3)
+						   (draw score))))))
+
+		    (quarter-rest (onset 8) (dy .25))
+		    (eighth-rest (onset 9) (dy .25))
+		    (sixteenth-rest (onset 9.5) (dy .25))
+		    (gs4 s (text "una corda" (font-scaler .4) (dy -.75) (dx -.25)))
+		    (bar
+		     (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					    (when (not justifying)
+					      (display (meter 3 8 (dx -.5)) note score justifying)))))
+
+		    (meter 3 8)
+		    (cs5 s stem-down begin-beam
+			 (make-instance 'sundry :name :slow-SP-with-parens
+				      :mark #'(lambda (mark note score &optional justifying)
+						(when (not justifying)
+						  (let* ((x0 (+ (x0 note) (vis-dx mark)))
+							 (dx (- (box-x1 *cmn-staff*) 2 x0))
+							 (y0  (+ -1.75 (staff-y0 note) (vis-dy mark))))
+						    (show score (text "(S.P.)" (font-name "Times-BoldItalic") (font-scaler .5))
+							  :matrix (translate-matrix score mark x0 y0))
+						    (moveto score (+ x0 1.5) y0)
+						    (rlineto score dx .3)
+						    (rlineto score 0 -.3)
+						    (draw score)))))
+			 (text "*Note: while the left foot holds the sostenuto pedal (S.P.) in this movement, the right foot can cross behind it to activate the una"
+			       (font-scaler .55) (dx -1.0) (dy -3.0))
+			 (text "corda pedal when required." (font-scaler .55) (dy -3.5) (dx -1.0)))
+
+		    (as4 s stem-down end-beam)
+		    (ds5 s begin-beam)
+		    (gs5 e)
+		    (as5 s end-beam
+
+			 ;; [-1 0 0 1 100 100] concat
+			 ;;  0 5 100 0 50 arc
+			 ;;  0 0   100 50 0 arcn
+			 ;; fill
+			 (make-instance 'sundry :name :half-slur
+				      :mark #'(lambda (mark note score &optional justifying)
+						(when (not justifying)
+						  (let* ((y0 (+ (staff-y0 note) .85))
+							 (x0 (+ (box-x0 note) 2))
+							 (prog (format nil "~% newpath 0 4 80 0 50 arc~% 0 0 80 50 0 arcn~%")))
+						   (with-transformation
+						       score 
+						       (rotate-matrix (scale-matrix nil -.35 .3) 25)
+						       (+ 4 (* x0 (size score))) 
+						       (+ 2 (* y0 (size score)))
+						       (g-send score prog)
+						       (fill-in score)))))))
+			 
+		    (bass (explicit-justification .25 .25) (dx -.5) (scale .8 .8))
+		    bar
+		    (meter 2 4)
+
+		    ;;(rest (rq 1/3))
+		    ;;(rest (rq 1/3))
+		    ;;(gn2 te no-beam (p (dx -.25))
+		    ;;  (text "tre corde" (font-scaler .5) (dy -1.25))
+		    ;;  begin-tie begin-slur)
+		    ;; need explicit control on the start and end of the bracket
+
+		    (rest (rq 1/3) (setf bt0 (beat-subdivision- (dy .25) (dx0 -.5) (dx1 .25) (subdivision 3))))
+		    (rest (rq 1/3) (-beat-subdivision- bt0))
+		    (gn2 te (-beat-subdivision bt0) (p (dx -.5))
+			 no-beam (text "tre corde" (font-scaler .5) (dy -1.25))
+			 begin-tie begin-slur)
+
+		    (g2 e end-tie begin-beam)
+		    (e2 s)
+		    (fs2 s end-beam)
+		    
+		    bar
+		    (meter 3 8)
+		    (a2 s)
+		    (fn2 s end-slur)
+		    (e2 e begin-slur) 
+		    (d2 e end-slur wedge
+			(make-instance 'sundry :name :half-slur
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (if justifying 
+						   (moveto score (+ (box-x0 note) .5) (staff-y0 note))
+						 (let* ((y0 (+ (staff-y0 note) 1.8))
+							(x0 (+ (box-x0 note) -1.1))
+							(prog (format nil "~% newpath 0 4 80 0 50 arc~% 0 0 80 50 0 arcn~%")))
+						   (with-transformation
+						      score 
+						      (rotate-matrix (scale-matrix nil .3 .35) -25)
+						      (+ 0 (* x0 (size score))) 
+						      (+ 3 (* y0 (size score)))
+						      (g-send score prog)
+						      (fill-in score)))))))
+
+       
+		    bar
+		    (meter 2 4)
+		    (a3 h -ring)
+		    interior-double-bar)))
+
+
+
+;;; #2 of CCARH 1993 examples -- David Chaitkin, "Prelude"
+
+(setf funny-arpeggio 
+    (make-instance 'sundry
+	:name :funny-arpeggio
+	:mark #'(lambda (mark note score &optional justifying)
+		  (when (not justifying)
+		    (let* ((maxl 28)
+			   (minl 1)
+			   (dist (- maxl minl))
+			   (bottom (+ (staff-y0 note) -.125 (dy mark) 
+				      (* minl *staff-line-separation*)))
+			   (x-loc (+ (x0 note) -.3 (dx mark) (x0 mark) 
+				     (if (or (< minl -1) (> maxl 9)) -.05))))
+		      (matrix-front score (translate-matrix score mark x-loc (+ .05 bottom)))
+		      (draw-arpeggios score (+ (floor dist 4) 1))
+		      (matrix-back score))))))
+
+(cmn (size 16) (output-file "2.eps") (automatic-rests nil) (line-separation 5.0) (staff-separation 2.0) (page-width 7.5)
+     (system brace
+	     (staff (bar (measure-number 27)) treble (meter 4 4 invisible)
+		    (dotted-quarter-rest (dy -.25))
+		    (chord (onset 0) (notes d6 d7) stem-up no-octave-sign (staccato (dy 2.05))
+			   (begin-slur (dx0 -1) (dy .25) (slur-direction :up)))
+		    (chord (onset 1) (notes fs5 fs6) stem-up no-octave-sign (staccato (dy 2.175))
+			   (ring- (dx .375) (ring-direction :up) unjustified) (end-slur))
+		    (chord (notes g4 d5) (onset 2) stem-down q (crescendo (onset-offset 1) (duration 1.75))
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (cmn-dot score (+ (x0 note) .4) (+ (staff-y0 note) (* *staff-line-separation* 5)))
+						    (cmn-dot score (+ (x0 note) .4) (+ (staff-y0 note) (* *staff-line-separation* 1)))))))
+		    (quarter-rest invisible)
+		    
+		    bar
+		    
+		    (chord (notes g4 d5) q stem-down (onset 4) (ring- (ring-direction :down)))
+		    (rest (rq 2/3) (dy 1.0) (onset 4) (setf bt (beat-subdivision- (dy 2.125) (dx0 -.25) (subdivision 3))))
+		    (chord (rq 4/3) (onset (+ 4 2/3)) (staccato (dy 2.175)) (notes fs5 fs6) stem-up no-octave-sign
+			   (-beat-subdivision bt)
+			   (setf s1 (slur- (dy .25) (slur-direction :up))))
+		    (quarter-rest (onset 5) (dy -.25))
+		    (dotted-quarter-rest (onset 6) (dy -.25))
+		    (chord (notes d6 d7) (onset 6) q stem-up (staccato (dy 2.05)) (-slur- s1))
+		    (chord (notes f5 f6) (onset 7) q stem-up (staccato (dy 2.175)) 
+			   (ring- (ring-direction :up) unjustified (dx .125)) (-slur s1))
+		    
+		    bar
+		    
+		    (chord (notes g4 d5) (onset 8) stem-down q
+			   (diminuendo (duration 1.5) (dy -.25) (begin-dynamic mp))
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (cmn-dot score (+ (x0 note) .4) (+ (staff-y0 note) (* *staff-line-separation* 5)))
+						    (cmn-dot score (+ (x0 note) .4) (+ (staff-y0 note) (* *staff-line-separation* 1)))))))
+		    (dotted-quarter-rest (onset 10))
+		    (d6 e (onset 11.5) (ring- (ring-direction :up)) (sff (dx -.5) (dy .25) unjustified)
+			(make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (filled-bezier score
+								(- (x0 note) .4) (+ (staff-y0 note) 1.125)
+								(- (x0 note) .05) (+ (staff-y0 note) .925)
+								.025 .02))))
+			(grace-notes (slurred nil) (dx -.25) (chord a5 a6) stem-up) (octave-up (dy 1.25) (dx -.5)))
+		    
+		    bar
+		    
+		    half-rest
+		    dotted-quarter-rest
+		    (chord (notes d4 e5) e stem-down (sf (dy -.6))  (ring- (dx .125)) accent)
+		    
+		    line-break
+		    
+		    (bar (measure-number 31))
+		    eighth-rest
+		    (d6 q (onset 16.5) (sf (dx -.6) (dy .25))
+			(begin-slur)
+			(make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (filled-bezier score
+								(- (x0 note) .4) (+ (staff-y0 note) 1.125)
+								(- (x0 note) .05) (+ (staff-y0 note) .925)
+								.025 .02))))
+			(grace-notes (slurred nil) (dx -.25) (chord a5 a6) stem-up) (begin-octave-up (dy 1.25) (dx -.5)))
+		    (e5 e end-slur ring- end-octave-up 
+			(text "allarg." (font-name "Times-BoldItalic") (font-scaler .6) (dx 1.25) (dy .75)))
+		    half-rest
+		    
+		    bar
+		    
+		    whole-rest
+		    
+		    bar
+		    
+		    (rest (rq 2/3) (text "A tempo" (font-name "Times-Bold") (font-scaler .6) (dx -.125) (dy 1.625)))
+		    (cs4 tq (p (dx -.25) (dy 2.25)) (begin-slur (dy .75) (dy3 -.25)))
+		    (e4 tq (text "cantabile" (font-name "Times-Italic") (font-scaler .5) (dx -.5) (dy 1.5)))
+		    (a4 tq (setf bt1 (beat-subdivision- (bracketed :down) (dy0 -.25) (dy1 .25) (subdivision 3))))
+		    (fs5 tq (-beat-subdivision- bt1))
+		    (g5 tq (-beat-subdivision bt1))
+		    
+		    bar
+		    
+		    (c4 w)
+		    (e5 tq (onset 28) stem-up (setf bt3 (beat-subdivision- (subdivision 3) (dx1 .125) (dy1 -.5))))
+		    (g4 tq (onset (+ 28 2/3)) (-beat-subdivision- bt3))
+		    (fs4 tq (onset (+ 28 4/3)) (-beat-subdivision bt3))
+		    (e4 tq (onset 30))
+		    (a4 tq (onset (+ 30 2/3)))
+		    (g4 tq (onset (+ 30 4/3)) end-slur)
+		    
+		    bar)
+	     
+	     (staff bar treble (meter 4 4 invisible)
+		    (chord (notes fs4 b4) e (onset 1.5)
+			   (begin-slur (slur-curvature 3.75) (dx0 -.25) (dx1 -1.8) (slur-direction :up))
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (let ((y (- (staff-y0 note) 2.125)))
+						      (moveto score (+ (x0 *cmn-staff*) .2) y)
+						      (rlineto score 5.25 0)
+						      ;; pedal = .125 x .375 y 
+						      ;; half-pedal = .06 x .2 y
+						      (rlineto score .125 .375) (rlineto score .125 -.375)
+						      (rlineto score 11.25 0)
+						      (rlineto score .125 .375) (rlineto score .125 -.375)
+						      (rlineto score 9.5 0)
+						      (rlineto score .06 .2) (rlineto score .06 -.2)
+						      (rlineto score 1.25 0)
+						      (rlineto score .125 .375) (rlineto score .125 -.375)
+						      (rlineto score 1 0)
+						      (draw score))))))
+
+		    quarter-rest
+		    (bass (scale .8 .8))
+		    (chord (notes e2 b2) e (pp (dx -1.0)) stem-down
+			   (ring- (ring-direction :down) (dx .125)) (staccato (dy -1.875)) no-beam)
+		    (treble (scale .8 .8))
+		    (chord (notes fs4 b4) e no-beam (ring- (dx .375) (ring-direction :up))
+			   end-slur)
+		    (eighth-rest (onset 3.5) (dy -1.0))
+		    
+		    bar
+		    
+		    (chord (notes fs4 b4) e no-beam (onset 7.5)
+			   (begin-slur (slur-curvature 3.75) (dx0 -.25) (dx1 -1.5) (slur-direction :up)))
+		    
+		    bar
+		    
+		    (quarter-rest (onset 8))
+		    (bass (scale .8 .8))
+		    (chord (notes c2 g2) e stem-down (ring- (ring-direction :down) (dx .05)) (staccato (dy -1.875)) no-beam
+			   (pp in-parentheses (dy -.25) (dx -1.125)))
+		    (treble (scale .8 .8))
+		    (chord (notes fs4 b4) e no-beam end-slur (ring- (dx .375) (ring-direction :up)))
+		    (eighth-rest (onset 9.5) (dy -1.0))
+		    (dotted-quarter-rest (onset 10))
+		    (fs5 e no-beam (ring-) stem-down
+			 (grace-notes (chord (notes d5 d6) stem-up)))
+		    
+		    bar
+		    
+		    eighth-rest
+		    (bass (scale .8 .8))
+		    (b3 q. (mf (dx -.5) (dy 2.25)) begin-tie)
+		    (b3 e no-beam end-tie)
+		    (c4 q)
+		    (chord (notes bf2 c4) funny-arpeggio stem-down e no-beam)
+		    
+		    line-break
+		    
+		    eighth-rest
+		    (treble (scale .8 .8))
+		    (fn5 q no-beam 
+			 (grace-notes (chord (notes d5 d6) stem-up))
+			 (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						(when (not justifying)
+						  (let* ((y (- (staff-y0 note) 2))
+							 (xx0 (+ (x0 *cmn-staff*) .2))
+							 (yy0 y))
+						    (show score (text "(flutter)" (font-name "Times-Italic") (font-scaler .5))
+							  :matrix (translate-matrix score mark (+ (x0 *cmn-staff*) 10) (+ y .5)))
+						    (moveto score xx0 yy0)
+						    (lineto score (incf xx0 4.25) yy0)
+						    ;; pedal = .125 x .375 y 
+						    ;; half-pedal = .06 x .2 y
+						    (lineto score (incf xx0 .06) (incf yy0 .2))
+						    (lineto score (incf xx0 .06) (incf yy0 -.2))
+						    (lineto score (incf xx0 3.5) (incf yy0 0))
+						    (lineto score (incf xx0 .06) (incf yy0 .2))
+						    (lineto score (incf xx0 .06) (incf yy0 -.2))
+						    (lineto score (incf xx0 1.5) (incf yy0 0))
+						    (lineto score (incf xx0 .1) (incf yy0 .1))
+						    (draw score)
+						    (incf xx0 -.05) 
+						    (incf yy0 -.1)
+						    ;; trill or arpeggio here...
+						    (matrix-front score (list 1 0 0 1 (* (scr-size score) xx0) (* (scr-size score) yy0)))
+						    (draw-trill-sections score 13)
+						    (matrix-back score)
+						    (incf xx0 5)
+						    (incf yy0 .1)
+						    (moveto score xx0 yy0)
+						    (lineto score (incf xx0 .1) (incf yy0 -.1))
+						    (lineto score (incf xx0 .625) (incf yy0 0))
+						    (draw score)
+						    (incf xx0 .125) 
+						    (matrix-front score (list 1 0 0 1 (* (scr-size score) xx0) (* (scr-size score) yy0)))
+						    (draw-pedal-off score)
+						    (matrix-back score)
+						    (matrix-front score (list 1 0 0 1 (* (scr-size score) (+ xx0 1.75)) (* (scr-size score) yy0)))
+						    (draw-ped score)
+						    (matrix-back score)
+						    (incf xx0 2.25)
+						    (moveto score xx0 yy0)
+						    (lineto score (incf xx0 5.25) (incf yy0 0))
+						    (lineto score (incf xx0 .125) (incf yy0 .375) )
+						    (lineto score (incf xx0 .125) (incf yy0 -.375))
+						    (lineto score (incf xx0 .875) (incf yy0 0))
+						    (lineto score (incf xx0 .06) (incf yy0 .2) )
+						    (lineto score (incf xx0 .06) (incf yy0 -.2))
+						    (lineto score (incf xx0 .875) (incf yy0 0))
+						    (lineto score (incf xx0 .06) (incf yy0 .2) )
+						    (lineto score (incf xx0 .06) (incf yy0 -.2))
+						    (lineto score (incf xx0 .75) (incf yy0 0))
+						    (draw score)
+						    (matrix-front score (list 1 0 0 1 (* (scr-size score) xx0) (* (scr-size score) yy0)))
+						    (draw-pedal-off score)
+						    (matrix-back score))))))
+
+		    (g5 e begin-tie (begin-slur (slur-curvature .5) (dy2 .5) (dy3 .75)))
+		    (g5 e no-beam end-tie)
+		    (c5 q (text- "dim." (font-name "Times-Italic") (font-scaler .5) (dy 2.5) (connecting-pattern '(5 20))))
+		    (f4 e begin-tie)
+		    
+		    bar
+		    
+		    (f4 e end-tie no-beam)
+		    (e4 q)
+		    (d4 e no-beam begin-tie)
+		    (d4 (rq 2/3) end-tie (setf bt4 (beat-subdivision- (subdivision 3) (bracketed :up) (dy -.1))))
+		    (g4 (rq 2/3) (-text "") (p (dy 3.0)) (-beat-subdivision- bt4)
+			(make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (moveto score 
+							 (+ (x0 note) .625)
+							 (+ (staff-y0 note) 2.4))
+						 (setf (line-width score) .025)
+						 (rlineto score 1.9 -1.2)
+						 (rlineto score -2.1 .9)
+						 (draw score)
+						 (setf (line-width score) 0)))))
+							 
+		    (a3 (rq 2/3) end-slur (-beat-subdivision bt4))
+		    (bass (scale .8 .8))
+		    
+		    bar
+		    
+		    (b3 w)
+		    (rest (rq 2/3) (dy -.5) (onset 24) (setf bt (beat-subdivision- (subdivision 3) (bracketed :down))))
+		    (g2 (rq 4/3) (begin-tie (tie-direction :down)) stem-down (-beat-subdivision bt))
+		    (g2 h end-tie stem-down)
+		    
+		    bar
+		    
+		    (chord (notes a2 bf3) funny-arpeggio w)
+		    
+		    bar
+		    
+		    )
+		    
+		    
+	     ))
+
+     
+;;; CCARH example #3: Basart "Blue Again"
+
+(setf simple-beam (list (list 1 1 0) (list 0 0 0) (list 0 0 1)))
+
+(setf use-pedal-off-symbol t)
+
+(setf with-stem-down-too 
+  (make-instance 'sundry
+      :name :extra-stem-down
+      :mark #'(lambda (mark note score &optional justifying)
+		(when (not justifying)
+		  (moveto score (- (x0 note) .0125) (y0 note))
+		  (setf (line-width score) *stem-width*)
+		  (rlineto score 0 -.75)	;second stem going down
+		  (draw score)
+		  (setf (line-width score) 0)))))
+
+
+(cmn (output-file "3.eps")
+ (size 14)
+ (page-width 7.5)
+ (partial-stem-length 0)
+ (automatic-ties nil)
+ (automatic-line-breaks nil)
+ (note-head-size 1.2)
+ (line-separation 6)
+ (staff-separation 2)
+
+ (system brace
+	 
+	 (staff treble unmetered 
+		(g5 h begin-tie -ring
+		    (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					   (when (not justifying)
+					     (filled-bezier score 
+							    (- (x0 note) 1) (+ (staff-y0 note) 1.5)
+							    (+ (x0 note) 3.1) (+ (staff-y0 note) 1.8)
+							    .5 .04)))))
+		(g5 e end-tie (crescendo (dy -.25) (dx0 -1) (dx1 -.5)))
+		(chord (notes gf5 f6) e (mp (dy -.25) (dx .125)) begin-tie)
+		(chord (notes g5 f6) e end-tie no-beam)
+		(chord (notes gn5 f6) q)
+		(chord (notes (e5 (grace-note f6 (tenuto unjustified (dy 1.5)) (dx -.25) (slur-direction :down))) 
+			      (f6 (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+							 (when (not justifying)
+							   (filled-bezier score 
+									  (- (x0 note) .3) (+ (staff-y0 note) 2)
+									  (- (x0 note) .05) (+ (staff-y0 note) 2.25)
+									  .025 .04))))))
+		       (mf (dy -.25)) e no-beam (begin-slur (dx0 -.5) (dy0 .3)) tenuto)
+		(chord (notes e5 ds6) staccato (begin-beam (explicit-beams simple-beam)) end-slur e)
+		sixteenth-rest
+		(chord (notes e5 b5) s end-beam begin-tie)
+		(chord (notes e5 b5) e end-tie (begin-diminuendo (dy -.5) (dx1 .625) (dx0 -.25)))
+		(chord (notes e5 gs5) e end-diminuendo)
+		(bf5 te (p (dy -.25))) (c5 te) (df5 te)
+		(c5 (rq 1/5)) (bf5 (rq 1/5)) (c5 (rq 1/5)) (g5 (rq 1/5)) (c5 (rq 1/5)) 
+		(bartok-bounce (rq 9/2) (start-beams 1) (end-beams 3)
+			       (notes (setf f5c (f5 (dx -.04))) gf5 f5 
+				      (gf5 (text "9" (font-scaler .5) (dx 0) (dy -1.875)))
+				      (setf f5d (f5)) gf5 f5 gf5
+				      (f5 (begin-tie (tie-direction :down))))
+			       (spacing .5))
+		(eighth-rest invisible)
+		
+		line-mark
+		
+		(f5 s stem-down (mf (dx -.25)) end-tie)
+		(c6 stem-up (setf b3t (beam-)) (rq 1/8) (onset 14))
+		(a5 stem-up (-beam- b3t) (rq 1/8) (onset 14.125))
+		(af5 stem-up (-beam- b3t) (rq 1/8) (onset 14.25))
+		(fs5 stem-up (-beam- b3t) (rq 1/8) (onset 14.375))
+		(sixteenth-rest (dy -.25) (onset 14.375))
+		(g5 stem-up (-beam- b3t) e (begin-tie (tie-direction :up)) (onset 14.5) 
+		    (text "3" (font-scaler .5) (dx .25) (dy 1.9)))
+		(eighth-rest (dy -.25) (onset 14.75))
+		(g5 stem-up (-beam- b3t) (rq 1/8) end-tie (onset 15))
+		(bf5 stem-up (-beam- b3t) (rq 1/8) (begin-crescendo (dx1 .25) (dx0 -.25) (dy -.125)))
+		(g5 stem-up (-beam- b3t) (rq 1/8)) 
+		(d5 stem-up (-beam b3t) (rq 1/8) (begin-tie (tie-direction :down)) end-crescendo)
+		
+		(d5 e stem-down end-tie (dx .05) no-beam (f (dx -.25) (dy .125)))
+		(df6 (onset 15.5) e (setf b5t (beam- (explicit-beams (list (list 1 2 2 3 3 3 0) (list 0 0 0 0 0 0 0) (list 0 0 1 0 0 0 0))))) 
+		     stem-up (begin-tie (tie-direction :up)))
+		(d6 end-tie s. (-beam- b5t) stem-up (onset 16))
+		(eighth-rest (dx .75) (onset 16))
+		(bf5 (onset 16.375) (rq 1/8) (-beam- b5t)
+		     (text "3" (font-scaler .5) (dx .25) (dy 1.5)))
+		(a5 (onset 16.5) (rq 1/8) (-beam- b5t) stem-up)
+		(gf5 (onset 16.625) (rq 1/8) (-beam- b5t) stem-up)
+		(f5 (onset 16.75) (rq 1/8) (-beam- b5t) stem-up)
+		(e5 (onset 16.875) (rq 1/8) (-beam b5t) stem-up (staccato unjustified (dy 2.4)))
+		
+		(e5 e stem-up (setf b6t (beam-)) with-stem-down-too (tenuto unjustified (dy 1.375)) (onset 17))
+		(df5 (-beam- b6t) e (onset 17.5) (diminuendo (dy .125) (dx1 -.25))
+		     (text "3" (font-scaler .5) (dx 0) (dy 1.0)))
+		(c5 e (-beam b6t) begin-tie (mp (dx -.125) (dy .125)) stem-up (onset 18))
+		(c5 e end-tie (setf ben0 (beam-)) stem-up (onset 18.5))
+		(quarter-rest (dy -1) (onset 18.5))
+		(c5 e (-beam ben0) (onset 19) (p (dy .125)))
+		(rest (rq 1/6) (dy .5) (setf bbt0 (beat-subdivision- (dx0 -.2) (dx1 .2) (dy .75) (subdivision 3)))
+		      (onset 19.5) (mf (dy -.125) (dx -.25)))
+		(eighth-rest (onset 19.5) no-beat-subdivision (dy -.5))
+		(c5 te stem-up (begin-tie (tie-direction :up) (tie-curvature .3)) no-beam (-beat-subdivision bbt0) (onset (+ 39/2 1/6)) p)
+		(c5 q end-tie stem-up (onset 20)
+		    (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+					   (when (not justifying)
+					     (cmn-dot score (+ (x0 note) .625) (y0 note))
+					     (cmn-dot score (+ (x0 note) .625) (- (y0 note) .25))))))
+		(b4 stem-down q (sign flat (dx -.2)) (onset 20))
+		(eighth-rest invisible)
+		
+		line-mark
+		
+		(df5 e (mf (dy -.25))
+		     (grace-note c5 (dx -.125)) tenuto begin-beam 
+		     (accent mirrored unjustified (dy -2.3) (dx -.3))
+		     (begin-diminuendo (dx0 .4) (dx1 .75) (dy -.5)))
+		(df5 e begin-tie end-beam)
+		(d5 te begin-beam end-tie)
+		(c5 te)
+		(df5 te end-beam begin-tie end-diminuendo)
+		(d5 e end-tie (pp (dy -.2) (dx -.25)) begin-beam)
+		(c5 e end-beam)
+		
+		(rest invisible (rq 3/8) (setf be5 
+					   (beat-subdivision- (bracketed :up) (dx0 -.2) (dx1 .2) (dy0 -1.5) (dy1 .75) (subdivision 3))))
+		(c5 (rq 1/8) (setf ho (begin-tie)) (setf b7t (beam- (dy0 -.6) (dy1 -.2))) (-beat-subdivision- be5))
+		
+		(chord (notes (c5 (end-tie ho)) g5) q begin-tie (-beat-subdivision be5) 
+		       (p (dx -.25)) (begin-diminuendo (dx0 .125) (dy -.4)))
+		(chord (notes c5 g5) q end-tie (setf be3 (beat-subdivision- (dx0 -.2) (dy .1) (subdivision 3))))
+		(sixteenth-rest end-diminuendo (-beat-subdivision- be3))
+		(e5 s no-beam begin-tie (-beat-subdivision be3))
+		(e5 te end-tie begin-beam)
+		(e5 te)
+		(f5 te end-beam (setf bnt0 (begin-tie)))
+		(bartok-bounce (rq 7/2) (start-beams 1) (end-beams 3) (spacing .5)
+			       (notes (f5 (end-tie bnt0) (pp (dy -.375)))
+				      (e5 (crescendo (dx0 -.5) (dx1 4.5) (dy -.8)))
+				      (f5 (text "7" (font-scaler .5) (dx .25) (dy -1.875))) 
+				      e5 f5 e5 f5))
+		(gf5 q tenuto (mf (dx -.3) (dy -.5)) (setf be2 (beat-subdivision- (dy -.2) (subdivision 3))))
+		(f5 e no-beam (p (dy -.2)) (-beat-subdivision be2))
+		
+		)
+	 
+	 (staff bar treble unmetered
+		(chord (notes (a3 -ring) (c4 (-ring (ring-direction :up)))) e.)
+		(af3 s (pedal- (dy -1.0)) (begin-slur (slur-direction :up)) (setf bt (begin-tie)))
+		(chord (notes (a3 (end-tie bt)) d4) end-slur q)
+		(b4 e) (c5 e begin-tie)
+		(c5 e no-beam end-tie)
+		(chord (notes gf4 c5) q -pedal)
+		(chord (notes af4 c5) stem-down tenuto e no-beam begin-slur)
+		(c5 e staccato stem-down (begin-beam (explicit-beams simple-beam)) end-slur)
+		sixteenth-rest
+		(chord (notes an4 c5) s stem-down end-beam begin-tie)
+		(chord (notes a4 c5) e end-tie)
+		(chord (notes g4 cs5) e)
+		(chord stem-down (notes f4 gf4) h) (b4 stem-up (onset 7) q)
+		(b4 e (pedal- (dy -1.0)) stem-up (onset 8)) 
+		(b4 e (onset 8.5) stem-up)
+		
+		(chord (notes e4 a4 b4) (tied-to f5c) (dx -.2) q stem-up (stem-dy 1.8) (staccato (dx -.35)) -pedal)
+		(quarter-rest invisible)
+		(chord (notes ds4 gs4 b4) q (tied-to f5d) stem-up (dx -.5) (stem-dy 1.5) (tenuto unjustified (dx -.5))
+		       (pedal- (dx -.5) (dy -1.0)))
+		(half-rest invisible)
+		
+		line-mark
+		
+		(thirty-second-rest (dy .25) (setf b4t (beam- (dy .25))))
+		(dn4 (rq 1/8) (-beam- b4t) (setf dtie (begin-tie)))
+		(b4 (rq 1/8) (-beam- b4t) (setf btie (begin-tie)))
+		(cs5 stem-up (-beam- b4t) (rq 1/8) (setf ctie (begin-tie))
+		     (text "3" (font-scaler .5) (dx 1.7) (dy 1.5)))
+		(chord (notes (d4 (end-tie dtie)) (b4 (end-tie btie)) (c5 (end-tie ctie))) e. (-beam- b4t))
+		(chord (notes fs4 b4 cs5) s -pedal (pedal- (dy -1.0) (dx .5)) begin-tie (-beam b4t))
+		
+		(chord (notes f4 b4 c5) end-tie q) (eighth-rest invisible)
+		
+		(sixteenth-rest (onset 17) (dy .25) 
+				(setf b9t (beam- (explicit-beams (list (list 2 1 2 1 0) (list 0 0 0 0 0) (list 0 0 0 1 0))))))
+		(sixteenth-rest (onset 17) (dy -.5) (setf be4 (beat-subdivision- (dy .1) (dx1 .2) (subdivision 3))))
+		(c5 s (-beam- b9t) (onset 17.25))
+		(chord (notes cs4 ds4) (setf tt (begin-tie (dx0 .4) (dx1 -.3) (tie-direction :down))) 
+		       (setf ben2 (beam-)) (-beat-subdivision- be4)
+		       stem-down e. (onset 17.25) -pedal (pedal- (dx .5) (dy -1.0)))
+		(a4 s. (-beam- b9t) (onset 17.5)
+		    (text "3" (font-scaler .5) (dx 0) (dy 1.3)))
+		(g4 (rq 1/8) (-beam- b9t) (onset 17.875) (setf tg (begin-tie (tie-direction :up))))
+		(g4 e (-beam b9t) (end-tie tg) (setf ttg (begin-tie (tie-direction :up))) (onset 18))
+		(chord (notes c4 d4) e stem-down (-beam ben2) (end-tie tt) (onset 18) (-beat-subdivision be4)
+		       (setf ttt (begin-tie)))
+		
+		(chord (notes c4 d4) tq stem-down no-beat-subdivision (end-tie ttt) (onset 18.5))
+		(g4 stem-up tq (onset 18.5) (setf bbt2 (beat-subdivision- (subdivision 3) (dx1 .1))) (end-tie ttg))
+		(g4 te no-beam (-beat-subdivision bbt2) (onset (+ 37/2 2/3)))
+		
+		(chord (notes as3 ds4 a4) te (setf bbt1 (beat-subdivision- (subdivision 3)))
+		       no-beam (accent unjustified (dy -2.4)) staccato stem-up (onset 19.5) -pedal)
+		(chord (notes e4 fs4) tq (-beat-subdivision bbt1) (onset (+ 39/2 1/3)) begin-tie)
+		(chord (notes e4 f4) end-tie (onset 20.5) q)
+		
+		line-mark
+		
+		(fs4 q (onset 21.5) (tenuto unjustified (dy 1.3))
+			(make-instance 'sundry :name :dumb-slur
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (let* ((y0 (+ (staff-y0 note) .8))
+							(x0 (+ (box-x0 note) -.625))
+							(y1 (+ y0 .625))
+							(x1 (+ x0 1)))
+						     (moveto score x0 y0)
+						     (curveto score (+ x0 .125) (+ y0 .3) (- x1 .25) (+ y0 .8) x1 y1)
+						     (curveto score (- x1 .25) (+ y0 .75) (+ x0 .125) (+ y0 .25) x0 y0)
+						     (fill-in score))))))
+
+		(chord (notes d4 e4) h (onset 21.5) stem-down (dx .4) (grace-note e4 (dx -.35)))
+		(fs4 q (onset 22.5))
+		
+		(chord (notes d4 fs4 gs4) q (onset 23.5))
+		
+		(fs4 (-beam- b7t) (rq 1/8) (begin-crescendo (rotate 7) (dx0 .5) (dx1 .5) (dy 2.4)) (setf fst (begin-tie)))
+		(gs4 (-beam- b7t) (rq 1/8) (setf gst (begin-tie)))
+		(a4 (-beam b7t) (rq 1/8) (setf ast (begin-tie (tie-direction :up))))
+		(rest invisible (rq 1/8) end-crescendo)
+		(chord (notes (f4 (end-tie fst)) (g4 (end-tie gst)) (a4 (end-tie ast))) q begin-tie)
+		(chord (notes f4 g4 a4) q end-tie)
+		(eighth-rest invisible)
+		
+		(chord (notes cs4 a4) stem-down q (onset 27.5))
+		(b4 stem-up e (dx -.3) (onset 27.5) (setf ben1 (beam-)))
+		(c5 e (onset 28) (-beam ben1))
+		
+		(chord (notes ds4 gs4 as4) q (onset 28.5))
+		(half-rest invisible)
+		(eighth-rest invisible)
+
+		(sixteenth-rest (setf be1 (beat-subdivision- (subdivision 3) (dx0 -.1) (dx1 .1))))
+		(chord (notes bf3 e4 an4) e. no-beam (-beat-subdivision- be1) (p (dx -.1) (dy 2.125)))
+		(eighth-rest (-beat-subdivision be1))
+
+		)))
+
+
+
+;;; CCARH example #4: Bielawa "Just Add Water"
+
+(defun circled (&rest args)
+  (apply #'mark #'(lambda (mark note score &optional justifying)
+		    (when (not justifying)
+		      (circle score 
+			      (+ (x0 note) (dx mark) (dx note) (center note) (if (sign note) -.05 0))
+			      (+ (staff-y0 note) (dy mark) (* *staff-line-separation* (head-line note)))
+			      (if (not (sign note)) .5 .6))
+		      (draw score)))
+	 :circled args))
+
+(setf circled (circled))
+
+(setf use-pedal-off-symbol t)			
+
+(defun rl (&rest args) (apply #'rehearsal-letter (rehearsal-frame-white-space .1) args))
+
+(cmn (size 14) (page-width 7.5) (line-separation 5.0) 
+     (partial-stem-length 0)
+     (always-show-staff-names nil)
+     (automatic-beat-subdivision-numbers nil)
+     (automatic-line-breaks nil)
+     (automatic-ties nil)
+     (dynamics-size 1.0)
+     (note-head-size 1.25)
+     (output-file "4.eps")
+     (system brace
+	     (staff (staff-name (text "Piano" (dy -1.125) (dx -.2) (font-scaler .4)))
+		    (bar (rl "A" (dy 1.5) (frame :box)) (mm 80 (dx 1.0))) treble unmetered
+		    (quarter-rest (text "effervescent" (font-name "Times-Italic") (font-scaler .5) (dy -1.0) (dx -.5)))
+		    (chord s (setf bm1 (beam-)) (notes cs5 d6) stem-down (sfz (dx .125) (dy 2.875)))
+		    sixteenth-rest sixteenth-rest (sixteenth-rest invisible)
+		    (rest (rq 2/3))
+		    (e5 tenuto (rq 2/3))
+		    (rest (rq 2/3) invisible)
+		    (end-repeat-bar (breath-mark (dx -.25))
+				    (text "(Go to" (font-scaler .4) (dy 2.1) (dx -.75))
+				    (text "beginning)" (font-scaler .4) (dy 1.65) (dx -1))
+				    (rl "B" (dy 1.5) (frame :box)))
+
+		    (eighth-rest invisible)
+		    (g5 e stem-up staccato (let ((wb-list (wedge-beam- 2 1 (beam-direction :up))))
+					     (setf wb (first (data wb-list)))
+					     wb-list))
+		    (fs4 e stem-up staccato (-beam- wb))
+		    (half-rest invisible)
+
+		    (eighth-rest (dy -.5) (setf bt3 (begin-beam)))
+		    (chord (notes c5 b5) e staccato (end-beam bt3) (p (dx -.25)))
+
+		    (eighth-rest invisible)
+		    (chord (notes cs4 d5) (setf bm3 (beam-)) (f (dx -.375) (dy 2)) e (accent (dy -.1)))
+
+		    bar
+
+		    eighth-rest
+		    (bf4 (rq 1/6) (setf bt4 (beam-)) (mp (dy -.125) (dx -.75))
+			 (text "3" (font-scaler .5) (dy -.75) (dx 1.25)))
+		    (rest (rq 1/6) invisible)
+		    (f5 (rq 1/6) (-beam- bt4))
+		    (sixteenth-rest (dy -.5) (setf bt5 (beam-)))
+		    (chord (notes c6 g6) s (-beam- bt5) (sfz))
+		    (eighth-rest (dy -.5) (-beam bt5))
+		    quarter-rest
+		    (rest (rq 1/3) invisible)
+		    (chord (notes ef5 bf5) te (setf bt6 (beam-)) staccato (f (dx -1.25))
+			   (text "3" (font-scaler .5) (dx .2) (dy -2.1)))
+		    (a4 (staccato (justification :up)) te (-beam- bt6))
+		    
+		    (end-repeat-bar (breath-mark (dx -.25))
+				    (text "(Go to" (font-scaler .4) (dy 2.1) (dx -.75))
+				    (text "beginning)" (font-scaler .4) (dy 1.65) (dx -1)))
+
+		    line-mark
+
+		    (bar (rl "C" (dy .75) (frame :box)))
+		    
+		    quarter-rest
+		    (eighth-rest invisible)
+		    (af3 stem-down s (setf bt7 (beam-)))
+		    (cf4 stem-down s (-beam- bt7))
+		    
+		    (ef4 stem-down (rq 2/5) (setf bt8 (beam-)) circled 
+			 (begin-slur (dy3 .25) (dy .25) (dx2 -.05) (dx3 -.15) (slur-direction :down)))
+		    (rest (rq 2/5) invisible)
+		    (chord (rq 2/5) (-beam- bt8) (notes bf4 f5) stem-down end-slur tenuto
+			   (text "5" (font-scaler .5) (dx .25) (dy -2.375)))
+		    (df4 (rq 2/5) stem-down (-beam- bt8) tenuto)
+		    (rest (rq 2/5) invisible)
+
+		    bar
+
+		    (eighth-rest invisible)
+		    (chord (notes ef5 bf5) e staccato (setf bt9 (beam-)))
+		    quarter-rest
+		    (cs4 stem-down ts (setf bt10 (beam-)) (mp (dy -.5) (dx -.75)) (begin-slur (dy .125)))
+		    (fs4 stem-down ts (-beam- bt10) end-slur)
+		    (rest (rq 1/6) invisible)
+		    (a2 (rq 1/6) stem-down invisible begin-slur)
+		    (ef4 stem-down ts (-beam- bt10))
+		    (af4 stem-down ts (-beam- bt10) end-slur)
+		    
+		    (sixteenth-rest invisible (setf bt11 (beam-)))
+		    (sixteenth-rest invisible)
+		    (b4 stem-down (sharp invisible) (rq 1/8) (-beam- bt11))
+		    (fs5 stem-down (rq 1/8) (-beam- bt11))
+		    (sixteenth-rest invisible)
+
+		    bar
+
+		    (gs4 stem-down e (let ((bt12-l (wedge-beam- 2 1)))
+				       (setf bt12 (first (data bt12-l)))
+				       bt12-l)
+			 staccato circled begin-slur)
+		    (gn5 staccato e (-beam- bt12))
+		    (b4 e stem-down (-beam- bt12) staccato end-slur)
+		    (quarter-rest invisible)
+		    (as4 staccato stem-down e (-beam- bt12))
+		    (cs6 staccato stem-down e (-beam- bt12))
+		    (cn5 staccato stem-down e (-beam- bt12))
+		    (eighth-rest invisible)
+		    (e6 staccato stem-down e (-beam- bt12))
+		    (ds5 staccato stem-down e (-beam- bt12))
+		    (quarter-rest invisible)
+		    (fn4 staccato stem-down e (-beam- bt12))
+		    (a5 staccato stem-down e (-beam- bt12))
+		    (d4 staccato stem-down e (-beam- bt12))
+		    (eighth-rest invisible)
+		    (e4 staccato stem-down e (-beam- bt12))
+		    
+		    (end-repeat-bar (breath-mark (dx -.25))
+				    (text "(Go to" (font-scaler .4) (dy 2.1) (dx -.75))
+				    (text "beginning)" (font-scaler .4) (dy 1.65) (dx -1)))
+
+		    )
+	     (staff bar bass unmetered
+		    dotted-eighth-rest
+		    (chord s no-beam (notes g2 bf2) (f (dy 2.0)))
+		    (dotted-eighth-rest invisible (pedal- (dy -.75)))
+		    (a3 s stem-up (-beam bm1) circled (begin-slur (slur-direction :down) (dy0 -.75) (dy1 -.3)))
+		    (rest (rq 2/3) invisible
+			  (setf bts (beat-subdivision- (subdivision 3) (dy 1) (dy1 -.2) (dx1 .25) (bracket-type :up-down))))
+		    (rest (rq 2/3) invisible -pedal)
+		    (c3 tenuto (rq 2/3) end-slur (-beat-subdivision bts))
+		    end-repeat-bar
+
+		    (ef4 e stem-up staccato (pedal- (dy -.75)) (-beam- wb))
+		    (quarter-rest invisible)
+		    (a3 stem-up e staccato (-beam- wb))
+		    (d3 stem-up e staccato (-beam- wb))
+		    (f2 stem-up e staccato circled (begin-slur (slur-direction :down) (dy3 -.125)) (-beam- wb))
+		    (af3 stem-up e staccato (-wedge-beam wb))
+
+		    (quarter-rest invisible)
+		    (sixteenth-rest -pedal (dy 1.5) (-beam- bm3))
+		    (g1 s end-slur (pedal- (dy -.75)) (-beam bm3))
+		    (eighth-rest invisible)
+
+		    bar
+
+		    eighth-rest
+		    (rest (rq 1/6) invisible)
+		    (e3 (rq 1/6) (-beam bt4) circled 
+			(begin-slur (slur-direction :down) (dy -.5) (dy2 .3) (dy3 .5)) (mp (dx -.125)))
+		    (rest (rq 1/6) invisible)
+		    (quarter-rest (-pedal (dx .5)))
+		    dotted-eighth-rest
+		    (ef3 end-slur s stem-down)
+		    (gf2 te (pedal- (dy -.75)) (-beam bt6) staccato)
+		    (rest (rq 1/3) invisible)
+		    (rest (rq 1/3) -pedal invisible)
+
+		    end-repeat-bar
+		    (line-mark (dy -1.0))
+
+		    quarter-rest
+		    (f3 stem-up s (-beam- bt7) (p (dx -.5) (dy 3.0)) (pedal- (dy -1.3))
+			(begin-slur (dy .25) (slur-curvature .5)))
+		    (c4 stem-up s (-beam bt7))
+		    (sixteenth-rest invisible)
+		    (c7 s invisible end-slur)
+		    (rest (rq 2/5) invisible)
+		    (d3 (rq 2/5) stem-up tenuto (-beam- bt8))
+		    (rest (rq 2/5) invisible)
+		    (rest (rq 2/5) invisible)
+		    (chord (notes af2 cf3) tenuto (rq 2/5) (-beam bt8))
+
+		    bar
+
+		    (g3 circled e (staccato (justification :down)) (-beam bt9)
+			(make-instance 'sundry :name :double-slur
+				     :mark #'(lambda (mark note score &optional justifying)
+					       (when (not justifying)
+						 (let* ((y0 (+ (staff-y0 note) 1.0))
+							(x0 (+ (box-x0 note) .25)))
+						   (with-transformation
+						       score 
+						       (scale-matrix (rotate-matrix nil 25) .35 .35)
+						       (+ 4 (* x0 (size score))) 
+						       (+ 4 (* y0 (size score)))
+
+						     ;;  0.00 0.00 moveto
+						     ;;  200.00 30.00 300.00 -30.00 500.00 0 curveto
+						     ;;  275.00 -36.00 225.00 24.00 0 0 curveto stroke
+
+						     (moveto score 0 0)
+						     (curveto score 2 .6 3 -.6 5 0)
+						     (curveto score 2.75 -.75 2.25 .75 0 0)
+						     (fill-in score)))))))
+		    (eighth-rest invisible (-pedal (dx -.25)))
+		    quarter-rest
+		    (rest (rq 1/3) invisible)
+		    (cn4 stem-up ts (-beam- bt10) staccato
+			 (text "6" (font-scaler .5) (dx .3) (dy 1.5)))
+		    (a3 stem-up ts (-beam bt10))
+		    (rest (rq 1/3) invisible)
+
+		    sixteenth-rest
+		    (d2 (-beam- bt11) s circled staccato (sfz (dx -.25) (dy -.625)) 
+			(begin-crescendo (dx0 .5) (dy -.375))
+			(begin-slur (slur-direction :down)))
+		    (sixteenth-rest invisible (pedal- (dx .25) (dy -1.3)))
+		    (cs4 (rq 1/8) (-beam- bt11) end-slur)
+		    (es3 (rq 1/8) (-beam bt11) staccato)
+
+		    bar
+
+		    (dotted-quarter-rest invisible  end-crescendo (f (dy -.625) (dx .25)))
+		    (e4 e (-beam- bt12) (staccato (justification :down)) (begin-diminuendo (dy -1)))
+		    (fs3 e (-beam- bt12) (staccato (justification :down)))
+		    (dotted-quarter-rest invisible)
+		    (a3 e (-beam- bt12) (staccato (justification :down)) circled 
+			(begin-slur (slur-direction :down) (dy3 .5) (dy2 .2)))
+		    (quarter-rest invisible)
+		    (fs4 e (-beam- bt12) (staccato (justification :down)) end-slur)
+		    (b3 e (-beam- bt12) (staccato (justification :down)))
+		    (dotted-quarter-rest invisible)
+		    (gs2 e (-wedge-beam bt12) (staccato (justification :down)))
+		    (eighth-rest invisible -pedal  end-diminuendo)
+
+		    end-repeat-bar
+		    
+		    
+		    )
+	     ))
+
+
+
+;;; CCARH example 5: Grieg "Brudefolget drager forbi"
+
+(setf 32nd (rq 1/8))
+
+(defun finger (&rest args) (apply #'fingering (font-scaler .5) args))
+
+(defun upfinger (&rest args)
+  (let ((m (apply #'fingering (justification :up) (font-scaler .5) args)))
+    (incf (dy m) 1.0)
+    m))
+
+
+(cmn (size 11) (output-file "5.eps") (page-width 7.5) (automatic-line-breaks nil) (staff-separation 2.5) (line-separation 4.875)
+     (note-head-size 1.25)  (slur-curvature .8) (dynamics-size 1.5)
+     (system brace
+
+	     (staff treble e-major (meter 2 4 invisible)
+		    (chord e no-beam (notes gn5 e5) (f (dy -.5))
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (filled-bezier score 
+								   (- (x0 note) 1) (+ (staff-y0 note) 1.5)
+								   (+ (x0 note) (center note)) (+ (staff-y0 note) 1.8)
+								   .125 .04))))
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (filled-bezier score
+								   (- (x0 note) .125) (- (staff-y0 note) 4)
+								   (+ (x0 note) 40.5) (- (staff-y0 note) 4.75)
+								   .125 .05)
+						    (moveto score (+ (x0 note) .25) (- (staff-y0 note) 4.875))
+						    (rlineto score 0 -.3)
+						    (rlineto score 11 .3)
+						    (rlineto score 0 -.3)
+						    
+						    (rmoveto score 2.25 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 8 .3)
+						    (rlineto score 0 -.3)
+
+						    (rmoveto score 2.5 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 7.25 .3)
+						    (rlineto score 0 -.3)
+
+						    (rmoveto score 2.25 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 5 .3)
+						    (rlineto score 0 -.3)
+						    
+						    (draw score)))))
+
+		    (bass unjustified (scale .8 .8) (dx -.75))
+		    (chord (notes cn3 gn3) stem-down begin-beam e (fz (dy 2.5) (dx -.75)) 
+			   (finger 5 2 (dx .125) (dy .25)) staccato)
+		    (chord (notes cn2 gn2) stem-down end-beam e (fz (dy 2.5)) staccato)
+		    dotted-sixteenth-rest
+		    (treble unjustified (scale .8 .8) (dx -.5))
+		    (cn6 32nd (finger 4) p (begin-slur (dy .5)))
+
+		    (b5 s. (accent (dy -.1)) (finger 3 (dy .5)) (appoggiatura (notes (bf5 s (upfinger 2)) (cn6 s (upfinger 4))) stem-up))
+		    (gn5 32nd (finger 1))
+		    (b5 s. (finger 2))
+		    (dn6 32nd (finger 4) end-slur)
+		    (rest (rq 7/8))
+		    (bf5 32nd (begin-slur (dy0 .75) (dy1 .4) (dy2 .1)) (finger 2))
+		    
+		    (a5 (accent (dy -.1)) (finger 2 (dy .5)) s. (appoggiatura (notes (a5 s (upfinger 1)) (bf5 s (upfinger 3))) stem-up))
+		    (fn5 32nd (finger 1))
+		    (a5 s. (finger 3))
+		    (cn6 32nd end-slur)
+		    (rest (rq 7/8))
+		    (a5 32nd (finger 2) (begin-slur (dy0 .25) (dy .5)))
+
+		    (g5 s. (finger 2 (dy .5)) (accent (dy -.1)) (appoggiatura (notes (gn5 s (upfinger 1)) (a5 s (upfinger 3))) stem-up))
+		    (e5 32nd)
+		    (g5 s.)
+		    (bf5 32nd (finger 4))
+		    (dn5 (finger 1) s.)
+		    (fn5 32nd (finger 3))
+		    (e5 s. (finger 2))
+		    (g5 32nd (finger 4))
+
+		    line-break
+
+		    (fn5 e no-beam end-slur
+			   (make-instance 'sundry :mark #'(lambda (mark note score &optional justifying)
+						  (when (not justifying)
+						    (filled-bezier score
+								   (- (x0 note) .125) (- (staff-y0 note) 3.75)
+								   (+ (x0 note) 41) (- (staff-y0 note) 4.25)
+								   .125 .05)
+						    (moveto score (+ .25 (x0 note)) (- (staff-y0 note) 4.5))
+						    (rlineto score 0 -.3)
+						    (rlineto score 9.5 .3)
+						    (rlineto score 0 -.3)
+						    
+						    (rmoveto score 2.625 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 7 .3)
+						    (rlineto score 0 -.3)
+
+						    (rmoveto score 3.5 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 6.75 .3)
+						    (rlineto score 0 -.3)
+
+						    (rmoveto score 2.5 .3)
+						    (rlineto score 0 -.3)
+						    (rlineto score 6 .3)
+						    (rlineto score 0 -.3)
+						    
+						    (draw score)))))
+
+		    (bass unjustified (scale .8 .8) (dx -.75))
+		    (chord (notes cn4 fn3) e begin-beam stem-down (fz (dy 2.75)) staccato)
+		    (chord (notes cn3 fn2) e end-beam stem-down (fz (dy 2.25)) staccato)
+		    dotted-sixteenth-rest
+		    (treble (explicit-justification .125 .125) (scale .8 .8) (dx -.25))
+		    (cn6 32nd (finger 4) (begin-slur (dy .625)))
+		    
+		    (b5 ts begin-beam (finger 3) (appoggiatura (notes (bf5 s (upfinger 2)) (cn6 s (upfinger 4))) stem-up))
+		    (e5 ts (finger 1))
+		    (b5 ts end-beam (finger 2))
+		    (g6 e no-beam end-slur (finger 5 (dy .25)) staccato)
+		    (bass unjustified (scale .8 .8) (dx -.75))
+		    (chord (notes cn4 fn3) e no-beam fz)
+		    dotted-sixteenth-rest
+		    (treble (explicit-justification .125 .125) (scale .8 .8) (dx -.25))
+		    (bf5 32nd (finger 2) (begin-slur (dy .5)))
+		    
+		    (a5 ts begin-beam (finger 2) (appoggiatura (notes (a5 s (upfinger 1)) (bf5 s (upfinger 3))) stem-up))
+		    (fn5 ts (finger 1))
+		    (a5 ts end-beam (finger 2))
+		    (fn6 e no-beam end-slur (finger 5 (dy .25)) staccato)
+		    (bass unjustified (scale .8 .8) (dx -.75))
+		    (chord (notes cn4 fn3) e no-beam fz)
+		    dotted-sixteenth-rest
+		    (treble (explicit-justification .25 .25) (scale .8 .8) (dx -.375))
+		    (a5 32nd (finger 2) (begin-slur (dy0 .75) (dy1 .5) (dx3 .5) (dy3 .5)))
+
+		    (g5 ts (finger 2) (appoggiatura (notes (gn5 s (upfinger 1)) (a5 s (upfinger 3))) stem-up))
+		    (e5 ts) (g5 ts (begin-crescendo (dy -.5) (dx .5))) (e6 ts) (g5 ts) (e5 ts)
+		    (dn5 ts (finger 2))
+		    (fn5 ts (finger 4))
+		    (d5 ts (finger 1))
+		    (e5 ts (finger 2))
+		    (g5 ts (finger 4))
+		    (e5 ts (finger 1) end-slur end-crescendo))		    
+
+	     (staff bar treble e-major (meter 2 4 invisible)
+		    (cycle (list cn5 gn4 cn4 g4 c5 g4 c4 c5 
+				 (chord (notes gn4 bf4) (finger 2 4 (dx .25) (dy .25))) cn5 (chord (notes g4 b4)) fn4
+				   (chord (notes g4 b4)) c5 (chord (notes g4 b4)) f4
+				 a4 cn5 a4 fn4 a4 c5 a4 f4
+				 (chord (notes gn4 bf4)) cn5 (chord (notes g4 b4)) fn4
+				   (chord (notes g4 b4)) c5 (chord (notes g4 b4)) f4
+				   a4 cn5 a4 fn4 a4 c5 a4 f4
+				 (chord (notes gn4 bf4)) cn5 (chord (notes g4 b4)) fn4
+				   (chord (notes g4 b4)) c5 (chord (notes g4 b4)) f4
+				   a4 cn5 a4 fn4 a4 c5 a4 f4
+				 (chord (notes gn4 bf4)) cn5 (chord (notes g4 b4)) fn4
+				   (chord (notes g4 b4)) c5 (chord (notes g4 b4)) f4)
+			   (list s. 32nd))
+		    bar)))
+     

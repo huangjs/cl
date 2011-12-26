@@ -1,0 +1,86 @@
+<html>
+<head><title>STOBJ-EXAMPLE-1-IMPLEMENTATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-1-IMPLEMENTATION</h2>the implementation of the <code>counters</code> stobj
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+the event  
+
+<pre>
+(defstobj counters
+  (NodeCnt     :type integer :initially 0)
+  (TipCnt      :type integer :initially 0)
+  (IntTipsSeen :type t       :initially nil))
+</pre>
+
+discussed in <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a>, creates a Common Lisp object to
+represent the current value of <code>counters</code>.  That object is created
+by evaluating either of the following ``raw'' (non-ACL2) Common Lisp
+forms:
+
+<pre>
+(create-counters)<p>
+
+(vector (make-array 1 :element-type 'integer
+                      :initial-element '0)
+        (make-array 1 :element-type 'integer
+                      :initial-element '0)
+        'nil)
+</pre>
+
+and the value is stored in the Common Lisp global variable named
+<code>*the-live-counters*</code>.
+
+<p>
+Thus, the <code>counters</code> object is an array of length three.  The first
+two elements are arrays of size 1 and are used to hold the
+<code>NodeCnt</code> and <code>TipCnt</code> fields.  The third element is the
+<code>IntTipsSeen</code> field.  The first two fields are represented by
+arrays so that we can implement the <code>integer</code> type specification
+efficiently.  Generally, integers are ``boxed'' in some Common Lisp
+implementations, for example, GCL.  Creating a new integer requires
+creating a new box to put it in.  But in some lisps, including GCL,
+the integers inside arrays of integers are not boxed.<p>
+
+The function <code>NodeCnt</code> is defined in raw Lisp as:
+
+<pre>
+(defun NodeCnt (counters)
+  (the integer
+       (aref (the (simple-array integer (1))
+                  (svref counters 0))
+             0)))
+</pre>
+
+Observe that the form <code>(svref counters 0)</code> is evaluated to get
+an array of size 1, which is followed by a call of <code>aref</code> to
+access the 0th element of that array.<p>
+
+The function <code>update-NodeCnt</code> is defined in raw Lisp as:
+
+<pre>
+(defun update-NodeCnt (v counters)
+  (declare (type integer v))
+  (progn
+   (setf (aref (the (simple-array integer (1))
+                    (svref counters 0))
+               0)
+         (the integer v))
+   counters))
+</pre>
+  
+Note that when this function is called, it does not create a new
+vector of length three, but ``smashes'' the existing one.<p>
+
+One way to see all the raw Lisp functions defined by a given <code>defstobj</code> is
+to evaluate the <code>defstobj</code> event and then evaluate, in the ACL2 loop, the
+expression <code>(nth 4 (global-val 'cltl-command (w state)))</code>.  Those functions
+that contain <code>(DECLARE (STOBJ-INLINE-FN T))</code> will generate <code><a href="DEFABBREV.html">defabbrev</a></code>
+forms because the <code>:inline</code> keyword of <code><a href="DEFSTOBJ.html">defstobj</a></code> was supplied the
+value <code>t</code>.  The rest will generate <code><a href="DEFUN.html">defun</a></code>s.<p>
+
+We now recommend that you look at <a href="STOBJ-EXAMPLE-1-PROOFS.html">stobj-example-1-proofs</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<html>
+<head><title>PUFF_star_.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PUFF*</h2>replace a compound <a href="COMMAND.html">command</a> by its subevents
+<pre>Major Section:  <a href="HISTORY.html">HISTORY</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+ACL2 !&gt;:puff* :max
+ACL2 !&gt;:puff* :x
+ACL2 !&gt;:puff* 15
+ACL2 !&gt;:puff* "book"
+<p>
+General Form:
+:puff* cd
+</pre>
+
+where <code>cd</code> is a <a href="COMMAND.html">command</a> descriptor (see <a href="COMMAND-DESCRIPTOR.html">command-descriptor</a>) for
+a ``puffable'' <a href="COMMAND.html">command</a>.  See <a href="PUFF.html">puff</a> for the definition of
+``puffable'' and for a description of the basic act of ``puffing'' a
+<a href="COMMAND.html">command</a>.  <code>Puff*</code> is just the recursive application of <a href="PUFF.html">puff</a>.  <code>Puff*</code>
+prints the region <a href="PUFF.html">puff</a>ed, using <code><a href="PCS.html">pcs</a></code>.<p>
+
+To <a href="PUFF.html">puff</a> a <a href="COMMAND.html">command</a> is to replace it by its immediate subevents, each
+of which is executed as a <a href="COMMAND.html">command</a>.  To <code>puff*</code> a <a href="COMMAND.html">command</a> is to replace
+the <a href="COMMAND.html">command</a> by each of its immediate subevents and then to <code>puff*</code>
+each of the puffable <a href="COMMAND.html">command</a>s among the newly introduced ones.<p>
+
+For example, suppose <code>"ab"</code> is a book containing the following
+
+<pre>
+(in-package "ACL2")
+(include-book "a")
+(include-book "b")
+</pre>
+
+Suppose that book <code>"a"</code> only contained <code><a href="DEFUN.html">defun</a></code>s for the functions <code>a1</code>
+and <code>a2</code> and that <code>"b"</code> only contained <code><a href="DEFUN.html">defun</a></code>s for <code>b1</code> and <code>b2</code>.<p>
+
+Now consider an ACL2 <a href="STATE.html">state</a> in which only two <a href="COMMAND.html">command</a>s have been
+executed, the first being <code>(include-book "ab")</code> and the second being
+<code>(include-book "c")</code>.  Thus, the relevant part of the display
+produced by <code>:</code><code><a href="PBT.html">pbt</a></code> 1 would be:
+
+<pre>
+1 (INCLUDE-BOOK "ab")
+2 (INCLUDE-BOOK "c")
+</pre>
+
+Call this <a href="STATE.html">state</a> the ``starting <a href="STATE.html">state</a>'' in this example, because we
+will refer to it several times.<p>
+
+Suppose <code>:puff 1</code> is executed in the starting <a href="STATE.html">state</a>.  Then the first
+<a href="COMMAND.html">command</a> is replaced by its immediate subevents and <code>:pbt 1</code> would
+show:
+
+<pre>
+1 (INCLUDE-BOOK "a")
+2 (INCLUDE-BOOK "b")
+3 (INCLUDE-BOOK "c")
+</pre>
+
+Contrast this with the execution of <code>:puff* 1</code> in the starting
+<a href="STATE.html">state</a>.  <code>Puff*</code> would first <a href="PUFF.html">puff</a> <code>(include-book "ab")</code> to get the
+<a href="STATE.html">state</a> shown above.  But then it would recursively <code>puff*</code> the puffable
+<a href="COMMAND.html">command</a>s introduced by the first <a href="PUFF.html">puff</a>.  This continues recursively
+as long as any <a href="PUFF.html">puff</a> introduced a puffable <a href="COMMAND.html">command</a>.  The end result
+of <code>:puff* 1</code> in the starting <a href="STATE.html">state</a> is
+
+<pre>
+1 (DEFUN A1 ...)
+2 (DEFUN A2 ...)
+3 (DEFUN B1 ...)
+4 (DEFUN B2 ...)
+5 (INCLUDE-BOOK "c")
+</pre>
+
+Observe that when <code>puff*</code> is done, the originally indicated <a href="COMMAND.html">command</a>,
+<code>(include-book "ab")</code>, has been replaced by the corresponding
+sequence of primitive <a href="EVENTS.html">events</a>.  Observe also that puffable <a href="COMMAND.html">command</a>s
+elsewhere in the <a href="HISTORY.html">history</a>, for example, <a href="COMMAND.html">command</a> 2 in the starting
+<a href="STATE.html">state</a>, are not affected (except that their <a href="COMMAND.html">command</a> numbers grow as a
+result of the splicing in of earlier <a href="COMMAND.html">command</a>s).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

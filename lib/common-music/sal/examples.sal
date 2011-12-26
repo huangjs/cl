@@ -1,0 +1,473 @@
+; SAL syntax. SAL stands for Simple Algorithmic Language, or Secretly
+; Another Lisp, as you wish. SAL provides an intuitive, command-style
+; syntax for working with Lisp and Common Music without having to know
+; anything about Lisp notation.  To execute SAL commands first select
+; "Start CM" from the SAL menu, then place the cursor at the very end
+; of a command expression and press the keypad Enter key.
+
+; SAL consists of symbolic expressions (sexprs), statements and
+; commands. A sexpr evaluates to a value. A statement is a language
+; construct. A command is a "top-level" statement that accomplishes
+; some interactive task. For example, the print command (statement)
+; prints the value of one or more sexprs to standard output.
+
+; Put the cursor just after 'pi' and press keypad Enter, look in the
+; Lisp REPL for the answer:
+
+print 2 * pi
+
+; You can use commas to print more than one sexpr at a time. A number
+; of commands and statements use comma delimiting (see bnf.text)
+
+print "random pi is ", random(2.0) * pi
+
+; to eval multiline commands put the cursor at the end of its LAST
+; line or select the whole thing as a region and hit Enter.
+
+print "Bb is ", 
+      440 * expt(2, 1/12), 
+      " Hz"
+
+; Arithmetic sexprs are infix. Operators MUST be delimited from their
+; operands using spaces and/or parens. In other words, 2 / 4 is
+; division and '2/4' is a ratio; 2 + 4 is addition and 2+4 is
+; nothing. Normal operator precedence rules apply if there are no
+; parens.
+
+print 1 + 3 * 4
+
+print (1 + 3) * 4
+
+print 2 ^ 10 + 1
+
+print random(128) % 12
+
+print {c e g} ~= {c e g}
+
+print 2 * pi > 10
+
+print #? (random(2) = 0, "winner!", "loser!" )
+
+print #f | #t
+
+print #f & #t
+
+print ! #t
+
+; function calls.
+; function names go in front of their argument lists and commas
+; separate the individual arguments:
+
+print list(1, 2 + 3, 4)
+
+; you can nest funcalls:
+
+print note(between(30,odds(.5, 60, 90)))
+
+; you can call pretty much any Lisp function even simple special
+; forms, although it probably isn't a good idea...
+
+print setq(bif, list(1,2,random(100)))
+
+; of course funcall args can include sexprs, and sexprs can
+; contain funcalls:
+
+print between(pi + 1, pi + 2) * pi + 1
+
+;; #t and #f are the notations for Lisp's boolean true and false.
+
+print "Lisp true: ", #t, " Lisp false: ", #f
+
+;; #? (test,true [,false]) is conditional expression
+
+print #? ( random(2) = 0, "winner", "loser")
+
+; lists. use the list() function to create a list or curly brackets
+; {} to notate a constant (quoted) list. the {} notation comes from
+; PLA, by Bill Schottstaedt
+
+print pickl( {a b c d e f g})
+
+print interpl( random(1.0), {0 60 .5 120 1.0 0})
+
+; keyword args. keywords look like "xxx:" and are comma delimited.
+
+print keynum( 440 * random(16.0), hz: #t)
+
+print make(<midi>, time: 33, keynum: between(60, 90))
+
+print make(<cycle>, of: {1 2 3})
+
+; the define command defines variables, functions, processes.
+; (patterns and classes will be added soon)
+
+define variable bar = random(10)
+
+; you can define more than one var at at time. vars are bound
+; sequentially left to right
+
+define variable baz = bar * 2, bif = list(bar, baz)
+
+print list(bar,baz)
+
+; defining functions.  a function has zero or more parameters and
+; executes a single statement. use the 'return' statement to return
+; one or more values from a function. 
+
+define function foo ()
+  return random(128)
+
+print foo()
+
+; the 'begin...end' statement turns multiple statements into a single
+; statement (block). the first statement inside a begin end can be a
+; 'with' statement to declares local variables inside the block:
+
+define function foo ()
+  begin
+    with x = random(10), y = x * 2, z
+    print "x=", x, " y=", y
+    set z = list(x, y)
+    return z
+  end
+
+print foo()
+
+; conditional statements: 'when', 'unless' and 'if then [else]'
+
+define function snake-eyes ()
+  begin
+    with a = random(6), b = random(6)
+    if (a = b & b = 0) then
+      return "snake-eyes!"
+    else
+      return "loser"
+  end
+
+print snake-eyes()
+
+;; use begin...end blocks to associate more than one statement with a
+;; conditional clause
+
+define function smaller (a, b)
+  if a < b then
+    begin
+      print "arg1 ", a, " is smaller than arg2 ", b
+      return a
+    end
+  else
+    begin
+      print "arg2 ", b, " is smaller than arg1 ", a
+      return b
+    end
+
+print smaller(10, random(20))
+
+; the set statement sets one or more variables according to its
+; assignment operators: = += *= &= @= ^= <= >=
+;   var = 2   sets var to 2
+;   var += 2  increments var by 2
+;   var *= 2  scales var by 2
+;   var &= 2  appends 2 to the list in var
+;   var @= 2  prepends 2 to the list in var
+;   var ^= {2 3 4}  lisp appends list to the list in var
+;   var <= 2  minimize var by 2
+;   var >= 2  maximize var by 2
+; Each var can be a variable or a slot reference var.slot
+
+define function foo ()
+  begin
+    with a, b = 2, c = 3, d = list(1) , e = list(1)
+    set a = b, b += 100, c *= 100, d &= 100, e @= 100
+    return list(a,b,c,d,e)
+  end
+
+print foo()
+
+; this is how you can get/set slot values:
+
+define function foo()
+  begin
+    with a = make(<midi>, duration: 10)
+    set a.keynum = random(124), a.duration += random(2.0)
+    return list(a.keynum, a.duration / 2.0)
+  end
+
+print foo()
+
+; the loop statement.
+; loop performs iteration. its pretty much like the lisp loop macro
+; except that values are not returned. a loop is an implicit begin: it
+; supports an initial with statement and MUST be terminated by an 'end'
+; statement
+
+; print 10 random numbers
+
+loop repeat 10
+  print random(10)
+end
+
+; collect n random keynums. the &= appends things to a list
+
+define function foo (n)
+  loop with l = list()
+    repeat n
+    set l &= random(128)
+    finally return l
+  end
+
+print foo(10)
+
+; transpose a list of intervals converted to note names
+
+define function transp(ints, knum)
+  loop with l = list()
+    for i in ints
+      set l &= note(knum + i)
+    finally return l
+  end
+    
+print transp({0 1 3 6 7}, between(30,50))
+
+; pitch class transposition of intervals
+
+define variable myrow = {0 1 11 2 10 3 9 4 8 5 7 6}
+
+define function pctransp(ints, pc)
+  loop with l = list()
+    for i in ints
+    set l &= mod( i + pc, 12)
+    finally return l
+  end
+
+print pctransp(myrow, random(12))
+
+; pc inversion of a row 
+
+define function pcinvert( ints)
+  loop with l = list()
+    for i in ints
+    set l &= mod( - i, 12)
+    finally return l
+  end
+
+print pcinvert(myrow)
+
+; compute the matrix of a row
+
+define function matrix(row)
+  loop with mat = list(), inv = pcinvert(row)
+    for i in inv
+    for new = pctransp(row, i)
+    set mat &= new
+    finally return mat
+  end
+
+print matrix(myrow)
+
+; take the average of n random keynums
+
+define function foo (n)
+  loop with s = 0
+    repeat n
+    set s += random(128)
+    finally return floor( s / n)
+  end
+
+print foo(20)
+
+; iterate while a condition holds, 
+
+define function foo ()
+  begin
+    with l = list()
+    loop for a = random(10)
+      while a < 8
+      print a
+      set l &= a
+    end
+    return l
+  end 
+
+print foo()
+
+; loop can contain inner begin end blocks
+
+define function foo()
+  loop with l = list()
+    for i below 20
+    for j = 0 then random(100)
+    begin
+      with c = odds(.5)
+      set l &= i, l &= j, l &= c
+    end
+    finally return l
+  end
+
+print foo()
+
+; processes.  
+; process definitions are like functions except that they do not have
+; return statements and contain a 'run' block as their final
+; statement. 'run' is syntactically identical to 'loop' except that it
+; supports the 'wait' statement. use the 'output' statement (command)
+; to send an object to an open output stream.
+ 
+define process simp(num, rate, lo, hi)
+  run repeat num
+    for k = between(lo, hi)
+    output make(<midi>, time: now(), keynum: k)
+    wait rate
+  end
+
+; generating musical algorithmically
+
+; directories and files
+; the 'chdir' command changes the current working directory. 
+
+chdir "~/"
+
+; use the 'open' and 'sprout' commands to generate music.  'open'
+; opens an output destination: a file, port, seq or plot. you can pass
+; keyword args to the output stream as appropriate to its type when
+; you open it.
+
+open "test.mid"
+
+open "test.mid", versioning: #t, play: #t
+
+; the 'sprout' command triggers algorithmic output to the open output
+; destination. if a file is open each sprout results in a new instance
+; of that file being written
+
+sprout simp(16, .2, 60, 70)
+
+; you can sprout a list of things.
+
+sprout list(simp(20, .2, 40, 50), simp(20, .2, 60, 70))
+  
+; you can offset them in time
+
+sprout list(simp(20, .2, 40, 50), simp(20, .2, 60, 70)) , {0 1.2}
+
+; a slightly more complex process
+
+define process foo(n, r)
+  run repeat n
+    for k = between(40, 70)
+    output make(<midi>, time: now(), keynum: k)
+    if even?(k) then
+      output make(<midi>, time: now(), keynum: k + 12)
+      else
+	begin
+	  output make(<midi>, time: now(), keynum: k - 12)
+	  if odds(.4) then
+	    output make(<midi>, time: now(), keynum: k - random(12))
+	end
+    wait random(r)
+  end
+
+sprout foo(20, .4)
+
+; you can open seqs and ports too. here we generate to seq, then open
+; a file and sprout two instance of that seq offset by two seconds
+
+define variable myout = make(<seq>)
+
+open myout
+
+define process simp (num, rhy, low, hi)
+  run repeat num
+    output make(<midi>, time: now(), 
+                keynum: between(low,hi))
+    wait rhy
+  end
+
+; write simp to the seq
+
+sprout simp(20, .25, 50, 80)
+
+open "test.mid"
+
+sprout list(myout,myout) , {0 2}
+
+
+; A complex example 
+; Some SAL statements like 'if' 'print' and 'sprout' shadow Lisp
+; functions with the same names. You can get at the CL functions by
+; using a capital letter: Print("foo") or If( x, y, z) At this point
+; keywords are not sexprs, and SAL does not have ', or even symbols
+; except in {}. You can still write lisp keywords and they get passed
+; through. (Perhaps lisp keywords as data could be notated: #:foo) ?
+; Id actually prefer NOT to incorporate quoted things since that's
+; exactly what causes so many problems for new lisp users. You can
+; still write symbols in quoted lists. Here is an example that
+; uses If, lisp keywords as data and symbols in lists:
+
+define variable contour =
+  note( {a4 g f e a4 b c d gs b c5 ef fs gs a5 bf g f e
+          a5 b c d gs3 f e cs c bf5 gs5 as3 cs5 e6 f4 gs5
+          d6 e f g c5 b a g bf c5 cs e4 f gs d4 c b a4 e5 f g a5})
+
+define process fm-improv (line, beat)
+  run with amp = .7, dur = rhythm(beat)
+    for car in line
+    for mel = odds(.7)
+    for rhy = pick(dur,  dur / 2, dur / 4)
+    for spec = fm-spectrum( hertz(car),
+                            between(1.1, 1.9),
+                            pick(1, 2, 3),
+                            spectrum: :keynum,
+                            minimum: transpose(car, -14),
+                            maximum: transpose(car, 14),
+                            scale-order: #? (mel, :random, :up),
+                            ignore-zero: #t,
+                            remove-duplicates: #t)
+    for sub = #? ( mel,  rhy / length(spec), 0)
+    loop for k in spec 
+      for i = 0 then i + 1
+      output make(<midi>, time: now() + (i * sub),
+                          keynum: k,
+                          duration: dur,
+                          amplitude: amp)
+       end
+     wait rhy
+  end
+
+open "fm-improv.mid", versioning: #t
+
+sprout fm-improv(contour, 1/4)
+
+; working with systems and rts.
+; these examples assume the rts and midishare systems are already
+; installed and working
+
+; load rts and midishare systems
+
+system "rts"
+system "midishare"
+
+; open the midishare port:
+
+open "midi-port.ms"
+
+; start rts. 1 starts rts scheduler in seconds. 1000 starts rts
+; in millisecond mode. 0 stops rts and -1 pauses it.
+
+rts 1
+
+
+; now sprout simps in real time. each time you press Enter a new simp
+; is added to the mix
+
+define process simp (num, rhy, key, wid)
+  run for i below num
+    output make(<midi>, time: now(), 
+                keynum: between(key, wid + key),
+                amplitude: interpl( i / num, {0 .85 1 .25}))
+    
+    wait rhy
+  end
+
+sprout simp(pick(8,12,16), .1, between(50,70), between(2,12))
+

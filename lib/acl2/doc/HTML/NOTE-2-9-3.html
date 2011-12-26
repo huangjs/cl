@@ -1,0 +1,247 @@
+<html>
+<head><title>NOTE-2-9-3.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9-3</h2>ACL2 Version  2.9.3 (August, 2005) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Also see <a href="NOTE-2-9-1.html">note-2-9-1</a> and see <a href="NOTE-2-9-2.html">note-2-9-2</a> for other changes since the last
+non-incremental release (Version_2.9).<p>
+
+We fixed a soundness bug that exploited the ability to define
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions that are improperly guarded, and then to
+use those functions in <code><a href="DEFCONST.html">defconst</a></code> forms.  The fix is to evaluate
+<code><a href="DEFCONST.html">defconst</a></code> forms using the same ``safe-mode'' that is used in
+macroexpansion (see <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>).  Here is a proof of <code>nil</code> that
+succeeded in Allegro Common Lisp (but not, for example, GCL).  See also a
+long comment in source function <code>defconst-fn</code> for an example that does not
+require the use of <code>:set-guard-checking</code>.
+
+<pre>
+:set-guard-checking nil ; execute before certifying the book below<p>
+
+(in-package "ACL2")<p>
+
+(encapsulate
+ ()
+ (local (defun f1 ()
+          (declare (xargs :mode :program))
+          (char-upcase (code-char 224))))
+ (local (defconst *b* (f1)))
+ (defun f1 ()
+   (char-upcase (code-char 224)))
+ (defconst *b* (f1))
+ (defthm bad
+   (not (equal *b* (code-char 224)))
+   :rule-classes nil))<p>
+
+(defthm ouch
+  nil
+  :hints (("Goal" :use bad))
+  :rule-classes nil)
+</pre>
+<p>
+
+We fixed a soundness hole due to the fact that the "LISP" package does not
+exist in OpenMCL.  We now explicitly disallow this package name as an
+argument to <code><a href="DEFPKG.html">defpkg</a></code>.  Thanks to Bob Boyer and Warren Hunt for bringing
+an issue to our attention that led to this fix.<p>
+
+ACL2 now requires all package names to consist of standard characters
+(see <a href="STANDARD-CHAR-P.html">standard-char-p</a>, none of which is lower case.  The reason is that we
+have seen at least one lisp implementation that does not handle lower case
+package names correctly.  Consider for example the following raw lisp log
+(some newlines omitted).
+
+<pre>
+&gt;(make-package "foo")
+#&lt;"foo" package&gt;
+&gt;(package-name (symbol-package 'FOO::A))
+"foo"
+&gt;(package-name (symbol-package '|FOO|::A))
+"foo"
+&gt;
+</pre>
+
+Distributed book <code>books/textbook/chap10/compiler</code>, as well as workshop
+books in directory <code>books/workshops/2004/cowles-gamboa/support/</code>, were
+modified to accommodate the above change.<p>
+
+Added <code>newline</code>, <code><a href="ADD-TO-SET-EQL.html">add-to-set-eql</a></code>, <code>the-fixnum</code>, and <code>the-fixnum!</code>
+to <code>*acl2-exports*</code>.  Thanks to Jared Davis for bringing these to our
+attention.<p>
+
+Added a line to <code>acl2.lisp</code> to support CMUCL running on Mac OSX, thanks to
+a suggestion from Fabricio Chalub Barbosa do Rosario.<p>
+
+The executable scripts for saved ACL2 images now include <code>$*</code>, so that
+command-line arguments will be passed along.<p>
+
+(For GCL profiling only) Fixed a colon (<code>:</code>) that should have been a
+semicolon (<code>;</code>) in file <code>save-gprof.lsp</code>.  Thanks to David Hardin for
+pointing out this bug.<p>
+
+The documentation for <code>:</code><code><a href="ELIM.html">elim</a></code> rules has been expanded and improved,
+thanks to useful feedback from Hanbing Liu.<p>
+
+Fixed a bug in the guard for function <code>include-book-dir</code>.<p>
+
+For those who want to experiment with an alternate implementation of <code><a href="MV.html">mv</a></code>
+and <code><a href="MV-LET.html">mv-let</a></code>, there is now support for under-the-hood implementation of
+these in terms of raw Lisp functions <code>values</code> and <code>multiple-value-bind</code>,
+respectively.  The regression suite has seen about a 10% speed-up in Allegro
+CL and about an 8% slowdown in GCL for builds with this change.  See the
+makefile (<code>GNUmakefile</code>) for examples of how to build ACL2 by including the
+feature, <code>:acl2-mv-as-values</code>.  Source file <code>init.lsp</code> has been renamed
+to <code>init.lisp</code> in support of this change (technical detail: otherwise GCL
+loads the init file too soon, before its <code>-eval</code> argument is evaluated).
+Thanks to David Rager for inspiring this change, by pointing out the
+problematic use of globals by the existing <code><a href="MV.html">mv</a></code> implementation from the
+standpoint of supporting parallel evaluation.  This capability is
+experimental: there is likely to be some remaining work to be done on it.<p>
+
+A change related to the one just above is that we now limit the maximum
+number of arguments to any call of <code><a href="MV.html">mv</a></code> to 32.  Thanks to Bob Boyer for
+raising a question that lead to this change.<p>
+
+Eliminated some compiler warnings in OpenMCL.<p>
+
+In the rtl library (<code>books/rtl/rel4/</code>), functions <code>bits</code> and <code>setbits</code>
+have had their <a href="GUARD.html">guard</a>s improved (as they had been too restrictive,
+especially for <code>setbits</code>).<p>
+
+A new function <code><a href="TIME$.html">time$</a></code> permits timing of forms, by using (under the hood)
+the host Common Lisp's <code>time</code> utility.<p>
+
+We fixed an infinite loop that could occur during destructor elimination
+(see <a href="ELIM.html">elim</a>).  Thanks to Sol Swords to bringing this to our attention and
+sending a nice example, and to Doug Harper for sending a second example that
+we also found useful.<p>
+
+The method of speeding up GCL-based builds (see <a href="NOTE-2-9-2.html">note-2-9-2</a>) has changed
+slightly from Version_2.9.2.  Now, in the <code>make</code> command:
+
+<pre>
+  LISP='gcl -eval "(defparameter user::*fast-acl2-gcl-build* t)"
+</pre>
+<p>
+
+We improved the pretty-printer's handling of keywords.  For example, before
+this change one might see the following printed by ACL2.
+
+<pre>
+(MODIFY TH S :KEY1 VAL1 :KEY2
+        (IF (IF X Y Z) AAAAAAAAAA BBBBBBB))
+</pre>
+
+Now, the above might print as follows.  Notice that we have avoided breaking
+after a keyword (see <a href="KEYWORDP.html">keywordp</a>) that is preceded by other forms on the same
+line.
+
+<pre>
+(MODIFY TH S
+        :KEY1 VAL1
+        :KEY2 (IF (IF X Y Z) AAAAAAAAAA BBBBBBB))
+</pre>
+
+See <a href="NOTE-2-9-3-PPR-CHANGE.html">note-2-9-3-ppr-change</a> for a detailed discussion of this change.<p>
+
+(GCL ONLY) Evaluation in a break is no longer inhibited by ACL2 when built on
+top of GCL, so GCL now matches other Common Lisps in this respect.<p>
+
+For ACL2 built on most host Common Lisps, you will see the string
+<code>[RAW LISP]</code> in the prompt, at least at a break, to emphasize
+that one is inside a break and hence should probably quit from the
+break.  See <a href="BREAKS.html">breaks</a>.<p>
+
+Jared Davis suggested improvements to lemmas <code>len-update-nth</code> (in source
+file <code>axioms.lisp</code>) and <code>append-true-listp-type-prescription</code> (in
+<code>books/meta/term-defuns.lisp</code>), which have been incorporated.  The former
+required a change in <code>books/workshops</code> book
+<code>2004/ruiz-et-al/support/q-dag-unification.cert</code>, which has been made.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> command <code>rewrite</code> allows further binding of free
+variables in hypotheses, with new optional argument <code>instantiate-free</code>.
+Proof-checker command <code>show-rewrites</code> (<code>sr</code>) gives corresponding
+additional information.  Documentation for these commands has been improved;
+see <a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a>.  Thanks to John Matthews and Bill Young for
+suggestions and feedback leading to these improvements.<p>
+
+Fixed downcase printing so that the package name of a symbol is also
+downcased.  For example, after execution of <code>(defpkg "FOO" nil)</code> and
+<code>(set-acl2-print-case :downcase)</code>, <code>'foo::ab</code> will print back as the
+same, rather than as <code>'FOO::ab</code>.<p>
+
+It is now possible to control the output so that numbers are printed in
+binary, octal, or hex, though the default is still radix 10.
+See <a href="SET-ACL2-PRINT-BASE.html">set-acl2-print-base</a>.  Note that in support of this change, built-in
+functions <code><a href="EXPLODE-NONNEGATIVE-INTEGER.html">explode-nonnegative-integer</a></code> and <code>explode-atom</code> now take an
+extra <code>print-base</code> argument.  Different support for radix conversion may be
+found in a book newly contributed by Jun Sawada, <code>books/misc/radix.lisp</code>.<p>
+
+Built-in axiom <code>car-cdr-elim</code> is now only an <code>:</code><code><a href="ELIM.html">elim</a></code> rule.  It was
+formerly both an <code>:elim</code> rule and a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule.  A new rule,
+<code>cons-car-cdr</code>, takes the place of the old <code>:rewrite</code> rule, but is
+instead a hypothesis-free rule that can cause a case split (see source file
+<code>axioms.lisp</code>).  Thanks to Jared Davis for suggesting this change.<p>
+
+Lemmas about <code><a href="ALPHORDER.html">alphorder</a></code> (<code>alphorder-reflexive</code>, <code>alphorder-transitive</code>,
+<code>alphorder-anti-symmetric</code>, and <code>alphorder-total</code>) are now available.
+(They had been <code><a href="LOCAL.html">local</a></code> in source file <code>axioms.lisp</code>.)  Thanks to Serita
+Nelesen for bringing this issue to our attention.<p>
+
+ACL2 has, for some time, printed a space in the event summary after the open
+parenthesis for a <code><a href="DEFTHM.html">defthm</a></code> event, in order to ease backward searching for
+the original form, for example <code>(defthm bar ...)</code>:
+
+<pre>
+Form:  ( DEFTHM BAR ...)
+</pre>
+
+The intention was that this extra space should be printed for every event
+form; but it was missing in some cases, for example, for <code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.
+This has been fixed.<p>
+
+In analogy to <code><a href="INCLUDE-BOOK.html">include-book</a></code>, now <code><a href="LD.html">ld</a></code> takes the (optional) keyword
+argument <code>:dir</code>.  Thanks to Jared Davis for providing an implementation of
+this feature and to Eric Smith and Jeff Marshall for requesting this feature.<p>
+
+We fixed a bug in <code><a href="INCLUDE-BOOK.html">include-book</a></code> that could cause an error when
+redefinition is on, for example:
+
+<pre>
+(set-ld-redefinition-action '(:warn! . :overwrite) state)
+(include-book "/u/acl2/books/arithmetic/top")
+</pre>
+<p>
+
+The behavior of <code><a href="INCLUDE-BOOK.html">include-book</a></code> now matches the documentation: handling of
+compiled files for uncertified <a href="BOOKS.html">books</a> will follow the same rules as for
+certified books.  In particular, if you create an object file in raw Lisp for
+some book, then including that book will load that object file.  Thanks to
+Jared Davis for bringing this issue to our attention.<p>
+
+New documentation explains the interaction of redefinition and redundancy.
+See <a href="REDUNDANT-EVENTS.html">redundant-events</a> -- the ``Note About Unfortunate Redundancies'' is new.
+Thanks to Grant Passmore for providing examples that led us to write this
+additional documentation.<p>
+
+Solutions to exercises in ``How To Prove Theorems Formally''
+(<code>http://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms</code>) are
+now available in distributed book <code>books/misc/how-to-prove-thms.lisp</code>.
+Also in that directory may be found a new book <code>hanoi.lisp</code> that contains a
+solution to the Towers of Hanoi problem.<p>
+
+
+<p>
+<ul>
+<li><h3><a href="NOTE-2-9-3-PPR-CHANGE.html">NOTE-2-9-3-PPR-CHANGE</a> -- change in pretty-printing for ACL2 Version_2.9.3
+</h3>
+</li>
+
+</ul>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

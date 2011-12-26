@@ -1,0 +1,113 @@
+<html>
+<head><title>NOTE-2-7-PROOFS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-PROOFS</h3>ACL2 Version  2.7 Notes on Changes in Proof Engine
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+An improvement in the linear arithmetic heuristics has been provided
+by Robert Krug.  For information about this change, search for the
+comment in <code>add-linear-lemma</code> (file <code>rewrite.lisp</code>) that begins
+as follows.
+
+<pre>
+; Previous to Version_2.7, we just went ahead and used the result of
+</pre>
+
+Thanks, Robert!  Also thanks to Eric Smith for providing a
+motivating example.<p>
+
+The non-linear-arithmetic addition (see <a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a>) led to
+several small changes in the linear-arithmetic decision procedure
+(see <a href="LINEAR-ARITHMETIC.html">linear-arithmetic</a>).  Two of these changes could affect existing
+proofs.
+<blockquote><p>
+
+First, when we are setting up the initial arithmetic data-base (which we call
+the ``pot-lst''), we have always scanned it to see if there were any pairs of
+inequalities from which we could derive a previously unknown equality.  In
+some cases we added this equality to the clause and in others we used it to
+rewrite the clause, substituting one side of the equality for the other
+throughout the clause.  Previously, the heuristics that we used to determine
+whether we performed the substitution differed from those used in several
+other places in the code.  This has now been regularized, and similar
+heuristics are now used throughout the code.<p>
+
+The second change to the linear-arithmetic decision procedure is
+that we now explicitly add inequalities derived from type reasoning
+to the pot-lst.  Previously, we performed cancellations against these
+inequalities without adding them to the pot-lst.  This change results
+in there being more inequalities in the pot-lst than before, and
+so more chances for there to be a pair of inequalities from which an
+equality can be derived.  In effect, certain simple consequences of
+the current goal (see <a href="TYPE-SET.html">type-set</a>) may now be added as hypotheses of
+the goal or used to peform equality substitutions.<p>
+
+</blockquote>
+<p>
+
+A slight improvement has been made to the way certain rewrite rules are
+stored.  It was already the case that a rewrite rule rule whose conclusion
+<code>C</code> is not a call of a known equivalence relation (or <code><a href="EQ.html">eq</a></code>, <code><a href="EQL.html">eql</a></code>,
+or <code><a href="=.html">=</a></code>) is stored as <code>(iff C t)</code>, except that if ACL2 can determine
+(using its <code><a href="TYPE-SET.html">type-set</a></code> mechanism) that <code>C</code> is Boolean, then the rule is
+stored as <code>(equal C t)</code>.  The iprovement is that if <code>C</code> and <code>C'</code> are
+Boolean, then a rule stated as <code>(iff C C')</code> is stored as <code>(equal C C')</code>.
+Thanks to Pete Manolios for providing an example that led us to consider this
+improvement.<p>
+
+The heuristic use of equalities (fertilization) has been modified.
+Previously, ACL2 would sometimes substitute using an equality but keep the
+equality, and then undo the substitution by using the equality again.  Now,
+when ACL2 keeps an equality after using it, it puts the equality inside a
+call of <code><a href="HIDE.html">hide</a></code>.  Descendents of that goal that are unchanged by
+simplification will have this call of <code><a href="HIDE.html">hide</a></code> removed so that the equality
+can once again contribute to the proof.  This change can cause some proofs to
+succeed that otherwise would fail.  In the unlikely event that a proof fails
+that formerly succeeded, the following hint on "Goal" may fix the problem
+(see <a href="HINTS.html">hints</a>):
+
+<pre>
+:expand ((:free (x) (hide x)))
+</pre>
+<p>
+
+We have refined the heuristics employed when an <code><a href="IF.html">IF</a></code> form is assumed true
+or false.  Our previous attempt (see <a href="NOTE-2-6-PROOFS.html">note-2-6-proofs</a> for the original
+announcement) was not as general as we had believed.  We have also improved
+some low-level code responsible for rewriting <code>IF</code> expressions.  In
+earlier versions of ACL2, it was possible to have the truth or falsity
+of an <code>IF</code> expression explicitly recorded in the type-alist, and yet
+not use this information during rewriting.  This problem has been corrected.
+Thanks to Robert Krug for noticing this problem and implementing the fix.<p>
+
+We have sped up the rewriter in some cases where there are large collections
+of mutually-recursive functions (see <a href="MUTUAL-RECURSION.html">mutual-recursion</a>).  (Implementation
+notes: technically, we have modified the way function <code>being-openedp</code>
+operates on the <code>fnstack</code>, and we have modified
+<code>*current-acl2-world-key-ordering*</code> as described in the essay above its
+definition.)<p>
+
+<a href="FORWARD-CHAINING.html">Forward-chaining</a> is now done in the preprocessing phase of proof
+attempts (see the discussion of <code>:DO-NOT</code> -- see <a href="HINTS.html">hints</a>).  This is part
+of a technical change, made in support of translation of type declarations to
+<a href="GUARD.html">guard</a>s (see <a href="NOTE-2-7-GUARDS.html">note-2-7-guards</a>).  Previously, whenever ACL2 checked for
+<a href="BUILT-IN-CLAUSES.html">built-in-clauses</a>, it then looked for a contradiction using
+<code><a href="TYPE-SET.html">type-set</a></code> reasoning if it did not find a suitable built-in clause.  The
+change is to perform forward-chaining in such cases (i.e., when a built-in
+clause is not found).<p>
+
+A couple of changes have been made in the generation of goals for
+<a href="FORCING-ROUND.html">forcing-round</a>s.  Thanks to Eric Smith for bringing issues to our
+attention that led to these changes.  For one, <a href="GUARD.html">guard</a>s are no longer
+relevant in such goal generation.  Formerly, the addition of a guard could
+make a proof fail that otherwise succeeded.  Secondly, contextual information
+is now always kept when it involves a constrained constant, i.e., a zero-ary
+function introduced in the signature of an <code><a href="ENCAPSULATE.html">encapsulate</a></code>.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

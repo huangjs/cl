@@ -1,0 +1,114 @@
+<html>
+<head><title>DEFEVALUATOR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFEVALUATOR</h2>introduce an evaluator function
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(defevaluator evl evl-list
+  ((length x) (member x y)))
+</pre>
+
+See <a href="META.html">meta</a>.
+<p>
+
+<pre>
+General Form:
+(defevaluator ev ev-list
+   ((g1 x1 ... xn_1)
+    ...
+    (gk x1 ... xn_k))
+</pre>
+
+where <code>ev</code> and <code>ev</code>-list are new function symbols and <code>g1</code>, ..., <code>gk</code> are
+old function symbols with the indicated number of formals, i.e.,
+each <code>gi</code> has <code>n_i</code> formals.<p>
+
+This function provides a convenient way to constrain <code>ev</code> and <code>ev-list</code>
+to be mutually-recursive evaluator functions for the symbols <code>g1</code>,
+..., <code>gk</code>.  Roughly speaking, an evaluator function for a fixed,
+finite set of function symbols is a restriction of the universal
+evaluator to terms composed of variables, constants, lambda
+expressions, and applications of the given functions.  However,
+evaluator functions are constrained rather than defined, so that the
+proof that a given metafunction is correct vis-a-vis a particular
+evaluator function can be lifted (by functional instantiation) to a
+proof that it is correct for any larger evaluator function.
+See <a href="META.html">meta</a> for a discussion of metafunctions.<p>
+
+<code>Defevaluator</code> executes an <code><a href="ENCAPSULATE.html">encapsulate</a></code> after generating the
+appropriate <code><a href="DEFUN.html">defun</a></code> and <code><a href="DEFTHM.html">defthm</a></code> events.  Perhaps the easiest way to
+understand what <code>defevaluator</code> does is to execute the keyword command
+
+<pre>
+:trans1 (defevaluator evl evl-list ((length x) (member x y)))
+</pre>
+
+and inspect the output.  This trick is also useful in the rare case
+that the event fails because a hint is needed.  In that case, the
+output of <code>:</code><code><a href="TRANS1.html">trans1</a></code> can be edited by adding hints, then
+submitted directly.<p>
+
+Formally, <code>ev</code> is said to be an ``evaluator function for <code>g1</code>,
+..., <code>gk</code>, with mutually-recursive counterpart <code>ev-list</code>'' iff
+<code>ev</code> and <code>ev-list</code> are constrained functions satisfying just the
+<a href="CONSTRAINT.html">constraint</a>s discussed below.<p>
+
+<code>Ev</code> and <code>ev-list</code> must satisfy <a href="CONSTRAINT.html">constraint</a>s (1)-(4) and (k):
+
+<pre>
+(1) How to ev a variable symbol:
+    (implies (symbolp x)
+             (equal (ev x a) (cdr (assoc-eq x a))))<p>
+
+(2) How to ev a constant:
+    (implies (and (consp x)
+                  (equal (car x) 'quote))
+             (equal (ev x a) (cadr x)))<p>
+
+(3) How to ev a lambda application:
+    (implies (and (consp x)
+                  (consp (car x)))
+             (equal (ev x a)
+                    (ev (caddar x)
+                        (pairlis$ (cadar x)
+                                  (ev-list (cdr x) a)))))<p>
+
+(4) How to ev an argument list:
+    (implies (consp x-lst)
+             (equal (ev-list x-lst a)
+                    (cons (ev (car x-lst) a)
+                          (ev-list (cdr x-lst) a))))
+    (implies (not (consp x-lst))
+             (equal (ev-list x-lst a)
+                    nil))<p>
+
+(k) For each i from 1 to k, how to ev an application of gi,
+    where gi is a function symbol of n arguments:
+    (implies (and (consp x)
+                  (equal (car x) 'gi))
+             (equal (ev x a)
+                    (gi (ev x1 a)
+                        ...
+                        (ev xn a)))),
+    where xi is the (cad...dr x) expression equivalent to (nth i x).
+</pre>
+
+<code>Defevaluator</code> defines suitable witnesses for <code>ev</code> and <code>ev-list</code>, proves
+the theorems about them, and constrains <code>ev</code> and <code>ev-list</code>
+appropriately.  We expect <code>defevaluator</code> to work without assistance
+from you, though the proofs do take some time and generate a lot of
+output.  The proofs are done in the context of a fixed theory,
+namely the value of the constant <code>*defevaluator-form-base-theory*</code>.<p>
+
+(Aside: (3) above may seem surprising, since the bindings of <code>a</code> are not
+included in the environment that is used to evaluate the lambda body,
+<code>(caddar x)</code>.  However, ACL2 lambda expressions are all <em>closed</em>:
+in <code>(lambda (v1 ... vn) body)</code>, the only free variables in <code>body</code> are
+among the <code>vi</code>.  See <a href="TERM.html">term</a>.)
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

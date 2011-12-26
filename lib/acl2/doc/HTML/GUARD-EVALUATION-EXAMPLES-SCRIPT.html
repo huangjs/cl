@@ -1,0 +1,171 @@
+<html>
+<head><title>GUARD-EVALUATION-EXAMPLES-SCRIPT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>GUARD-EVALUATION-EXAMPLES-SCRIPT</h3>a script to show combinations of <a href="DEFUN-MODE.html">defun-mode</a>s and <a href="GUARD.html">guard</a>-checking
+<pre>Major Section:  <a href="GUARD.html">GUARD</a>
+</pre><p>
+
+Below is a script that illustrates the combination of <a href="DEFUN-MODE.html">defun-mode</a>s --
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode, <code>:</code><code><a href="LOGIC.html">logic</a></code> mode without <a href="GUARD.html">guard</a>s verified,
+and <code>:</code><code><a href="LOGIC.html">logic</a></code> mode with <a href="GUARD.html">guard</a>s verified -- with values from
+<code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code> -- <code>t</code> (the default), <code>:all</code>, <code>:none</code>, and
+<code>nil</code>.  (It does not illustrate the value <code>:nowarn</code>, which is the same as
+<code>t</code> except for inhibiting a warning.)  The script also illustrates cases
+where the guard is not, or is, <code>t</code>.<p>
+
+See <a href="GUARD-EVALUATION-EXAMPLES-LOG.html">guard-evaluation-examples-log</a> for result of running this script.  Before
+presenting the script below, we give some instructions in case you want to
+run it yourself.<p>
+
+See <a href="SET-GUARD-CHECKING.html">set-guard-checking</a> for discussion of the interaction between
+<a href="DEFUN-MODE.html">defun-mode</a>s and <a href="GUARD.html">guard</a>-checking that is illustrated by this script.
+Also see <a href="GUARD-EVALUATION-TABLE.html">guard-evaluation-table</a> for a succinct table, with associated
+discussion, that covers in detail the interactions illustrated here.<p>
+
+The script mentions the running of ``Tracing Code''.  The code is the
+following sequence of commands.<p>
+
+
+<pre>
+(trace$ fact)
+:set-guard-checking t
+(fact 2)
+(fact t)
+:set-guard-checking :all
+(fact 2)
+(fact t)
+:set-guard-checking :none
+(fact 2)
+(fact t)
+:set-guard-checking nil
+(fact 2)
+(fact t)
+</pre>
+<p>
+
+If you want to run the script yourself, you may find it handy to use the
+following Emacs keyboard macro for running the tracing code in 2-window mode,
+with the cursor in the window with the script and ACL2 running in the other
+window.<p>
+
+
+<pre>
+(fset 'step-guard-script
+   [?C-a ?C-  ?C-e ?M-w ?C-a ?C-n
+    ?C-x ?o ?M-&gt; ?C-y return ?C-x ?o])<p>
+
+; Put it on a key (if you have defined the indicated keymap by using
+; emacs/emacs-acl2.el):
+(define-key ctl-t-keymap "r" 'step-guard-script)
+</pre>
+<p>
+
+The script follows.
+<p>
+
+<pre>
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Program mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;<p>
+
+(defun fact (x)
+         (declare (xargs :guard (integerp x)
+                         :mode :program))
+         (if (posp x)
+             (* x (fact (1- x)))
+           1))<p>
+
+; Run the Tracing Code here.  It shows execution in raw Lisp in the t and nil
+; cases of :set-guard-checking, but not in the :all or :none cases.  We get a
+; guard violation for argument t in the case :set-guard-checking t.<p>
+
+:u<p>
+
+(defun fact (x)
+         (declare (xargs :guard t
+                         :mode :program))
+         (if (posp x)
+             (* x (fact (1- x)))
+           1))<p>
+
+; Run the Tracing Code here.  It should give the same results as above,
+; except that we no longer get a guard violation in the case
+; :set-guard-checking t.<p>
+
+:u<p>
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Logic mode, guard other than t
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;<p>
+
+(defun fact (x)
+         (declare (xargs :guard (integerp x)
+                         :verify-guards nil
+                         :mode :logic))
+         (if (posp x)
+             (* x (fact (1- x)))
+           1))<p>
+
+; Run the Tracing Code here.  It should give guard violations for (fact t)
+; with guard-checking set to t or :all.  It should never run in raw Lisp,
+; because we have not verified guards.  In the t case, we should get a
+; warning about avoiding the guard check on recursive calls.<p>
+
+(verify-guards fact)<p>
+
+; Run the Tracing Code here.  The results should be as described just above,
+; except that now we go into raw Lisp for (fact 2) with guard-checking other
+; than :none.<p>
+
+:u
+:u<p>
+
+; The following definition is the same as above, except that guards are
+; verified.<p>
+
+(defun fact (x)
+         (declare (xargs :guard (integerp x)
+                         :mode :logic))
+         (if (posp x)
+             (* x (fact (1- x)))
+           1))<p>
+
+; Run the Tracing Code here.  We should get the same traces as in the
+; immediately preceding case, since guards had been verified in both cases.<p>
+
+:u<p>
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Logic mode, guard t
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;<p>
+
+(defun fact (x)
+         (declare (xargs :guard t
+                         :verify-guards nil
+                         :mode :logic))
+         (if (posp x)
+             (* x (fact (1- x)))
+           1))<p>
+
+; Run the Tracing Code here.  We should never go in to raw Lisp, because
+; guards have not been verified.  We will see the same traces for (fact 2) as
+; with the (integerp x) guard above with :verify-guards nil specified, except
+; that there is no warning for :set-guard-checking t about recursive calls.
+; And, there are no guard violations for (fact t), of course, since posp
+; (necessarily, if we are to verify guards) has a guard of t.<p>
+
+(verify-guards fact)<p>
+
+; Run the Tracing Code here.  Now that guards have been verified, the :none
+; trace for (fact 2) differs from the corresponding (guard-verified) trace
+; for guard (integerp x) because now the guard is t, so we can (and do) go
+; directly into raw Lisp without the need to check the guard.  The (fact 2)
+; traces other than for :none are the same as in the corresponding trace for
+; guard (integerp x).  And of course (fact t) now computes without guard
+; violations, and using raw Lisp even in the :none case,<p>
+
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

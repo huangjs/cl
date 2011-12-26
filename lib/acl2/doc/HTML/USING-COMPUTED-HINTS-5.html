@@ -1,0 +1,75 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-5.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-5</h2>Debugging Computed Hints
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+We have found that it is sometimes helpful to define hints so that
+they print out messages to the terminal when they fire, so you can
+see what hint was generated and which of your computed hints did it.<p>
+
+To that end we have defined a macro we sometimes use.  Suppose you
+have a <code>:hints</code> specification such as:
+
+<pre>
+:hints (computed-hint-fn (hint-expr id))
+</pre>
+
+If you defmacro the macro below you could then write instead:
+
+<pre>
+:hints ((show-hint computed-hint-fn 1)
+        (show-hint (hint-expr id) 2))
+</pre>
+
+with the effect that whenever either hint is fired (i.e., returns
+non-<code>nil</code>), a message identifying the hint by the marker (1 or 2,
+above) and the non-<code>nil</code> value is printed.<p>
+
+
+<pre>
+(defmacro show-hint (hint &amp;optional marker)
+  (cond
+   ((and (consp hint)
+         (stringp (car hint)))
+    hint)
+   (t
+    `(let ((marker ,marker)
+           (ans ,(if (symbolp hint)
+                     `(,hint id clause world stable-under-simplificationp)
+                   hint)))
+       (if ans
+           (prog2$
+            (cw "~%***** Computed Hint~#0~[~/ (from hint ~x1)~]~%~x2~%~%"
+                (if (null marker) 0 1)
+                marker
+                (cons (string-for-tilde-@-clause-id-phrase id)
+                      ans))
+            ans)
+         nil)))))
+</pre>
+
+Note that when <code>show-hint</code> is applied to a hint that is a symbol,
+e.g., <code>computed-hint-fn</code>, it applies the symbol to the four
+computed-hint arguments: <code>id</code>, <code>clause</code>, <code>world</code>, and
+<code>stable-under-simplificationp</code>.  If <code>computed-hint-fn</code> is of 
+arity 3 the code above would cause an error.  One way to avoid it
+is to write
+
+<pre>
+:hints ((show-hints (computed-hint-fn id clause world) 1)
+        (show-hint (hint-expr id) 2)).
+</pre>
+
+If you only use computed hints of arity 3, you might eliminate
+the occurrence of <code>stable-under-simplificationp</code> in the definition
+of <code>show-hint</code> above.<p>
+
+Putting a <code>show-hint</code> around a common hint has no effect.  If you
+find yourself using this utility let us know and we'll consider
+putting it into the system itself.  But it does illustrate that you
+can use computed hints to do unusual things.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

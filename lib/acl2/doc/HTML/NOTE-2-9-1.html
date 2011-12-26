@@ -1,0 +1,186 @@
+<html>
+<head><title>NOTE-2-9-1.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9-1</h2>ACL2 Version  2.9.1 (December, 2004) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+(GCL only) A bug in <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> has been fixed that could be
+exploited to prove <code>nil</code>, and hence is a soundness bug.  Thanks to Dave
+Greve for sending us an example of a problem with <code><a href="DEFCONG.html">defcong</a></code> (see below)
+that led us to this discovery.<p>
+
+ACL2 now warns when <code><a href="DEFCONG.html">defcong</a></code> specifies <code><a href="EQUAL.html">equal</a></code> as the first
+equivalence relation, e.g., <code>(defcong equal iff (member x y) 2)</code>.  The
+warning says that the rule has no effect because <code><a href="EQUAL.html">equal</a></code> already refines
+all other equivalence relations.  Formerly, this caused an error unless
+<code>:event-name</code> was supplied (see <a href="DEFCONG.html">defcong</a>), and in fact the error was a
+nasty raw Lisp error on GCL platforms due to some mishandling of packages by
+ACL2 that has been fixed (see the paragraph about <code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code>
+above).  Thanks to Dave Greve for sending a helpful example in his report of
+this problem.<p>
+
+(GCL only) The build process was broken for GCL 2.6.0 (and perhaps some
+earlier versions), and has been fixed.  Thanks to Jose Luis Ruiz-Reyna for
+bringing this problem to our attention.<p>
+
+(GCL only) We have increased the hole size to at least 20% of max-pages,
+which may eliminate some garbage collection at the expense of larger virtual
+memory (not larger resident memory or larger image).  Thanks to Camm Maguire
+for helpful explanations on this topic.<p>
+
+We have clarified the <a href="GUARD.html">guard</a> warning message that is printed during
+evaluation of recursively-defined functions whose <a href="GUARD.html">guard</a>s have not been
+verified, for example:
+
+<pre>
+  ACL2 Warning [Guards] in TOP-LEVEL:  Guard-checking may be inhibited
+  on some recursive calls of executable counterparts (i.e., in the ACL2
+  logic), including perhaps EVENLP.  To check guards on all recursive
+  calls:
+    (set-guard-checking :all)
+  To leave behavior unchanged except for inhibiting this message:
+    (set-guard-checking :nowarn)
+</pre>
+
+And, ACL2 no longer prints that message when the <a href="GUARD.html">guard</a> was
+unspecified for the function or was specified as <code>T</code>.  Thanks to Serita
+Nelesen for bringing the latter issue to our attention.  Finally, ACL2 now
+prints such a warning at most once during the evaluation of any top-level
+form; thanks to Bill Young for pointing out this issue.<p>
+
+The function <code><a href="VERBOSE-PSTACK.html">verbose-pstack</a></code> has been enhanced to allow specified prover
+functions <strong>not</strong> to be traced.  See <a href="VERBOSE-PSTACK.html">verbose-pstack</a>.<p>
+
+Added <code><a href="LP.html">lp</a></code>, <code><a href="WET.html">wet</a></code>, and <code><a href="SET-NON-LINEARP.html">set-non-linearp</a></code> to <code>*acl2-exports*</code>,
+and hence to the <code>"</code><code><a href="ACL2-USER.html">ACL2-USER</a></code><code>"</code> package.<p>
+
+The distributed book
+<code>books/arithmetic-3/bind-free/integerp.lisp</code> has been modified in order to prevent
+potential looping; specifically, the definition of function
+<code>reduce-integerp-+-fn-1</code>.  Thanks to Robert Krug for providing this change.<p>
+
+A small improvement was made in the <code><a href="WET.html">wet</a></code> failure message when the error
+occurs during translation to internal form.  Thanks to Jared Davis for
+pointing out the obscurity of some <code><a href="WET.html">wet</a></code> error messages.<p>
+
+We have improved ACL2's evaluation mechanism for the function <code>bad-atom&lt;=</code>,
+which now is specified to return <code>nil</code> if neither argument is a so-called
+``bad atom'' (as recognized by function <code>bad-atom</code>).  The following events
+had caused a hard error, for example.  (We're sorry that <code>bad-atom</code> and
+<code>bad-atom&lt;=</code> are not documented, but we also consider it unlikely that
+anyone needs such documentation; otherwise, please contact the implementors.)
+
+<pre>
+(defun foo (x y) (declare (xargs :guard t)) (bad-atom&lt;= x y))
+(defun bar (x y) (declare (xargs :guard t)) (foo x y))
+(thm (equal (bar 3 4) 7))
+</pre>
+
+We have also changed the guard on <code><a href="ALPHORDER.html">alphorder</a></code> to require both arguments
+to be atoms.<p>
+
+For forms <code>(local x)</code> that are skipped during <code><a href="INCLUDE-BOOK.html">include-book</a></code>, or during
+the second pass of <code><a href="CERTIFY-BOOK.html">certify-book</a></code> or <code><a href="ENCAPSULATE.html">encapsulate</a></code>, ACL2 had
+nevertheless checked that <code>x</code> is a legal event form.  This is no longer the
+case.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> now does non-linear arithmetic when appropriate.  It
+had formerly ignored <code><a href="SET-NON-LINEARP.html">set-non-linearp</a></code> executed in the ACL2 command loop.<p>
+
+Incremental releases are now supported.  See <a href="VERSION.html">version</a> and
+see <a href="SET-TAINTED-OKP.html">set-tainted-okp</a>.  Thanks to Hanbing Liu for discovering a flaw in our
+original design.<p>
+
+The pattern-matching algorithm for <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules has been made
+slightly more restrictive, thanks to a suggestion and examples from Robert
+Krug.  For example, previously one could get an infinite loop as follows.
+
+<pre>
+(defstub foo (x) t)
+(defaxiom foo-axiom
+  (equal (foo (+ 1 x))
+         (foo x)))
+(thm (foo 0)) ; or replace 0 by any integer!
+</pre>
+
+That is because the term <code>(foo 0)</code> was considered to match against the
+pattern <code>(foo (+ 1 x))</code>, with <code>x</code> bound to <code>-1</code>.  While such matching
+is sound, it leads to an infinite loop since it allows <code>foo-axiom</code> to
+rewrite <code>(foo 0)</code> to <code>(foo -1)</code>, and then <code>(foo -1)</code> to <code>(foo -2)</code>,
+and so on.  The fix is to insist that the new value, in this case <code>-1</code>, is
+no larger in size according to <code><a href="ACL2-COUNT.html">acl2-count</a></code> than the old value, in this
+case <code>0</code>.  Since that test fails, the match is considered to fail and the
+loop no longer occurs.  An analogous fix has been made for multiplication,
+where now we only match when the new term is still a non-zero integer.  That
+change avoids a loop here.
+
+<pre>
+(defstub foo (x) t)
+(defaxiom foo-axiom
+  (equal (foo (* 2 x))
+         (foo x)))
+(thm (foo 0)) ; or try (thm (foo 4))
+</pre>
+<p>
+
+Added macro <code>find-lemmas</code> in <code>books/misc/find-lemmas.lisp</code> (see
+brief documentation there) for finding all lemmas that mention all function
+symbols in a given list.<p>
+
+<code>:Restrict</code> <a href="HINTS.html">hints</a> now work for <code>:</code><code><a href="DEFINITION.html">definition</a></code> rules, though
+they continue to be ignored by the preprocessor and hence you may want to use
+<code>:do-not '(preprocess)</code> with any restrict hints.  Thanks to John Matthews
+for pointing out the lack of support for <code>:definition</code> rules in
+<code>:restrict</code> hints.<p>
+
+Some books have been updated.  In particular, there is a new directory
+<code>books/workshops/2004/</code> in workshops distribution, for the 2004 ACL2
+workshop.  There is also a new version of Jared Davis's ordered sets library,
+formerly in <code>books/finite-set-theory/osets-0.81/</code> but now in
+<code>books/finite-set-theory/osets/</code>.<p>
+
+Fixed a bug in the (under-the-hood) raw Lisp definition of <code><a href="DEFCHOOSE.html">defchoose</a></code>,
+which had been causing a warning in CMU Common Lisp.<p>
+
+[Technical improvements related to the use of ``<code>make dependencies</code>'' for
+certifying distributed books:]<br>
+File <code>books/Makefile-generic</code> now does a
+better job with ``<code>make dependencies</code>,'' specifically with respect to
+handling <code>*.acl2</code> files and handling <code><a href="INCLUDE-BOOK.html">include-book</a></code> commands with
+<code>:dir :system</code>.  Regarding the latter, suppose for example that book
+<code>basic.lisp</code> contains the line:
+
+<pre>
+(include-book "arithmetic/top-with-meta" :dir :system)
+</pre>
+
+Then <code>make dependencies</code> would generate the following line:
+
+<pre>
+basic.cert: $(ACL2_SRC_BOOKS)/arithmetic/top-with-meta.cert
+</pre>
+
+Thus, if <code>:dir :system</code> is used with <code><a href="INCLUDE-BOOK.html">include-book</a></code>, the corresponding
+<code>Makefile</code> should define the variable <code>ACL2_SRC_BOOKS</code>.  A standard
+<code>Makefile</code> header for a books directory could thus be as follows.
+
+<pre>
+# The following variable should represent the ACL2 source directory.  It is the
+# only variable in this Makefile that may need to be edited.
+ACL2_SRC = ../../../../../..<p>
+
+ACL2_SRC_BOOKS = $(ACL2_SRC)/books
+include $(ACL2_SRC_BOOKS)/Makefile-generic
+ACL2 = $(ACL2_SRC)/saved_acl2
+</pre>
+
+Finally, the ``<code>-s</code>'' flag may now be omitted when running
+``<code>make dependencies</code>.''<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

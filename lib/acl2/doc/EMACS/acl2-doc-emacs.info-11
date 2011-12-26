@@ -1,0 +1,1148 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: DEFUN-SK,  Next: DEFUND,  Prev: DEFUN,  Up: EVENTS
+
+DEFUN-SK    define a function whose body has an outermost quantifier
+
+     Examples:
+     (defun-sk exists-x-p0-and-q0 (y z)
+       (exists x
+               (and (p0 x y z)
+                    (q0 x y z))))
+     
+     (defun-sk exists-x-p0-and-q0 (y z) ; equivalent to the above
+       (exists (x)
+               (and (p0 x y z)
+                    (q0 x y z))))
+     
+     (defun-sk forall-x-y-p0-and-q0 (z)
+       (forall (x y)
+               (and (p0 x y z)
+                    (q0 x y z))))
+
+     * Menu:
+     
+     * DEFUN-SK-EXAMPLE:: a simple example using defun-sk
+     
+     * EXISTS:: existential quantifier
+     
+     * FORALL:: universal quantifier
+     
+     * QUANTIFIERS:: issues about quantification in ACL2
+     
+     General Form:
+     (defun-sk fn (var1 ... varn) body
+       &key rewrite doc quant-ok skolem-name thm-name witness-dcls)
+
+where fn is the symbol you wish to define and is a new symbolic name
+(see *note NAME::), (var1 ... varn) is its list of formal parameters
+(see *note NAME::), and body is its body, which must be quantified as
+described below.  The &key argument doc is an optional documentation
+string to be associated with fn; for a description of its form, see
+*note DOC-STRING::.  In the case that n is 1, the list (var1) may be
+replaced by simply var1.  The other arguments are explained below.
+
+For a simple example, see *note DEFUN-SK-EXAMPLE::.  For a more
+elaborate example, see *note TUTORIAL4-DEFUN-SK-EXAMPLE::.  Also see
+*note QUANTIFIERS:: for an example illustrating how the use of
+recursion, rather than explicit quantification with defun-sk, may be
+preferable.
+
+Below we describe the defun-sk event precisely.  First, let us consider
+the examples above.  The first example, again, is:
+
+     (defun-sk exists-x-p0-and-q0 (y z)
+       (exists x
+               (and (p0 x y z)
+                    (q0 x y z))))
+
+It is intended to represent the predicate with formal parameters y and
+z that holds when for some x, (and (p0 x y z) (q0 x y z)) holds.  In
+fact defun-sk is a macro that adds the following two events, as shown
+just below.  The first event guarantees that if this new predicate
+holds of y and z, then the term shown, (exists-x-p0-and-q0-witness y
+z), is an example of the x that is therefore supposed to exist.
+(Intuitively, we are axiomatizing exists-x-p0-and-q0-witness to pick a
+witness if there is one.)  Conversely, the second event below
+guarantees that if there is any x for which the term in question holds,
+then the new predicate does indeed hold of y and z.
+
+     (defun exists-x-p0-and-q0 (y z)
+       (declare (xargs :non-executable t))
+       (let ((x (exists-x-p0-and-q0-witness y z)))
+         (and (p0 x y z) (q0 x y z))))
+     (defthm exists-x-p0-and-q0-suff
+       (implies (and (p0 x y z) (q0 x y z))
+                (exists-x-p0-and-q0 y z)))
+
+Now let us look at the third example from the introduction above:
+
+     (defun-sk forall-x-y-p0-and-q0 (z)
+       (forall (x y)
+               (and (p0 x y z)
+                    (q0 x y z))))
+
+The intention is to introduce a new predicate (forall-x-y-p0-and-q0 z)
+which states that the indicated conjunction holds of all x and all y
+together with the given z.  This time, the axioms introduced are as
+shown below.  The first event guarantees that if the application of
+function forall-x-y-p0-and-q0-witness to z picks out values x and y for
+which the given term (and (p0 x y z) (q0 x y z)) holds, then the new
+predicate forall-x-y-p0-and-q0 holds of z.  Conversely, the
+(contrapositive of) the second axiom guarantees that if the new
+predicate holds of z, then the given term holds for all choices of x
+and y (and that same z).
+
+     (defun forall-x-y-p0-and-q0 (z)
+       (declare (xargs :non-executable t))
+       (mv-let (x y)
+               (forall-x-y-p0-and-q0-witness z)
+               (and (p0 x y z) (q0 x y z))))
+     (defthm forall-x-y-p0-and-q0-necc
+       (implies (not (and (p0 x y z) (q0 x y z)))
+                (not (forall-x-y-p0-and-q0 z))))
+
+The examples above suggest the critical property of defun-sk:  it
+indeed does introduce the quantified notions that it claims to
+introduce.
+
+Notice that the defthm event just above, forall-x-y-p0-and-q0-necc, may
+not be of optimal form as a rewrite rule.  Users sometimes find that
+when the quantifier is forall, it is useful to state this rule in a
+form where the new quantified predicate is a hypothesis instead.  In
+this case that form would be as follows:
+
+     (defthm forall-x-y-p0-and-q0-necc
+       (implies (forall-x-y-p0-and-q0 z)
+                (and (p0 x y z) (q0 x y z))))
+
+ACL2 will turn this into one :rewrite rule for each conjunct, (p0 x y
+z) and (q0 x y z), with hypothesis (forall-x-y-p0-and-q0 z) in each
+case.  In order to get this effect, use :rewrite :direct, in this case
+as follows.
+
+     (defun-sk forall-x-y-p0-and-q0 (z)
+       (forall (x y)
+               (and (p0 x y z)
+                    (q0 x y z)))
+       :rewrite :direct)
+
+We now turn to a detailed description defun-sk, starting with a
+discussion of its arguments as shown in the "General Form" above.
+
+The third argument, body, must be of the form
+
+     (Q bound-vars term)
+
+where:  Q is the symbol forall or exists (in the "ACL2" package),
+bound-vars is a variable or true list of variables disjoint from (var1
+... varn) and not including state, and term is a term.  The case that
+bound-vars is a single variable v is treated exactly the same as the
+case that bound-vars is (v).
+
+The result of this event is to introduce a "Skolem function," whose
+name is the keyword argument skolem-name if that is supplied, and
+otherwise is the result of modifying fn by suffixing "-WITNESS" to its
+name.  The following definition and one of the following two theorems
+(as indicated) are introduced for skolem-name and fn in the case that
+bound-vars (see above) is a single variable v.  The name of the defthm
+event may be supplied as the value of the keyword argument :thm-name;
+if it is not supplied, then it is the result of modifying fn by
+suffixing "-SUFF" to its name in the case that the quantifier is
+exists, and "-NECC" in the case that the quantifier is forall.
+
+     (defun fn (var1 ... varn)
+       (declare (xargs :non-executable t))
+       (let ((v (skolem-name var1 ... varn)))
+         term))
+     
+     (defthm fn-suff ;in case the quantifier is EXISTS
+       (implies term
+                (fn var1 ... varn)))
+     
+     (defthm fn-necc ;in case the quantifier is FORALL
+       (implies (not term)
+                (not (fn var1 ... varn))))
+
+In the forall case, however, the keyword pair :rewrite :direct may be
+supplied after the body of the defun-sk form, in which case the
+contrapositive of the above form is used instead:
+
+     (defthm fn-necc ;in case the quantifier is FORALL
+       (implies (fn var1 ... varn)
+                term))
+
+This is often a better choice for the "-NECC" rule, provided ACL2 can
+parse term as a :rewrite rule.  A second possible value of the :rewrite
+argument of defun-sk is :default, which gives the same behavior as when
+:rewrite is omitted.  Otherwise, the value of :rewrite should be the
+term to use as the body of the fn-necc theorem shown above; ACL2 will
+attempt to do the requisite proof in this case.  If that term is weaker
+than the default, the properties introduced by defun-sk may of course
+be weaker than they would be otherwise.  Finally, note that the
+:rewrite keyword argument for defun-sk only makes sense if the
+quantifier is forall; it is thus illegal if the quantifier is exists.
+Enough said about :rewrite!
+
+In the case that bound-vars is a list of at least two variables, say
+(bv1 ... bvk), the definition above (with no keywords) is the following
+instead, but the theorem remains unchanged.
+
+     (defun fn (var1 ... varn)
+       (declare (xargs :non-executable t))
+       (mv-let (bv1 ... bvk)
+               (skolem-name var1 ... varn)
+               term))
+
+In order to emphasize that the last element of the list, body, is a
+term, defun-sk checks that the symbols forall and exists do not appear
+anywhere in it.  However, on rare occasions one might deliberately
+choose to violate this convention, presumably because forall or exists
+is being used as a variable or because a macro call will be eliminating
+"calls of" forall and exists.  In these cases, the keyword argument
+quant-ok may be supplied a non-nil value.  Then defun-sk will permit
+forall and exists in the body, but it will still cause an error if
+there is a real attempt to use these symbols as quantifiers.
+
+Note the form (declare (xargs :non-executable t)) that appears in each
+defun above.  These forms disable certain checks that are required for
+execution, in particular the single-threaded use of stobjs.  However,
+there is a price: calls of these defined functions cannot be evaluated.
+Normally that is not a problem, since these notions involve
+quantifiers.  But you are welcome to replace this declare form with
+your own, as follows: if you supply a list of declare forms to keyword
+argument :witness-dcls, these will become the declare forms in the
+generated defun.
+
+Defun-sk is a macro implemented using defchoose, and hence should only
+be executed in defun-mode :logic; see *note DEFUN-MODE:: and see *note
+DEFCHOOSE::.
+
+If you find that the rewrite rules introduced with a particular use of
+defun-sk are not ideal, even when using the :rewrite keyword discussed
+above (in the forall case), then at least two reasonable courses of
+action are available for you.  Perhaps the best option is to prove the
+rewrite rules you want.  If you see a pattern for creating rewrite
+rules from your defun-sk events, you might want to write a macro that
+executes a defun-sk followed by one or more defthm events.  Another
+option is to write your own variant of the defun-sk macro, say,
+my-defun-sk, for example by modifying a copy of the definition of
+defun-sk from the ACL2 sources.
+
+If you want to represent nested quantifiers, you can use more than one
+defun-sk event.  For example, in order to represent
+
+     (forall x (exists y (p x y z)))
+
+you can use defun-sk twice, for example as follows.
+
+     (defun-sk exists-y-p (x z)
+       (exists y (p x y z)))
+     
+     (defun-sk forall-x-exists-y-p (z)
+       (forall x (exists-y-p x z)))
+
+Some distracting and unimportant warnings are inhibited during defun-sk.
+
+Note that this way of implementing quantifiers is not a new idea.
+Hilbert was certainly aware of it 60 years ago!  Also see *note
+CONSERVATIVITY-OF-DEFCHOOSE:: for a technical argument that justifies
+the logical conservativity of the defchoose event in the sense of the
+paper by Kaufmann and Moore entitled "Structured Theory Development for
+a Mechanized Logic" (Journal of Automated Reasoning 26, no. 2 (2001),
+pp. 161-203).
+
+
+File: acl2-doc-emacs.info,  Node: DEFUN-SK-EXAMPLE,  Next: EXISTS,  Prev: DEFUN-SK,  Up: DEFUN-SK
+
+DEFUN-SK-EXAMPLE    a simple example using defun-sk
+
+The following example illustrates how to do proofs about functions
+defined with defun-sk.  The events below can be put into a certifiable
+book (see *note BOOKS::).  The example is contrived and rather silly,
+in that it shows how to prove that a quantified notion implies itself,
+where the antecedent and conclusion are defined with different defun-sk
+events.  But it illustrates the formulas that are generated by
+defun-sk, and how to use them.  Thanks to Julien Schmaltz for
+presenting this example as a challenge.
+
+     (in-package "ACL2")
+     
+     (encapsulate
+      (((p *) => *)
+       ((expr *) => *))
+     
+      (local (defun p (x) x))
+      (local (defun expr (x) x)))
+     
+     (defun-sk forall-expr1 (x)
+       (forall (y) (implies (p x) (expr y))))
+     
+     (defun-sk forall-expr2 (x)
+       (forall (y) (implies (p x) (expr y)))))
+     
+     ; We want to prove the theorem my-theorem below.  What axioms are there that
+     ; can help us?  If you submit the command
+     
+     ; :pcb! forall-expr1
+     
+     ; then you will see the following two key events.  (They are completely
+     ; analogous of course for FORALL-EXPR2.)
+     
+     #|
+     (DEFUN FORALL-EXPR1 (X)
+       (LET ((Y (FORALL-EXPR1-WITNESS X)))
+            (IMPLIES (P X) (EXPR Y))))
+     
+     (DEFTHM FORALL-EXPR1-NECC
+       (IMPLIES (NOT (IMPLIES (P X) (EXPR Y)))
+                (NOT (FORALL-EXPR1 X)))
+       :HINTS
+       (("Goal" :USE FORALL-EXPR1-WITNESS)))
+     |#
+     
+     ; We see that the latter has value when FORALL-EXPR1 occurs negated in a
+     ; conclusion, or (therefore) positively in a hypothesis.  A good rule to
+     ; remember is that the former has value in the opposite circumstance: negated
+     ; in a hypothesis or positively in a conclusion.
+     
+     ; In our theorem, FORALL-EXPR2 occurs positively in the conclusion, so its
+     ; definition should be of use.  We therefore leave its definition enabled,
+     ; and disable the definition of FORALL-EXPR1.
+     
+     #|
+     (thm
+       (implies (and (p x) (forall-expr1 x))
+                (forall-expr2 x))
+       :hints (("Goal" :in-theory (disable forall-expr1))))
+     
+     ; which yields this unproved subgoal:
+     
+     (IMPLIES (AND (P X) (FORALL-EXPR1 X))
+              (EXPR (FORALL-EXPR2-WITNESS X)))
+     |#
+     
+     ; Now we can see how to use FORALL-EXPR1-NECC to complete the proof, by
+     ; binding y to (FORALL-EXPR2-WITNESS X).
+     
+     ; We use defthmd below so that the following doesn't interfere with the
+     ; second proof, in my-theorem-again that follows.
+     (defthmd my-theorem
+       (implies (and (p x) (forall-expr1 x))
+                (forall-expr2 x))
+       :hints (("Goal"
+                :use ((:instance forall-expr1-necc
+                                 (x x)
+                                 (y (forall-expr2-witness x)))))))
+     
+     ; The following illustrates a more advanced technique to consider in such
+     ; cases.  If we disable forall-expr1, then we can similarly succeed by having
+     ; FORALL-EXPR1-NECC applied as a :rewrite rule, with an appropriate hint in how
+     ; to instantiate its free variable.  See :doc hints.
+     
+     (defthm my-theorem-again
+       (implies (and (P x) (forall-expr1 x))
+                (forall-expr2 x))
+       :hints (("Goal"
+                :in-theory (disable forall-expr1)
+                :restrict ((forall-expr1-necc
+                            ((y (forall-expr2-witness x))))))))
+
+
+File: acl2-doc-emacs.info,  Node: EXISTS,  Next: FORALL,  Prev: DEFUN-SK-EXAMPLE,  Up: DEFUN-SK
+
+EXISTS    existential quantifier
+
+The symbol exists (in the ACL2 package) represents existential
+quantification in the context of a defun-sk form.  See *Note DEFUN-SK::
+and see *note FORALL::.
+
+See *Note QUANTIFIERS:: for an example illustrating how the use of
+recursion, rather than explicit quantification with defun-sk, may be
+preferable.
+
+
+File: acl2-doc-emacs.info,  Node: FORALL,  Next: QUANTIFIERS,  Prev: EXISTS,  Up: DEFUN-SK
+
+FORALL    universal quantifier
+
+The symbol forall (in the ACL2 package) represents universal
+quantification in the context of a defun-sk form.  See *Note DEFUN-SK::
+and see *note EXISTS::.
+
+See *Note QUANTIFIERS:: for an example illustrating how the use of
+recursion, rather than explicit quantification with defun-sk, may be
+preferable.
+
+
+File: acl2-doc-emacs.info,  Node: QUANTIFIERS,  Prev: FORALL,  Up: DEFUN-SK
+
+QUANTIFIERS    issues about quantification in ACL2
+
+ACL2 supports first-order quantifiers exists and forall by way of the
+defun-sk event.  However, proof support for quantification is quite
+limited.  Therefore, we recommend using recursion in place of defun-sk
+when possible (following common ACL2 practice).
+
+* Menu:
+
+* QUANTIFIERS-USING-DEFUN-SK:: quantification example
+
+* QUANTIFIERS-USING-DEFUN-SK-EXTENDED:: quantification example with details
+
+* QUANTIFIERS-USING-RECURSION:: recursion for implementing quantification
+
+For example, the notion "every member of x has property p" can be
+defined either with recursion or explicit quantification, but proofs
+may be simpler when recursion is used.  We illustrate this point with
+two proofs of the same informal claim, one of which uses recursion
+which the other uses explicit quantification.  Notice that with
+recursion, the proof goes through fully automatically; but this is far
+from true with explicit quantification (especially notable is the ugly
+hint).
+
+The informal claim for our examples is:  If every member a of each of
+two lists satisfies the predicate (p a), then this holds of their
+append; and, conversely.
+
+See *Note QUANTIFIERS-USING-RECURSION:: for a solution to this example
+using recursion.
+
+See *Note QUANTIFIERS-USING-DEFUN-SK:: for a solution to this example
+using defun-sk.  Also See *Note QUANTIFIERS-USING-DEFUN-SK-EXTENDED::
+for an elaboration on that solution.
+
+
+File: acl2-doc-emacs.info,  Node: QUANTIFIERS-USING-DEFUN-SK,  Next: QUANTIFIERS-USING-DEFUN-SK-EXTENDED,  Prev: QUANTIFIERS,  Up: QUANTIFIERS
+
+QUANTIFIERS-USING-DEFUN-SK    quantification example
+
+See *Note QUANTIFIERS:: for the context of this example.  It should be
+compared to a corresponding example in which a simpler proof is
+attained by using recursion in place of explicit quantification; see
+*note QUANTIFIERS-USING-RECURSION::.
+
+     (in-package "ACL2")
+     
+     ; We prove that if every member A of each of two lists satisfies the
+     ; predicate (P A), then this holds of their append; and, conversely.
+     
+     ; Here is a solution using explicit quantification.
+     
+     (defstub p (x) t)
+     
+     (defun-sk forall-p (x)
+       (forall a (implies (member a x)
+                          (p a))))
+     
+     (defthm member-append
+       (iff (member a (append x1 x2))
+            (or (member a x1) (member a x2))))
+     
+     (defthm forall-p-append
+       (equal (forall-p (append x1 x2))
+              (and (forall-p x1) (forall-p x2)))
+       :hints (("Goal" ; ``should'' disable forall-p-necc, but no need
+                :use
+                ((:instance forall-p-necc
+                            (x (append x1 x2))
+                            (a (forall-p-witness x1)))
+                 (:instance forall-p-necc
+                            (x (append x1 x2))
+                            (a (forall-p-witness x2)))
+                 (:instance forall-p-necc
+                            (x x1)
+                            (a (forall-p-witness (append x1 x2))))
+                 (:instance forall-p-necc
+                            (x x2)
+                            (a (forall-p-witness (append x1 x2))))))))
+
+Also see *note QUANTIFIERS-USING-DEFUN-SK-EXTENDED:: for an elaboration
+on this example.
+
+
+File: acl2-doc-emacs.info,  Node: QUANTIFIERS-USING-DEFUN-SK-EXTENDED,  Next: QUANTIFIERS-USING-RECURSION,  Prev: QUANTIFIERS-USING-DEFUN-SK,  Up: QUANTIFIERS
+
+QUANTIFIERS-USING-DEFUN-SK-EXTENDED    quantification example with details
+
+See *Note QUANTIFIERS-USING-DEFUN-SK:: for the context of this example.
+
+     (in-package "ACL2")
+     
+     ; We prove that if every member A of each of two lists satisfies the
+     ; predicate (P A), then this holds of their append; and, conversely.
+     
+     ; Here is a solution using explicit quantification.
+     
+     (defstub p (x) t)
+     
+     (defun-sk forall-p (x)
+       (forall a (implies (member a x)
+                          (p a))))
+     
+     ; The defun-sk above introduces the following axioms.  The idea is that
+     ; (FORALL-P-WITNESS X) picks a counterexample to (forall-p x) if there is one.
+     
+     #|
+     (DEFUN FORALL-P (X)
+       (LET ((A (FORALL-P-WITNESS X)))
+            (IMPLIES (MEMBER A X) (P A))))
+     
+     (DEFTHM FORALL-P-NECC
+       (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
+                (NOT (FORALL-P X)))
+       :HINTS (("Goal" :USE FORALL-P-WITNESS)))
+     |#
+     
+     ; The following lemma seems critical.
+     
+     (defthm member-append
+       (iff (member a (append x1 x2))
+            (or (member a x1) (member a x2))))
+     
+     ; The proof of forall-p-append seems to go out to lunch, so we break into
+     ; directions as shown below.
+     
+     (defthm forall-p-append-forward
+       (implies (forall-p (append x1 x2))
+                (and (forall-p x1) (forall-p x2)))
+       :hints (("Goal" ; ``should'' disable forall-p-necc, but no need
+                :use
+                ((:instance forall-p-necc
+                            (x (append x1 x2))
+                            (a (forall-p-witness x1)))
+                 (:instance forall-p-necc
+                            (x (append x1 x2))
+                            (a (forall-p-witness x2)))))))
+     
+     (defthm forall-p-append-reverse
+       (implies (and (forall-p x1) (forall-p x2))
+                (forall-p (append x1 x2)))
+       :hints (("Goal"
+                :use
+                ((:instance forall-p-necc
+                            (x x1)
+                            (a (forall-p-witness (append x1 x2))))
+                 (:instance forall-p-necc
+                            (x x2)
+                            (a (forall-p-witness (append x1 x2))))))))
+     
+     (defthm forall-p-append
+       (equal (forall-p (append x1 x2))
+              (and (forall-p x1) (forall-p x2)))
+       :hints (("Goal" :use (forall-p-append-forward
+                             forall-p-append-reverse))))
+
+
+File: acl2-doc-emacs.info,  Node: QUANTIFIERS-USING-RECURSION,  Prev: QUANTIFIERS-USING-DEFUN-SK-EXTENDED,  Up: QUANTIFIERS
+
+QUANTIFIERS-USING-RECURSION    recursion for implementing quantification
+
+The following example illustrates the use of recursion as a means of
+avoiding proof difficulties that can arise from the use of explicit
+quantification (via defun-sk).  See *Note QUANTIFIERS:: for more about
+the context of this example.
+
+     (in-package "ACL2")
+     
+     ; We prove that if every member A of each of two lists satisfies the
+     ; predicate (P A), then this holds of their append; and, conversely.
+     
+     ; Here is a solution using recursively-defined functions.
+     
+     (defstub p (x) t)
+     
+     (defun all-p (x)
+       (if (atom x)
+           t
+         (and (p (car x))
+              (all-p (cdr x)))))
+     
+     (defthm all-p-append
+       (equal (all-p (append x1 x2))
+              (and (all-p x1) (all-p x2))))
+
+
+File: acl2-doc-emacs.info,  Node: DEFUND,  Next: DELETE-INCLUDE-BOOK-DIR,  Prev: DEFUN-SK,  Up: EVENTS
+
+DEFUND    define a function symbol and then disable it
+
+Use defund instead of defun when you want to disable a function
+immediately after its definition.  This macro has been provided for
+users who prefer working in a mode where functions are only enabled
+when explicitly directed by :in-theory.  Specifically, the form
+
+     (defund NAME FORMALS ...)
+
+expands to:
+
+     (progn
+       (defun NAME FORMALS ...)
+       (with-output
+        :off summary
+        (in-theory (disable NAME)))
+       (value NAME)).
+
+Only the :definition rule (and, for recursively defined functions, the
+:induction rule) for the function are disabled, and the summary for the
+in-theory event is suppressed.
+
+Note that defund commands are never redundant (see *note
+REDUNDANT-EVENTS::).  If the function has already been defined, then
+the in-theory event will still be executed.
+
+See *Note DEFUN:: for documentation of defun.
+
+
+File: acl2-doc-emacs.info,  Node: DELETE-INCLUDE-BOOK-DIR,  Next: DIVE-INTO-MACROS-TABLE,  Prev: DEFUND,  Up: EVENTS
+
+DELETE-INCLUDE-BOOK-DIR    remove association of keyword for include-book's :dir argument
+
+     Example Forms:
+     (delete-include-book-dir :smith)
+      ; Remove association of directory with :smith for include-book.
+     
+     General Form:
+     (delete-include-book-dir kwd)
+
+where kwd is a keywordp.  The effect of this event is to modify the
+meaning of the :dir keyword argument of include-book as indicated by
+the examples above, namely by removing association of any directory with
+the indicated keyword for purposes of the include-book :dir argument.
+Normally one would instead use add-include-book-dir to associate a new
+directory with that keyword; see *note ADD-INCLUDE-BOOK-DIR::.
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.
+
+This macro generates a call (table acl2-defaults-table
+:include-book-dir-alist ...)  and hence is local to any books and
+encapsulate events in which it occurs. See *Note ACL2-DEFAULTS-TABLE::.
+
+
+File: acl2-doc-emacs.info,  Node: DIVE-INTO-MACROS-TABLE,  Next: ENCAPSULATE,  Prev: DELETE-INCLUDE-BOOK-DIR,  Up: EVENTS
+
+DIVE-INTO-MACROS-TABLE    right-associated function information for the proof-checker
+
+     Examples:
+     ACL2 !>(dive-into-macros-table (w state))
+     ((CAT . EXPAND-ADDRESS-CAT)
+      (LXOR . EXPAND-ADDRESS-LXOR)
+
+This table associates macro names with functions used by the
+proof-checker's DV and numeric diving commands (e.g., 3) in order to
+dive properly into subterms.  See *Note PROOF-CHECKER::, in particular
+the documentation for DV.
+
+This table can be extended easily.  See *Note ADD-DIVE-INTO-MACRO:: and
+also see *note REMOVE-DIVE-INTO-MACRO::.
+
+The symbol associated with a macro should be a function symbol taking
+four arguments, in this order:
+
+     car-addr ; the first number in the list given to the proof-checker's
+                DV command
+     raw-term ; the untranslated term into which we will dive
+     term     ; the translated term into which we will dive
+     wrld     ; the current ACL2 logical world
+
+The function will normally return a list of positive integers,
+representing the (one-based) address for diving into term that
+corresponds to the single-address dive into raw-term by car-address.
+However, it can return (cons str alist), where str is a string suitable
+for fmt and args is the corresponding alist for fmt.
+
+Referring to the example above, expand-address-cat would be such a
+function, which will be called on raw-term values that are calls of
+cat.  See the distributed book books/misc/rtl-untranslate.lisp for the
+definition of such a function.
+
+See *Note TABLE:: for a general discussion of tables.
+
+
+File: acl2-doc-emacs.info,  Node: ENCAPSULATE,  Next: IN-ARITHMETIC-THEORY,  Prev: DIVE-INTO-MACROS-TABLE,  Up: EVENTS
+
+ENCAPSULATE    constrain some functions and/or hide some events
+
+     Examples:
+     (encapsulate (((an-element *) => *))
+     
+     ; The list of signatures above could also be written
+     ;            ((an-element (lst) t))
+     
+       (local (defun an-element (lst)
+                (if (consp lst) (car lst) nil)))
+       (local (defthm member-equal-car
+                 (implies (and lst (true-listp lst))
+                          (member-equal (car lst) lst))))
+       (defthm thm1
+          (implies (null lst) (null (an-element lst))))
+       (defthm thm2
+          (implies (and (true-listp lst)
+                        (not (null lst)))
+                   (member-equal (an-element lst) lst))))
+     
+     (encapsulate
+      ()
+     
+      (local (defthm hack
+               (implies (and (syntaxp (quotep x))
+                             (syntaxp (quotep y)))
+                        (equal (+ x y z)
+                               (+ (+ x y) z)))))
+     
+      (defthm nthcdr-add1-conditional
+        (implies (not (zp (1+ n)))
+                 (equal (nthcdr (1+ n) x)
+                        (nthcdr n (cdr x))))))
+     
+     General Form:
+     (encapsulate (signature ... signature)
+       ev1
+       ...
+       evn)
+
+where each signature is a well-formed signature (see *note
+SIGNATURE::), each signature describes a different function symbol, and
+each evi is an embedded event form (See *Note EMBEDDED-EVENT-FORM::).
+There must be at least one evi.  The evi inside local special forms are
+called "local" events below.  Events that are not local are sometimes
+said to be "exported" by the encapsulation.  We make the further
+restriction that no defaxiom event may be introduced in the scope of an
+encapsulate (not even by encapsulate or include-book events that are
+among the evi).  Furthermore, no non-local include-book event is
+permitted in the scope of any encapsulate with a non-empty list of
+signatures.
+
+To be well-formed, an encapsulate event must have the properties that
+each event in the body (including the local ones) can be successfully
+executed in sequence and that in the resulting theory, each function
+mentioned among the signatures was introduced via a local event and has
+the signature listed.  (A utility is provided to assist in debugging
+failures of such execution; see *note REDO-FLAT::.)  In addition, the
+body may contain no "local incompatibilities" which, roughly stated,
+means that the events that are not local must not syntactically require
+symbols defined by local events, except for the functions listed in the
+signatures.  See *Note LOCAL-INCOMPATIBILITY::.  Finally, no non-local
+recursive definition in the body may involve in its suggested induction
+scheme any function symbol listed among the signatures.  See *Note
+SUBVERSIVE-RECURSIONS::.
+
+The result of an encapsulate event is an extension of the logic in
+which, roughly speaking, the functions listed in the signatures are
+constrained to have the signatures listed and to satisfy the non-local
+theorems proved about them.  In fact, other functions introduced in the
+encapsulate event may be considered to have "constraints" as well.
+(See *Note CONSTRAINT:: for details, which are only relevant to
+functional instantiation.)  Since the constraints were all theorems in
+the "ephemeral" or "local" theory, we are assured that the extension
+produced by encapsulate is sound.  In essence, the local definitions of
+the constrained functions are just "witness functions" that establish
+the consistency of the constraints.  Because those definitions are
+local, they are not present in the theory produced by encapsulation.
+Encapsulate also exports all rules generated by its non-local events,
+but rules generated by local events are not exported.
+
+The default-defun-mode for the first event in an encapsulation is the
+default defun-mode "outside" the encapsulation.  But since events
+changing the defun-mode are permitted within the body of an
+encapsulate, the default defun-mode may be changed.  However,
+defun-mode changes occurring within the body of the encapsulate are not
+exported.  In particular, the acl2-defaults-table after an encapsulate
+is always the same as it was before the encapsulate, even though the
+encapsulate body might contain defun-mode changing events, :program and
+:logic.  See *Note DEFUN-MODE::.  More generally, after execution of an
+encapsulate event, the value of acl2-defaults-table is restored to what
+it was immediately before that event was executed.  See *Note
+ACL2-DEFAULTS-TABLE::.
+
+Theorems about the constrained function symbols may then be proved --
+theorems whose proofs necessarily employ only the constraints.  Thus,
+those theorems may be later functionally instantiated, as with the
+:functional-instance lemma instance (see *note LEMMA-INSTANCE::), to
+derive analogous theorems about different functions, provided the
+constraints (see *note CONSTRAINT::) can be proved about the new
+functions.
+
+Observe that if the signatures list is empty, encapsulate may still be
+useful for deriving theorems to be exported whose proofs require lemmas
+you prefer to hide (i.e., made local).
+
+The order of the events in the vicinity of an encapsulate is confusing.
+We discuss it in some detail here because when logical names are being
+used with theory functions to compute sets of rules, it is sometimes
+important to know the order in which events were executed.  (See *Note
+LOGICAL-NAME:: and see *note THEORY-FUNCTIONS::.)  What, for example,
+is the set of function names extant in the middle of an encapsulation?
+
+If the most recent event is previous and then you execute an
+encapsulate constraining an-element with two non-local events in its
+body, thm1 and thm2, then the order of the events after the
+encapsulation is (reading chronologically forward): previous, thm1,
+thm2, an-element (the encapsulate itself).  Actually, between previous
+and thm1 certain extensions were made to the world by the superior
+encapsulate, to permit an-element to be used as a function symbol in
+thm1.
+
+Finally, we note that an encapsulate event is redundant if and only if
+a syntactically identical encapsulate has already been executed under
+the same default-defun-mode.  See *Note REDUNDANT-EVENTS::.
+
+
+File: acl2-doc-emacs.info,  Node: IN-ARITHMETIC-THEORY,  Next: IN-THEORY,  Prev: ENCAPSULATE,  Up: EVENTS
+
+IN-ARITHMETIC-THEORY    designate ``current'' theory for some rewriting done in linear arithmetic
+
+     Example:
+     (in-arithmetic-theory '(lemma1 lemma2))
+     
+     General Form:
+     (in-arithmetic-theory term :doc doc-string)
+
+where term is a term that when evaluated will produce a theory (see
+*note THEORIES::), and doc-string is an optional documentation string
+not beginning with ":doc-section ...".  Except for the variable world,
+term must contain no free variables.  Term is evaluated with the
+variable world bound to the current world to obtain a theory and the
+corresponding runic theory (see *note THEORIES::) is then made the
+current theory.  Thus, immediately after the in-arithmetic-theory, a
+rule is enabled iff its rule name is a member of the runic
+interpretation (see *note THEORIES::) of some member of the value of
+term.
+
+Warning:  If term involves macros such as ENABLE and DISABLE you will
+probably not get what you expect!  Those macros are defined relative to
+the CURRENT-THEORY.  But in this context you might wish they were
+defined in terms of the "CURRENT-ARITHMETIC-THEORY" which is not
+actually a defined function.  We do not anticipate that users will
+repeatedly modify the arithmetic theory.  We expect term most often to
+be a constant list of runes and so have not provided "arithmetic theory
+manipulation functions" analogous to CURRENT-THEORY and ENABLE.
+
+BECAUSE NO UNIQUE name is associated with an in-arithmetic-theory event,
+there is no way we can store the documentation string doc-string in our
+il[documentation] data base.  Hence, we actually prohibit doc-string
+from having the form of an ACL2 documentation string; see *note
+DOC-STRING::.
+
+See *Note NON-LINEAR-ARITHMETIC::.
+
+
+File: acl2-doc-emacs.info,  Node: IN-THEORY,  Next: INCLUDE-BOOK,  Prev: IN-ARITHMETIC-THEORY,  Up: EVENTS
+
+IN-THEORY    designate ``current'' theory (enabling its rules)
+
+     Example:
+     (in-theory (set-difference-theories
+                  (universal-theory :here)
+                  '(flatten (:executable-counterpart flatten))))
+     
+     General Form:
+     (in-theory term :doc doc-string)
+
+where term is a term that when evaluated will produce a theory (see
+*note THEORIES::), and doc-string is an optional documentation string
+not beginning with ":doc-section ...".  Except for the variable world,
+term must contain no free variables.  Term is evaluated with the
+variable world bound to the current world to obtain a theory and the
+corresponding runic theory (see *note THEORIES::) is then made the
+current theory.  Thus, immediately after the in-theory, a rule is
+enabled iff its rule name is a member of the runic interpretation (see
+*note THEORIES::) of some member of the value of term.  See *Note
+THEORY-FUNCTIONS:: for a list of the commonly used theory manipulation
+functions.
+
+Because no unique name is associated with an in-theory event, there is
+no way we can store the documentation string doc-string in our
+documentation data base.  Hence, we actually prohibit doc-string from
+having the form of an ACL2 documentation string; see *note DOC-STRING::.
+
+Also see *note HINTS:: for a discussion of the :in-theory hint,
+including some explanation of the important point that an :in-theory
+hint will always be evaluated relative to the current ACL2 logical
+world, not relative to the theory of a previous goal.
+
+
+File: acl2-doc-emacs.info,  Node: INCLUDE-BOOK,  Next: INVISIBLE-FNS-TABLE,  Prev: IN-THEORY,  Up: EVENTS
+
+INCLUDE-BOOK    load the events in a file
+
+     Examples:
+     (include-book "my-arith")
+     (include-book "/home/smith/my-arith")
+     (include-book "/../../my-arith")
+     
+     General Form:
+     (include-book file :load-compiled-file action  ; [default :warn]
+                        :uncertified-okp t/nil      ; [default t]
+                        :defaxioms-okp t/nil        ; [default t]
+                        :skip-proofs-okp t/nil      ; [default t]
+                        :ttags ttags                ; [default nil]
+                        :dir directory
+                        :doc doc-string)
+
+where file is a book name.  See *Note BOOKS:: for general information,
+see *note BOOK-NAME:: for information about book names, and see *note
+PATHNAME:: for information about file names.  Action is one of t, nil,
+:warn (the default), :try, :comp, or :comp!; these values are explained
+below.  The three -okp keyword arguments, which default to t, determine
+whether errors or warnings are generated under certain conditions
+explained below; when the argument is t, warnings are generated.  The
+dir argument, if supplied, is a keyword that represents an absolute
+pathname for a directory (see *note PATHNAME::), to be used instead of
+the current book directory (see *note CBD::) for resolving the given
+file argument to an absolute pathname.  In particular, :dir :system
+resolves file using the distributed books/ directory of your ACL2
+installation, unless your ACL2 executable was built somewhere other
+than where it currently resides; please see the "Distributed Books
+Directory" below.  To define other keywords that can be used for dir,
+see *note ADD-INCLUDE-BOOK-DIR::.  Doc-string is an optional
+documentation string; see *note DOC-STRING::.  If the book has no
+certificate, if its certificate is invalid or if the certificate was
+produced by a different version of ACL2, a warning is printed and the
+book is included anyway; see *note CERTIFICATE::.  This can lead to
+serious errors; see *note UNCERTIFIED-BOOKS::.  If the portcullis of the
+certificate (see *note PORTCULLIS::) cannot be raised in the host
+logical world, an error is caused and no change occurs to the logic.
+Otherwise, the non-local events in file are assumed.  Then the keep of
+the certificate is checked to ensure that the correct files were read;
+see *note KEEP::.  A warning is printed if uncertified books were
+included.  Even if no warning is printed, include-book places a burden
+on you; see *note CERTIFICATE::.
+
+If there is a compiled file for the book that was created more recently
+than the book itself and the value action of the :load-compiled-file
+argument is not nil, or is omitted, then the compiled file is
+automatically loaded; otherwise it is not loaded.  If action is t then
+the compiled file must be loaded or an error will occur; if action is
+:warn (the default) then a warning will be printed; if action is :try
+then no warning will be printed; and if action is :comp then the file
+will be immediately compiled (if the compiled file does not already
+exist) and loaded.  The action :comp! is handled just like :comp, with
+two exceptions: compilation always takes place because the old compiled
+file is first deleted, and executable counterparts are also compiled (in
+analogy to value :all for the compile-flg argument of certify-book; see
+*note CERTIFY-BOOK::).  Certify-book can also be used to compile a
+book; thus, :comp and :comp! do the same sort of compilation as
+certify-book when the latter is given a compile-flg of t or :all,
+respectively.  An effect of compilation is to speed up the execution of
+the functions defined within the book when those functions are applied
+to specific values.  Compilation can also remove tail recursion, thus
+avoiding stack overflows.  The presence of compiled code for the
+functions in the book should not otherwise affect the performance of
+ACL2.  See *Note GUARD:: for a discussion.  NOTE: the
+:load-compiled-file argument is not recursive; that is, calls of
+include-book that are inside the book supplied to include-book will use
+their own :load-compiled-file arguments (default :warn), not the
+:load-compiled-file argument for the enclosing book.
+
+The three -okp arguments, :uncertified-okp, defaxioms-okp, and
+skip-proofs-okp, determine the system's behavior when the book or any
+subbook is found to be uncertified, when the book or any subbook is
+found to contain defaxiom events, and when the book or any subbook is
+found to contain skip-proofs events, respectively.  All three default
+to t, which means it is "ok" for the condition to arise.  In this case,
+a warning is printed but the processing to load the book is allowed to
+proceed.  When one of these arguments is nil and the corresponding
+condition arises, an error is signaled and processing is aborted.
+*Exception*: :uncertified-okp is ignored if the include-book is being
+performed on behalf of a certify-book.
+
+The keyword argument :ttags may normally be omitted.  A few constructs,
+used for example if you are building your own system based on ACL2, may
+require it.  See *Note DEFTTAG:: for an explanation of this argument.
+
+Include-book is similar in spirit to encapsulate in that it is a single
+event that "contains" other events, in this case the events listed in
+the file named.  Include-book processes the non-local event forms in
+the file, assuming that each is admissible.  Local events in the file
+are ignored.  You may use include-book to load several books, creating
+the logical world that contains the definitions and theorems of all of
+them.
+
+If any non-local event of the book attempts to define a name that has
+already been defined -- and the book's definition is not syntactically
+identical to the existing definition -- the attempt to include the book
+fails, an error message is printed, and no change to the logical world
+occurs.  See *Note REDUNDANT-EVENTS:: for the details.
+
+When a book is included, the default defun-mode (see *note
+DEFAULT-DEFUN-MODE::) for the first event is always :logic.  That is,
+the default defun-mode "outside" the book -- in the environment in
+which include-book was called -- is irrelevant to the book.  Events
+that change the defun-mode are permitted within a book (provided they
+are not in local forms).  However, such changes within a book are not
+exported, i.e., at the conclusion of an include-book, the "outside"
+default defun-mode is always the same as it was before the include-book.
+
+Unlike every other event in ACL2, include-book puts a burden on you.
+Used improperly, include-book can be unsound in the sense that it can
+create an inconsistent extension of a consistent logical world.  A
+certification mechanism is available to help you carry this burden --
+but it must be understood up front that even certification is no
+guarantee against inconsistency here.  The fundamental problem is one
+of file system security.  See *Note CERTIFICATE:: for a discussion of
+the security issues.
+
+After execution of an include-book form, the value of
+acl2-defaults-table is restored to what it was immediately before that
+include-book form was executed.  See *Note ACL2-DEFAULTS-TABLE::.
+
+Distributed Books Directory.  We refer to the "books directory" of an
+executable image as the full pathname string of the books directory
+associated with :dir :system for that image.  This is where the
+distributed books directory should reside.  By default, it is the books/
+subdirectory of the directory where the sources reside and the
+executable image is thus built.  If those books reside elsewhere, the
+environment variable ACL2_SYSTEM_BOOKS can be set to the books/
+directory under which they reside (a Unix-style pathname, typically
+ending in books/ or books, is permissible).  In most cases, your ACL2
+executable is a small script in which you can set this environment
+variable just above the line on which the actual ACL2 image is invoked.
+
+This concludes the guided tour through books.  See *Note
+SET-COMPILE-FNS:: for a subtle point about the interaction between
+include-book and on-the-fly compilation.  See *Note CERTIFY-BOOK:: for
+a discussion of how to certify a book.
+
+:cited-by Programming
+
+
+File: acl2-doc-emacs.info,  Node: INVISIBLE-FNS-TABLE,  Next: LOCAL,  Prev: INCLUDE-BOOK,  Up: EVENTS
+
+INVISIBLE-FNS-TABLE    functions that are invisible to the loop-stopper algorithm
+
+     Examples:
+     ACL2 !>(invisible-fns-table (w state))
+     ((binary-+ unary--)
+      (binary-* unary-/)
+      (unary-- unary--)
+      (unary-/ unary-/))
+
+Among other things, the setting above has the effect of making unary-
+"invisible" for the purposes of applying permutative :rewrite rules to
+binary-+ trees.  Also see *note ADD-INVISIBLE-FNS::, see *note
+REMOVE-INVISIBLE-FNS::, and see *note SET-INVISIBLE-FNS-TABLE::.
+
+See *Note TABLE:: for a general discussion of tables.
+
+The "invisible functions table" is an alist with elements of the
+following form, where fn is a function symbol and the ufni are unary
+function symbols in the current ACL2 world, and k is at least 1.
+
+     (fn ufn1 ufn2 ... ufnk)
+
+This table thus associates with certain function symbols, e.g., fn
+above, a set of unary functions, e.g., the ufni above.  The ufni
+associated with fn in the invisible functions table are said to be
+"invisible with respect to fn."  If fn is not the car of any pair in
+the alist, then no function is invisible for it.  Thus for example,
+setting the invisible functions alist to nil completely eliminates the
+consideration of invisibility.
+
+The notion of invisibility is involved in the use of the :loop-stopper
+field of :rewrite rules to prevent the indefinite application of
+permutative rewrite rules.  Roughly speaking, if rewrite rules are
+being used to permute arg and (ufni arg) inside of a nest of fn calls,
+and ufni is invisible with respect to fn, then arg and (ufni arg) are
+considered to have the same "weight" and will be permuted so as to end
+up as adjacent tips in the fn nest.  See *Note LOOP-STOPPER::.
+
+
+File: acl2-doc-emacs.info,  Node: LOCAL,  Next: LOGIC,  Prev: INVISIBLE-FNS-TABLE,  Up: EVENTS
+
+LOCAL    hiding an event in an encapsulation or book
+
+     Examples:
+     (local (defthm hack1
+              (implies (and (acl2-numberp x)
+                            (acl2-numberp y)
+                            (equal (* x y) 1))
+                       (equal y (/ x)))))
+     
+     (local (defun double-naturals-induction (a b)
+              (cond ((and (integerp a) (integerp b) (< 0 a) (< 0 b))
+                     (double-naturals-induction (1- a) (1- b)))
+                    (t (list a b)))))
+     
+     General Form:
+     (local ev)
+
+where ev is an event form.  If the current default defun-mode (see
+*note DEFAULT-DEFUN-MODE::) is :logic and ld-skip-proofsp is nil or t,
+then (local ev) is equivalent to ev.  But if the current default
+defun-mode is :program or if ld-skip-proofsp is 'include-book, then
+(local ev) is a no-op.  Thus, if such forms are in the event list of an
+encapsulate event or in a book, they are processed when the
+encapsulation or book is checked for admissibility in :logic mode but
+are skipped when extending the host world.  Such events are thus
+considered "local" to the verification of the encapsulation or book.
+The non-local events are the ones "exported" by the encapsulation or
+book.  See *Note ENCAPSULATE:: for a thorough discussion.  Also see
+*note LOCAL-INCOMPATIBILITY:: for a discussion of a commonly
+encountered problem with such event hiding:  you can't make an event
+local if its presence is required to make sense of a non-local one.
+
+Note that events that change the default defun-mode, and in fact any
+events that set the acl2-defaults-table, are disallowed inside the
+scope of local.  See *Note EMBEDDED-EVENT-FORM::.
+
+
+File: acl2-doc-emacs.info,  Node: LOGIC,  Next: MACRO-ALIASES-TABLE,  Prev: LOCAL,  Up: EVENTS
+
+LOGIC    to set the default defun-mode to :logic
+
+     Example:
+     ACL2 p!>:logic
+     ACL2 !>
+
+Typing the keyword :logic sets the default defun-mode to :logic.
+
+Functions defined in :logic mode are logically defined.  See *Note
+DEFUN-MODE::.
+
+Note: This is an event!  It does not print the usual event summary but
+nevertheless changes the ACL2 logical world and is so recorded.
+
+See *Note DEFUN-MODE:: for a discussion of the defun-modes available
+and what their effects on the logic are.  See *Note
+DEFAULT-DEFUN-MODE:: for a discussion of how the default defun-mode is
+used.  This event is equivalent to (table acl2-defaults-table
+:defun-mode :logic), and hence is local to any books and encapsulate
+events in which it occurs. See *Note ACL2-DEFAULTS-TABLE::.
+
+Recall that the top-level form :logic is equivalent to (logic); see
+*note KEYWORD-COMMANDS::.  Thus, to change the default defun-mode to
+:logic in a book, use (logic), which is an embedded event form, rather
+than :logic, which is not a legal form for books.  See *Note
+EMBEDDED-EVENT-FORM::.
+

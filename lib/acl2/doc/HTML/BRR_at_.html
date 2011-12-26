@@ -1,0 +1,116 @@
+<html>
+<head><title>BRR_at_.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BRR@</h2>to access context sensitive information within <code><a href="BREAK-REWRITE.html">break-rewrite</a></code>
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+
+<pre>
+Example:
+(brr@ :target)      ; the term being rewritten
+(brr@ :unify-subst) ; the unifying substitution
+<p>
+General Form:
+(brr@ :symbol)
+</pre>
+
+where <code>:symbol</code> is one of the following keywords.  Those marked with
+<code>*</code> probably require an implementor's knowledge of the system to use
+effectively.  They are supported but not well documented.  More is
+said on this topic following the table.
+
+<pre>
+:symbol             (brr@ :symbol)
+-------             ---------------------<p>
+
+:target             the term to be rewritten.  This term is an
+                    instantiation of the left-hand side of the
+                    conclusion of the rewrite-rule being broken.
+                    This term is in translated form!  Thus, if
+                    you are expecting (equal x nil) -- and your
+                    expectation is almost right -- you will see
+                    (equal x 'nil); similarly, instead of (cadr a)
+                    you will see (car (cdr a)).  In translated
+                    forms, all constants are quoted (even nil, t,
+                    strings and numbers) and all macros are
+                    expanded.<p>
+
+:unify-subst        the substitution that, when applied to :target,
+                    produces the left-hand side of the rule being
+                    broken.  This substitution is an alist pairing
+                    variable symbols to translated (!) terms.<p>
+
+:wonp               t or nil indicating whether the rune was
+                    successfully applied.  (brr@ :wonp) returns
+                    nil if evaluated before :EVALing the rule.<p>
+
+:rewritten-rhs      the result of successfully applying the rule
+                    or else nil if (brr@ :wonp) is nil.  The result
+                    of successfully applying the rule is always a
+                    translated (!) term and is never nil.<p>
+
+:failure-reason     some non-nil lisp object indicating why the rule 
+                    was not applied or else nil.  Before the rule is
+                    :EVALed, (brr@ :failure-reason) is nil.  After
+                    :EVALing the rule, (brr@ :failure-reason) is nil
+                    if (brr@ :wonp) is t.  Rather than document the
+                    various non-nil objects returned as the failure
+                    reason, we encourage you simply to evaluate
+                    (brr@ :failure-reason) in the contexts of interest.
+                    Alternatively, study the ACL2 function tilde-@-
+                    failure-reason-phrase.<p>
+
+:lemma           *  the rewrite rule being broken.  For example,
+                    (access rewrite-rule (brr@ :lemma) :lhs) will
+                    return the left-hand side of the conclusion
+                    of the rule.<p>
+
+:type-alist      *  a display of the type-alist governing :target.
+                    Elements on the displayed list are of the form
+                    (term type), where term is a term and type
+                    describes information about term assumed to hold
+                    in the current context.  The type-alist may be
+                    used to determine the current assumptions, e.g.,
+                    whether A is a CONSP.<p>
+
+:ancestors       *  a stack of frames indicating the backchain history
+                    of the current context.  The theorem prover is in
+                    the process of trying to establish each hypothesis
+                    in this stack.  Thus, the negation of each hypothesis
+                    can be assumed false.  Each frame also records the
+                    rules on behalf of which this backchaining is being
+                    done and the weight (function symbol count) of the
+                    hypothesis.  All three items are involved in the
+                    heuristic for preventing infinite backchaining.
+                    Exception:  Some frames are ``binding hypotheses''
+                    (equal var term) or (equiv var (double-rewrite term))
+                    that bind variable var to the result of rewriting
+                    term.<p>
+
+:gstack          *  the current goal stack.  The gstack is maintained
+                    by rewrite and is the data structure printed as the
+                    current ``path.''  Thus, any information derivable
+                    from the :path brr command is derivable from gstack.
+                    For example, from gstack one might determine that
+                    the current term is the second hypothesis of a
+                    certain rewrite rule.
+</pre>
+
+In general <code>brr@-expressions</code> are used in break conditions, the
+expressions that determine whether interactive breaks occur when
+<a href="MONITOR.html">monitor</a>ed <a href="RUNE.html">rune</a>s are applied.  See <a href="MONITOR.html">monitor</a>.  For example, you
+might want to break only those attempts in which one particular term
+is being rewritten or only those attempts in which the binding for
+the variable <code>a</code> is known to be a <code><a href="CONSP.html">consp</a></code>.  Such conditions can be
+expressed using ACL2 system functions and the information provided
+by <code>brr@</code>.  Unfortunately, digging some of this information out of the
+internal data structures may be awkward or may, at least, require
+intimate knowledge of the system functions.  But since conditional
+expressions may employ arbitrary functions and macros, we anticipate
+that a set of convenient primitives will gradually evolve within the
+ACL2 community.  It is to encourage this evolution that <code>brr@</code> provides
+access to the <code>*</code>'d data.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

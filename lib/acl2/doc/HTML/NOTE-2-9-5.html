@@ -1,0 +1,263 @@
+<html>
+<head><title>NOTE-2-9-5.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-9-5</h2>Changes in Version  3.0 since Version  2.9.4
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Fixed a bug in <code><a href="CW-GSTACK.html">cw-gstack</a></code> that was causing a hard error when attempting
+to report on a forced assumption.  Thanks to Jared Davis for pointing this
+out and sending an example that helped us to determine a fix.<p>
+
+Added <code><a href="SET-BACKCHAIN-LIMIT.html">set-backchain-limit</a></code> to the set of legal <a href="EVENTS.html">events</a> that can be
+placed in <code><a href="ENCAPSULATE.html">encapsulate</a></code> forms and <a href="BOOKS.html">books</a>.  Thanks to John Cowles for
+bringing this issue to our attention.<p>
+
+Fixed a bug that broke <code><a href="WET.html">wet</a></code>.  Thanks to David Rager for bringing this
+bug to our attention.<p>
+
+Guard verification now evaluates ground subexpressions (those with no free
+variables) when computing the guard conjecture for the body of a function.
+Thanks to Jared Davis for useful conversations leading to this change.
+See <a href="VERIFY-GUARDS.html">verify-guards</a>, in particular its ``Note on computation of guard
+conjectures and evaluation'' near the end of that topic, for more details.<p>
+
+Added a warning when a <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> is redefined.  Thanks to Jared
+Davis for suggesting a warning in this case and providing an informative
+example.  Also, <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code>s are now maintained more completely,
+as they are checked at the end of every event except for events executed on
+behalf of an <code><a href="INCLUDE-BOOK.html">include-book</a></code> or the second pass of an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code>.<p>
+
+Fixed the handling of runic designators to match their specification
+(see <a href="THEORIES.html">theories</a>), so that disabling the name of a <code><a href="DEFTHM.html">defthm</a></code> event
+<code><a href="DISABLE.html">disable</a></code>s all rules generated for that event.<p>
+
+(For those who do numerous builds using feature <code>:acl2-mv-as-values</code>,
+currently only OpenMCL and multi-threaded SBCL by default:) You can speed up
+builds by adding the following parameter to <code>make</code>, under conditions
+described in <code>GNUmakefile</code>: <code>USE_ACL2_PROCLAIMS=:REUSE</code>.<p>
+
+Arranged that traced functions (see <a href="TRACE$.html">trace$</a>) are automatically untraced when
+events are undone (for example see <a href="UBT.html">ubt</a>), at least for most underlying Common
+Lisp implementations.<p>
+
+The macro <code><a href="DEFUN-SK.html">defun-sk</a></code> now creates non-executable functions, which allows
+<code><a href="STOBJ.html">stobj</a></code>s to be used where they had previously been prohibited.  More
+generally, the user now has control over <code><a href="DECLARE.html">declare</a></code> forms to be used by
+the underlying <code><a href="DEFUN.html">defun</a></code>'d function; see <a href="DEFUN-SK.html">defun-sk</a>.  Thanks to Sandip for
+pointing out the need for such a modification.<p>
+
+<code>:</code><code><a href="DEFINITION.html">Definition</a></code> rules are now treated, at least by default, as truly
+first-class definitions.  In particular, <code>:expand</code> <a href="HINTS.html">hints</a> use the
+latest <code>:</code><code><a href="DEFINITION.html">definition</a></code> rule by default.  You may specify
+<code>:install-body nil</code> to get the previous behavior of <code>:definition</code> rules;
+See <a href="DEFINITION.html">definition</a>, and you may choose a previously-installed <code>:definition</code>
+rule to provide the current body; see <a href="SET-BODY.html">set-body</a>.  Also see <a href="RULE-CLASSES.html">rule-classes</a> for
+details of the <code>:install-body</code> field, and see <a href="HINTS.html">hints</a> to see a new <code>:with</code>
+directive for controlling expansion.  The <code>:with</code> directive for <code>:expand</code>
+hints can even direct the use of a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule for expansion!
+Thanks to various people, including Sandip Ray and Rob Sumners, for
+discussions on the issue of the applicability of <code>:definition</code> rules for
+<code>:expand</code> <a href="HINTS.html">hints</a>.<p>
+
+<a href="CONSTRAINT.html">Constraint</a>s for functional instantiation now use the original definition
+rather than a simplified (``normalized'') version of it.<p>
+
+Fixed a bug that caused the prompt to stay the same when guard-checking is
+off (see <a href="SET-GUARD-CHECKING.html">set-guard-checking</a>) and raw-mode is changed (see <a href="SET-RAW-MODE.html">set-raw-mode</a>).<p>
+
+Lemma names in directory <code>books/ordinals</code> have been changed by replacing
+<code>/\</code> with <code>&amp;</code> and replacing <code>\/</code> with <code>V</code>.  We made this change
+because backslash is an escape character and hence disappears unless it is
+itself escaped.<p>
+
+Fixed <a href="PROOF-TREE.html">proof-tree</a> output so that failed non-proof events do not cause the
+proof-tree to be re-printed.  Thus for example, if you have already advanced
+the checkpoint marker, it will not be reset by subequent failed non-proof
+events.  Thanks to Pete Manolios and Peter Dillinger for bringing this bug to
+our attention.<p>
+
+Fixed a bug that was preventing the printing of <a href="STOBJ.html">stobj</a> fields as
+constants instead of numbers in certain cases.  (Note that this bug only
+affected printing, not soundness.) Thanks to Eric Smith for bringing this
+problem to our attention and providing the following example (which now works
+fine).
+
+<pre>
+(defstobj st fld1 fld2)
+(in-theory (disable update-nth))
+(defund run (st)
+  (declare (xargs :stobjs (st))) ;adding this didn't seem to help..
+  st)<p>
+
+;works great; *fld1* prints as  *fld1*
+(thm (equal (update-nth *fld1* 'abc st)
+            (car (cons x y))))<p>
+
+;*fld1* gets printed as 0, presumably because the call to run intervenes.
+(thm (equal (update-nth *fld1* 'abc (run st))
+            (car (cons x y))))
+</pre>
+<p>
+
+The macro <code><a href="PROGN.html">progn</a></code> now allows the use of macros defined within its bodies
+even when at the event level, as illustrated by the following example.
+
+<pre>
+(progn (defmacro my-defun (&amp;rest args)
+         `(defun ,@args))
+       (my-defun g (x) x))
+</pre>
+
+Thanks to Anna Slobodova for bringing this issue to our attention.  A related
+change is that all arguments of <code><a href="PROGN.html">progn</a></code> must now be embedded event forms
+(see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>), so use <code><a href="ER-PROGN.html">er-progn</a></code> instead if this is not the
+case.<p>
+
+The change to <code><a href="PROGN.html">progn</a></code> mentioned above also fixes a bug in handling
+<a href="LOCAL.html">local</a> events inside a <code><a href="PROGN.html">progn</a></code> that is inside an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or
+in a book.  For example, the following form formerly caused an error.
+
+<pre>
+(encapsulate
+ ()
+ (defun foo (x) x)
+ (progn (local (defun bar (x) x))
+        (defun abc (x) x)))
+</pre>
+<p>
+
+We fixed two bugs in <code>:</code><code><a href="PUFF.html">puff</a></code> and <code>:</code><code><a href="PUFF_star_.html">puff*</a></code>.  The first,
+brought to our attention by Eric Smith (who we thank), caused a cryptic error
+message when puffing a command with no subsidiary stored events; try, for
+example, <code>(encapsulate () (value-triple 3))</code>.  The second was due to a
+failure to restore the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>.  Suppose for example that
+we have certified the book <code>foo.lisp</code>, which contains
+<code>(</code><code><a href="PROGRAM.html">program</a></code><code>)</code> followed by some definitions and/or theorems.  Now
+suppose we start ACL2 and execute the following.
+
+<pre>
+(include-book "foo")
+(defthm test-thm
+  (equal x x)
+  :rule-classes nil)
+</pre>
+
+If we now execute <code>:</code><code><a href="PUFF.html">puff</a></code><code> 1</code>, ACL2 will roll back the world to
+before the <code><a href="INCLUDE-BOOK.html">include-book</a></code>; then ``puff'' the include-book, which will
+leave us in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode; and finally skip re-execution of the
+<code><a href="DEFTHM.html">defthm</a></code> because such <a href="EVENTS.html">events</a> are skipped in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode.
+The fix is to re-install the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code> immediately after the
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> to its pre-<code><a href="INCLUDE-BOOK.html">include-book</a></code> value.<p>
+
+A new event, <code><a href="MAKE-EVENT.html">make-event</a></code>, provides something like macros that take
+state.  For example, one can use it to put tests into certified books, do
+proof search, and generate new function names.  Many examples appear in
+directory <code>books/make-event/</code>.  See <a href="MAKE-EVENT.html">make-event</a>.  Thanks to Bob Boyer and
+Jared Davis for useful feedback and to Warren Hunt, David Rager, and Sandip
+Ray for helpful discussions leading to some of the examples in directory
+<code>books/make-event/</code>.<p>
+
+In support of <code><a href="MAKE-EVENT.html">make-event</a></code>, which is described in the preceding
+paragraph, <code>certify-book</code> has a new keyword argument, <code>:save-expansion</code>,
+that controls whether the result of expanding <code><a href="MAKE-EVENT.html">make-event</a></code> forms is
+written out to a file.  See <a href="CERTIFY-BOOK.html">certify-book</a>; and for a discussion of book
+expansion files, see <a href="MAKE-EVENT.html">make-event</a>.<p>
+
+We fixed a soundness bug that did not correctly detect <code><a href="LOCAL.html">local</a></code> events.
+For example, the following event was admitted.
+
+<pre>
+(encapsulate
+ ()
+ (local
+  (encapsulate
+   ()
+   (local (progn (program))) ; or, (local (with-output :off summary (program)))
+   (set-irrelevant-formals-ok t)
+   (defun foo (x)
+     (declare (xargs :measure (acl2-count x)))
+     (1+ (foo x)))))
+ (defthm inconsistent
+   nil
+   :hints (("Goal" :use foo))
+   :rule-classes nil))
+</pre>
+<p>
+
+A new value for <a href="GUARD.html">guard</a> checking, <code>:none</code>, is now allowed.  If you
+execute <code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code><code> :none</code>, then no guard checking will
+take place (but raw Lisp code will not be executed in this case).  As a
+result, you should never see a guard violation, even for calls of
+<code>:</code><code>program</code> mode functions.  We thank Pete Manolios, who has long wanted
+this feature, and also Peter Dillinger, for asking for it.  New documentation
+explains the interaction between the <a href="DEFUN-MODE.html">defun-mode</a> and the value supplied
+to <code>:</code><code><a href="SET-GUARD-CHECKING.html">set-guard-checking</a></code>.  See <a href="GUARD-EVALUATION-TABLE.html">guard-evaluation-table</a>,
+see <a href="GUARD-EVALUATION-EXAMPLES-SCRIPT.html">guard-evaluation-examples-script</a>, and
+see <a href="GUARD-EVALUATION-EXAMPLES-LOG.html">guard-evaluation-examples-log</a>.<p>
+
+In the course of adding the <a href="GUARD.html">guard</a>-checking value <code>:none</code> described in
+the paragraph above, we eliminated an optimization that eliminated guard
+checking for some recursive calls of <code>:</code><a href="LOGIC.html">logic</a> mode mutually-recursive
+functions that have not had their guards verified.  But we doubt that this
+change will be noticed by any users!)<p>
+
+The ACL2 hyper-card has been enhanced, thanks to David Rager, with a listing
+of ``Useful EMACS Commands'' to match comments in <code>emacs/emacs-acl2.el</code>.<p>
+
+Users contributed books following the <code>Readme.lsp</code> methodology:
+<code>data-structures/memories</code> and <code>unicode</code> (Jared Davis), <code>proofstyles</code>
+(Sandip Ray and J Moore).<p>
+
+Made some improvements to <code>books/Makefile-generic</code> (a file discussed
+elsewhere; see <a href="BOOK-MAKEFILES.html">book-makefiles</a>).  In particular, improved handling of
+<code>.acl2</code> files for <code>dependencies</code> target.<p>
+
+(Only OpenMCL and, with feature <code>:acl2-mv-as-values</code>, GCL) Fixed a bug that
+was causing proclaiming to fail when definitions are submitted interactively.<p>
+
+The default stack size has been increased for several lisps.<p>
+
+(Very technical) A restriction has been weakened on the use of <code><a href="LOCAL.html">local</a></code>
+<a href="STOBJ.html">stobj</a>s under a call of an ACL2 evaluator (<code>trans-eval</code> or
+<code>simple-translate-and-eval</code>).  Now, the error can only take place for
+<code><a href="STOBJ.html">stobj</a></code> names that occur in the term being evaluated.  Thanks to Erik
+Reeber for bringing this issue to our attention.<p>
+
+The notion of ``ancestor'' has been changed slightly.  This notion is used by
+extended metafunctions and <a href="BREAK-REWRITE.html">break-rewrite</a> (see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>
+and see <a href="BRR_at_.html">brr@</a>), and also with backchain limits (see <a href="BACKCHAIN-LIMIT.html">backchain-limit</a> and
+see <a href="SET-BACKCHAIN-LIMIT.html">set-backchain-limit</a>).  Basically, each time a hypothesis is encountered
+during application of a <a href="REWRITE.html">rewrite</a> rule, that hypothesis is pushed (after
+instantiating and negating) onto the current list of ancestors before it is
+rewritten.  However, hypotheses of the form <code>(equal var term)</code>, where
+<code>var</code> is free (see <a href="FREE-VARIABLES.html">free-variables</a>), had not been included in the ancestors
+(similarly for <code>(equiv var (double-rewrite term))</code> where <code>equiv</code> is a
+known <a href="EQUIVALENCE.html">equivalence</a> relation).  Now such ``binding hypotheses'' are
+included in a special way in ancestors data structures.  In particular,
+<code>(null (mfc-ancestors mfc))</code> will now be true if and only if the term being
+rewritten is part of the current goal as opposed to a hypothesis from a rule
+encountered during backchaining, even if that hypothesis is a binding
+hypothesis.  Thanks to Dave Greve for bringing this issue to our attention.<p>
+
+Termination and induction analysis now continue through both arguments of
+<code><a href="PROG2$.html">prog2$</a></code>, not just the second.  (Normally, the gathering up of <code><a href="IF.html">if</a></code>
+tests stops at function calls; but it continued through the second argument
+of <code><a href="PROG2$.html">prog2$</a></code>, and now it will continue through both arguments.)  Thanks to
+Sol Swords for discussion leading to this change.<p>
+
+The ACL2 distribution is now kept on the http server rather than the ftp
+server (but the home page has not been moved).  Thanks to Robert Krug for
+letting us know that some ACL2 users have found it inconvenient to fetch ACL2
+using ftp.<p>
+
+The file <code>books/README.html</code> has been renamed to <code>books/Readme.html</code>,
+since some browsers don't show the former in the directory listing.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

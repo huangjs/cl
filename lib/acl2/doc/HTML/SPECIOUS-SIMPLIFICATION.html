@@ -1,0 +1,123 @@
+<html>
+<head><title>SPECIOUS-SIMPLIFICATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SPECIOUS-SIMPLIFICATION</h2>nonproductive proof steps
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Occasionally the ACL2 theorem prover reports that the current goal
+simplifies to itself or to a set including itself.  Such
+simplifications are said to be ``specious'' and are ignored in the
+sense that the theorem prover acts as though no simplification were
+possible and tries the next available proof technique.  Specious
+simplifications are almost always caused by forcing.
+<p>
+The simplification of a formula proceeds primarily by the local
+application of <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code>, and other rules to its
+various subterms.  If no rewrite rules apply, the formula cannot be
+simplified and is passed to the next ACL2 proof technique, which is
+generally the elimination of destructors.  The experienced ACL2 user
+pays special attention to such ``maximally simplified'' formulas;
+the presence of unexpected terms in them indicates the need for
+additional rules or the presence of some conflict that prevents
+existing rules from working harmoniously together.<p>
+
+However, consider the following interesting possibility: local
+rewrite rules apply but, when applied, reproduce the goal as one of
+its own subgoals.  How can rewrite rules apply and reproduce the
+goal?  Of course, one way is for one rule application to undo the
+effect of another, as when commutativity is applied twice in
+succession to the same term.  Another kind of example is when two rules
+conflict and undermine each other.  For example, under suitable
+hypotheses, <code>(length x)</code> might be rewritten to <code>(+ 1 (length (cdr x)))</code>
+by the <code>:</code><code><a href="DEFINITION.html">definition</a></code> of <code><a href="LENGTH.html">length</a></code> and then a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule might be used
+to ``fold'' that back to <code>(length x)</code>.  Generally speaking the
+presence of such ``looping'' rewrite rules causes ACL2's simplifier
+either to stop gracefully because of heuristics such as that
+described in the documentation for <code><a href="LOOP-STOPPER.html">loop-stopper</a></code> or to cause a
+stack overflow because of indefinite recursion.<p>
+
+A more insidious kind of loop can be imagined: two rewrites in
+different parts of the formula undo each other's effects ``at a
+distance,'' that is, without ever being applied to one another's
+output.  For example, perhaps the first hypothesis of the formula is
+simplified to the second, but then the second is simplified to the
+first, so that the end result is a formula propositionally
+equivalent to the original one but with the two hypotheses commuted.
+This is thought to be impossible unless forcing or case-splitting
+occurs, but if those features are exploited (see <a href="FORCE.html">force</a> and
+see <a href="CASE-SPLIT.html">case-split</a>) it can be made to happen relatively easily.<p>
+
+Here is a simple example.  Declare <code>foo</code> to be a function of one
+argument returning one result:
+
+<pre>
+(defstub p1 (x) t)
+</pre>
+
+Prove the following silly rule:
+
+<pre>
+(defthm bad
+  (implies (case-split (p1 x))
+           (p1 x)))
+</pre>
+
+Now suppose we try the following.
+
+<pre>
+(thm (p1 x))
+</pre>
+
+The <a href="REWRITE.html">rewrite</a> rule <code>bad</code> will rewrite <code>(p1 x)</code> to <code>t</code>, but it will
+be unable to prove the hypothesis <code>(case-split (p1 x))</code>.  As a result, the
+prover will spawn a new goal, to prove <code>(p1 x)</code>.  However, since this new
+goal is the same as the original goal, ACL2 will recognize the simplification
+as <em>specious</em> and consider the attempted simplification to have failed.<p>
+
+In other words, despite the rewriting, no progress was made!  In more common
+cases, the original goal may simplify to a set of subgoals, one of which
+includes the original goal.<p>
+
+If ACL2 were to adopt the new set of subgoals, it would loop
+indefinitely.  Therefore, it checks whether the input goal is a
+member of the output subgoals.  If so, it announces that the
+simplification is ``specious'' and pretends that no simplification
+occurred.<p>
+
+``Maximally simplified'' formulas that produce specious
+simplifications are maximally simplified in a very technical sense:
+were ACL2 to apply every applicable rule to them, no progress would
+be made.  Since ACL2 can only apply every applicable rule, it cannot
+make further progress with the formula.  But the informed user can
+perhaps identify some rule that should not be applied and make it
+inapplicable by disabling it, allowing the simplifier to apply all
+the others and thus make progress.<p>
+
+When specious simplifications are a problem it might be helpful to
+<a href="DISABLE.html">disable</a> all forcing (including <a href="CASE-SPLIT.html">case-split</a>s) and resubmit
+the formula to observe whether forcing is involved in the loop or
+not.  See <a href="FORCE.html">force</a>.  The commands
+
+<pre>
+ACL2 !&gt;:disable-forcing
+and
+ACL2 !&gt;:enable-forcing
+</pre>
+
+<a href="DISABLE.html">disable</a> and <a href="ENABLE.html">enable</a> the pragmatic effects of both <code>force</code>
+and <code>case-split</code>.  If the loop is broken when forcing is
+<a href="DISABLE.html">disable</a>d, then it is very likely some <a href="FORCE.html">force</a>d hypothesis of
+some rule is ``undoing'' a prior simplification.  The most common
+cause of this is when we <a href="FORCE.html">force</a> a hypothesis that is actually
+false but whose falsity is somehow temporarily hidden (more below).
+To find the offending rule, compare the specious simplification with
+its non-specious counterpart and look for rules that were speciously
+applied that are not applied in the non-specious case.  Most likely
+you will find at least one such rule and it will have a <code><a href="FORCE.html">force</a></code>d
+hypothesis.  By disabling that rule, at least for the subgoal in
+question, you may allow the simplifier to make progress on the
+subgoal.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

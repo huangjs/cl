@@ -1,0 +1,48 @@
+<html>
+<head><title>REBUILD.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REBUILD</h2>a convenient way to reconstruct your old <a href="STATE.html">state</a>
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Examples:
+ACL2 !&gt;(rebuild "project.lisp")
+ACL2 !&gt;(rebuild "project.lisp" t)
+ACL2 !&gt;(rebuild "project.lisp" :all)
+ACL2 !&gt;(rebuild "project.lisp" :query)
+ACL2 !&gt;(rebuild "project.lisp" 'lemma-22)
+</pre>
+
+<p>
+<code>Rebuild</code> allows you to assume all the <a href="COMMAND.html">command</a>s in a given file or
+list, supplied in the first argument.  Because <code>rebuild</code> processes an
+arbitrary sequence of <a href="COMMAND.html">command</a>s with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> <code>t</code>, it is
+unsound!  However, if each of these <a href="COMMAND.html">command</a>s is in fact admissible,
+then processing them with <code>rebuild</code> will construct the same logical
+<a href="STATE.html">state</a> that you would be in if you typed each <a href="COMMAND.html">command</a> and waited
+through the proofs again.  Thus, <code>rebuild</code> is a way to reconstruct a
+<a href="STATE.html">state</a> previously obtained by proving your way through the <a href="COMMAND.html">command</a>s.<p>
+
+The second, optional argument to <code>rebuild</code> is a ``filter''
+(see <a href="LD-PRE-EVAL-FILTER.html">ld-pre-eval-filter</a>) that lets you specify which <a href="COMMAND.html">command</a>s
+to process.  You may specify <code>t</code>, <code>:all</code>, <code>:query</code>, or a new logical name.
+<code>t</code> and <code>:all</code> both mean that you expect the entire file or list to be
+processed.  <code>:query</code> means that you will be asked about each <a href="COMMAND.html">command</a>
+in turn.  A new name means that all <a href="COMMAND.html">command</a>s will be processed as
+long as the name is new, i.e., <code>rebuild</code> will stop processing <a href="COMMAND.html">command</a>s
+immediately after executing a <a href="COMMAND.html">command</a> that introduces name.  <code>Rebuild</code>
+will also stop if any <a href="COMMAND.html">command</a> causes an error.  You may therefore
+wish to plant an erroneous form in the file, e.g., <code>(mv t nil state)</code>,
+(see <a href="LD-ERROR-TRIPLES.html">ld-error-triples</a>), to cause <code>rebuild</code> to stop there.  The
+form <code>(i-am-here)</code> is such a pre-defined form.  If you do not specify
+a filter, <code>rebuild</code> will query you for one.<p>
+
+Inspection of the definition of <code>rebuild</code>, e.g., via <code>:</code><code><a href="PC.html">pc</a></code> <code>rebuild-fn</code>,
+will reveal that it is just a glorified call to the function <code><a href="LD.html">ld</a></code>.
+See <a href="LD.html">ld</a> if you find yourself wishing that <code>rebuild</code> had additional
+functionality.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

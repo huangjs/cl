@@ -1,0 +1,54 @@
+<html>
+<head><title>CASE-SPLIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CASE-SPLIT</h2>like force but immediately splits the top-level goal on the hypothesis
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+When a hypothesis of a conditional rule has the form <code>(case-split hyp)</code>
+it is logically equivalent to <code>hyp</code>.  However it affects the
+application of the rule generated as follows:  if ACL2
+attempts to apply the rule but cannot establish that the required
+instance of <code>hyp</code> holds in the current context, it considers the
+hypothesis true anyhow, but (assuming all hypotheses are seen to be true and
+the rule is applied) creates a subgoal in which that instance of <code>hyp</code> is
+assumed false.  (There are exceptions, noted below.)
+<p>
+For example, given the rule
+
+<pre>
+(defthm p1-&gt;p2
+  (implies (case-split (p1 x))
+           (p2 x)))
+</pre>
+
+then an attempt to prove
+
+<pre>
+(implies (p3 x) (p2 (car x)))
+</pre>
+
+can give rise to a single subgoal:
+
+<pre>
+(IMPLIES (AND (NOT (P1 (CAR X))) (P3 X))
+         (P2 (CAR X))).
+</pre>
+
+Unlike <code><a href="FORCE.html">force</a></code>, <code>case-split</code> does not delay the ``false case'' to
+a forcing round but tackles it more or less immediately.<p>
+
+The special ``split'' treatment of <code>case-split</code> can be disabled by
+disabling forcing:  see <a href="FORCE.html">force</a> for a discussion of disabling forcing, and
+also see <a href="DISABLE-FORCING.html">disable-forcing</a>.  Finally, we should mention that the rewriter is
+never willing to split when there is an <code><a href="IF.html">if</a></code> term present in the goal
+being simplified.  Since <code><a href="AND.html">and</a></code> terms and <code><a href="OR.html">or</a></code> terms are merely
+abbreviations for <code><a href="IF.html">if</a></code> terms, they also prevent splitting.  Note that
+<code><a href="IF.html">if</a></code> terms are ultimately eliminated using the ordinary flow of the proof
+(but see <a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a>), so <code>case-split</code> will ultimately
+function as intended.<p>
+
+When in the proof checker, <code>case-split</code> behaves like <code>force</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

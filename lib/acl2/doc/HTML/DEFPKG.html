@@ -1,0 +1,112 @@
+<html>
+<head><title>DEFPKG.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFPKG</h2>define a new symbol package
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(defpkg "MY-PKG"
+        (union-eq *acl2-exports*
+                  *common-lisp-symbols-from-main-lisp-package*))
+<p>
+<ul>
+<li><h3><a href="HIDDEN-DEATH-PACKAGE.html">HIDDEN-DEATH-PACKAGE</a> -- handling <code><a href="DEFPKG.html">defpkg</a></code> <a href="EVENTS.html">events</a> that are <code><a href="LOCAL.html">local</a></code>
+</h3>
+</li>
+
+<li><h3><a href="HIDDEN-DEFPKG.html">HIDDEN-DEFPKG</a> -- handling defpkg events that are local
+</h3>
+</li>
+
+</ul>
+
+General Form:
+(defpkg "name" term doc-string)
+</pre>
+<p>
+
+where <code>"name"</code> is a non-empty string consisting of standard characters
+(see <a href="STANDARD-CHAR-P.html">standard-char-p</a>), none of which is lower case, that names the package
+to be created; <code>term</code> is a variable-free expression that evaluates to a
+list of symbols, where no two distinct symbols in the list may have the same
+<code><a href="SYMBOL-NAME.html">symbol-name</a></code>, to be imported into the newly created package; and
+<code><a href="DOC-STRING.html">doc-string</a></code> is an optional <a href="DOCUMENTATION.html">documentation</a> string; see <a href="DOC-STRING.html">doc-string</a>.
+The name of the new package must be ``new'': the host lisp must not contain
+any package of that name.  There are two exceptions to this newness rule,
+discussed at the end of this documentation.<p>
+
+(There is actually an additional argument, book-path, that is used for error
+reporting but has no logical content.  Users should generally ignore this
+argument, as well as the rest of this sentence: a book-path will be specified
+for <code><a href="DEFPKG.html">defpkg</a></code> events added by ACL2 to the <a href="PORTCULLIS.html">portcullis</a> of a book's
+<a href="CERTIFICATE.html">certificate</a>; see <a href="HIDDEN-DEATH-PACKAGE.html">hidden-death-package</a>.)<p>
+
+<code>Defpkg</code> forms can be entered at the top-level of the ACL2 <a href="COMMAND.html">command</a>
+loop.  They should not occur in <a href="BOOKS.html">books</a> (see <a href="CERTIFY-BOOK.html">certify-book</a>).<p>
+
+After a successful <code>defpkg</code> it is possible to ``intern'' a string
+into the package using <code><a href="INTERN-IN-PACKAGE-OF-SYMBOL.html">intern-in-package-of-symbol</a></code>.  The result
+is a symbol that is in the indicated package, provided the imports
+allow it.  For example, suppose <code>'my-pkg::abc</code> is a symbol whose
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> is <code>"MY-PKG"</code>.  Suppose further that
+the imports specified in the <code>defpkg</code> for <code>"MY-PKG"</code> do not include
+a symbol whose <code><a href="SYMBOL-NAME.html">symbol-name</a></code> is <code>"XYZ"</code>.  Then
+
+<pre>
+(intern-in-package-of-symbol "XYZ" 'my-pkg::abc)
+</pre>
+
+returns a symbol whose <code><a href="SYMBOL-NAME.html">symbol-name</a></code> is <code>"XYZ"</code> and whose
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> is <code>"MY-PKG"</code>.  On the other hand, if
+the imports to the <code>defpkg</code> does include a symbol with the name 
+<code>"XYZ"</code>, say in the package <code>"LISP"</code>, then
+
+<pre>
+(intern-in-package-of-symbol "XYZ" 'my-pkg::abc)
+</pre>
+
+returns that symbol (which is uniquely determined by the restriction
+on the imports list above).  See <a href="INTERN-IN-PACKAGE-OF-SYMBOL.html">intern-in-package-of-symbol</a>.<p>
+
+<code>Defpkg</code> is the only means by which an ACL2 user can create a new
+package or specify what it imports.  That is, ACL2 does not support
+the Common Lisp functions <code>make-package</code> or <code>import</code>.  Currently, ACL2
+does not support exporting at all.<p>
+
+The Common Lisp function <code><a href="INTERN.html">intern</a></code> is weakly supported by ACL2.
+See <a href="INTERN.html">intern</a>.<p>
+
+We now explain the two exceptions to the newness rule for package
+names.  The careful experimenter will note that if a package is
+created with a <code>defpkg</code> that is subsequently undone, the host lisp
+system will contain the created package even after the undo.
+Because ACL2 hangs onto <a href="WORLD.html">world</a>s after they have been undone, e.g., to
+implement <code>:</code><code><a href="OOPS.html">oops</a></code> but, more importantly, to implement error recovery,
+we cannot actually destroy a package upon undoing it.  Thus, the
+first exception to the newness rule is that <code>name</code> is allowed to be
+the name of an existing package if that package was created by an
+undone <code>defpkg</code> and the newly proposed set of imports is identical to the
+old one.  See <a href="PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS.html">package-reincarnation-import-restrictions</a>.  This
+exception does not violate the spirit of the newness rule, since one
+is disinclined to believe in the existence of undone packages.  The
+second exception is that <code>name</code> is allowed to be the name of an
+existing package if the package was created by a <code>defpkg</code> with
+identical set of imports.  That is, it is permissible to execute
+``redundant'' <code>defpkg</code> <a href="COMMAND.html">command</a>s.  The redundancy test is based on the
+values of the two import forms (comparing them after sorting and removing
+duplicates), not on the forms themselves.<p>
+
+Finally, we explain why we require the package name to contain standard
+characters, none of which is lower case.  We have seen at least one
+implementation that handled lower-case package names incorrectly.  Since we
+see no need for lower-case characters in package names, which can lead to
+confusion anyhow (note for example that <code>foo::bar</code> is a symbol whose
+<code><a href="SYMBOL-PACKAGE-NAME.html">symbol-package-name</a></code> is <code>"FOO"</code>, not <code>"foo"</code>), we simply
+disallow them.  Since the notion of ``lower case'' is only well-specified in
+Common Lisp for standard characters, we restrict to these.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

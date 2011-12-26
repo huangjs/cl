@@ -1,0 +1,52 @@
+<html>
+<head><title>ACL2-PC_colon__colon_CLAIM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::CLAIM</h3>(atomic macro)
+<code>   </code>add a new hypothesis
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(claim (&lt; x y))   -- attempt to prove (&lt; x y) from the current
+                     top-level hypotheses and if successful, then
+                     add (&lt; x y) as a new top-level hypothesis in
+                     the current goal
+(claim (&lt; x y)
+       :otf-flg t
+       :hints (("Goal" :induct t)))
+                  -- as above, but call the prover using the
+                     indicated values for the otf-flg and hints
+(claim (&lt; x y) 0) -- as above, except instead of attempting to
+                     prove (&lt; x y), create a new subgoal with the
+                     same top-level hypotheses as the current goal
+                     that has (&lt; x y) as its conclusion
+(claim (&lt; x y) :hints :none)
+                  -- same as immediately above
+<p>
+General Form:
+(claim expr &amp;rest rest-args)
+</pre>
+
+This command creates a new subgoal with the same top-level
+hypotheses as the current goal but with a conclusion of <code>expr</code>.  If
+<code>rest-args</code> is a non-empty list headed by a non-keyword, then there
+will be no proof attempted for the new subgoal.  With that possible
+exception, <code>rest-args</code> should consist of keyword arguments.  The
+keyword argument <code>:do-not-flatten</code> controls the ``flattening'' of new
+hypotheses, just as with the <code>casesplit</code> command (as described in its
+documentation).  The remaining <code>rest-args</code> are used with a call the
+<code>prove</code> command on the new subgoal, except that if <code>:hints</code> is a non-<code>nil</code>
+atom, then the prover is not called -- rather, this is the same as
+the situation described above, where <code>rest-args</code> is a non-empty list
+headed by a non-keyword.<p>
+
+<strong>Notes:</strong>  (1) Unlike the <code>casesplit</code> command, the <code>claim</code>
+command is completely insensitive to governors. (2) It is allowed to
+use abbreviations in the hints.  (3) The keyword :<code>none</code> has the
+special role as a value of :<code>hints</code> that is shown clearly in an
+example above.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

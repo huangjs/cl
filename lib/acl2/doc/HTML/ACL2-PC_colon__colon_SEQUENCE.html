@@ -1,0 +1,89 @@
+<html>
+<head><title>ACL2-PC_colon__colon_SEQUENCE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::SEQUENCE</h3>(meta)
+<code>   </code>run the given list of instructions according to a multitude of
+<code>   </code>options
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(sequence (induct p prove) t)
+</pre>
+
+See also the definitions of commands <code>do-all</code>, <code>do-strict</code>, <code>protect</code>, and
+<code>succeed</code>.
+<p>
+
+<pre>
+General Form:
+(sequence
+ instruction-list
+ &amp;optional
+ strict-flg protect-flg success-expr no-prompt-flg no-restore-flg)
+</pre>
+
+Each instruction in the list <code>instruction-list</code> is run, and the
+instruction ``succeeds'' if every instruction in <code>instruction-list</code>
+``succeeds''.  However, it might ``succeed'' even if some
+instructions in the list ``fail''; more generally, the various
+arguments control a number of aspects of the running of the
+instructions.  All this is explained in the paragraphs below.  First
+we embark on a general discussion of the instruction interpreter,
+including the notions of ``succeed'' and ``fail''.<p>
+
+<strong>Note:</strong>  The arguments are <strong>not</strong> evaluated, except (in a sense) for
+<code>success-expr</code>, as described below.<p>
+
+Each primitive and meta instruction can be thought of as returning
+an error triple (in the standard ACL2 sense), say <code>(erp val state)</code>.
+An instruction (primitive or meta) ``succeeds'' if <code>erp</code> is <code>nil</code> and
+<code>val</code> is not <code>nil</code>; otherwise it ``fails''.  (When we use the words
+``succeed'' or ``fail'' in this technical sense, we'll always
+include them in double quotes.)  If an instruction ``fails,'' we say
+that that the failure is ``soft'' if <code>erp</code> is <code>nil</code>; otherwise the
+failure is ``hard''.  The <code>sequence</code> command gives the user control
+over how to treat ``success'' and ``failure'' when sequencing
+instructions, though we have created a number of handy macro
+commands for this purpose, notably <code>do-all</code>, <code>do-strict</code> and <code>protect</code>.<p>
+
+Here is precisely what happens when a <code>sequence</code> instruction is run.
+The instruction interpreter is run on the instructions supplied in
+the argument <code>instruction-list</code> (in order).  The interpreter halts the
+first time there is a hard ``failure.'' except that if <code>strict-flg</code> is
+supplied and not <code>nil</code>, then the interpreter halts the first time
+there is any ``failure.''  The error triple <code>(erp val state)</code> returned
+by the <code>sequence</code> instruction is the triple returned by the last
+instruction executed (or, the triple <code>(nil t state)</code> if
+<code>instruction-list</code> is <code>nil</code>), except for the following provision.  If
+<code>success-expr</code> is supplied and not <code>nil</code>, then it is evaluated with the
+state global variables <code>erp</code> and <code>val</code> (in ACL2 package) bound to the
+corresponding components of the error triple returned (as described
+above).  At least two values should be returned, and the first two
+of these will be substituted for <code>erp</code> and <code>val</code> in the triple finally
+returned by <code>sequence</code>.  For example, if <code>success-expr</code> is <code>(mv erp val)</code>,
+then no change will be made to the error triple, and if instead it
+is <code>(mv nil t)</code>, then the <code>sequence</code> instruction will ``succeed''.<p>
+
+That concludes the description of the error triple returned by a
+<code>sequence</code> instruction, but it remains to explain the effects of the
+arguments <code>protect-flg</code> and <code>no-prompt-flg</code>.<p>
+
+If <code>protect-flg</code> is supplied and not <code>nil</code> and if also the instruction
+``fails'' (i.e., the error component of the triple is not <code>nil</code> or the
+value component is <code>nil</code>), then the state is reverted so that the
+proof-checker's state (including the behavior of <code>restore</code>) is set
+back to what it was before the <code>sequence</code> instruction was executed.
+Otherwise, unless <code>no-restore-flg</code> is set, the state is changed so
+that the <code>restore</code> command will now undo the effect of this <code>sequence</code>
+instruction (even if there were nested calls to <code>sequence</code>).<p>
+
+Finally, as each instruction in <code>instruction-list</code> is executed, the
+prompt and that instruction will be printed, unless the global state
+variable <code>print-prompt-and-instr-flg</code> is unbound or <code>nil</code> and the
+parameter <code>no-prompt-flg</code> is supplied and not <code>nil</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

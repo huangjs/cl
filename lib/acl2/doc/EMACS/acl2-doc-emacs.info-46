@@ -1,0 +1,1042 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-3-0-1(R),  Next: NOTE-3-0-2,  Prev: NOTE-3-0-1,  Up: RELEASE-NOTES
+
+NOTE-3-0-1(R)    ACL2 Version  3.0.1(r) (August, 2006) Notes
+
+No significant changes have been made since Version  3.0 for support of
+non-standard analysis in particular.
+
+Please also see *note NOTE-3-0-1:: for changes to Version  3.0.1 of
+ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-3-0-2,  Next: NOTE-3-1,  Prev: NOTE-3-0-1(R),  Up: RELEASE-NOTES
+
+NOTE-3-0-2    ACL2 Version  3.0.2 (December, 2006) Notes
+
+NOTE!  New users can ignore these release notes, because the
+documentation has been updated to reflect all changes that are recorded
+here.
+
+Fixed soundness bugs in the handling of primitive function pkg-witness,
+and improved its documentation.  (The executable counterpart returned an
+incorrect default value, and the axiom
+symbol-package-name-pkg-witness-name needed pkg-name to be other than
+"" in order to avoid the default value of "ACL2".)  As fallout, a new
+built-in :forward-chaining rule,
+symbol-package-name-of-symbol-is-not-empty-string, now asserts that the
+symbol-package-name of a symbol is never "".  Thanks to Mike Gordon for
+bringing these soundness bugs to our attention by attempting to prove
+translations of ACL2 axioms in HOL4.
+
+Fixed a soundness bug in linear arithmetic, due to incomplete tracking
+of forced assumptions while deriving inequalities.  Thanks to Robert
+Krug for providing a fix and a proof of nil before the fix.
+
+Fixed a soundness bug in the redundancy criterion for defun events,
+which has been modified; see *note REDUNDANT-EVENTS::.  This bug is
+illustrated below.  Thanks to Peter Dillinger and Jared Davis for
+contributions to an email thread that led us to discover this bug.  The
+solution is that for a definition to be redundant with an earlier
+definition, ACL2 no longer ignores :measure xargs except when skipping
+proofs (e.g., during include-book).  However, a new "measure", (:? v1
+... vk), is supported, for specifying a measured subset of the set of
+formals, i.e., a set of formals that serves as the set of parameters
+for some valid measure.
+
+     (encapsulate
+      ()
+     
+      (local (defun foo (x y)
+               (declare (xargs :measure (acl2-count y)))
+               (if (and (consp x) (consp y))
+                   (foo (cons x x) (cdr y))
+                 y)))
+     
+     ; So the following is redundant -- but it guesses a measure
+     ; of (acl2-count x), which isn't right!
+      (defun foo (x y)
+        (if (and (consp x) (consp y))
+            (foo (cons x x) (cdr y))
+          y)))
+     
+     ; end of encapsulate
+     
+     ; Now we prove a non-theorem by exploiting the bug above,
+     ; erroneously replacing formal y by a constant in the induction
+     ; scheme hinted below.  (This should not be allowed, as y should be
+     ; labeled as a measured formal.)
+     
+     (defthm bad
+       (atom x)
+       :rule-classes nil
+       :hints (("Goal" :induct (foo x '(3)))))
+     
+     ; It's easy to get a contradiction by instantiating the
+     ; non-theorem just above.
+     (defthm contradiction
+       nil
+       :rule-classes nil
+       :hints (("Goal" :use ((:instance bad (x '(7)))))))
+
+Fixed a bug in :pl and the proof-checker's show-rewrites (sr) command
+that was causing a Lisp break.  For :pl, also improved the display of
+unifying substitutions, modified output to take binding hypotheses
+(equal var term) into account properly, and arranged for inclusion of
+meta rules that modify the given term.  Thanks to Eric Smith for
+bringing these issues to our attention.
+
+Introduced new utilities for undoing commands, :ubu and :ubu!, which
+are analogous to :ubt and :ubt!  (respectively) except that they only
+undo back up to, but not including, the indicated command.
+
+Fixed a performance bug, pointed out by Eric Smith, that was negating
+efforts made for the preceding release to avoid computation for
+disabled warnings.
+
+Added time$ and value-triple to *acl2-exports*.  Thanks to Bob Boyer
+and Erik Reeber (respectively) for bringing these issues to our
+attention.
+
+Improved the automatic proclaiming of function types for GCL and
+OpenMCL, specifically to use an output format consistent with the
+Common Lisp spec.  Thanks to Bob Boyer for bringing this issue to our
+attention.
+
+Added books/misc/transfinite.lisp, which deals with transfinite
+induction in ACL2.  Thanks to Eric Smith for contributing this book.
+
+Added books/misc/process-book-readme.lisp to the distribution.  Thanks
+to Sandip Ray for pointing out its omission.
+
+Added contributions books/concurrent-programs/bakery/ and
+books/concurrent-programs/german-protocol/.  These contributions can be
+used as tutorials, especially by new ACL2 users, for learning how to
+model concurrent protocols in ACL2 and the steps involved in reasoning
+about their correctness.  Thanks to Sandip Ray for these contributions.
+See the Readme.lsp files in these directories.
+
+Theory invariants may now involve the variable ENS instead of the
+variable THEORY.  The practical effect of this change is that any
+expression of the form (MEMBER-EQUAL rune THEORY) occurring in a
+theory-invariant expression should be replaced by (ACTIVE-RUNEP rune).
+See *Note THEORY-INVARIANT::.  Thanks to Eric Smith and Dave Greve for
+pointing out an inefficiency in the handling of theory invariants that
+led to this change, which can speed up their handling by orders of
+magnitude on large examples, and to Eric for testing this change and
+pointing out problems with an early implementation of it.
+
+Theory invariants (see *note THEORY-INVARIANT::) are no longer checked
+on theories defined by deftheory events.  After all, one can define a
+theory with deftheory that is not intended to be used as the current
+theory, but rather is intended to be combined with other theories (see
+*note THEORY-FUNCTIONS::).  Thanks to Eric Smith for bringing this
+issue to our attention.
+
+Theory-invariant errors had been reported with very little detail when
+warnings were inhibited.  This problem has been fixed; thanks to Eric
+Smith for bringing it to our attention and providing an example.  We
+have also improved the handling of redundancy for theory-invariant
+events.
+
+The macro defun-sk now has a new optional keyword, rewrite, that can be
+used to change the form of the :rewrite rule generated when the
+quantifier is forall.  Thanks to Eric Smith and Sandip Ray for useful
+discussions on this topic.  We have also slightly modified the hints
+for the defthm event underneath a defun-sk in order to make the proof
+more reliably efficient.
+
+A new event, reset-prehistory, allows setting of a barrier before which
+undoing is illegal.  An argument to this macro allows the barrier to be
+made permanent; otherwise, it can be removed with :ubt-prehistory.
+Thanks to Peter Dillinger for useful conversations leading to the
+addition of reset-prehistory.
+
+A new query, (wormhole-p state), allows users to determine whether or
+not they are in a wormhole.  Thanks to Peter Dillinger for providing
+this utility.
+
+Value-triple no longer evaluates its form during include-book, and in
+raw Lisp its calls trivially macroexpand to nil, without any
+consideration of its argument.  This change avoids errors and warnings
+when stobj names occur in the argument.
+
+We fixed what could be considered a soundness hole that could occur by
+exploiting redefinition in a particular way.  Thanks to Peter Dillinger
+for raising a question that led to discovery of this hole.
+
+A bug has been fixed in handling of illegal theory expressions.  Thanks
+to Eric Smith, who reported this problem and provided the example
+(in-theory '((:definition natp) (:rewrite doesntexist))) to show how a
+hard error could occur.
+
+Improved error reporting by certify-book when the certification world
+contains inadmissible forms.
+
+Modified defchoose to add two new keyword arguments.  There is now a
+:doc keyword argument; previously, an optional documentation string
+(see *note DOC-STRING::) was to be placed just before the body, without
+a keyword.  There is also a :strengthen argument that strengthens the
+axiom added, which allows for the definition of "fixing" functions for
+equivalence relations that choose canonical representatives of
+equivalence classes.  See *Note DEFCHOOSE::.  Thanks for Dave Greve for
+useful discussions that led us to this :strengthen enhancement.
+
+Added books/misc/bash.lisp, which provides utilities for simplifying a
+goal into a list of subgoals (as documented at the top of that file).
+Thanks to Dave Greve for requesting this utility and suggesting
+refinements to its functionality, which have been incorporated.
+
+(For Emacs users only) The command meta-x new-shell provided by file
+emacs/emacs-acl2.el now puts you in shell-mode, which for example
+supports directory tracking.  Thanks to Jared Davis for suggesting this
+change.
+
+Fixed some mishandling of stobjs by make-event expansion.
+
+Introduced a new event, defttag, that introduces a "trust tag" ("ttag")
+allowing for extensions of ACL2 and for the use of generally unsafe
+ACL2 constructs.  Thanks to Peter Dillinger, Sandip Ray, and Erik
+Reeber for useful discussions on defttag and the following related
+items.
+
+     A new event, remove-untouchable, can be used to give users access
+     to system functions and data structures.  We also fixed a bug in
+     push-untouchable; and, it no longer is a no-op in :program mode.
+     Thanks to Peter Dillinger for proposing remove-untouchable and
+     suggesting that it and push-untouchable be functional in :program
+     mode.
+
+     Raw-mode (see *note SET-RAW-MODE::) no longer disables
+     certify-book.  However, set-raw-mode is now disallowed unless
+     there is an active ttag (see *note DEFTTAG::).  If you want to
+     execute (set-raw-mode t) and there is no active ttag, consider
+     executing (set-raw-mode-on!)  instead.
+
+     Redefinition of system functions is disallowed unless there is an
+     active ttag.  However, redef! now introduces (defttag :redef!) in
+     order to allow redefinition of system functions.
+
+     A new event, progn!, is a legal embedded event form that can go in
+     books and both encapsulate and progn forms (see *note
+     EMBEDDED-EVENT-FORM::), and is similar to progn except that it
+     allows arbitrary forms.  Thus, a progn! form is potentially
+     dangerous and can only be evaluated if there is an active ttag.
+
+     See *Note TTAGS-SEEN:: for information about how to find the ttags
+     known in the current ACL2 world, and for related caveats.
+
+     A new book created with Peter Dillinger, books/misc/hacker.lisp,
+     uses progn! to define utiliities with-raw-mode and
+     with-redef-allowed, which respectively allow raw Lisp evaluation
+     and redefinition to take place within a certifiable book (!).
+
+Macro with-output is no longer allowed in function bodies because it
+does not have (and has never had) any effect in raw Lisp.  See *Note
+WITH-OUTPUT:: for a workaround.
+
+Fixed a bug in redundancy of defstobj in raw Lisp, which caused an
+error when certifying a book with a redundant defstobj event whose
+stobj had already been modified.  Here is an example:
+
+     (defstobj st fld)
+     (update-fld 3 st)
+     (certify-book "foo" 1) ; where foo.lisp contains (defstobj st fld)
+
+New books illustrating make-event have been contributed in directory
+books/make-event/: dotimes.lisp (David Rager), stobj-test.lisp, and
+logical-tangent.lisp (Peter Dillinger).
+
+Modified print-object$ (see *note IO::) so that it no longer prints an
+extra space at the end.
+
+Replaced the "draconian restriction to avoid capture" that had prevented
+some :functional-instance hints from being legal.  The corresponding
+check now only requires that no variable free in the functional
+substitution is captured by a let or mv-let (or lambda) binding.  See
+*Note LEMMA-INSTANCE::.
+
+Added new extended metafunction, mfc-rw+, which is equivalent to mfc-rw
+except that it takes an alist argument, which may be useful for
+efficiency.  See *Note EXTENDED-METAFUNCTIONS::.  Thanks to Robert Krug
+for suggesting this more efficient variant of mfc-rw.
+
+Added support for the ignorable declare form.
+
+We now cause an error on a call of open-input-channel (see *note IO::)
+with an argument string whose first character is the | character.
+Thanks to Bob Boyer for providing an example (several months ago)
+showing the danger of such calls, namely that the following command
+would log you out and kill all of your processes when running on top of
+GCL in Linux:
+(open-input-channel "|kill -9 -1" :object state)
+
+Restricted the use of make-event to contexts in which it can be tracked
+properly, under legal events (see *note EMBEDDED-EVENT-FORM::).  Thanks
+to Peter Dillinger for bringing an example to our attention that led to
+this fix.
+
+Fixed a bug that was avoiding guard-checking for the functions
+compress1 and compress2.  Thanks to David Rager for bringing this bug
+to our attention.
+
+Added an error message when a defun or mutual-recursion event fails, to
+clarify whether failure is for the measure conjecture or for the guard
+conjecture.  Thanks to David Rager for requesting clarification for
+such failures.
+
+Fixed a bug in reporting of guard violations (hard Lisp error) when
+certain macros (for example, cond) are used in the guard.  Thanks to
+Jared Davis for bringing this problem to our attention and providing
+assistance with the solution, in particular by providing a helpful
+example.
+
+Grant Passmore has contributed a resolution/paramodulation prover
+written in ACL2, in directory books/deduction/passmore/.  Thanks, Grant.
+
+Improved the error message when illegal theories are encountered.
+
+Improved the suppression of output for inhibit-output arguments of
+routines in the book books/misc/expander.lisp.  Thanks to Qiang Zhang
+for pointing out the possibility for improvement here.
+
+Added a new directory books/arithmetic-3/extra/ that extends
+books/arithmetic-3 with additional rules, contributed by Alex
+Spiridonov with guidance from Robert Krug.  WARNING: This directory is
+under development.  It may undergo large changes in future releases, so
+please consider it experimental and subject to change.  Feedback is
+welcomed.
+
+As part of the work mentioned just above, Robert Krug and Alex
+Spiridonov contributed improvements to books/arithmetic-3/:
+
+     o A new rule |(* (/ x) (/ (expt x n)))| in bind-free/collect.lisp,
+     which is important for reducing collect-* expressions though it
+     slowed down one proof (see comment above this rule in
+     bind-free/collect.lisp).
+
+     o Slight improvements of rules integerp-mod and rationalp-mod in
+     floor-mod/floor-mod.lisp.
+
+     o To avoid conflict with books/rtl/rel6/arithmetic/, renamed rule
+     mod-minus to mod-neg in floor-mod/floor-mod.lisp, and renamed
+     integerp-+-reduce-leading-constant to
+     integerp-+-reduce-leading-rational-constant in
+     bind-free/integerp.lisp.
+
+(GCL on Windows only) Made a low-level change to avoid multiplying
+stacks for GCL on Windows, since GCL 2.6.6 broke while doing this.
+
+Fixed bugs in linear arithmetic (rarely evidenced, it seems) involving
+using < to compare complex rational constants.  Thanks to Robert Krug
+for helping with the fixes.
+
+Added a new event, assert-event, for checking that forms evaluate to
+non-nil values.  Thanks to Peter Dillinger for suggesting and
+collaborating on this addition.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-3-1,  Next: NOTE-3-1(R),  Prev: NOTE-3-0-2,  Up: RELEASE-NOTES
+
+NOTE-3-1    ACL2 Version  3.1 (December, 2006) Notes
+
+NOTE!  New users can ignore these release notes, because the
+documentation has been updated to reflect all changes that are recorded
+here.
+
+Please see *note NOTE-3-0-2:: for a description of changes since
+Version  3.0.1, and also see *note NOTE-3-0-1:: for additional changes
+since Version  3.0.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-3-1(R),  Next: NOTE1,  Prev: NOTE-3-1,  Up: RELEASE-NOTES
+
+NOTE-3-1(R)    ACL2 Version  3.1(r) (December, 2006) Notes
+
+No significant changes have been made since Version  3.0 for support of
+non-standard analysis in particular.
+
+Please also see *note NOTE-3-1:: for changes to Version  3.1 of ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE1,  Next: NOTE2,  Prev: NOTE-3-1(R),  Up: RELEASE-NOTES
+
+NOTE1    Acl2 Version 1.1 Notes
+
+The new features are extensively documented.  The relevant topics are:
+
+* Menu:
+
+
+Related topics other than immediate subtopics:
+* BOOKS:: files of ACL2 event forms
+
+* GUARD:: restricting the domain of a function
+
+* MORE:: your response to :doc or :more's ``(type :more...)''
+
+* REDUNDANT-EVENTS:: allowing a name to be introduced ``twice''
+
+It is especially important to read all of of the documentation for
+books before trying to use books.  However, the new :more keyword
+command is so handy for reading long documentation strings that we
+recommend you start with :doc more if reading at the terminal.  Some
+documentation has been written for guards which you might find
+interesting.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE2,  Next: NOTE3,  Prev: NOTE1,  Up: RELEASE-NOTES
+
+NOTE2    Acl2 Version 1.2 Notes
+
+Hacker mode has been eliminated and programming mode has been added.
+Programming mode is unsound but does syntax checking and permits
+redefinitions of names.  See :doc load-mode and :doc g-mode.
+
+The arguments to ld have changed.  Ld is now much more sophisticated.
+See *Note LD::.
+
+For those occasions on which you wish to look at a large list structure
+that you are afraid to print, try (walkabout x state), where x is an
+Acl2 expression that evaluates to the structure in question.  I am
+afraid there is no documentation yet, but it is similar in spirit to
+the Interlisp structure editor.  You are standing on an object and
+commands move you around in it.  E.g., 1 moves you to its first
+element, 2 to its second, etc.; 0 moves you up to its parent; nx and bk
+move you to its next sibling and previous sibling; pp prettyprints it;
+q exits returning nil; = exits returning the thing you're standing on;
+(= symb) assigns the thing you're standing on to the state global
+variable symb.
+
+Several new hints have been implemented, including :by and :do-not.
+The old :do-not-generalize has been scrapped in favor of such new hints
+as :do-not (generalize elim).  :By lets you say "this goal is subsumed
+by" a given lemma instance.  The :by hint also lets you say "this goal
+can't be proved yet but skip it and see how the rest of the proof
+goes." See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE3,  Next: NOTE4,  Prev: NOTE2,  Up: RELEASE-NOTES
+
+NOTE3    Acl2 Version 1.3 Notes
+
+Programming mode has been eliminated.  Instead, all functions have a
+"color" which indicates what can be done with the function.  For
+example, :red functions can be executed but have no axioms describing
+them.  Thus, :red functions can be introduced after passing a simple
+syntactic check and they can be redefined without undoing.  But nothing
+of consequence can be proved about them.  At the other extreme are
+:gold functions which can be executed and which also have passed both
+the termination and the guard verification proofs.  The color of a
+function can be specified with the new xargs keyword, :color, which, if
+omitted defaults to the global setting of ld-color.  Ld-color replaces
+load-mode.  Setting ld-color to :red causes behavior similar to the old
+:g-mode.  Setting ld-color to :gold causes behavior similar to the old
+:v-mode.  It is possible to prototype your system in :red and then
+convert :red functions to :blue individually by calling
+verify-termination on them.  They can then be converted to :gold with
+verify-guards.  This allows us to undertake to verify the termination
+and guards of system functions.  See :doc color for an introduction to
+the use of colors.
+
+Type prescription rules have been added.  Recall that in Nqthm, some
+rewrite rules were actually stored as "type-prescriptions."  Such rules
+allow the user to inform Nqthm's primitive type mechanism as to the
+kinds of shells returned by a function.  Earlier versions of Acl2 did
+not have an analogous kind of rule because Acl2's type mechanism is
+complicated by guards.  Version 1.3 supports type-prescription rules.
+See *Note TYPE-PRESCRIPTION::.
+
+Three more new rule-classes implement congruence-based rewriting.  It
+is possible to identify a binary relation as an equivalence relation
+(see *note EQUIVALENCE::), to show that one equivalence relation
+refines another (see *note REFINEMENT::) and to show that a given
+equivalence relation is maintained when rewriting a given function
+call, e.g., (fn ...xk...), by maintaining another equivalence relation
+while rewriting the kth argument (see *note CONGRUENCE::).  If r has
+been shown to be an equivalence relation and then (implies hyps (r (foo
+x) (bar x))) is proved as a :rewrite rule, then instances of (foo x)
+will be replaced by corresponding instances of (bar x) provided the
+instance occurs in a slot where the maintainence of r-equivalence is
+known to be sufficient and hyps can be established as usual.
+
+In Version 1.2, rule-classes were simple keywords, e.g., :rewrite or
+:elim.  In Version 1.3, rule-classes have been elaborated to allow you
+to specify how the theorem ought to be used as a rule.  That is, the
+new rule-classes allows you to separate the mathematical statement of
+the formula from its interpretation as a rule.  See *Note
+RULE-CLASSES::.
+
+Rules used to be named by symbols, e.g., car and car-cons were the
+names of rules.  Unfortunately, this was ambiguous because there are
+three rules associated with function symbols: the symbolic definition,
+the executable counterpart, and the type-prescription; many different
+rules might be associated with theorems, depending on the rule classes.
+In Version 1.3 rules are named by "runes" (which is just short hand
+for "rule names").  Example runes are (:definition car),
+(:executable-counterpart car), and (:type-prescription car . 1).  Every
+rule added by an event has a different name and you can enable and
+disable them independently.  See *Note RUNE:: and see *note THEORIES::.
+
+The identity function force, of one argument, has been added and given
+a special interpretation by the functions responsible for establishing
+hypotheses in backchaining: When the system fails to establish some
+hypothesis of the form (force term), it simply assumes it is true and
+goes on, delaying until later the establishment of term.  In
+particular, pushes a new subgoal to prove term in the current context.
+When that subgoal is attacked, all of the resources of the theorem
+prover, not just rewriting, are brought to bear.  Thus, for example, if
+you wish to prove the rule (implies (good-statep s) (equal (exec s n)
+s')) and it is your expectation that every time exec appears its first
+argument is a good-statep then you might write the rule as (implies
+(force (good-statep s)) (equal (exec s n) s')).  This rule is
+essentially an unconditional rewrite of (exec s n) to s' that spawns
+the new goal (good-statep s).  See *Note FORCE::.  Because you can now
+specify independently how a theorem is used as a rule, you need not
+write the force in the actual theorem proved.  See *Note RULE-CLASSES::.
+
+Version 1.3 supports a facility similar to Nqthm's break-lemma.  See
+*Note BREAK-REWRITE::.  You can install "monitors" on runes that will
+cause interactive breaks under certain conditions.
+
+Acl2 also provides "wormholes" which allow you to write functions that
+cause interaction with the user but which do not require that you have
+access to state.  See *Note WORMHOLE::.
+
+The rewriter now automatically backchains to stronger recognizers.
+There is no user hook to this feature but it may simplify some proofs
+with which older versions of Acl2 had trouble.  For example, if the
+rewriter is trying to prove (rationalp (foo a b c)) it is now smart
+enough to try lemmas that match with (integerp (foo a b c)).
+
+
+File: acl2-doc-emacs.info,  Node: NOTE4,  Next: NOTE5,  Prev: NOTE3,  Up: RELEASE-NOTES
+
+NOTE4    Acl2 Version 1.4 Notes
+
+Once again ld only takes one required argument, as the bind-flg has
+been deleted.
+
+Three commands have been added in the spirit of :pe.  :Pe! is similar
+to :pe but it prints all events with the given name, rather than just
+the most recent.  The command :pf prints the corollary formula
+corresponding to a name or rune.  The command :pl (print lemmas) prints
+rules whose top function symbol is the given name.  See *Note PE!::,
+see *note PF::, and see *note PL::.
+
+Book naming conventions have been changed somewhat.  The once-required
+.lisp extension is now prohibited!  Directories are supported,
+including a notion of "connected book directory".  See *Note
+BOOK-NAME::.  Also, the second argument of certify-book is now
+optional, defaulting to 0.
+
+Compilation is now supported inside the Acl2 loop.  See *Note COMP::
+and see *note SET-COMPILE-FNS::.
+
+The default color is now part of the Acl2 world; see :doc
+default-color.  Ld-color is no longer an ld special.  Instead, colors
+are events; see the documentation for red, pink, blue, and gold.
+
+A table exists for controlling whether Acl2 prints comments when it
+forces hypotheses of rules; see :doc force-table.  Also, it is now
+possible to turn off the forcing of assumptions by disabling the
+definition of force; see *note FORCE::.
+
+The event defconstant is no longer supported, but a very similar event,
+defconst, has been provided in its place.  See *Note DEFCONST::.
+
+The event for defining congruence relations is now defcong (formerly,
+defcon).
+
+Patterns are now allowed in :expand hints.  See the documentation for
+:expand inside the documentation for hints.
+
+We have improved the way we report rules used by the simplifier.  All
+runes of the same type are reported together in the running commentary
+associated with each goal, so that for example, executable counterparts
+are listed separately from definitions, and rewrite rules are listed
+separately from linear rules.  The preprocessor now mentions "simple"
+rules; see *note SIMPLE::.
+
+The mechanism for printing warning messages for new rewrite rules,
+related to subsumption, now avoids worrying about nonrecursive function
+symbols when those symbols are disabled.  These messages have also been
+eliminated for the case where the old rule is a :definition rule.
+
+Backquote has been modified so that it can usually provide predictable
+results when used on the left side of a rewrite rule.
+
+Time statistics are now printed even when an event fails.
+
+The Acl2 trace package has been modified so that it prints using the
+values of the Lisp globals *print-level* and *print-length*
+(respectively).
+
+Table has been modified so that the :clear option lets you replace the
+entire table with one that satisfies the val and key guards (if any);
+see *note TABLE::.
+
+We have relaxed the translation rules for :measure hints to defun, so
+that the the same rules apply to these terms that apply to terms in
+defthm events.  In particular, in :measure hints mv is treated just
+like list, and state receives no special handling.
+
+The loop-stopper test has been relaxed.  The old test required that
+every new argument be strictly less than the corresponding old argument
+in a certain term-order.  The new test uses a lexicographic order on
+term lists instead.  For example, consider the following rewrite rule.
+
+       (equal
+        (variable-update var1
+                         val1 (variable-update var2 val2 vs))
+        (variable-update var2
+                         val2 (variable-update var1 val1 vs)))
+
+This rule is permutative.  Now imagine that we want to apply this rule
+to the term
+
+       (variable-update u y (variable-update u x vs)).
+
+Since the actual corresponding to both var1 and var2 is u, which is not
+strictly less than itself in the term-order, this rule would fail to be
+applied in this situation when using the old test.  However, since the
+pair (u x) is lexicographically less than the pair (u y) with respect
+to our term-order, the rule is in fact applied using our new test.
+
+Messages about events now contain a space after certain left
+parentheses, in order to assist emacs users.  For example, the event
+
+       (defthm abc (equal (+ (len x) 0) (len x)))
+
+leads to a summary containing the line
+
+       Form:  ( DEFTHM ABC ...)
+
+and hence, if you search backwards for "(defthm abc", you won't stop at
+this message.
+
+More tautology checking is done during a proof; in fact, no goal
+printed to the screen, except for the results of applying :use and :by
+hints or the top-level goals from an induction proof, are known to Acl2
+to be tautologies.
+
+The ld-query-control-alist may now be used to suppress printing of
+queries; see *note LD-QUERY-CONTROL-ALIST::.
+
+Warning messages are printed with short summary strings, for example
+the string "Use" in the following message.
+
+       Acl2 Warning [Use] in DEFTHM:  It is unusual to :USE an enabled
+       :REWRITE or :DEFINITION rule, so you may want to consider
+       disabling FOO.
+
+At the end of the event, just before the time is printed, all such
+summary strings are printed out.
+
+The keyword command :u has been introduced as an abbreviation for :ubt
+:max.  Printing of query messages is suppressed by :u.
+
+The keyword :cheat is no longer supported by any event form.
+
+Some irrelevant formals are detected; see *note IRRELEVANT-FORMALS::.
+
+A bug in the application of metafunctions was fixed: now if the output
+of a metafunction is equal to its input, the application of the
+metafunction is deemed unsuccessful and the next metafunction is tried.
+
+An example has been added to the documentation for equivalence to
+suggest how to make use of equivalence relations in rewriting.
+
+The following Common Lisp functions have been added to Acl2:
+alpha-char-p, upper-case-p, lower-case-p, char-upcase, char-downcase,
+string-downcase, string-upcase, and digit-charp-p.
+
+A documentation section called proof-checker has been added for the
+interactive facility, whose documentation has been slightly improved.
+See in particular the documentation for proof-checker, verify, and
+macro-command.
+
+A number of events that had been inadvertently disallowed in books are
+now permitted in books.  These are:  defcong, defcor, defequiv,
+defrefinement, defstub, and verify-termination.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE5,  Next: NOTE6,  Prev: NOTE4,  Up: RELEASE-NOTES
+
+NOTE5    Acl2 Version 1.5 Notes
+
+Acl2 now allows "complex rationals," which are complex numbers whose
+real parts are rationals and whose imaginary parts are non-zero
+rationals.  See *Note COMPLEX::.
+
+A new way of handling forced hypotheses has been implemented.  Rather
+than cause a case split at the time the force occurs, we complete the
+main proof and then embark on one or more "forcing rounds" in which we
+try to prove the forced hypotheses.  See *Note FORCING-ROUND::.  To
+allow us to compare the new handling of force with the old, Version 1.5
+implements both and uses a flag in state to determine which method
+should be used.  Do (assign old-style-forcing t) if you want force to
+be handled as it was in Version 1.4.  However, we expect to eliminate
+the old-style forcing eventually because we think the new style is more
+effective.  To see the difference between the two approaches to
+forcing, try proving the associativity of append under both settings of
+old-style-forcing.  To get the new behavior invoke:
+
+     (thm (implies (and (true-listp a) (true-listp b))
+                   (equal (append (append a b) c)
+                          (append a (append b c)))))
+
+Then (assign old-style-forcing t) and invoke the thm command above
+again.
+
+A new :cases hints allows proof by cases.  See *Note HINTS::.
+
+Include-book and encapsulate now restore the acl2-defaults-table when
+they complete.  See *Note INCLUDE-BOOK:: and see *note ENCAPSULATE::.
+
+The guards on many Acl2 primitives defined in axioms.lisp have been
+weakened to permit them to be used in accordance with lisp custom and
+tradition.
+
+It is possible to attach heuristic filters to :rewrite rules to limit
+their applicability.  See *Note SYNTAXP::.
+
+A tutorial has been added; see *note ACL2-TUTORIAL::.
+
+Events now print the Summary paragraph listing runes used, time, etc.,
+whether they succeed or fail.  The format of the "failure banner" has
+been changed but still has multiple asterisks in it.  Thm also prints a
+Summary, whether it succeeds or fails; but thm is not an event.
+
+A new event form skip-proofs has been added; see *note SKIP-PROOFS::.
+
+A user-specific customization facility has been added in the form of a
+book that is automatically included, if it exists on the current
+directory.  See *Note ACL2-CUSTOMIZATION::.
+
+A facility for conditional metalemmas has been implemented; see *note
+META::.
+
+The acceptable values for ld-skip-proofsp have changed.  In the old
+version (Version 1.4), a value of t meant that proofs and local events
+are to be skipped.  In Version 1.5, a value of t means proofs (but not
+local events) are to be skipped.  A value of 'include-book means proofs
+and local events are to be skipped.  There are two other, more obscure,
+acceptable values.  See *Note LD-SKIP-PROOFSP::.
+
+In order to turn off the forcing of assumptions, one should now disable
+the :executable-counterpart of force (rather than the :definition of
+force, as in the previous release); see *note FORCE::.
+
+The macros enable-forcing and disable-forcing make it convenient to
+enable or disable forcing.  See *Note ENABLE-FORCING:: and see *note
+DISABLE-FORCING::.
+
+The new commands :pr and :pr! print the rules created by an event or
+command.  See *Note PR:: and see *note PR!::.
+
+The new history commands :puff and :puff* will replace a compound
+command such as an encapsulate or include-book by the sequence of
+events in it.  That is, they "puff up" or "lift" the subevents of a
+command to the command level, eliminating the formerly superior command
+and lengthening the history.  This is useful if you want to "partially
+undo" an encapsulate or book or other compound command so you can
+experiment.  See *Note PUFF:: and see *note PUFF*::.
+
+Theory expressions now are allowed to use the free variable world and
+prohibited from using the free variable state.  See *Note THEORIES::,
+although it is essentially the same as before except it mentions world
+instead of state.  See *Note WORLD:: for a discussion of the Acl2
+logical world.  Allowing in-theory events to be state-sensitive
+violated an important invariant about how books behaved.
+
+Table keys and values now are allowed to use the free variable world
+and prohibited from using the free variable state.  See the note above
+about theory expressions for some explanation.
+
+The macro for minus, -, used to expand (- x 3) to (+ x -3) and now
+expands it to (+ -3 x) instead.  The old macro, if used in the
+left-hand sides of rewrite rules, produced inapplicable rules because
+the constant occurs in the second argument of the +, but potential
+target terms generally had the constant in the first argument position
+because of the effect of commutativity-of-+.
+
+A new class of rule, :linear-alias rules, allows one to implement the
+nqthm package and similar hacks in which a disabled function is to be
+known equivalent to an arithmetic function.
+
+A new class of rule, :built-in-clause rules, allows one to extend the
+set of clauses proved silently by defun during measure and guard
+processing.  See *Note BUILT-IN-CLAUSES::.
+
+The new command pcb! is like pcb but sketches the command and then
+prints its subsidiary events in full.  See *Note PCB!::.
+
+:Rewrite class rules may now specify the :loop-stopper field.  See
+*Note RULE-CLASSES:: and see *note LOOP-STOPPER::.
+
+The rules for how loop-stoppers control permutative rewrite rules have
+been changed.  One effect of this change is that now when the built-in
+commutativity rules for + are used, the terms a and (- a) are permuted
+into adjacency.  For example, (+ a b (- a)) is now normalized by the
+commutativity rules to (+ a (- a) b); in Version 1.4, b was considered
+syntactically smaller than (- a) and so (+ a b (- a)) is considered to
+be in normal form.  Now it is possible to arrange for unary functions
+be be considered "invisible" when they are used in certain contexts.
+By default, unary- is considered invisible when its application appears
+in the argument list of binary-+.  See *Note LOOP-STOPPER:: and see
+:DOC set-invisible-fns-table.
+
+Extensive documentation has been provided on the topic of Acl2's "term
+ordering."  See *Note TERM-ORDER::.
+
+Calls of ld now default ld-error-action to :return rather than to the
+current setting.
+
+The command descriptor :x has been introduced and is synonymous with
+:max, the most recently executed command.  History commands such as
+:pbt print a :x beside the most recent command, simply to indicate that
+it *is* the most recent one.
+
+The command descriptor :x-23 is synonymous with (:x -23).  More
+generally, every symbol in the keyword package whose first character is
+#\x and whose remaining characters parse as a negative integer is
+appropriately understood.  This allows :pbt :x-10 where :pbt (:max -10)
+or :pbt (:here -10) were previously used.  The old forms are still
+legal.
+
+The order of the arguments to defcong has been changed.
+
+The simplifier now reports the use of unspecified built-in type
+information about the primitives with the phrase "primitive type
+reasoning."  This phrase may sometimes occur in situations where
+"propositional calculus" was formerly credited with the proof.
+
+The function pairlis has been replaced in the code by a new function
+pairlis$, because Common Lisp does not adequately specify its pairlis
+function.
+
+Some new Common Lisp functions have been added, including logtest,
+logcount, integer-length, make-list, remove-duplicates, string, and
+concatenate.  The source file /slocal/src/acl2/axioms.lisp is the
+ultimate reference regarding Common Lisp functions in Acl2.
+
+The functions defuns and theory-invariant have been documented.  See
+*Note DEFUNS:: and see *note THEORY-INVARIANT::.
+
+A few symbols have been added to the list *acl2-exports*.
+
+A new key has been implemented for the acl2-defaults-table,
+:irrelevant-formals-ok.  See *Note SET-IRRELEVANT-FORMALS-OK::.
+
+The connected book directory, cbd, must be nonempty and begin and end
+with a slash.  It is set (and displayed) automatically upon your first
+entry to lp.  You may change the setting with set-cbd.  See *Note CBD::.
+
+:oops will undo the last :ubt.  See *Note OOPS::.
+
+Documentation has been written about the ordinals.  See :DOC e0-ordinalp
+and see :DOC e0-ord-<.  [Note added later: Starting with Version_2.8,
+instead see *note O-P:: and see *note O<::.
+
+The color events -- (red), (pink), (blue), and (gold) -- may no longer
+be enclosed inside calls of local, for soundness reasons.  In fact,
+neither may any event that sets the acl2-defaults-table.  See *Note
+EMBEDDED-EVENT-FORM::.
+
+See *Note LD-KEYWORD-ALIASES:: for an example of how to change the exit
+keyword from :q to something else.
+
+The attempt to install a monitor on :rewrite rules stored as simple
+abbreviations now causes an error because the application of
+abbreviations is not tracked.
+
+A new message is sometimes printed by the theorem prover, indicating
+that a given simplification is "specious" because the subgoals it
+produces include the input goal.  In Version 1.4 this was detected but
+not reported, causing behavior some users found bizarre.  See *Note
+SPECIOUS-SIMPLIFICATION::.
+
+:Definition rules are no longer always required to specify the :clique
+and :controller-alist fields; those fields can be defaulted to
+system-determined values in many common instances.  See *Note
+DEFINITION::.
+
+A warning is printed if a macro form with keyword arguments is given
+duplicate keyword values.  Execute (thm t :doc nil :doc "ignored") and
+read the warning printed.
+
+A new restriction has been placed on encapsulate.  Non-local recursive
+definitions inside the encapsulate may not use, in their tests and
+recursive calls, the constrained functions introduced by the
+encapsulate.  See *Note SUBVERSIVE-RECURSIONS::.  (Note added in
+Version  2.3:  Subversive recursions were first recognized by us here
+in Version 1.5, but our code for recognizing them was faulty and the
+bug was not fixed until Version  2.3.)
+
+The events defequiv, defcong, defrefinement, and defevaluator have been
+reimplemented so that they are just macros that expand into appropriate
+defthm or encapsulate events; they are no longer primitive events.  See
+the documentation of each affected event.
+
+The defcor event, which was a shorthand for a defthm that established a
+corollary of a named, previously proved event, has been eliminated
+because its implementation relied on a technique we have decided to ban
+from our code.  If you want the effect of a defcor in Version 1.5 you
+must submit the corresponding defthm with a :by hint naming the
+previously proved event.
+
+Error reporting has been improved for inappropriate in-theory hints and
+events, and for syntax errors in rule classes, and for non-existent
+filename arguments to ld.
+
+Technical Note:  We now maintain the Third Invariant on type-alists, as
+described in the Essay on the Invariants on Type-alists, and
+Canonicality.  This change will affect some proofs, for example, by
+causing a to rewrite more quickly to c when (equiv a b) and (equiv b c)
+are both known and c is the canonical representative of the three.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE6,  Next: NOTE7,  Prev: NOTE5,  Up: RELEASE-NOTES
+
+NOTE6    Acl2 Version 1.6 Notes
+
+A new key has been implemented for the acl2-defaults-table, :ignore-ok.
+See *Note SET-IGNORE-OK::.
+
+It is now legal to have color events, such as (red), in the portcullis
+of a book.  More generally, it is legal to set the acl2-defaults-table
+in the portcullis of a book.  For example, if you execute :red and then
+certify a book, the event (red) will show up in the portcullis of that
+book, and hence the definitions in that book will all be red (except
+when overridden by appropriate declarations or events).  When that book
+is included, then as always, its portcullis must first be "raised," and
+that will cause the default color to become red before the events in
+the book are executed.  As always, the value of acl2-defaults-table
+immediately after execution of an include-book, certify-book, or
+encapsulate form will be the same as it was immediately before
+execution (and hence, so will the default color).  See *Note
+PORTCULLIS:: and, for more about books, see *note BOOKS::.
+
+A theory ground-zero has been defined to contain exactly those rules
+that are enabled when Acl2 starts up.  See *Note GROUND-ZERO::.
+
+The function nth is now enabled, correcting an oversight from Version
+1.5.
+
+Customization files no longer need to meet the syntactic restrictions
+put on books; rather, they can contain arbitrary Acl2 forms.  See *Note
+ACL2-CUSTOMIZATION::.
+
+Structured directory names and structured file names are supported; see
+especially the documentation for pathname, book-name, and cbd.
+
+Acl2 now works with some Common Lisp implementations other than akcl,
+including Lucid, Allegro, and MCL.
+
+A facility has been added for displaying proof trees, especially using
+emacs; see *note PROOF-TREE::.
+
+There is a considerable amount of new documentation, in particular for
+the printing functions fmt, fmt1, and fms, and for the notion of Acl2
+term (see *note TERM::).
+
+It is possible to introduce new well-founded relations, to specify
+which relation should be used by defun, and to set a default relation.
+See *Note WELL-FOUNDED-RELATION::.
+
+It is possible to make functions suggest new inductions.  See *Note
+INDUCTION::.
+
+It is possible to change how Acl2 expresses type-set information; in
+particular, this affects what clauses are proved when forced
+assumptions are generated.  See *Note TYPE-SET-INVERTER::.
+
+A new restriction has been added to defpkg, having to do with undoing.
+If you undo a defpkg and define the same package name again, the
+imports list must be identical to the previous imports or else an
+explanatory error will occur.  See *Note
+PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS::.
+
+Theory-invariant and set-irrelevant-formals-ok are now embedded event
+forms.
+
+The command :good-bye may now be used to quit entirely out of Lisp,
+thus losing your work forever.  This command works in akcl but may not
+work in every Common Lisp.
+
+A theory ground-zero has been added that contains exactly the enabled
+rules in the startup theory.  See *Note GROUND-ZERO::.
+
+Define-pc-macro and define-pc-atomic-macro now automatically define
+:red functions.  (It used to be necessary, in general, to change color
+to :red before invoking these.)
+
+For a proof of the well-foundedness of e0-ord-< on the e0-ordinalps,
+see *note PROOF-OF-WELL-FOUNDEDNESS::.  [Note added later: Starting with
+Version_2.8, o< and o-p replace e0-ord-< and e0-ordinalp, respectively.]
+
+Free variables are now handled properly for hypotheses of
+:type-prescription rules.
+
+When the system is loaded or saved, state is now bound to
+*the-live-state*.
+
+Certify-book has been modified so that when it compiles a file, it
+loads that object file.
+
+Defstub has been modified so that it works when the color is hot (:red
+or :pink).
+
+Several basic, but not particularly commonly used, events have been
+added or changed.  The obscure axiom symbol-name-intern has been
+modified.  The definition of firstn has been changed.  Butlast is now
+defined.  The definition of integer-length has been modified.  The
+left-hand side of the rewrite rule rational-implies2 has been changed
+from (* (numerator x) (/ (denominator x))) to (* (/ (denominator x))
+(numerator x)), in order to respect the fact that unary-/ is invisible
+with respect to binary-*.  See *Note LOOP-STOPPER::.
+
+The `preprocess' process in the waterfall (see *note HINTS:: for a
+discussion of the :do-not hint) has been changed so that it works to
+avoid case-splitting.  The `simplify' process refuses to force (see
+*note FORCE::) when there are if terms, including and and or terms, in
+the goal being simplified.
+
+The function apply is no longer introduced automatically by translation
+of user input to internal form when functions are called on
+inappropriate explicit values, e.g., (car 3).
+
+The choice of which variable to use as the measured variable in a
+recursive definition has been very slightly changed.
+

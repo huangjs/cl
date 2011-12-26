@@ -1,0 +1,75 @@
+<html>
+<head><title>PORTCULLIS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PORTCULLIS</h2>the gate guarding the entrance to a certified book
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+The certificate (see <a href="CERTIFICATE.html">certificate</a> for general information) of a
+certified file is divided into two parts, a portcullis and a
+<a href="KEEP.html">keep</a>.  These names come from castle lore.  The portcullis of a
+castle is an iron grate that slides up through the ceiling of the
+tunnel-like entrance.  The portcullis of a book ensures that
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> does not start to read the book until the
+appropriate context has been created.
+<p>
+Technically, the portcullis consists of the <a href="VERSION.html">version</a> number of
+the certifying ACL2, a list of <a href="COMMAND.html">command</a>s used to create the
+``certification <a href="WORLD.html">world</a>'' and an alist specifying the check sums
+of all the <a href="BOOKS.html">books</a> included in that <a href="WORLD.html">world</a>.  The portcullis
+is constructed automatically by <code><a href="CERTIFY-BOOK.html">certify-book</a></code> from the <a href="WORLD.html">world</a>
+in which <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is called, but that <a href="WORLD.html">world</a> must have
+certain properties described below.  After listing the properties we
+discuss the issues in a more leisurely manner.<p>
+
+Each <a href="COMMAND.html">command</a> in the portcullis must be either a <code><a href="DEFPKG.html">defpkg</a></code> form or an
+embedded event form (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).<p>
+
+Consider a book to be certified.  The book is a file containing
+event forms.  Suppose the file contains references to such symbols
+as <code>my-pkg::fn</code> and <code>acl2-arith::cancel</code>, but that the book itself
+does not create the packages.  Then a hard Lisp error would be
+caused merely by the attempt to read the expressions in the book.
+The corresponding <code><a href="DEFPKG.html">defpkg</a></code>s cannot be written into the book itself
+because the book must be compilable and Common Lisp compilers differ
+on the rules concerning the inline definition of new packages.  The
+only safe course is to make all <code><a href="DEFPKG.html">defpkg</a></code>s occur outside of compiled
+files.<p>
+
+More generally, when a book is certified it is certified within some
+logical <a href="WORLD.html">world</a>.  That ``certification <a href="WORLD.html">world</a>'' contains not only
+the necessary <code><a href="DEFPKG.html">defpkg</a></code>s but also, perhaps, function and constant
+definitions and maybe even references to other <a href="BOOKS.html">books</a>.  When
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> creates the <a href="CERTIFICATE.html">certificate</a> for a file it recovers
+from the certification <a href="WORLD.html">world</a> the <a href="COMMAND.html">command</a>s used to create that
+<a href="WORLD.html">world</a> from the initial ACL2 <a href="WORLD.html">world</a>.  Those <a href="COMMAND.html">command</a>s become
+part of the portcullis for the certified book.  In addition,
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> records in the portcullis the check sums
+(see <a href="CHECK-SUM.html">check-sum</a>) of all the <a href="BOOKS.html">books</a> included in the certification
+<a href="WORLD.html">world</a>.<p>
+
+<code><a href="INCLUDE-BOOK.html">Include-book</a></code> presumes that it is impossible even to read the
+contents of a certified book unless the portcullis can be
+``raised.'' To raise the portcullis we must be able to execute
+(possibly redundantly, but certainly without error), all of the
+<a href="COMMAND.html">command</a>s in the portcullis and then verify that the <a href="BOOKS.html">books</a> thus
+included were identical to those used to build the certification
+<a href="WORLD.html">world</a> (up to check sum).  This raising of the portcullis must
+be done delicately since <code><a href="DEFPKG.html">defpkg</a></code>s are present: we cannot even read
+a <a href="COMMAND.html">command</a> in the portcullis until we have successfully executed the
+previous ones, since packages are being defined.<p>
+
+Clearly, a book is most useful if it is certified in the most
+elementary extension possible of the initial logic.  If, for
+example, your certification <a href="WORLD.html">world</a> happens to contain a
+<code><a href="DEFPKG.html">defpkg</a></code> for <code>"MY-PKG"</code> and the function <code>foo</code>, then those
+definitions become part of the portcullis for the book.  Every time
+the book is included, those names will be defined and will have to
+be either new or redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>).  But if
+those names were not necessary to the certification of the book,
+their presence would unnecessarily restrict the utility of the book.<p>
+
+See <a href="KEEP.html">keep</a> to continue the guided tour of <a href="BOOKS.html">books</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

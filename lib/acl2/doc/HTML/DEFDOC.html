@@ -1,0 +1,64 @@
+<html>
+<head><title>DEFDOC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFDOC</h2>add a <a href="DOCUMENTATION.html">documentation</a> topic
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defdoc interp-section
+   ":Doc-Section ...")
+<p>
+General Form:
+(defdoc name doc-string)
+</pre>
+
+where <code>name</code> is a symbol or string to be documented and
+<code><a href="DOC-STRING.html">doc-string</a></code> is a <a href="DOCUMENTATION.html">documentation</a> string (see <a href="DOC-STRING.html">doc-string</a>).  This
+event adds the <a href="DOCUMENTATION.html">documentation</a> string for symbol <code>name</code> to the
+<code>:</code><code><a href="DOC.html">doc</a></code> data base.  It may also be used to change the <a href="DOCUMENTATION.html">documentation</a>
+for <code>name</code> if <code>name</code> already has <a href="DOCUMENTATION.html">documentation</a>.  The difference
+between this event and <code><a href="DEFLABEL.html">deflabel</a></code> is that, unlike <code><a href="DEFLABEL.html">deflabel</a></code> (but
+like <code><a href="TABLE.html">table</a></code>), it does not mark the current <a href="HISTORY.html">history</a> with the
+<code>name</code>.  But like <code><a href="DEFLABEL.html">deflabel</a></code>, <code>defdoc</code> <a href="EVENTS.html">events</a> are never
+considered redundant (see <a href="REDUNDANT-EVENTS.html">redundant-events</a>).<p>
+
+See <a href="DEFLABEL.html">deflabel</a> for a means of attaching a <a href="DOCUMENTATION.html">documentation</a> string to
+a name that marks the current <a href="HISTORY.html">history</a> with that name.  We now
+elaborate further on how <code>defdoc</code> may be useful in place of <code><a href="DEFLABEL.html">deflabel</a></code>.<p>
+
+It is usually sufficient to use <code><a href="DEFLABEL.html">deflabel</a></code> when you might be tempted
+to use <code>defdoc</code>.  However, unlike <code><a href="DEFLABEL.html">deflabel</a></code>, <code>defdoc</code> does not mark
+the current <a href="HISTORY.html">history</a> with <code>name</code>.  Thus, <code>defdoc</code> is useful for
+introducing the <a href="DOCUMENTATION.html">documentation</a> for a <code><a href="DEFUN.html">defun</a></code> or <code><a href="DEFTHEORY.html">deftheory</a></code> event,
+for example, several <a href="EVENTS.html">events</a> before the function or theory is
+actually defined.<p>
+
+For example, suppose you want to define a theory (using <code><a href="DEFTHEORY.html">deftheory</a></code>).
+You need to prove the lemmas in that theory before executing the
+<code><a href="DEFTHEORY.html">deftheory</a></code> event.  However, it is quite natural to define a
+<code>:doc-section</code> (see <a href="DOC-STRING.html">doc-string</a>) whose name is the name of the
+theory to be defined, and put the <a href="DOCUMENTATION.html">documentation</a> for that theory's
+lemmas into that <code>:doc-section</code>.  <code>Defdoc</code> is ideal for this purpose,
+since it can be used to introduce the <code>:doc-section</code>, followed by the
+lemmas referring to that <code>:doc-section</code>, and finally concluded with a
+<code><a href="DEFTHEORY.html">deftheory</a></code> event of the same name.  If <code><a href="DEFLABEL.html">deflabel</a></code> were used
+instead of <code>defdoc</code>, for example, then the <code><a href="DEFTHEORY.html">deftheory</a></code> event would
+be disallowed because the name is already in use by the <code><a href="DEFLABEL.html">deflabel</a></code>
+event.<p>
+
+We also imagine that some users will want to use <code>defdoc</code> to insert
+the <a href="DOCUMENTATION.html">documentation</a> for a function under development.  This <code>defdoc</code>
+event would be followed by definitions of all the subroutines of
+that function, followed in turn by the function definition itself.<p>
+
+Any time <code>defdoc</code> is used to attach <a href="DOCUMENTATION.html">documentation</a> to an
+already-documented name, the name must not be attached to a new
+<code>:doc-section</code>.  We make this requirement as a way of avoiding
+loops in the <a href="DOCUMENTATION.html">documentation</a> tree.  When <a href="DOCUMENTATION.html">documentation</a> is redefined, a
+warning will be printed to the terminal.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

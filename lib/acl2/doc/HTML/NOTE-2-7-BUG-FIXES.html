@@ -1,0 +1,300 @@
+<html>
+<head><title>NOTE-2-7-BUG-FIXES.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-BUG-FIXES</h3>ACL2 Version  2.7 Notes on Bug Fixes
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+Francisco J. Martin-Mateos emailed us a soundness bug (!) in our handling of
+functional instantiation (for example see <a href="FUNCTIONAL-INSTANTIATION-EXAMPLE.html">functional-instantiation-example</a>).
+We are grateful for that email, which clearly illustrated the problem.
+It is included just below the definition of <code>push-clause</code> in ACL2 source file
+<code>prove.lisp</code>, where we have fixed the bug.  This bug was fixed in a
+re-release of Version  2.6 in February, 2002.<p>
+
+Rob Sumners emailed us a soundness bug (!) in function <code>commutative-p1</code>,
+which is used by the ACL2 <a href="BDD.html">bdd</a> package.  We are grateful for his help;
+his email gave a proof of nil and also pointed to the problem function.
+This bug was fixed in a re-release of Version  2.6 in February, 2002.<p>
+
+We discovered and fixed a soundness bug illustrated by the book below, which
+was certifiable in Version  2.6 and ends in a proof of <code>nil</code>.  The event
+<code>(verify-guards foo)</code> should have been rejected, because <code>foo</code> calls a
+function whose guards have not been verified, namely, <code>bar</code>.  However, ACL2
+did not notice the call of function <code>bar</code> in the body of <code>foo</code> because it
+was looking in the simplified (normalized) body of <code>foo</code> rather than in the
+original body of <code>foo</code>.  During processing of the book below, the logical
+definition of <code>zp</code> is used before <code>(verify-guards foo)</code>, and <code>(zp -3)</code>
+reduces to <code>t</code> in the logic.  After <code>(verify-guards foo)</code>, ACL2
+simplifies <code>(foo -3)</code> by going into raw Lisp, where <code>(zp -3)</code> is
+evaluated and reduces to <code>nil</code>.
+
+<pre>
+  (in-package "ACL2")
+  (defun bar (x)
+    (zp x))
+  (defthm zp-false-on-negatives
+    (implies (&lt; x 0)
+             (bar x))
+    :rule-classes :type-prescription)
+  (defun foo (x)
+    (declare (xargs :guard (rationalp x)
+                    :verify-guards nil))
+    (if (&lt; x 0)
+        (if (bar x) 0 1) ; simplified body reduces this line to 0
+      17))
+  (defthm foo-of-minus-3-is-0
+    (equal (foo -3) 0)
+    :rule-classes nil)
+  (verify-guards foo)
+  (defthm foo-of-minus-3-is-1
+    (equal (foo -3) 1)
+    :rule-classes nil)
+  (defthm bug
+    nil
+    :rule-classes nil
+    :hints (("Goal" :use (foo-of-minus-3-is-0 foo-of-minus-3-is-1))))
+</pre>
+
+The above bug exploited the fact that <code><a href="ZP.html">zp</a></code> has a different definition in
+raw Lisp than in the logic for arguments that violate its guard).  The
+following example caused a hard error in raw Lisp, though not a soundness
+error.
+
+<pre>
+  (in-package "ACL2")
+  (defun bar (x)
+    (cons (car x) (car x)))
+  (defun foo (x)
+    (declare (xargs :guard t
+                    :verify-guards nil))
+    (if (bar x) x nil))
+  (verify-guards foo)
+  (defthm bug
+    (equal (foo 3) t)
+    :rule-classes nil)
+</pre>
+
+We have made a minor change to the notion of the <em>formula</em> of a function
+symbol, related to the change above, which however is unlikely to be
+noticeable.<p>
+
+In order to make it harder to hit problems like the guard problem above, we
+have slighly modified the raw Lisp definition of <code><a href="ZP.html">zp</a></code>.<p>
+
+A <code><a href="BREAK-REWRITE.html">break-rewrite</a></code> command, <code>:ancestors</code>, was broken, but has been
+fixed.  Thanks to Eric Smith for bringing the problem to our attention, and
+to Robert Krug for supplying the final part of the fix.<p>
+
+Some <a href="PROOF-CHECKER.html">proof-checker</a> commands caused errors when all goals have already
+been proved.  This has been fixed.  Thanks to Matt Wilding for reporting this
+bug.<p>
+
+Fixed a bug in <code>:</code><code><a href="COMP.html">comp</a></code>.  When compiling uncompiled functions with
+very large definitions, ACL2 was inserted a backslash (<code>\</code>) character into
+generated files.<p>
+
+Fixed the <code>:type-alist</code> <code>:</code><code><a href="BRR.html">brr</a></code> command (see <a href="BRR-COMMANDS.html">brr-commands</a>), whose
+output was difficult to read when typed after an <code>:eval</code>..<p>
+
+Fixed some clumsy handling of errors when including an uncertified book, for
+example, with the error message when including an uncertified book with a bad
+<code><a href="DEFTHEORY.html">deftheory</a></code> event.  Thanks to Eric Smith for pointing out this problem.<p>
+
+Two modifications to <code><a href="CERTIFY-BOOK.html">certify-book</a></code> now cause it to reflect natural
+expectations with respect to soundness.  First, it now has default values of
+<code>nil</code> instead of <code>t</code> for keyword arguments <code>:skip-proofs-okp</code> and
+<code>:defaxioms-okp</code>.  Thanks to Robert Krug for suggesting this change and the
+ACL2 seminar at the University of Texas for discussing it.  Second, when
+<code>:skip-proofs-okp</code> (respectively, <code>:defaxioms-okp</code>) is <code>nil</code>, either
+explicitly or by default, then <code><a href="SKIP-PROOFS.html">skip-proofs</a></code> commands (respectively,
+<code><a href="DEFAXIOM.html">defaxiom</a></code> events) are disallowed inside any included books, regardless
+of the keyword parameters passed to <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  This had not been
+the case for previous versions of ACL2, regardless of the values of
+<code>:skip-proofs-okp</code> or <code>:defaxioms-okp</code> passed to <code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+Improved warnings and errors for <code><a href="CERTIFY-BOOK.html">certify-book</a></code> and <code><a href="INCLUDE-BOOK.html">include-book</a></code> to
+mention the <a href="PORTCULLIS.html">portcullis</a> as a possible source of <code><a href="SKIP-PROOFS.html">skip-proofs</a></code> and
+<code><a href="DEFAXIOM.html">defaxiom</a></code>s.<p>
+
+ACL2 formerly caused an error when <a href="HINTS.html">hints</a> in a <code>:</code><code><a href="COROLLARY.html">corollary</a></code> were
+not well-formed.  This situation could arise as follows when certifying a
+book.  A lemma FOO is proved <code><a href="LOCAL.html">LOCAL</a></code>ly to the book (or, is present in a
+sub-book that is included locally).  The <code>:corollary</code> of a subsequent
+theorem, BAR, disables that rule in a hint.  When BAR is proved, this is not
+a problem.  But <code><a href="CERTIFY-BOOK.html">certify-book</a></code> makes a second pass after processing the
+events in a book: it essentially does an <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  During the
+<code>include-book</code> pass, FOO is not known (because it was <code><a href="LOCAL.html">local</a></code>), and
+therefore ACL2 fails to process the <code><a href="DISABLE.html">disable</a></code> of FOO in an
+<code><a href="IN-THEORY.html">in-theory</a></code> hint.  The fix is that during <code><a href="INCLUDE-BOOK.html">include-book</a></code>, <a href="HINTS.html">hints</a>
+are ignored in corollaries just as they have been for the main theorem (or
+definition).<p>
+
+It was possible for guard verification to succeed where it should have
+failed.  We have fixed the bug (which was in source function (ironically
+named!) <code>fcons-term-smart</code>).  Thanks to Robert Krug for sending us an
+example of bungled guard verification.  It turns out that this bug was also
+present in Version_2.6.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> command <code>=</code> has been improved.  Formerly, it could
+fail to apply when certain <code><a href="IMPLIES.html">implies</a></code> terms were in the context.  Thanks
+to Pete Manolios for bringing this problem to our attention.<p>
+
+The command <code><a href="ADD-BINOP.html">add-binop</a></code> failed to work.  This has been fixed.  Thanks to
+Rob Sumners for pointing out this problem.  Also see <a href="NOTE-2-7-OTHER.html">note-2-7-other</a> for a
+discussion of how this and another <a href="TABLE.html">table</a> are no longer part of the
+<code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>. <p>
+
+Book certification could cause a segmentation fault in cases where the
+certification world (see <a href="CERTIFY-BOOK.html">certify-book</a>) has a very large number of events.
+This has been fixed.<p>
+
+We now allow empty <code>:use</code> <a href="HINTS.html">hints</a> and empty hints, as requested by Eric
+Smith.  Examples:
+
+<pre>
+("Goal" :use ())
+("Goal")
+</pre>
+<p>
+
+A large <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> nest could cause a stack overflow when
+executing either <code>:pr FN</code>, <code>:pr! FN</code>, or <code>:monitor (:definition FN) t</code>,
+where <code>FN</code> is in that large mutual recursion nest.  This has been fixed
+(implementation detail:  function <code>actual-props</code> has been made
+tail-recursive).  NOTE:  If you just want the definition of <code>FN</code>,
+<code>:</code><code><a href="PF.html">pf</a></code><code> FN</code> can be much faster than <code>:</code><code><a href="PR.html">pr</a></code><code> FN</code> if <code>FN</code>
+is in a large <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code>.<p>
+
+Hard Lisp errors could occur when including uncertified books.  This has been
+fixed; ACL2 now does syntax-checking formerly omitted when including
+uncertified books.<p>
+
+Previously, the evaluation of <code><a href="DEFSTOBJ.html">defstobj</a></code> and <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> forms
+could cause ``undefined'' warnings when the form was compiled.  This has been
+fixed.  Thanks to Eric Smith for bring a <code>mutual-recursion</code> example to our
+attention.<p>
+
+A bug has been fixed in the syntactic check for valid <code>:</code><code><a href="LOOP-STOPPER.html">loop-stopper</a></code>
+values.  Formerly, valid <code>:loop-stopper</code> values were erroneously restricted
+to lists of length at most 2 (a minor problem, since these lists typically
+have length 1), and the function symbol(s) need not have been defined in the
+current ACL2 <a href="WORLD.html">world</a>.  Thanks to Eric Smith for sending an example to
+demonstrate the latter problem.<p>
+
+Functions definitions that are <code>:non-executable</code> (see <a href="XARGS.html">xargs</a>) had never
+been recognized as redundant, but this has been fixed.  Thanks to Vernon
+Austel for pointing out this problem.<p>
+
+Compilation using <code>:</code><code><a href="COMP.html">comp</a></code> now compiles user-defined
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode functions.  Formerly only <code>:</code><code><a href="LOGIC.html">logic</a></code> mode
+functions could be compiled using <code>:comp</code>.<p>
+
+Handling of <code>:by</code> hints has been improved in essentially three ways.  The
+primary change is that now, when the current goal exactly matches the
+supplied lemma instance, the subsumption test will always succeeds
+(see <a href="HINTS.html">hints</a>, in particular the discussion of <code>:by</code>).  Second, certain proof
+failures involving <code>:by</code> <a href="HINTS.html">hints</a> were failing silently, with duplicate
+messages ``As indicated by the hint, this goal is subsumed by....''  This
+could happen when the original goal was among the goals generated by applying
+the hint.  This problem has been fixed by no longer considering this proof
+step to be specious (see <a href="SPECIOUS-SIMPLIFICATION.html">specious-simplification</a>).  Third and finally, when
+the <a href="LEMMA-INSTANCE.html">lemma-instance</a> refers to a definition, the original body of that
+definition is used rather than the simplfied (``normalized'') body.<p>
+
+In addition to the obove, we now recognize more cases of specious
+simplification (see <a href="SPECIOUS-SIMPLIFICATION.html">specious-simplification</a>).  Thanks to Eric Smith for
+bringing this issue to our attention.<p>
+
+Fixed building of ACL2 under CLISP so that (1) the appropriate ACL2 startup
+message is printed out when ACL2 starts up, and (2) the lisp process supplied
+to make, e.g., LISP=/usr/bin/clisp, is the one written out to the saved ACL2
+file.  Thanks to Dave Greve and Noah Friedman for suggesting (2).  Also, ACL2
+now works with CLISP 2.30.  We have accommodated a change in CLISP's handling
+of streams and its package-locking mechanism, as well as certain non-standard
+characters that formerly could cause CLISP 2.30 to break, even when those
+characters are in comments.<p>
+
+Eliminated compiler warnings for CMU Lisp.<p>
+
+Fixed an incorrect error supplied when book certification proceeded so
+quickly that the file write dates of the book (<code>.lisp</code> file) and the
+corresponding compiled file are equal.  Now that error only occurs if the
+compiled file has a strictly earlier write date, which probably should never
+happen.<p>
+
+Fixed an infinite loop when executing <code>make clean-books</code> (and hence
+<code>make</code> with targets that call <code>clean-books</code>, namely,
+<code>certify-books-fresh</code>, <code>regression-fresh</code>, and
+<code>regression-nonstd-fresh</code>), which could occur when any subdirectories of
+<code>books/</code> are missing -- even <code>workshops/</code>, which is intended to be
+optional.  Thanks to Pete Manolios for pointing out this bug.<p>
+
+The <code><a href="INCLUDE-BOOK.html">include-book</a></code> command now works properly even when filenames, or
+their directories or parent directories (etc.) are links.  Thanks to Matt
+Wilding for pointing out this problem.<p>
+
+The commands <code>:</code><code><a href="PUFF.html">puff</a></code> <code>:</code><code><a href="PUFF_star_.html">puff*</a></code> have been fixed.  Formerly,
+there was a bug when <code>:puff</code> or <code>:puff*</code> caused the execution of an
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> for an absolute <a href="PATHNAME.html">pathname</a>, <code>P</code>, that was other than
+the current connected book directory (see <a href="CBD.html">cbd</a>).  When including <code>P</code>, any
+subsidiary <code><a href="INCLUDE-BOOK.html">include-book</a></code> with a relative pathname would be erroneously
+considered relative to the current <code><a href="CBD.html">cbd</a></code> rather than relative to the
+directory of <code>P</code>.  Thanks to Pete Manolios and Matt Wilding for pointing
+out this problem.<p>
+
+It had been possible in a ``large'' ACL2 image to call
+<code><a href="VERIFY-TERMINATION.html">verify-termination</a></code> successfully on built-in function <code><a href="SYS-CALL.html">sys-call</a></code>,
+with undesirable results.  This hole has been plugged.  Thanks to Rob Sumners
+for pointing out this problem.  The new function <code><a href="GC$.html">gc$</a></code> must also stay in
+<code>:</code><code><a href="PROGRAM.html">program</a></code> mode.<p>
+
+ACL2 no longer warns when certifying a book based on <code><a href="LOCAL.html">local</a></code> functions
+whose <a href="GUARD.html">guard</a>s have not yet been verified.  Thanks to Pete Manolios for
+pointing out this issue.<p>
+
+An occasional ``slow array warning'' had been possible during proofs.  The
+following sequence shows how to evoke that warning in previous versions.
+
+<pre>
+(in-theory (disable binary-append))
+(in-theory (enable binary-append))
+(in-theory (disable binary-append))
+(ubt 2)
+(thm (equal (car (cons x y)) x))
+</pre>
+
+(See <a href="NOTE-2-7-OTHER.html">note-2-7-other</a> for a discussion of a change to <code><a href="COMPRESS1.html">compress1</a></code> in
+support of this fix; however, users should not need to read that discussion.)<p>
+
+The raw Lisp code for <code><a href="DEFCHOOSE.html">defchoose</a></code> had a small bug, which was only
+evidenced in CLISP implementations as far as we know.  It has been fixed.<p>
+
+When <code><a href="LD.html">ld</a></code> is applied to a stringp file name, it now temporarily sets the
+connected book directory (see <a href="CBD.html">cbd</a>) to the directory of that file while
+evaluating forms in that file.  To see the effect of this change, imagine a
+subdirectory <code>"sub"</code> of the current directory, and imagine executing
+<code>(ld "sub/foo.lisp")</code>, where file <code>foo.lisp</code> contains the form
+<code>(include-book "bar")</code>.  Presumably the intention was to consider the
+file <code>bar.lisp</code> in the same directory, <code>sub/</code>, as <code>foo.lisp</code>.  <code>Ld</code>
+now honors that intention, but in previous versions <code>"bar.lisp"</code> would
+have been a reference to a file in the current directory, not in <code>sub/</code>.<p>
+
+For users of <code>run-acl2</code> [perhaps there are none!]: A fix has been provided
+by a Debian user via Camm Maguire so that acl2-mode anyone using that?] will
+work in Xemacs, which apparently uses variable <code>lisp-mode-shared-map</code> rather
+than <code>shared-lisp-mode-map</code>.<p>
+
+ACL2 has, for a long time (always?), had a mechanism for avoiding re-proving
+<a href="CONSTRAINT.html">constraint</a>s generated by <code>:functional-instance</code> <a href="LEMMA-INSTANCE.html">lemma-instance</a>s
+in <code>:use</code> and <code>:by</code> hints.  But this mechanism had not applied to defined
+(as opposed to constrained) functions.  This has been fixed.  Thanks to
+Francisco J. Martin-Mateos (ChesKo) for pointing out this problem by sending
+a clear example.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

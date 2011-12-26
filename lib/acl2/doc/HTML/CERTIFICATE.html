@@ -1,0 +1,88 @@
+<html>
+<head><title>CERTIFICATE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>CERTIFICATE</h2>how a book is known to be admissible and where its <code><a href="DEFPKG.html">defpkg</a></code>s reside
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+A book, say <code>"arith"</code>, is said to have a ``certificate'' if there
+is a file named <code>"arith.cert"</code>.  Certificates are created by the
+function <code><a href="CERTIFY-BOOK.html">certify-book</a></code> and inspected by <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  Check
+sums are used to help ensure that certificates are legitimate and
+that the corresponding book has not been modified since
+certification.  But because the file system is insecure and check
+sums are not perfect it is possible for the inclusion of a book to
+cause inconsistency even though the book carries an impeccable
+certificate.<p>
+
+The certificate includes the version number of the certifying ACL2.
+A book is considered uncertified if it is included in an ACL2
+with a different <a href="VERSION.html">version</a> number.
+<p>
+The presence of a ``valid'' certificate file for a book attests to
+two things: all of the <a href="EVENTS.html">events</a> of the book are admissible in a
+certain extension of the initial ACL2 logic, and the non-<code><a href="LOCAL.html">local</a></code>
+<a href="EVENTS.html">events</a> of the book are independent of the <code><a href="LOCAL.html">local</a></code> ones
+(see <a href="LOCAL-INCOMPATIBILITY.html">local-incompatibility</a>).  In addition, the certificate
+contains the <a href="COMMAND.html">command</a>s used to construct the <a href="WORLD.html">world</a> in which
+certification occurred.  Among those <a href="COMMAND.html">command</a>s, of course, are the
+<code><a href="DEFPKG.html">defpkg</a></code>s defining the packages used in the book.  When a book is
+included into a host <a href="WORLD.html">world</a>, that <a href="WORLD.html">world</a> is first extended
+by the <a href="COMMAND.html">command</a>s listed in the certificate for the book.  Unless that
+causes an error due to name conflicts, the extension ensures that
+all the packages used by the book are identically defined in the
+host <a href="WORLD.html">world</a>.<p>
+
+<em>Security:</em><p>
+
+Because the host file system is insecure, there is no way ACL2 can
+guarantee that the contents of a book remain the same as when its
+certificate was written.  That is, between the time a book is
+certified and the time it is used, it may be modified.  Furthermore,
+certificates can be counterfeited.  Check sums (see <a href="CHECK-SUM.html">check-sum</a>)
+are used to help detect such problems.  But check sums provide
+imperfect security: two different files can have the same check sum.<p>
+
+Therefore, from the strictly logical point of view, one must
+consider even the inclusion of certified <a href="BOOKS.html">books</a> as placing a burden
+on the user:
+<blockquote><p>
+
+The non-erroneous inclusion of a certified book is consistency
+preserving provided (a) the objects read by <code><a href="INCLUDE-BOOK.html">include-book</a></code> from the
+certificate were the objects written there by a <code><a href="CERTIFY-BOOK.html">certify-book</a></code> and
+(b) the forms read by <code><a href="INCLUDE-BOOK.html">include-book</a></code> from the book itself are the
+forms read by the corresponding <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.<p>
+
+</blockquote>
+We say that a given execution of <code><a href="INCLUDE-BOOK.html">include-book</a></code> is ``certified''
+if a certificate file for the book is present and well-formed and
+the check sum information contained within it supports the
+conclusion that the <a href="EVENTS.html">events</a> read by the <code><a href="INCLUDE-BOOK.html">include-book</a></code> are the ones
+checked by <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.  When an uncertified <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+occurs, warnings are printed or errors are caused.  But even if no
+warning is printed, you must accept burdens (a) and (b) if you use
+<a href="BOOKS.html">books</a>.  These burdens are easier to live with if you protect your
+<a href="BOOKS.html">books</a> so that other users cannot write to them, you abstain from
+running concurrent ACL2 jobs, and you abstain from counterfeiting
+certificates.  But even on a single user uniprocessor, you can shoot
+yourself in the foot by using the ACL2 <a href="IO.html">io</a> primitives to fabricate an
+inconsistent book and the corresponding certificate.<p>
+
+Note that part (a) of the burden described above implies, in
+particular, that there are no guarantees when a certificate is
+copied.  When <a href="BOOKS.html">books</a> are renamed (as by copying them), it is
+recommended that their certificates be removed and the <a href="BOOKS.html">books</a> be
+recertified.  The expectation is that recertification will go
+through without a hitch if relative <a href="PATHNAME.html">pathname</a>s are used.
+See <a href="PATHNAME.html">pathname</a>, which is not on the guided tour.<p>
+
+Certificates essentially contain two parts, a <a href="PORTCULLIS.html">portcullis</a> and a
+<a href="KEEP.html">keep</a>.  There is a third part, an <code>expansion-alist</code>, in order
+to record expansions if <code><a href="MAKE-EVENT.html">make-event</a></code> has been used, but the user
+need not be concerned with that level of detail.<p>
+
+See <a href="PORTCULLIS.html">portcullis</a> to continue the guided tour through <a href="BOOKS.html">books</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

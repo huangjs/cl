@@ -1,0 +1,42 @@
+<html>
+<head><title>ACL2-PC_colon__colon_PUT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::PUT</h3>(macro)
+<code>   </code>substitute for a ``free variable''
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Example:
+(put x 17)
+<p>
+General Form:
+(put var expr)
+</pre>
+
+Substitute <code>expr</code> for the ``free variable'' <code>var</code>, as explained below.<p>
+
+A ``free variable'' is, for our purposes, a variable <code>var</code> such that
+the instruction <code>(free var)</code> has been executed earlier in the
+state-stack.  What <code>(free var)</code> really does is to let <code>var</code> be an
+abbreviation for the term <code>(hide var)</code> (see documentation for
+<code>add-abbreviation</code>).  What <code>(put var expr)</code> really does is to unwind the
+state-stack, replacing that <code>free</code> instruction with the instruction
+<code>(add-abbreviation var expr)</code>, so that future references to <code>(? var)</code>
+become reference to <code>expr</code> rather than to <code>(hide var)</code>, and then to
+replay all the other instructions that were unwound.  Because <code>hide</code>
+was used, the expectation is that in most cases, the instructions
+will replay successfully and <code>put</code> will ``succeed''.  However, if any
+replayed instruction ``fails'', then the entire replay will abort
+and ``fail'', and the state-stack will revert to its value before
+the <code>put</code> instruction was executed.<p>
+
+If <code>(put var expr)</code> ``succeeds'', then <code>(remove-abbreviation var)</code> will
+be executed at the end.<p>
+
+<strong>Note</strong>:  The <code>restore</code> command will revert the state-stack to its value
+present before the <code>put</code> instruction was executed.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

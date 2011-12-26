@@ -1,0 +1,40 @@
+<html>
+<head><title>ASSIGN.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ASSIGN</h2>assign to a global variable in <code><a href="STATE.html">state</a></code>
+<pre>Major Section:  <a href="OTHER.html">OTHER</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(assign x (expt 2 10))
+(assign a (aset1 'ascii-map-array (@ a) 66 'Upper-case-B))
+<p>
+General Form:
+(assign symbol term)
+</pre>
+
+where <code>symbol</code> is any symbol (with certain enforced exclusions to
+avoid overwriting ACL2 system ``globals'') and <code>term</code> is any ACL2
+term that could be evaluated at the top-level.  <code>Assign</code> evaluates
+the term, stores the result as the value of the given symbol in the
+<code>global-table</code> of <code><a href="STATE.html">state</a></code>, and returns the result.  (Note:  the
+actual implementation of the storage of this value is much more
+efficient than this discussion of the logic might suggest.)
+<code>Assign</code> is a macro that effectively expands to the more
+complicated but understandable:
+
+<pre>
+(pprogn (f-put-global 'symbol term state)
+        (mv nil (f-get-global 'symbol term state) state)).
+</pre>
+
+The macro <code><a href="_at_.html">@</a></code> gives convenient access to the value of such globals.
+The <code>:</code><code><a href="UBT.html">ubt</a></code> operation has no effect on the <code>global-table</code> of <code><a href="STATE.html">state</a></code>.
+Thus, you may use these globals to hang onto useful data structures
+even though you may undo back past where you computed and saved
+them.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

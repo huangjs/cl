@@ -1,0 +1,154 @@
+;;; -*- syntax: common-lisp; package: cmn; base: 10; mode: lisp -*-
+
+(defun explicit-justification (x1 rx) 
+  (make-self-acting :action #'(lambda (ob rst) 
+				(declare (ignore rst))
+				(setf (box-x1 ob) x1) 
+				(setf (width ob) rx)) 
+		    :argument nil))
+
+(cmn (size 16)
+     (note-head-size 1.1)
+     (staff-separation 1.125)
+     (system-separation 1.00)
+     (line-separation 2.5)
+     (slur-curvature .33)
+     (slur-thickness .05)
+     (page-width 8.0)
+     (regularize 2)
+     (automatic-line-breaks nil)
+     (automatic-measure-numbers 3)
+  (setf vn1 
+    (staff (staff-size .75) bar treble 
+	   bf-major
+	    (f4 w (begin-tie (tie-direction :up)) 
+		(text "dolce" (dy -.5) (dx .75) (font-name "Times-Italic") (font-scaler .6)))
+	    bar
+	    (f4 w end-tie (begin-tie (tie-direction :up)))
+	    bar
+	    (f4 q end-tie (begin-slur (slur-direction :up))) (g4 q) (a4 q) (b4 q end-slur stem-up)
+	    bar
+	    (g4 w (begin-tie (tie-direction :up)))
+	    bar
+	    (chord (notes (f4 end-tie) b3) q 
+		   (begin-slur (dy -.8) (dx0 .2) (dx3 -.2) (slur-curvature .25) (slur-direction :up))) 
+	    (chord (notes g4 b3) end-slur h.)
+	    bar
+	    (chord (notes b3 f4) q) (c5 e begin-slur) (b4 e) (a4 q.) (b4 e end-slur)
+	    bar
+	    (c5 e (text "cresc." (dy -1.4) (font-name "Times-Italic") (font-scaler .6)))
+	    eighth-rest (c5 q (begin-slur (slur-curvature .5) (dy .2)) (trill (dy .125)))
+	    (d5 e end-slur (appoggiatura unjustified (slurred nil) (notes bn4 c5)))
+	    eighth-rest
+	    (en5 q (trill (dy .2)) (begin-slur (slur-curvature .5)(dy .125)))
+	    bar
+	    (f5 q end-slur f (appoggiatura unjustified (slurred nil) (dx -.75) (notes d5 e5) stem-up))
+	    quarter-rest half-rest
+	    bar
+	    whole-rest
+	    bar))
+    (staff (tied-to vn1) (staff-size .75) treble 
+	   bf-major
+	   (b3 w p begin-tie)
+	   bar
+	   (b3 w end-tie begin-tie)
+	   bar
+	   (b3 h. stem-down end-tie)
+	   (g4 stem-down q)
+	   bar
+	   (b3 w begin-tie)
+	   bar
+	   (b3 (scale 0 0) q end-tie)
+	   (dotted-half-rest (scale 0 0))
+	   bar
+	   (whole-rest (scale 0 0)) bar (whole-rest (scale 0 0)) bar (whole-rest (scale 0 0)) 
+	   bar (whole-rest (scale 0 0)) bar)
+    (staff (staff-size .75) bar bass 
+	   bf-major
+	   (b2 w p begin-tie) bar (b2 w end-tie begin-tie) bar (b2 h. end-tie) (e2 q begin-tie begin-slur) 
+	   bar
+	   (e2 q end-tie) (g2 q) (b2 h begin-tie)
+	   bar
+	   (b2 q end-tie end-slur) (e2 e begin-slur) (g2 e) (b2 h end-slur begin-tie)
+	   bar
+	   (b2 q end-tie) (b2 q begin-slur) (c3 q.) (b2 e end-slur)
+	   bar
+	   (a2 e (text "cresc." (dy -.75) (font-name "Times-Italic") (font-scaler .6)))
+	   eighth-rest (a2 q begin-slur) (g2 e end-slur) eighth-rest (g2 q begin-slur)
+	   bar
+	   (f2 h. (fp (dy -.3)) end-slur begin-slur 
+	       (text "espressivo" (dy -1.0) (dx 1.0) (font-name "Times-Italic") (font-scaler .6)))
+	   (a2 e) (c3 e end-slur)
+	   bar
+	   (f3 e (begin-slur (dy .3) (slur-curvature .85)) begin-beam) (a3 e) (c4 e) (f4 e end-beam) 
+	   (tenor (dx -.3) (scale .8 .8) (explicit-justification .25 .25))
+	   (a4 q) (g4 e) (f4 e end-slur)
+	   bar)
+    (system
+     (setf pn1 
+       (staff bar treble 
+	      bf-major
+	    (b4 begin-slur begin-octave-up mp 
+		(text "dolce" (dy -1.3) (dx 1.0) (font-name "Times-Italic") (font-scaler .6)))
+	    (d5 q) (a4 q) (c5 e) (b4 e end-octave-up)
+	    bar
+	    (f5 h. end-slur) (d5 e. begin-slur) (e5 s)
+	    bar
+	    (f5 q) (a5 e) (g5 e) (b5 e begin-beam) (a5 e) (c6 e) (b5 e end-beam)
+	    bar
+	    (g5 w end-slur)
+	    bar
+	    (f5 q begin-slur) (c6 e) (b5 e) (g5 h end-slur)
+	    bar
+	    (quarter-rest (scale 0 0))
+	    (c6 e stem-up (begin-slur (slur-direction :up))) (b5 e stem-up) (a5 q. stem-up) (b5 e stem-up end-slur)
+	    bar
+	    (chord (notes c6 c5) e stem-down 
+		   (setf ct2 (text- "cresc." (connecting-pattern '(5 20)) 
+				    (dy -.3) (font-name "Times-Italic") (font-scaler .6))))
+	    eighth-rest 
+	    (c6 q (trill (dy .4)) (begin-slur (slur-curvature .4) (dy .2)))
+	    (d6 e (appoggiatura unjustified (slurred nil) (notes bn5 c6) stem-up) end-slur)
+	    eighth-rest
+	    (en6 q (trill (dy .25)) (begin-slur (slur-curvature .4)))
+	    bar
+	    (f6 e (f (dy .3)) staccato end-slur (-text ct2 "") 
+		(appoggiatura unjustified (slurred nil) (dx -.5) (notes d6 e6) stem-up))
+	    eighth-rest
+	    (chord (notes f5 c5 a4) staccato e) eighth-rest half-rest
+	    bar
+	    whole-rest
+	    bar))
+     (staff (tied-to pn1) (treble invisible) (bf-major invisible) (meter 4 4 invisible) (f5 q (onset 20)) (d5 q) (e5 q.) (d5 e))
+     (staff brace bar treble 
+	    bf-major
+	    (chord (notes d4 f4) e begin-beam begin-slur) (b3 e) (chord (notes d4 f4) e) (b3 e end-beam) 
+	    (chord (notes d4 f4) e begin-beam) (b3 e) (chord (notes d4 f4) e) (b3 e end-slur end-beam) 
+	    bar
+	    (chord (notes d4 f4) e begin-beam begin-slur) (b3 e) (chord (notes d4 f4) e) (b3 e end-beam) 
+	    (chord (notes d4 f4) e begin-beam) (b3 e) (chord (notes d4 f4) e) (b3 e end-slur end-beam) 
+	    bar
+	    (chord (notes d4 f4) e begin-beam begin-slur) (b3 e) (chord (notes e4 g4) e) (b3 e end-beam) 
+	    (chord (notes f4 a4) e begin-beam) (b3 e) (chord (notes g4 b4) e) (b3 e end-slur end-beam) 
+	    bar
+	    (chord (notes e4 g4) e begin-beam begin-slur) (b3 e) (chord (notes e4 g4) e) (b3 e end-beam) 
+	    (chord (notes e4 g4) e begin-beam) (b3 e) (chord (notes e4 g4) e) (b3 e end-slur end-beam) 
+	    bar (line-mark (dy -.5))
+	    (chord (notes d4 f4) e begin-beam begin-slur) (b3 e) (chord (notes g4 b4) e) (b3 e end-beam) 
+	    (chord (notes e4 g4) e begin-beam) (b3 e) (chord (notes e4 g4) e) (b3 e end-slur end-beam) 
+	    bar
+	    (chord (notes d4 f4) e begin-beam begin-slur) (b3 e) (chord (notes d4 f4) e) (b3 e end-slur end-beam) 
+	    (chord (notes e4 f4) e begin-beam begin-slur) (c4 e) (chord (notes e4 f4) e) 
+	    (chord (notes d4 f4) e end-slur end-beam)
+	    bar
+	    (chord (notes c4 f4) e begin-beam begin-slur) (a3 e) (chord (notes c4 f4) e) (a3 e end-slur end-beam) 
+	    (chord (notes b3 c4 en4) e begin-beam begin-slur) (g3 e) (chord (notes b3 c4 e4) e) 
+	    (g3 e end-slur end-beam)
+	    (bass (scale .8 .8))
+	    bar
+	    (chord (notes f4 c4 a3 f3) e staccato) eighth-rest
+	    (chord (notes f4 c4 a3 f3) e staccato) eighth-rest
+	    half-rest
+	    bar
+	    whole-rest
+	    bar)))

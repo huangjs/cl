@@ -1,0 +1,194 @@
+<html>
+<head><title>TERM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TERM</h2>the three senses of well-formed ACL2 expressions or formulas
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples of Terms:
+(cond ((caar x) (cons t x)) (t 0))   ; an untranslated term<p>
+
+(if (car (car x)) (cons 't x) '0)    ; a translated term<p>
+
+(car (cons x y) 'nil v)              ; a pseudo-term
+</pre>
+
+<p>
+In traditional first-order predicate calculus a ``term'' is a
+syntactic entity denoting some object in the universe of
+individuals.  Often, for example, the syntactic characterization of
+a term is that it is either a variable symbol or the application of
+a function symbol to the appropriate number of argument terms.
+Traditionally, ``atomic formulas'' are built from terms with
+predicate symbols such as ``equal'' and ``member;'' ``formulas'' are
+then built from atomic formulas with propositional ``operators''
+like ``not,'' ``and,'' and ``implies.'' Theorems are formulas.
+Theorems are ``valid'' in the sense that the value of a theorem is
+true, in any model of the axioms and under all possible assignments
+of individuals to variables.<p>
+
+However, in ACL2, terms are used in place of both atomic formulas
+and formulas.  ACL2 does not have predicate symbols or propositional
+operators as distinguished syntactic entities.  The ACL2 universe of
+individuals includes a ``true'' object (denoted by <code>t</code>) and a
+``false'' object (denoted by <code>nil</code>), predicates and propositional
+operators are functions that return these objects.  Theorems in ACL2
+are terms and the ``validity'' of a term means that, under no
+assignment to the variables does the term evaluate to <code>nil</code>.<p>
+
+We use the word ``term'' in ACL2 in three distinct senses.  We will
+speak of ``translated'' terms, ``untranslated'' terms, and
+``pseudo-'' terms.<p>
+
+<em>Translated Terms:  The Strict Sense and Internal Form</em><p>
+
+In its most strict sense, a ``term'' is either a legal variable
+symbol, a quoted constant, or the application of an n-ary function
+symbol or closed <code>lambda</code> expression to a true list of n terms.<p>
+
+The legal variable symbols are symbols other than <code>t</code> or <code>nil</code>
+which are not in the keyword package, do not start with ampersand,
+do not start and end with asterisks, and if in the main Lisp
+package, do not violate an appropriate restriction (see <a href="NAME.html">name</a>).<p>
+
+Quoted constants are expressions of the form <code>(quote x)</code>, where <code>x</code> is
+any ACL2 object.  Such expressions may also be written <code>'x</code>.<p>
+
+Closed <code>lambda</code> expressions are expressions of the form
+<code>(lambda (v1 ... vn) body)</code> where the <code>vi</code> are distinct legal
+variable symbols, <code>body</code> is a term, and the only free variables in
+<code>body</code> are among the <code>vi</code>.<p>
+
+The function <code>termp</code>, which takes two arguments, an alleged term <code>x</code> and
+a logical world <code>w</code> (see <a href="WORLD.html">world</a>), recognizes terms of a given
+extension of the logic.  <code>Termp</code> is defined in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode.
+Its definition may be inspected with <code>:</code><code><a href="PE.html">pe</a></code> <code>termp</code> for a complete
+specification of what we mean by ``term'' in the most strict sense.
+Most ACL2 term-processing functions deal with terms in this strict
+sense and use <code>termp</code> as a <a href="GUARD.html">guard</a>.  That is, the ``internal form''
+of a term satisfies <code>termp</code>, the strict sense of the word ``term.''<p>
+
+<em>Untranslated Terms:  What the User Types</em><p>
+
+While terms in the strict sense are easy to explore (because their
+structure is so regular and simple) they can be cumbersome to type.
+Thus, ACL2 supports a more sugary syntax that includes uses of
+macros and constant symbols.  Very roughly speaking, macros are
+functions that produce terms as their results.  Constants are
+symbols that are associated with quoted objects.  Terms in this
+sugary syntax are ``translated'' to terms in the strict sense; the
+sugary syntax is more often called ``untranslated.''  Roughly
+speaking, translation just implements macroexpansion, the
+replacement of constant symbols by their quoted values, and the
+checking of all the rules governing the strict sense of ``term.''<p>
+
+More precisely, macro symbols are as described in the documentation
+for <code><a href="DEFMACRO.html">defmacro</a></code>.  A macro, <code>mac</code>, can be thought of as a function,
+<code>mac-fn</code>, from ACL2 objects to an ACL2 object to be treated as an
+untranslated term.  For example, <code><a href="CAAR.html">caar</a></code> is defined as a macro symbol;
+the associated macro function maps the object <code>x</code> into the object
+<code>(car (car x))</code>.  A macro form is a ``call'' of a macro symbol,
+i.e., a list whose <code><a href="CAR.html">car</a></code> is the macro symbol and whose <code><a href="CDR.html">cdr</a></code> is an
+arbitrary true list of objects, used as a term.  Macroexpansion is
+the process of replacing in an untranslated term every occurrence of
+a macro form by the result of applying the macro function to the
+appropriate arguments.  The ``appropriate'' arguments are determined
+by the exact form of the definition of the macro; macros support
+positional, keyword, optional and other kinds of arguments.
+See <a href="DEFMACRO.html">defmacro</a>.<p>
+
+In addition to macroexpansion and constant symbol dereferencing,
+translation implements the mapping of <code><a href="LET.html">let</a></code> and <code><a href="LET_star_.html">let*</a></code> forms into
+applications of <code>lambda</code> expressions and closes <code>lambda</code> expressions
+containing free variables.  Thus, the translation of
+
+<pre>
+(let ((x (1+ i))) (cons x k))
+</pre>
+
+can be seen as a two-step process that first produces
+
+<pre>
+((lambda (x) (cons x k)) (1+ i))
+</pre>
+
+and then
+
+<pre>
+((lambda (x k) (cons x k)) (1+ i) k) .
+</pre>
+
+Observe that the body of the <code><a href="LET.html">let</a></code> and of the first <code>lambda</code>
+expression contains a free <code>k</code> which is finally bound and passed
+into the second <code>lambda</code> expression.<p>
+
+When we say, of an event-level function such as <code><a href="DEFUN.html">defun</a></code> or <code><a href="DEFTHM.html">defthm</a></code>,
+that some argument ``must be a term'' we mean an untranslated term.
+The event functions translate their term-like arguments.<p>
+
+To better understand the mapping between untranslated terms and
+translated terms it is convenient to use the keyword command <code>:</code><code><a href="TRANS.html">trans</a></code>
+to see examples of translations.  See <a href="TRANS.html">trans</a> and also
+see <a href="TRANS1.html">trans1</a>.<p>
+
+Finally, we note that the theorem prover prints terms in
+untranslated form.  But there can be more than one correct untranslated
+term corresponding to a given translated term.  For example, the
+translated term <code>(if x y 'nil)</code> can be untranslated as <code>(if x y nil)</code>
+and can also be untranslated as <code>(and x y)</code>.  The theorem prover
+attempts to print an untranslated term that is as helpful to the
+user as possible.  In particular, consider a term of the form
+<code>(nth k st)</code> where <code>st</code> is a single-threaded object
+(see <a href="STOBJ.html">stobj</a>) and the <code>kth</code> accessor of <code>st</code> is, say, <code>kn</code>.  The
+theorem prover typically would expand <code>(kn st)</code> to <code>(nth k st)</code>.  If
+<code>k</code> is large then it could be difficult for the user to make sense out
+of a proof transcript that mentions the expanded term.  Fortunately,
+the untranslation of <code>(nth k st)</code> would be <code>(nth *kn* st)</code>; here
+<code>*kn*</code> would be a constant (see <a href="DEFCONST.html">defconst</a>) added by the <code><a href="DEFSTOBJ.html">defstobj</a></code>
+event introducing <code>st</code>, defined to have value <code>k</code>.  The user can
+extend this user-friendly style of printing applications of <code><a href="NTH.html">nth</a></code> to
+stobjs; see <a href="ADD-NTH-ALIAS.html">add-nth-alias</a>.  These remarks about printing
+applications of function <code><a href="NTH.html">nth</a></code> extend naturally to function
+<code><a href="UPDATE-NTH.html">update-nth</a></code>.  Moreover, the prover will attempt to treat terms as
+<a href="STOBJ.html">stobj</a>s for the above purpose when appropriate.  For example, if
+function <code>foo</code> has <a href="SIGNATURE.html">signature</a> <code>((foo * st) =&gt; (mv * * * st))</code>, where
+<code>st</code> is introduced with <code>(defstobj st f0 f1)</code>, then the <a href="TERM.html">term</a>
+<code>(nth '1 (mv-nth '3 (foo x st0)))</code> will be printed as
+<code>(nth *f1* (mv-nth 3 (foo x st0)))</code>.<p>
+
+<em>Pseudo-Terms:  A Common Guard for Metafunctions</em><p>
+
+Because <code>termp</code> is defined in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode, it cannot be used
+effectively in conjectures to be proved.  Furthermore, from the
+perspective of merely guarding a term processing function, <code>termp</code>
+often checks more than is required.  Finally, because <code>termp</code>
+requires the logical <a href="WORLD.html">world</a> as one of its arguments it is impossible
+to use <code>termp</code> as a <a href="GUARD.html">guard</a> in places where the logical <a href="WORLD.html">world</a> is not
+itself one of the arguments.<p>
+
+For these reasons we support the idea of ``pseudo-terms.''  A
+pseudo-term is either a symbol (but not necessarily one having the
+syntax of a legal variable symbol), a true list beginning with <code>quote</code>
+(but not necessarily well-formed), or the ``application of'' a
+symbol or pseudo <code>lambda</code> expression to a true list of
+pseudo-terms.  A pseudo <code>lambda</code> expression is an expression of the
+form <code>(lambda (v1 ... vn) body)</code> where the <code>vi</code> are all symbols
+and <code>body</code> is a pseudo-term.<p>
+
+Pseudo-terms are recognized by the unary function <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code>.  If
+<code>(termp x w)</code> is true, then <code>(pseudo-termp x)</code> is true.  However, if <code>x</code>
+fails to be a (strict) term it may nevertheless still be a
+pseudo-term.  For example, <code>(car a b)</code> is not a term, because <code><a href="CAR.html">car</a></code> is
+applied to the wrong number of arguments, but it is a pseudo-term.<p>
+
+The structures recognized by <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> can be recursively
+explored with the same simplicity that terms can be.  In particular,
+if <code>x</code> is not a <code>variablep</code> or an <code>fquotep</code>, then <code>(ffn-symb x)</code> is the
+function (<code>symbol</code> or <code>lambda</code> expression) and <code>(fargs x)</code> is the list of
+argument pseudo-terms.  A metafunction may use <code><a href="PSEUDO-TERMP.html">pseudo-termp</a></code> as the
+<a href="GUARD.html">guard</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

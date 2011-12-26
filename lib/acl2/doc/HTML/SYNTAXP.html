@@ -1,0 +1,175 @@
+<html>
+<head><title>SYNTAXP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SYNTAXP</h2>attach a heuristic filter on a <code>:</code><code><a href="REWRITE.html">rewrite</a></code>, <code>:</code><code><a href="META.html">meta</a></code>, or <code>:</code><code><a href="LINEAR.html">linear</a></code> rule
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Example:
+Consider the :REWRITE rule created from<p>
+
+(IMPLIES (SYNTAXP (NOT (AND (CONSP X)
+                            (EQ (CAR X) 'NORM))))
+         (EQUAL (LXD X)
+                (LXD (NORM X)))).
+</pre>
+
+The <code>syntaxp</code> hypothesis in this rule will allow the rule to be
+applied to <code>(lxd (trn a b))</code> but will not allow it to be applied to
+<code>(lxd (norm a))</code>.
+<p>
+<ul>
+<li><h3><a href="SYNTAXP-EXAMPLES.html">SYNTAXP-EXAMPLES</a> -- examples pertaining to syntaxp hypotheses
+</h3>
+</li>
+
+</ul>
+
+
+<pre>
+General Form:
+(SYNTAXP test)
+</pre>
+
+<code>Syntaxp</code> always returns <code>t</code> and so may be added as a vacuous
+hypothesis.  However, when relieving the hypothesis, the test
+``inside'' the <code>syntaxp</code> form is actually treated as a meta-level
+proposition about the proposed instantiation of the rule's variables
+and that proposition must evaluate to true (non-<code>nil</code>) to
+``establish'' the <code>syntaxp</code> hypothesis.<p>
+
+Note that the test of a <code>syntaxp</code> hypothesis does not, in general,
+deal with the meaning or semantics or values of the terms, but rather
+with their syntactic forms.  In the example above, the <code>syntaxp</code>
+hypothesis allows the rule to be applied to every target of the form
+<code>(lxd u)</code>, provided <code>u</code> is not of the form <code>(norm v)</code>.
+Observe that without this syntactic restriction the rule above could
+loop producing a sequence of increasingly complex targets <code>(lxd a)</code>,
+<code>(lxd (norm a))</code>, <code>(lxd (norm (norm a)))</code>, etc.  An intuitive reading
+of the rule might be ``<code>norm</code> the argument of <code>lxd</code> unless it has
+already been <code>norm</code>ed.''<p>
+
+Note also that a <code>syntaxp</code> hypothesis deals with the syntactic
+form used internally by ACL2, rather than that seen by the user.  In
+some cases these are the same, but there can be subtle differences
+with which the writer of a <code>syntaxp</code> hypothesis must be aware.
+You can use <code>:</code><code><a href="TRANS.html">trans</a></code> to display this internal representation.<p>
+
+There are two types of <code>syntaxp</code> hypotheses.  The simpler type of
+<code>syntaxp</code> hypothesis may be used as the nth hypothesis in a 
+<code>:</code><code><a href="REWRITE.html">rewrite</a></code> or <code>:</code><code><a href="LINEAR.html">linear</a></code> rule whose <code>:</code><code><a href="COROLLARY.html">corollary</a></code> is 
+<code>(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))</code>
+provided <code>test</code> is a term, <code>test</code> contains at least one variable, and
+every variable occuring freely in <code>test</code> occurs freely in <code>lhs</code> or in
+some <code>hypi</code>, <code>i&lt;n</code>.  In addition, <code>test</code> must not use any
+stobjs.  The case of <code>:</code><code><a href="META.html">meta</a></code> rules is similar to the above, except
+that it applies to the result of applying the hypothesis metafunction.
+(Later below we will describe the second type, an <em>extended</em> <code>syntaxp</code>
+hypothesis, which may use <code><a href="STATE.html">state</a></code>.)<p>
+
+We illustrate the use of simple <code>syntaxp</code> hypotheses by slightly
+elaborating the example given above.  Consider a <code>:</code><code><a href="REWRITE.html">rewrite</a></code>
+rule whose <code>:</code><code><a href="COROLLARY.html">corollary</a></code> is:
+
+<pre>
+(IMPLIES (AND (RATIONALP X)
+              (SYNTAXP (NOT (AND (CONSP X)
+                                 (EQ (CAR X) 'NORM)))))
+         (EQUAL (LXD X)
+                (LXD (NORM X))))
+</pre>
+
+How is this rule applied to <code>(lxd (trn a b))</code>?  First, we form a
+substitution that instantiates the left-hand side of the conclusion
+of the rule so that it is identical to the target term.  In the
+present case, the substitution replaces <code>x</code> with <code>(trn a b)</code>.
+
+<pre>
+(LXD X) ==&gt; (LXD (trn a b)).
+</pre>
+
+Then we backchain to establish the hypotheses, in order.  Ordinarily this
+means that we instantiate each hypothesis with our substitution and
+then attempt to rewrite the resulting instance to true.
+Thus, in order to relieve the first hypothesis above, we rewrite
+
+<pre>
+(RATIONALP (trn a b)).
+</pre>
+
+If this rewrites to true, we continue.<p>
+
+Of course, most users are aware of some exceptions to this general
+description of the way we relieve hypotheses.  For
+example, if a hypothesis contains a ``free-variable'' -- one not
+bound by the current substitution -- we attempt to extend the
+substitution by searching for an instance of the hypothesis among
+known truths.  See <a href="FREE-VARIABLES.html">free-variables</a>.  <code><a href="FORCE.html">Force</a></code>d hypotheses are another exception to the
+general rule of how hypotheses are relieved.<p>
+
+Hypotheses marked with <code>syntaxp</code>, as in <code>(syntaxp test)</code>, are
+also exceptions.  We instantiate such a hypothesis; but instead of
+rewriting the instantiated instance, we evaluate the instantiated
+<code>test</code>.  More precisely, we evaluate <code>test</code> in an environment in
+which its variable symbols are bound to the quotations of the terms
+to which those variables are bound in the instantiating
+substitution.  So in the case in point, we (in essence) evaluate
+
+<pre>
+(NOT (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))).
+</pre>
+
+This clearly evaluates to <code>t</code>.  When a <code>syntaxp</code> test evaluates
+to true, we consider the <code>syntaxp</code> hypothesis to have been
+established; this is sound because logically <code>(syntaxp test)</code> is
+<code>t</code> regardless of <code>test</code>.  If the test evaluates to <code>nil</code> (or
+fails to evaluate because of <a href="GUARD.html">guard</a> violations) we act as though
+we cannot establish the hypothesis and abandon the attempt to apply
+the rule; it is always sound to give up.<p>
+
+The acute reader will have noticed something odd about the form
+
+<pre>
+(NOT (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))).
+</pre>
+
+When relieving the first hypothesis, <code>(RATIONALP X)</code>, we substituted
+<code>(trn a b)</code> for <code>X</code>; but when relieving the second hypothesis,
+<code>(SYNTAXP (NOT (AND (CONSP X) (EQ (CAR X) 'NORM))))</code>, we substituted the
+quotation of <code>(trn a b)</code> for <code>X</code>.  Why the difference?  Remember
+that in the first hypothesis we are talking about the value of
+<code>(trn a b)</code> -- is it rational -- while in the second one we are
+talking about its syntactic form.  Remember also that Lisp, and hence
+ACL2, evaluates the arguments to a function before applying the function
+to the resulting values. Thus, we are asking ``Is the list <code>(trn a b)</code>
+a <code><a href="CONSP.html">consp</a></code> and if so, is its <code><a href="CAR.html">car</a></code> the symbol <code>NORM</code>?''  The 
+<code>quote</code>s on both <code>(trn a b)</code> and <code>NORM</code> are therefore necessary.
+One can verify this by defining <code>trn</code> to be, say <code><a href="CONS.html">cons</a></code>, and then
+evaluating forms such as
+
+<pre>
+(AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))
+(AND (CONSP (trn a b)) (EQ (CAR (trn a b)) NORM))
+(AND (CONSP (trn 'a 'b)) (EQ (CAR (trn 'a 'b)) NORM))
+(AND (CONSP '(trn a b)) (EQ '(CAR (trn a b)) ''NORM))
+</pre>
+
+at the top-level ACL2 prompt.<p>
+
+See <a href="SYNTAXP-EXAMPLES.html">syntaxp-examples</a> for more examples of the use of <code>syntaxp</code>.<p>
+
+An extended <code>syntaxp</code> hypothesis is similar to the simple type
+described above, but it uses two additional variables, <code>mfc</code> and <code>state</code>,
+which must not be bound by the left hand side or an earlier hypothesis
+of the rule.  They must be the last two variables mentioned by <code>form</code>;
+first <code>mfc</code>, then <code>state</code>.  These two variables give access to
+the functions <code>mfc-</code>xxx; see <a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a>.  As
+described there, <code>mfc</code> is bound to the so-called
+metafunction-context and <code>state</code> to ACL2's <code><a href="STATE.html">state</a></code>.
+See <a href="SYNTAXP-EXAMPLES.html">syntaxp-examples</a> for an example of the use of these extended
+<code>syntaxp</code> hypotheses.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

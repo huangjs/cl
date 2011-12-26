@@ -1,0 +1,7 @@
+(defun array= (a1 a2)
+  (and (equal (array-dimensions a1)
+              (array-dimensions a2))
+       (dotimes (i (apply #'* (array-dimensions a1)) t)
+         (unless (equal (row-major-aref a1 i)
+                        (row-major-aref a2 i))
+           (return nil)))))

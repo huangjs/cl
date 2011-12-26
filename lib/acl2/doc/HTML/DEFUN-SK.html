@@ -1,0 +1,302 @@
+<html>
+<head><title>DEFUN-SK.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFUN-SK</h2>define a function whose body has an outermost quantifier
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defun-sk exists-x-p0-and-q0 (y z)
+  (exists x
+          (and (p0 x y z)
+               (q0 x y z))))<p>
+
+(defun-sk exists-x-p0-and-q0 (y z) ; equivalent to the above
+  (exists (x)
+          (and (p0 x y z)
+               (q0 x y z))))<p>
+
+(defun-sk forall-x-y-p0-and-q0 (z)
+  (forall (x y)
+          (and (p0 x y z)
+               (q0 x y z))))
+<p>
+<ul>
+<li><h3><a href="DEFUN-SK-EXAMPLE.html">DEFUN-SK-EXAMPLE</a> -- a simple example using <code><a href="DEFUN-SK.html">defun-sk</a></code>
+</h3>
+</li>
+
+<li><h3><a href="EXISTS.html">EXISTS</a> -- existential quantifier
+</h3>
+</li>
+
+<li><h3><a href="FORALL.html">FORALL</a> -- universal quantifier
+</h3>
+</li>
+
+<li><h3><a href="QUANTIFIERS.html">QUANTIFIERS</a> -- issues about quantification in ACL2
+</h3>
+</li>
+
+</ul>
+
+General Form:
+(defun-sk fn (var1 ... varn) body
+  &amp;key rewrite doc quant-ok skolem-name thm-name witness-dcls)
+</pre>
+
+where <code>fn</code> is the symbol you wish to define and is a new symbolic
+name (see <a href="NAME.html">name</a>), <code>(var1 ... varn)</code> is its list of formal
+parameters (see <a href="NAME.html">name</a>), and <code>body</code> is its body, which must be
+quantified as described below.  The <code>&amp;key</code> argument <code><a href="DOC.html">doc</a></code> is an optional
+<a href="DOCUMENTATION.html">documentation</a> string to be associated with <code>fn</code>; for a description
+of its form, see <a href="DOC-STRING.html">doc-string</a>.  In the case that <code>n</code> is 1, the list
+<code>(var1)</code> may be replaced by simply <code>var1</code>.  The other arguments are
+explained below.<p>
+
+For a simple example, see <a href="DEFUN-SK-EXAMPLE.html">defun-sk-example</a>.  For a more elaborate example,
+see <a href="TUTORIAL4-DEFUN-SK-EXAMPLE.html">Tutorial4-Defun-Sk-Example</a>.  Also see <a href="QUANTIFIERS.html">quantifiers</a> for an example
+illustrating how the use of recursion, rather than explicit quantification
+with <code>defun-sk</code>, may be preferable.<p>
+
+Below we describe the <code>defun-sk</code> event precisely.  First, let us
+consider the examples above.  The first example, again, is:
+
+<pre>
+(defun-sk exists-x-p0-and-q0 (y z)
+  (exists x
+          (and (p0 x y z)
+               (q0 x y z))))
+</pre>
+
+It is intended to represent the predicate with formal parameters <code>y</code>
+and <code>z</code> that holds when for some <code>x</code>, <code>(and (p0 x y z) (q0 x y z))</code>
+holds.  In fact <code>defun-sk</code> is a macro that adds the following two
+<a href="EVENTS.html">events</a>, as shown just below.  The first event guarantees that if
+this new predicate holds of <code>y</code> and <code>z</code>, then the term shown,
+<code>(exists-x-p0-and-q0-witness y z)</code>, is an example of the <code>x</code> that is
+therefore supposed to exist.  (Intuitively, we are axiomatizing
+<code>exists-x-p0-and-q0-witness</code> to pick a witness if there is one.)
+Conversely, the second event below guarantees that if there is any
+<code>x</code> for which the term in question holds, then the new predicate does
+indeed hold of <code>y</code> and <code>z</code>. 
+
+<pre>
+(defun exists-x-p0-and-q0 (y z)
+  (declare (xargs :non-executable t))
+  (let ((x (exists-x-p0-and-q0-witness y z)))
+    (and (p0 x y z) (q0 x y z))))
+(defthm exists-x-p0-and-q0-suff
+  (implies (and (p0 x y z) (q0 x y z))
+           (exists-x-p0-and-q0 y z)))
+</pre>
+
+Now let us look at the third example from the introduction above:
+
+<pre>
+(defun-sk forall-x-y-p0-and-q0 (z)
+  (forall (x y)
+          (and (p0 x y z)
+               (q0 x y z))))
+</pre>
+
+The intention is to introduce a new predicate
+<code>(forall-x-y-p0-and-q0 z)</code> which states that the indicated conjunction
+holds of all <code>x</code> and all <code>y</code> together with the given <code>z</code>.  This time, the
+axioms introduced are as shown below.  The first event guarantees
+that if the application of function <code>forall-x-y-p0-and-q0-witness</code> to
+<code>z</code> picks out values <code>x</code> and <code>y</code> for which the given term
+<code>(and (p0 x y z) (q0 x y z))</code> holds, then the new predicate
+<code>forall-x-y-p0-and-q0</code> holds of <code>z</code>.  Conversely, the (contrapositive
+of) the second axiom guarantees that if the new predicate holds of
+<code>z</code>, then the given term holds for all choices of <code>x</code> and <code>y</code> (and that
+same <code>z</code>). 
+
+<pre>
+(defun forall-x-y-p0-and-q0 (z)
+  (declare (xargs :non-executable t))
+  (mv-let (x y)
+          (forall-x-y-p0-and-q0-witness z)
+          (and (p0 x y z) (q0 x y z))))
+(defthm forall-x-y-p0-and-q0-necc
+  (implies (not (and (p0 x y z) (q0 x y z)))
+           (not (forall-x-y-p0-and-q0 z))))
+</pre>
+
+The examples above suggest the critical property of <code>defun-sk</code>:  it
+indeed does introduce the quantified notions that it claims to
+introduce.<p>
+
+Notice that the <code><a href="DEFTHM.html">defthm</a></code> event just above, <code>forall-x-y-p0-and-q0-necc</code>,
+may not be of optimal form as a rewrite rule.  Users sometimes find that when
+the quantifier is <code>forall</code>, it is useful to state this rule in a form where
+the new quantified predicate is a hypothesis instead.  In this case that form
+would be as follows:
+
+<pre>
+(defthm forall-x-y-p0-and-q0-necc
+  (implies (forall-x-y-p0-and-q0 z)
+           (and (p0 x y z) (q0 x y z))))
+</pre>
+
+ACL2 will turn this into one <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule for each conjunct,
+<code>(p0 x y z)</code> and <code>(q0 x y z)</code>, with hypothesis
+<code>(forall-x-y-p0-and-q0 z)</code> in each case.  In order to get this effect, use
+<code>:rewrite :direct</code>, in this case as follows.
+
+<pre>
+(defun-sk forall-x-y-p0-and-q0 (z)
+  (forall (x y)
+          (and (p0 x y z)
+               (q0 x y z)))
+  :rewrite :direct)
+</pre>
+<p>
+
+We now turn to a detailed description <code>defun-sk</code>, starting with a
+discussion of its arguments as shown in the "General Form" above.<p>
+
+The third argument, <code>body</code>, must be of the form
+
+<pre>
+(Q bound-vars term)
+</pre>
+
+where:  <code>Q</code> is the symbol <code><a href="FORALL.html">forall</a></code> or <code><a href="EXISTS.html">exists</a></code> (in the "ACL2"
+package), <code>bound-vars</code> is a variable or true list of variables
+disjoint from <code>(var1 ... varn)</code> and not including <code><a href="STATE.html">state</a></code>, and
+<code>term</code> is a term.  The case that <code>bound-vars</code> is a single variable
+<code>v</code> is treated exactly the same as the case that <code>bound-vars</code> is
+<code>(v)</code>.<p>
+
+The result of this event is to introduce a ``Skolem function,'' whose name is
+the keyword argument <code>skolem-name</code> if that is supplied, and otherwise is
+the result of modifying <code>fn</code> by suffixing "-WITNESS" to its name.  The
+following definition and one of the following two theorems (as indicated) are
+introduced for <code>skolem-name</code> and <code>fn</code> in the case that <code>bound-vars</code>
+(see above) is a single variable <code>v</code>.  The name of the <code><a href="DEFTHM.html">defthm</a></code> event
+may be supplied as the value of the keyword argument <code>:thm-name</code>; if it is
+not supplied, then it is the result of modifying <code>fn</code> by suffixing
+"-SUFF" to its name in the case that the quantifier is <code><a href="EXISTS.html">exists</a></code>, and
+"-NECC" in the case that the quantifier is <code><a href="FORALL.html">forall</a></code>.
+
+<pre>
+(defun fn (var1 ... varn)
+  (declare (xargs :non-executable t))
+  (let ((v (skolem-name var1 ... varn)))
+    term))<p>
+
+(defthm fn-suff ;in case the quantifier is EXISTS
+  (implies term
+           (fn var1 ... varn)))<p>
+
+(defthm fn-necc ;in case the quantifier is FORALL
+  (implies (not term)
+           (not (fn var1 ... varn))))
+</pre>
+<p>
+
+In the <code>forall</code> case, however, the keyword pair <code>:rewrite :direct</code> may be
+supplied after the body of the <code>defun-sk</code> form, in which case the
+contrapositive of the above form is used instead:
+
+<pre>
+(defthm fn-necc ;in case the quantifier is FORALL
+  (implies (fn var1 ... varn)
+           term))
+</pre>
+
+This is often a better choice for the "-NECC" rule, provided ACL2 can parse
+<code>term</code> as a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule.  A second possible value of the
+<code>:rewrite</code> argument of <code>defun-sk</code> is <code>:default</code>, which gives the same
+behavior as when <code>:rewrite</code> is omitted.  Otherwise, the value of
+<code>:rewrite</code> should be the term to use as the body of the <code>fn-necc</code> theorem
+shown above; ACL2 will attempt to do the requisite proof in this case.  If
+that term is weaker than the default, the properties introduced by
+<code>defun-sk</code> may of course be weaker than they would be otherwise.  Finally,
+note that the <code>:rewrite</code> keyword argument for <code>defun-sk</code> only makes sense
+if the quantifier is <code>forall</code>; it is thus illegal if the quantifier is
+<code>exists</code>.  Enough said about <code>:rewrite</code>!<p>
+
+In the case that <code>bound-vars</code> is a list of at least two variables, say
+<code>(bv1 ... bvk)</code>, the definition above (with no keywords) is the following
+instead, but the theorem remains unchanged.
+
+<pre>
+(defun fn (var1 ... varn)
+  (declare (xargs :non-executable t))
+  (mv-let (bv1 ... bvk)
+          (skolem-name var1 ... varn)
+          term))
+</pre>
+<p>
+
+In order to emphasize that the last element of the list, <code>body</code>, is a
+term, <code>defun-sk</code> checks that the symbols <code><a href="FORALL.html">forall</a></code> and <code><a href="EXISTS.html">exists</a></code> do
+not appear anywhere in it.  However, on rare occasions one might
+deliberately choose to violate this convention, presumably because
+<code><a href="FORALL.html">forall</a></code> or <code><a href="EXISTS.html">exists</a></code> is being used as a variable or because a
+macro call will be eliminating ``calls of'' <code><a href="FORALL.html">forall</a></code> and <code><a href="EXISTS.html">exists</a></code>.
+In these cases, the keyword argument <code>quant-ok</code> may be supplied a
+non-<code>nil</code> value.  Then <code>defun-sk</code> will permit <code><a href="FORALL.html">forall</a></code> and
+<code><a href="EXISTS.html">exists</a></code> in the body, but it will still cause an error if there is
+a real attempt to use these symbols as quantifiers.<p>
+
+Note the form <code>(declare (xargs :non-executable t))</code> that appears in each
+<code><a href="DEFUN.html">defun</a></code> above.  These forms disable certain checks that are required for
+execution, in particular the single-threaded use of <code><a href="STOBJ.html">stobj</a></code>s.  However,
+there is a price: calls of these defined functions cannot be evaluated.
+Normally that is not a problem, since these notions involve quantifiers.  But
+you are welcome to replace this <code><a href="DECLARE.html">declare</a></code> form with your own, as follows:
+if you supply a list of <code>declare</code> forms to keyword argument
+<code>:witness-dcls</code>, these will become the declare forms in the generated
+<code><a href="DEFUN.html">defun</a></code>.<p>
+
+<code>Defun-sk</code> is a macro implemented using <code><a href="DEFCHOOSE.html">defchoose</a></code>, and hence should
+only be executed in <a href="DEFUN-MODE.html">defun-mode</a> <code>:</code><code><a href="LOGIC.html">logic</a></code>; see <a href="DEFUN-MODE.html">defun-mode</a> and
+see <a href="DEFCHOOSE.html">defchoose</a>.<p>
+
+If you find that the rewrite rules introduced with a particular use of
+<code>defun-sk</code> are not ideal, even when using the <code>:rewrite</code> keyword
+discussed above (in the <code>forall</code> case), then at least two reasonable
+courses of action are available for you.  Perhaps the best option is to prove
+the <code><a href="REWRITE.html">rewrite</a></code> rules you want.  If you see a pattern for creating rewrite
+rules from your <code>defun-sk</code> events, you might want to write a macro that
+executes a <code>defun-sk</code> followed by one or more <code><a href="DEFTHM.html">defthm</a></code> events.  Another
+option is to write your own variant of the <code>defun-sk</code> macro, say,
+<code>my-defun-sk</code>, for example by modifying a copy of the definition of
+<code>defun-sk</code> from the ACL2 sources.<p>
+
+If you want to represent nested quantifiers, you can use more than one
+<code>defun-sk</code> event.  For example, in order to represent
+
+<pre>
+(forall x (exists y (p x y z)))
+</pre>
+
+you can use <code>defun-sk</code> twice, for example as follows.
+
+<pre>
+(defun-sk exists-y-p (x z)
+  (exists y (p x y z)))<p>
+
+(defun-sk forall-x-exists-y-p (z)
+  (forall x (exists-y-p x z)))
+</pre>
+<p>
+
+Some distracting and unimportant warnings are inhibited during
+<code>defun-sk</code>.<p>
+
+Note that this way of implementing quantifiers is not a new idea.  Hilbert
+was certainly aware of it 60 years ago!  Also
+see <a href="CONSERVATIVITY-OF-DEFCHOOSE.html">conservativity-of-defchoose</a> for a technical argument that justifies the
+logical conservativity of the <code><a href="DEFCHOOSE.html">defchoose</a></code> event in the sense of the paper
+by Kaufmann and Moore entitled ``Structured Theory Development for a
+Mechanized Logic'' (Journal of Automated Reasoning 26, no. 2 (2001),
+pp. 161-203).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

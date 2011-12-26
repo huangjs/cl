@@ -1,0 +1,349 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+   <TITLE>Frames</TITLE>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Frames</DIV>
+
+<P><CODE><A HREF="../programs/frames.lisp">frames.lisp</A></CODE> is
+an implementation of a simple hierarchical frame memory, such as that
+used for implementing Schank's <A HREF="mops.html">Memory
+Organization Packets</A> (MOPs).</P>
+
+<P>A frame is a very general data structure, useful for representing
+different kinds of knowledge, including concepts, abstractions,
+indices, and so on. This package provides the basic functionality of
+frames, for use and extension by other packages.</P>
+
+<P>The <CODE><A HREF="../programs/mops.lisp">mops.lisp</A></CODE> is
+built on top of the frames package. Most of the time you will use
+mops. It exports most of the frames functions.</P>
+
+<P>A frame represents a concept. Each frame has</P>
+
+<UL>
+   <LI>a <EM>name</EM>,
+
+   <LI>a list of <EM>immediate abstractions</EM>, and
+
+   <LI>a list of <EM>slots</EM>.
+</UL>
+
+<P>The slots give information about attributes of name} and have 
+<em>roles</em>, e.g., <code>color</code> with <em>fillers</em>, 
+e.g., <code>grey</code>. Fillers are
+often the names of other frames.</P>
+
+<P>Here are examples of three very different concepts being
+represented, a concrete object, an abstraction, and an event
+involving the object:</P>
+
+<P><TABLE BORDER=1 WIDTH="100%">
+   <TR>
+      <TD VALIGN=top>
+         <PRE>clyde-1
+  absts: elephant
+  slots:
+    name = Clyde
+    age = 15</PRE>
+      </TD><TD VALIGN=top>
+         <PRE>elephant
+  absts: mammal
+  slots:
+   color = grey</PRE>
+      </TD><TD VALIGN=top>
+         <PRE>event-1
+  absts: event
+  slots:
+    actor = clyde-1
+    action = ingest
+    object = peanuts-1</PRE>
+      </TD></TR>
+</TABLE></P>
+
+<P>The chain of links from a frame to its immediate abstractions, and
+from the immediate abstractions of their abstractions, and so on,
+forms an abstraction hierarchy. For example, we might have the
+hierarchy "clyde is an elephant, an elephant is a mammal, a mammal is
+an animal, and an animal is a thing."</P>
+
+<P>Using the code in
+<CODE><A HREF="../programs/frames.lisp">frames.lisp</A></CODE>, the
+simple examples above could be defined as follows, using the
+primitive function <CODE>add-frame</CODE>. Normally, though, it's
+better to use higher-level functions, such as <CODE>defmop</CODE>,
+described later.</P>
+
+<PRE>(add-frame 'clyde-1
+   :abstractions '(elephant)
+   :slots '(:age 15 :name clyde))
+&nbsp;
+(add-frame 'elephant
+   :abstractions '(mammal)
+   :slots '(:color grey))
+&nbsp;
+(add-frame 'event-1
+   :abstractions '(event)
+   :slots '(:actor clyde-1
+            :action ingest
+            :object peanuts-12))
+</PRE>
+
+<P>A frame can have more than one abstraction, e.g., if
+<CODE>clyde-1</CODE> performed in a circus, we might write:</P>
+
+<PRE>(add-frame 'clyde-1
+   :abstractions '(elephant circus-performer)
+   :slots '(:age 15 :name clyde))
+</PRE>
+
+<P>
+<HR>
+</P>
+
+<H1>Frame Functions</H1>
+
+<P>The following briefly describes the functions defined in
+<A HREF="../programs/frames.lisp">frames.lisp</A>.</P>
+
+<H2>
+<HR>
+</H2>
+
+<H2>Frame Memory</H2>
+
+<PRE>(add-frame <I>name</I> :type :abstractions :slots) =&gt; <I>name</I>
+&nbsp;
+(frame-of <I>name</I>) =&gt; <I>frame</I> or nil
+&nbsp;
+(-&gt;frame <I>name</I>) =&gt; <I>frame</I>
+&nbsp;
+(clear-memory) =&gt; nil
+</PRE>
+
+<P><CODE>add-frame</CODE> creates a frame with the given name, type,
+abstractions, and slots. <I>typ</I>} is used internally to
+distinguishes different uses of frames. In the
+<CODE><A HREF="../programs/mops.lisp">mops.lisp</A></CODE>, for
+example, there are two types of frames, MOPs and instances.</P>
+
+<P><CODE>frame-of</CODE> returns the internal frame associated with
+<I>name</I>, if any.</P>
+
+<P><CODE>-&gt;frame</CODE> returns a frame, creating one if
+necessary.</P>
+
+<P><CODE>clear-memory</CODE> erases all frames from memory.</P>
+
+<P>
+<HR>
+</P>
+
+<H2>Frame access functions</H2>
+
+<PRE>(absts-of <I>name</I>) =&gt; list of <I>names</I>
+&nbsp;
+(slots-of <I>name</I>) =&gt; list of <I>slots</I>
+&nbsp;
+(all-absts-of <I>name</I>) =&gt; list of <I>names</I>
+</PRE>
+
+<P>These are the basic functions for getting the immediate
+abstractions, slots, and complete abstractions of a concept.
+<CODE>all-absts-of</CODE> returns a list of all the abstractions of
+<I>name</I>, including <I>nam</I>}, with no duplicates, sorted by
+specificity, with the most specific item first.</P>
+
+<P>Note that there is no <CODE>type-of</CODE> function for frames.
+There is an unrelated Common Lisp function with that name.</P>
+
+<P>Note: <CODE>(absts-of 'event)</CODE> is better than
+<CODE>(frame-absts (-&gt;frame 'event))</CODE> because the latter
+will create an empty frame if one doesn't already exist, but the
+former won't.</P>
+
+<PRE><HR>
+(frame-name <I>frame</I>) =&gt; <I>name</I>
+
+(frame-type <I>frame</I>) =&gt; <I>frame-type</I>
+&nbsp;
+(frame-absts <I>frame</I>) =&gt; list of <I>immediate abstractions</I>
+&nbsp;
+(frame-all-absts <I>frame</I>) =&gt; list of all <I>abstractions</I>
+&nbsp;
+(frame-slots <I>frame</I>) -&gt; list of <I>slots</I>
+</PRE>
+
+<P>These are the internal functions that support the previous set of
+functions. You only need to call these to change information
+associated with a frame, and that should happen rarely.</P>
+
+<P>For example, to change the abstractions of a frame, you would say
+</P>
+
+<PRE>(setf (frame-absts (-&gt;frame <I>name</I>)) <I>new list of abstractions</I>)
+</PRE>
+
+<P>Note that <CODE>-&gt;frame</CODE> is better in this context than
+<CODE>frame-of</CODE> because it guarantees a frame will be returned
+to <CODE>frame-absts</CODE>.</P>
+
+<P>
+<HR>
+</P>
+
+<H2>Abstraction Functions</H2>
+
+<PRE>(abstp <I>abst</I> <I>spec</I>) =&gt; <I>true</I> or <I>false</I>
+</PRE>
+
+<P><CODE>abstp</CODE> returns true if <I>abst</I> is either
+<CODE>eql</CODE> to or some abstraction of <I>spec</I>. Non-frames,
+such as numbers and strings, are abstractions of themselves.</P>
+
+<P>
+<HR>
+</P>
+
+<H2>Slot Functions</H2>
+
+<PRE>(role-filler <I>name role</I>) =&gt; <I>filler</I>
+&nbsp;
+(role-slot <I>name</I> <I>role</I>) =&gt; <I>slot</I>
+&nbsp;
+(inherit-filler <I>name role</I>) =&gt; <I>filler</I>
+&nbsp;
+(inherit-fillers <I>name role</I>) =&gt; list of <I>fillers</I>
+&nbsp;
+(path-filler <I>name path</I>) =&gt; <I>filler</I>
+&nbsp;
+(&lt;- name <I>role1 role2</I> ...) =&gt; <I>filler</I>
+</PRE>
+
+<P>These are the basic functions for accessing fillers of slots in a
+frame. <CODE>role-filler</CODE> returns the filler, if any, of
+<I>role</I> in the frame <I>name</I>. <CODE>role-slot</CODE> is the
+underlying function that returns the slot.</P>
+
+<P><CODE>inherit-filler</CODE> is like <CODE>role-filler</CODE>,
+except that it searches for a filler of <I>role</I> in the
+abstraction hierarchy, starting with <I>name</I>. It returns the
+first filler found, using the ordering of abstractions returned by
+<CODE>(all-absts-of </CODE><I><CODE>name</CODE></I><CODE>)</CODE>.
+</P>
+
+<P><CODE>path-filler</CODE> follows a path through <I>name</I>, where
+a path is a list of roles. <CODE>path-filler</CODE> looks for the
+filler of the first role in the path in <I>name</I>, using
+<CODE>inherit-filler</CODE>. If a filler is found,
+<CODE>path-filler</CODE> then looks in that filler for the second
+role in the path, and so on. If at any point a filler is not found,
+<CODE>path-filler</CODE> returns <CODE>nil</CODE> immediately. If
+<CODE>path-filler</CODE> is passed an empty path, it returns
+<I>name</I>.</P>
+
+<P>For example,</P>
+
+<PRE>(path-filler 'event-12 '(:actor :age))
+&nbsp;
+</PRE>
+
+<P>would find the age of the actor of <CODE>event-12</CODE>.</P>
+
+<P><CODE>&lt;-</CODE> is a notational variant of
+<CODE>path-filler</CODE>. In Lisp code, it may be clearer to write
+</P>
+
+<PRE>(&lt;- event :actor :age)
+</PRE>
+
+<P>than</P>
+
+<PRE>(path-filler event '(:actor :age))
+&nbsp;
+<HR>
+(slot-role <I>slot</I>) =&gt; <I>role</I>
+&nbsp;
+(slot-filler <I>slot</I>) =&gt; <I>filler</I>
+&nbsp;
+(make-slot <I>role filler</I>) =&gt; <I>slot</I>
+</PRE>
+
+<P>These are the basic functions for making individual slots and
+accessing their parts. They are mostly used by the functions above.
+</P>
+
+<P>
+<HR>
+</P>
+
+<H2>Memory Organization Packages (MOPs)</H2>
+
+<P>A MOP (Memory Organization Package) is an abstract concept that
+organizes individual <em>instances</em>, i.e., particular objects or
+events. Much of the time, we will use the term `MOP' to refer to both
+abstractions and instances. Sometimes, we will say `abstract MOP' and
+`instance MOP' to distinguish the two cases.</P>
+
+<P>MOPs are implemented as frames with names.</P>
+
+<PRE>(defmop <I>name</I> <I>abstractions role1 filler1 role2 filler2</I> ...) =&gt; <I>name</I>
+&nbsp;
+(definstance <I>name abstractions role1 filler1 role2 filler2</I> ...) =&gt; <I>name</I>
+</PRE>
+
+<P><CODE>defmop</CODE> defines a MOP with the given name,
+abstractions, and slots. <CODE>definstance</CODE> defines an
+instance.</P>
+
+<P>The simple Clyde examples given earlier would be defined thus:
+</P>
+
+<PRE>(defmop elephant (mammal) :color grey)
+&nbsp;
+(definstance clyde-1 (elephant)
+  :age 15 :name clyde)
+&nbsp;
+(definstance event-1 (event)
+  :actor clyde-1 :action ingest :object peanuts-12)
+</PRE>
+
+<P><CODE>clyde-1</CODE> and <CODE>event-1</CODE> are individual
+instances, while <CODE>elephant</CODE> is an abstraction.</P>
+
+<P>If <CODE>clyde-1</CODE> performed in a circus, we might write:
+</P>
+
+<PRE>(definstance clyde-1 (elephant circus-performer)
+  :age 15 :name clyde)
+</PRE>
+
+<P>
+<HR>
+</P>
+
+<PRE>(mop-p <I>name</I>) =&gt; <I>true</I> or <I>false</I>
+&nbsp;
+(instance-p <I>name</I>) =&gt; <I>true</I> or <I>false</I>
+</PRE>
+
+<P><CODE>mop-p</CODE> returns true if <CODE>name</CODE> is an
+abstract MOP. <CODE>instance-p</CODE> returns true if <I>name</I> is
+an instance MOP.</P>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

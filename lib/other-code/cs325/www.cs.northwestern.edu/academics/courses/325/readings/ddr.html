@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Deductive Data Retriever Code</title>
+<link href="../styles/cs325.css" rel="stylesheet" type=
+"text/css">
+</head>
+<body>
+<div id="logo"><a class="plain" href="../index.html" target=
+"_top"><img src="../images/cs325logo.gif" alt="CS 325 Logo"
+border="0"></a></div>
+
+<div id="banner">The Deductive Data Retriever Code
+</div>
+
+<hr>
+<p>The Deductive Data Retriever is a simple logic system that supports basic 
+  backward and forward chaining rules. The code was originally developed by Drew 
+  McDermott for the book <b>Artificial Intelligence Programming</b> by Eugene 
+  Charniak, Christopher Riesbeck, Drew McDermott and James Meehan. It's been extended 
+  and modified slightly for this class.</p>
+
+<a name="ddr-setup"></a>
+<h2>Setting up the Deductive Retriever</h2>
+
+<p>Load <a href="../programs/ddr.lisp">ddr.lisp</a>. The functions
+are defined and exported from the package <code>DDR</code>.
+</p>
+
+<p>The key functions for the Deductive Retriever are:</p>
+
+<ul>
+<li><code>(tell <em>form</em>)</code>: stores <em>form</em> in the 
+knowledge base</li>
+
+<li><code>(ask <em>sentence</em>)</code>: returns a list of all
+sentences matching <em>sentence</em> in the knowledge base, including 
+ones inferred by backward-chaining</li>
+
+<li><code>(replace-variables <em>form binding-list</em>)</code>:
+replaces the variables in <em>form</em> with the values those
+variables have in <em>binding-list</em></li>
+
+<li><code>(init-kb <em>kb1 kb2 ...</em>)</code>: clears the current
+knowledge base, and then uses <code>tell</code> to assert all
+the forms in the
+KB's, if any, where each KB is a list of forms.</li>
+</ul>
+
+<p>A <em>form</em> can be:</p>
+
+<ul>
+<li>an <u>atomic sentence</u> 
+<code>(<em>predicate term<sub>1</sub> term<sub>2</sub> ...</em>)</code>, 
+e.g., <code>(horse seabiscuit)</code></li>
+
+<li>A <u>backward-chaining rule</u> 
+<code>(<- <em>q<sub></sub> p<sub>1</sub> p<sub>2</sub> ...</em>)</code>, 
+e.g., <code>(<- (horse ?x) (parent ?y ?x) (horse ?y))</code></li>
+
+<li>A <u>forward-chaining rule</u> of the form
+<code>(-> <em>p q<sub>1</sub> q<sub>2</sub> ...</em>)</code>
+or
+<code>(-> (and <em>p<sub>1</sub> p<sub>2</sub> ...</em>) 
+<em>q<sub>1</sub> q<sub>2</sub> ...</em>)</code>,
+e.g., <code>(-> (married ?x ?y) (married ?y ?x))</code></li>
+</ul>
+
+<p>Terms in an atomic sentence can be:</p>
+
+<ul>
+<li>constants, e.g., <code>seabiscuit</code></li>
+
+<li>variables, e.g., <code>?x</code></li>
+
+<li>functional terms of the form <code>(<em>function</em> term<sub>2</sub> ...</em>)</code>, 
+e.g., <code>(father-of ?x)</code></li>
+</ul>
+
+<h3><tt>tell</tt> and forward-chaining</h3>
+
+<p>You use <tt>tell</tt> to add sentences and rules to the knowledge
+base. (To make a fresh knowledge base, use <code>init-kb</code>.)
+When you <code>tell</code> a rule, it just gets stored in the knowledge base.
+When you <code>tell</code> a sentence, and the sentence is
+not already in the knowledge base, then</p>
+
+<ul>
+<li>The sentence is added to the knowledge base.</li>
+
+<li>If the sentence matches <em>p</em> in
+the forward-chaining
+rule <code>(-> <em>p<sub></sub> q<sub>1</sub> q<sub>2</sub></em> ...)</code>,
+then <em>q<sub>1</sub></em>, <em>q<sub>2</sub></em>, ... 
+are also added, using <code>tell</code>, with the appropriate
+variable substitutions</li>
+
+<li>if the sentence matches <em>p<sub>1</sub></em> in
+the forward-chaining
+rule <code>(-> (and <em>p<sub>1</sub> p<sub>2</sub> ...</em>) 
+<em>q<sub>1</sub> q<sub>2</sub> ...</em>)</code>,
+and the remaining <em>p<sub>i</sub></em> can be retrieved, using
+<tt>ask</tt>,
+then <em>q<sub>1</sub></em>, <em>q<sub>2</sub></em>, ... 
+are also added, using <code>tell</code>, with the appropriate
+variable substitutions</li>
+</ul>
+
+<p>For example,</p>
+
+<table border="1" align="center">
+<tr>
+<td>
+<tt>(tell '(-> (married ?x ?y) (married ?y ?x)))</tt>
+</td>
+<td>adds the forward-chaining rule to the knowledge base</td>
+</tr>
+
+<tr>
+<td>
+<tt>(tell '(married john mary))</tt>
+</td>
+<td>adds <tt>(married john mary)</tt> and
+<tt>(married mary john)</tt> to the knowledge base</td>
+</tr>
+</table>
+
+<p>No endless loop occurs. The forward-chaining stops when 
+the second <tt>(tell '(married john mary))</tt> discovers that
+<tt>(married john mary)</tt> is already known.</p>
+
+<p>Note: in this system, forward chaining rules are applied only
+to information added after the rules are asserted. If you
+assert <code>(married john mary)</code> first, and
+then the forward chaining rule, <code>(married mary john)</code>
+will not be asserted.</p>
+
+<h3><tt>ask</tt> and backward-chaining</h3>
+
+<p>Most rules you write will be backward-chaining rules. You use forward-chaining 
+  mostly for simple rules, like <tt><code>married</code></tt>, that would cause 
+  endless loops as backward-chaining rules. </p>
+
+<p>You use <tt><code>ask</code></tt> to retrieve information that is stored explicitly 
+  or can be inferred by backward-chaining. </p>
+<blockquote>
+  <p><code>(ask <em>query</em>[<em> form </em>])</code></p>
+</blockquote>
+<p>will return a list of <em>instantiations</em> of <em>form</em> for every match 
+  to <em>query</em> that is deduced. Both <em>query</em> and <em>form</em> are 
+  patterns, with zero or more pattern variables. If <em>form</em> is omitted, 
+  it defaults to <em>query</em>. <code>ask</code> generates zero or more <em>binding 
+  lists</em> for <em>query</em>. An instantiation of <em>form</em> is created 
+  for each binding list.</p>
+<p>A binding list is generated when</p>
+
+<ul>
+<li><em>query</em> unifies with an atomic sentence in the knowledge base
+</li>
+
+<li><em>query</em> unifies with a <em>q</em> in a backward-chaining rule
+<code>(<- <em>q<sub></sub> p<sub>1</sub> p<sub>2</sub> ...</em>)</code>
+and all the
+<em>p<sub>i</sub></em> can be recursively retrieved, using <tt>ask</tt>.
+</ul>
+
+<p>Here's an example of backward-chaining rules:</p>
+
+<table border="1" align="center">
+<tr>
+<td>
+<tt>(tell '(<- (horse ?x) (parent ?y ?x) (horse ?y)))</tt>
+</td>
+<td>adds the backward-chaining rule to the knowledge base</td>
+</tr>
+
+<tr>
+<td>
+<tt>(tell '(horse fury))</tt>
+</td>
+<td>adds <tt>(horse fury)</tt> to the knowledge base</td>
+</tr>
+
+<tr>
+<td>
+<tt>(tell '(parent fury flicka))</tt>
+</td>
+<td>adds <tt>(parent fury flicka)</tt> to the knowledge base</td>
+</tr>
+
+<tr>
+<td>
+<tt>(ask '(horse fury))</tt>
+</td>
+<td>returns <tt>((horse fury))</tt>, because that's in the 
+knowledge base</td>
+</tr>
+
+<tr>
+<td>
+<tt>(ask '(horse flicka))</tt>
+</td>
+<td>returns <tt>((horse flicka))</tt>, because that can be
+inferred using backward chaining</td>
+</tr>
+
+<tr>
+<td>
+<tt>(ask '(horse ?x))</tt>
+</td>
+<td>returns <tt>((horse flicka) (horse fury))</tt></td>
+</tr>
+
+<tr>
+<td>
+<tt>(ask '(horse ?x) '?x)</tt>
+</td>
+<td>returns <tt>(flicka fury)</tt></td>
+</tr>
+</table>
+
+
+<p>For debugging, use <code>ask-trace</code> and <code>show-trace</code>.</p>
+<blockquote>
+  <pre>(ask-trace <em>query</em> [ <em>form</em> ])
+(show-trace)</pre>
+</blockquote>
+  
+<p><code>ask-trace</code> will create an internal tree showing what assertions 
+  and rules were used. <code>show-trace</code> will pretty-print this tree. The 
+  tree will mark which items were used and which didn't match and were skipped. 
+  If you get a stack overflow, looking at this tree may help you see where the 
+  problem is.</p>
+  
+<h2>Non-logical Extensions</h2>
+
+<p>The Deductive Retriever is extensible. You can define special
+methods for retrieving and storing forms based on the first element
+of the form. You should look at the code to see how this is done, but 
+several common extensions have already been implemented for you.</p>
+
+<ul>
+<li><code>(not <em>sentence</em>)</code> implements "negation as failure." 
+<code>(ask '(not <em>sentence</em>))</code> will fail, i.e., return <code>nil</code>,
+if <code>(ask '<em>sentence</em>)</code> succeeds, otherwise it will return
+the list of <code>((not <em>sentence</em>))</code>, which represents success.
+</li>
+
+<li><code>(bind <em>variable lisp-expression</em>)</code> will bind
+<em>variable</em> to the result of evaluating <em>lisp-expression</em>.
+Logic variables can appear in <em>lisp-expression</em> as long as
+they have been bound to some constant by the time the expression
+is evaluated.
+</li>
+</ul>
+
+<p><tt>bind</tt> is particularly useful when you need to do a numeric
+calculation. For example, the rule</p>
+
+<blockquote><pre>(tell '(<- (square-root ?n ?r) (bind ?r (sqrt ?n))))</pre>
+</blockquote>
+
+<p>This stores a rule that calculates the root of <tt>?n</tt> using
+the Lisp function <tt>sqrt</tt>. The form</p>
+
+<blockquote><pre>(ask '(square-root 25 ?x))</pre></blockquote>
+
+<p>matches the rule, binding <tt>?n</tt> to 25 and <tt>?r</tt> to
+<tt>?x</tt>. The rule then binds <tt>?r</tt>, and hence <tt>?x</tt>, to the 
+result of evaluating <code>(sqrt 25)</code>.
+</p>
+
+<p><em>QUESTIONS about the Retriever?</em> Don't ask me. Experiment. Read the code.
+It's not that long.  
+Look at the example tests in <a href="../programs/ddr-tests.lisp">ddr-tests.lisp</a>.
+Post your discoveries and puzzlements on the newsgroup.</p>
+
+<p>Also, there's more information about the Retriever on 
+<a href="http://www.cs.northwestern.edu/academics/courses/c25/readings/deductive-retrieval.html">
+the CS 325 deductive retriever page</a>.</p>
+
+<hr>
+
+<div id="closing">
+Comments? 
+<img src="../images/comments.gif" alt="comment image">
+Send mail to <a href="mailto:c-riesbeck@northwestern.edu">Chris Riesbeck</a>.
+</div>
+</body>
+</html>

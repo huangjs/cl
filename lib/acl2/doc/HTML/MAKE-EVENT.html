@@ -1,0 +1,183 @@
+<html>
+<head><title>MAKE-EVENT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MAKE-EVENT</h2>evaluate (expand) a given form and then evaluate the result
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+<code>Make-event</code> is a utility for generating <a href="EVENTS.html">events</a>.  It provides a
+capability not offered by Lisp macros (see <a href="DEFMACRO.html">defmacro</a>), as it allows access to
+the ACL2 <code><a href="STATE.html">state</a></code> and logical <a href="WORLD.html">world</a>.  In essence, the expression
+<code>(make-event form)</code> replaces itself with the result of evaluating <code>form</code>,
+say, <code>ev</code>, as though one had submitted <code>ev</code> instead of the <code>make-event</code>
+call.  But the evaluation of <code>form</code> may involve <code><a href="STATE.html">state</a></code> and even modify
+<code>state</code>, for example by attempting to admit some definitions and theorems.
+<code>Make-event</code> protects the ACL2 logical <a href="WORLD.html">world</a> so that it is restored
+after <code>form</code> is evaluated, before <code>ev</code> is submitted.
+<p>
+<ul>
+<li><h3><a href="MAKE-EVENT-DETAILS.html">MAKE-EVENT-DETAILS</a> -- details on <code><a href="MAKE-EVENT.html">make-event</a></code> expansion
+</h3>
+</li>
+
+</ul>
+
+
+<pre>
+Examples:<p>
+
+; Trivial example: evaluate (quote (defun foo (x) x)) to obtain
+; (defun foo (x) x), which is then evaluated.
+(make-event (quote (defun foo (x) x)))<p>
+
+; Evaluate (generate-form state) to obtain (mv nil val state), and
+; then evaluate val.  (Generate-form is not specified here, but
+; imagine for example that it explores the state and then generates
+; some desired definition or theorem.)
+(make-event (generate-form state))<p>
+
+; As above, but make sure that if this form is in a book, then when
+; we include the book, the evaluation of (generate-form state)
+; should return the same value as it did when the book was
+; certified.
+(make-event (generate-form state)
+            :check-expansion t)<p>
+
+; As above (where the :check-expansion value can be included or
+; not), where if there is an error during expansion, then the error
+; message will explain that expansion was on behalf of the indicated
+; object, typically specified as the first argument.
+(make-event (generate-form state)
+            :on-behalf-of (generate-form state))<p>
+
+General Form:
+(make-event form :check-expansion chk :on-behalf-of obj)
+</pre>
+
+where <code>chk</code> is <code>nil</code> (the default), <code>t</code>, or the intended ``expansion
+result'' from the evaluation of <code>form</code> (as explained below); and if
+supplied, <code>obj</code> is an arbitrary ACL2 object, used only in reporting errors
+in expansion, i.e., in the evaluation of form.<p>
+
+We strongly recommend that you look at <code>books/make-event/Readme.lsp</code>, which
+summarizes and suggests browsing of some <code>.lisp</code> files in that directory,
+in order to understand <code>make-event</code>, perhaps before continuing to read this
+documentation.  For example, <code>eval.lisp</code> contains definitions of macros
+<code>must-succeed</code> and <code>must-fail</code> that are useful for testing and are used
+in many other books in that directory, especially <code>eval-tests.lisp</code>.  Other
+than the examples, the explanations here should suffice for most users.  If
+you want explanations of subtler details, see <a href="MAKE-EVENT-DETAILS.html">make-event-details</a>.<p>
+
+<code>Make-event</code> is related to Lisp macroexpansion in the sense that its
+argument is evaluated to obtain an expansion result, which is evaluated
+again.  Let us elaborate on each of these notions in turn: ``is evaluated,''
+``expansion result'', and ``evaluated again.''
+<blockquote><p>
+
+``is evaluated'' -- The argument can be any expression, which is evaluated
+as would be any expression submitted to ACL2's top level loop.  Thus,
+<code><a href="STATE.html">state</a></code> and user-defined <code><a href="STOBJ.html">stobj</a></code>s may appear in the form supplied to
+<code>make-event</code>.  Henceforth, we will refer to this evaluation as
+``expansion.''  Expansion is actually done in a way that restores ACL2's
+built-in <code><a href="STATE.html">state</a></code> global variables, including the logical <a href="WORLD.html">world</a>, to
+their pre-expansion values (with a few exceptions --
+see <a href="MAKE-EVENT-DETAILS.html">make-event-details</a> -- and where we note that changes to user-defined
+<code><a href="STATE.html">state</a></code> global variables (see <a href="ASSIGN.html">assign</a>) are preserved).  So, for example,
+events might be evaluated during expansion, but they will disappear from the
+logical <a href="WORLD.html">world</a> after expansion returns its result.  Moreover, proofs are
+enabled by default at the start of expansion (see <a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a>), because
+an anticipated use of <code>make-event</code> is to call the prover to decide which
+event to generate, and that would presumably be necessary even if proofs had
+been disabled.<p>
+
+``expansion result'' -- The above expansion may result in an ordinary
+(non-<code><a href="STATE.html">state</a></code>, non-<code><a href="STOBJ.html">stobj</a></code>) value, which we call the ``expansion
+result.''  Or, expansion may result in a multiple value of the form
+<code>(mv erp val state stobj-1 ... stobj-k)</code>, where <code>k</code> may be 0; in fact the
+most common case is probably <code>(mv erp val state)</code>.  In that case, if
+<code>erp</code> is not <code>nil</code>, then there is no expansion result, and the original
+<code>make-event</code> evaluates to a soft error.  If however <code>erp</code> is <code>nil</code>,
+then the resulting value is <code>val</code>.  Moreover, <code>val</code> must be an embedded
+event form (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>); otherwise, the original <code>make-event</code>
+evaluates to a soft error.  Note that error messages from expansion are
+printed as described under ``Error Reporting'' below.<p>
+
+``evaluated again'' -- the expansion result is evaluated in place of the
+original <code>make-event</code>.<p>
+
+</blockquote>
+Note that the result of expansion can be an ordinary event, but it can
+instead be another call of <code>make-event</code>, or even of a call of a macro that
+expands to a call of <code>make-event</code>.  Or, expansion itself can cause
+subsidiary calls of <code>make-event</code>, for example if expansion uses <code><a href="LD.html">ld</a></code> to
+evaluate some <code>make-event</code> forms.  The state global variable
+<code>make-event-debug</code> may be set to a non-<code>nil</code> value in order to see a
+trace of the expansion process, where the level shown (as in ``<code>3&gt;</code>'')
+indicates the depth of expansions in progress.<p>
+
+Expansion of a <code>make-event</code> call will yield an event that replaces the
+original <code>make-event</code> call.  In particular, if you put a <code>make-event</code>
+form in a book, then in essence it is replaced by its expansion result,
+created during the proof pass of the <code><a href="CERTIFY-BOOK.html">certify-book</a></code> process.  We now
+elaborate on this idea of keeping the original expansion.<p>
+
+By default, a <code>make-event</code> call in a certified book is replaced (by a
+process hidden from the user, in an <code>:expansion-alist</code> field of the book's
+<a href="CERTIFICATE.html">certificate</a>) by the expansion result from evaluation of its first
+argument.  Thus, although the book is not textually altered during
+certification, one may imagine a ``book expansion'' corresponding to the
+original book in which all of the events for which expansion took place
+(during the proof phase of certification) have been replaced by their
+expansions.  A subsequent <code><a href="INCLUDE-BOOK.html">include-book</a></code> will then include the book
+expansion corresponding to the indicated book.  When a book is compiled
+during <code><a href="CERTIFY-BOOK.html">certify-book</a></code>, it is actually the corresponding book expansion,
+stored as a temporary file, that is compiled instead.  That temporary file is
+deleted after compilation unless one first evaluates the form
+<code>(assign keep-tmp-files t)</code>.  Note however that all of the original forms
+must still be legal <a href="EVENTS.html">events</a> (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).  So for example,
+if the first event in a book is <code>(local (defmacro my-id (x) x))</code>, followed
+by <code>(my-id (make-event ...))</code>, the final ``<code>include-book</code>'' pass of
+<code><a href="CERTIFY-BOOK.html">certify-book</a></code> will fail because <code>my-id</code> is not defined when the
+<code>my-id</code> call is encountered.<p>
+
+The preceding paragraph begins with ``by default'' because if you specify
+<code>:check-expansion t</code>, then subsequent evaluation of the same <code>make-event</code>
+call -- during the second pass of an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or during
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> -- will do the expansion again and check that the
+expansion result equals the original expansion result.  In the unusual case
+that you know the expected expansion result, <code>res</code>, you can specify
+<code>:check-expansion res</code>.  This will will cause a check that every subsequent
+expansion result for the <code>make-event</code> form is <code>res</code>, including the
+original one.<p>
+
+<strong>Error Reporting.</strong><p>
+
+Suppose that expansion produces a soft error as described above.  That is,
+suppose that the argument of a <code>make-event</code> call evaluates to a multiple
+value <code>(mv erp val state ...)</code> where <code>erp</code> is not <code>nil</code>.  If <code>erp</code> is
+a string, then that string is printed in the error message.  If <code>erp</code> is
+a <code><a href="CONS.html">cons</a></code> pair whose <code><a href="CAR.html">car</a></code> is a string, then the error prints
+<code>"~@0"</code> with <code>#\0</code> bound to that <code>cons</code> pair; see <a href="FMT.html">fmt</a>.  Any other
+non-<code>nil</code> value of <code>erp</code> causes a generic error message to be printed.<p>
+
+<strong>Restriction to the Top Level.</strong><p>
+
+Every form enclosing a <code>make-event</code> call must be an embedded event form
+(see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).  This restriction enables ACL2 to track
+expansions produced by <code>make-event</code>.  For example:
+
+<pre>
+; Legal:
+(progn (with-output
+        :on summary
+        (make-event '(defun foo (x) x))))<p>
+
+; Illegal:
+(mv-let (erp val state)
+        (make-event '(defun foo (x) x))
+        (mv erp val state))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

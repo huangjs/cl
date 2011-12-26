@@ -1,0 +1,59 @@
+<html>
+<head><title>SET-COMPILE-FNS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>SET-COMPILE-FNS</h2>have each function compiled as you go along.
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(set-compile-fns t)    ; new functions compiled after DEFUN
+(set-compile-fns nil)  ; new functions not compiled after DEFUN
+</pre>
+
+Note: This is an event!  It does not print the usual event summary
+but nevertheless changes the ACL2 logical <a href="WORLD.html">world</a> and is so recorded.<p>
+
+Also see <a href="COMP.html">comp</a>, because it may be more efficient in some Common
+Lisps to compile many functions at once rather than to compile each
+one as you go along.
+<p>
+
+<pre>
+General Form:
+(set-compile-fns term)
+</pre>
+
+where <code>term</code> is a variable-free term that evaluates to <code>t</code> or <code>nil</code>.
+This macro is equivalent to
+
+<pre>
+(table acl2-defaults-table :compile-fns term)
+</pre>
+
+and hence is <code><a href="LOCAL.html">local</a></code> to any <a href="BOOKS.html">books</a> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>
+in which it occurs; see <a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a>.  However, unlike the above
+simple call of the <code><a href="TABLE.html">table</a></code> event function (see <a href="TABLE.html">table</a>), no output results
+from a <code>set-compile-fns</code> event.<p>
+
+<code>Set-compile-fns</code> may be thought of as an event that merely sets a
+flag to <code>t</code> or <code>nil</code>.  The flag's effect is felt when functions
+are defined, as with <code><a href="DEFUN.html">defun</a></code>.  If the flag is <code>t</code>, functions are
+automatically compiled after they are defined, as are their
+executable counterparts (see <a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a>).
+Otherwise, functions are not automatically compiled.  Because
+<code>set-compile-fns</code> is an event, the old value of the flag is
+restored when a <code>set-compile-fns</code> event is undone.<p>
+
+Even when <code>:set-compile-fns t</code> has been executed, functions are not
+individually compiled when processing an <code><a href="INCLUDE-BOOK.html">include-book</a></code> event.  If
+you wish to include a book of compiled functions, we suggest that
+you first certify it with the <a href="COMPILATION.html">compilation</a> flag set
+(see <a href="CERTIFY-BOOK.html">certify-book</a>) or else compile the book by supplying the appropriate
+<code>load-compiled-file</code> argument to <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  More generally,
+<a href="COMPILATION.html">compilation</a> via <code>set-compile-fns</code> is suppressed when the <a href="STATE.html">state</a>
+global variable <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> has value <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

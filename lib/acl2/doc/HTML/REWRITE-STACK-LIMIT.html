@@ -1,0 +1,40 @@
+<html>
+<head><title>REWRITE-STACK-LIMIT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REWRITE-STACK-LIMIT</h2>limiting the stack depth of the ACL2 rewriter
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+ACL2 users can create rules of class <code>:</code><code><a href="REWRITE.html">rewrite</a></code> (see <a href="RULE-CLASSES.html">rule-classes</a>)
+that have the potential of causing an infinite loop in the ACL2 rewriter.
+This could lead to Lisp stack overflows and even segmentation faults.  For
+this reason, the depth of certain calls of functions in the ACL2 rewriter is
+limited by default using the value of the form
+<code>(rewrite-stack-limit (w state))</code>.  To see the limit in action, execute the
+following forms.<p>
+
+
+<pre>
+(defthm app-assoc-1
+  (equal (append (append x y) z)
+         (append x y z)))
+(defthm app-assoc-2
+  (equal (append x y z)
+         (append (append x y) z)))
+(thm (equal (append a b c) xxx)
+     ; try without these hints to see a slightly different error message
+     :hints (("Goal" :do-not '(preprocess))))
+</pre>
+
+The ensuing error message shows a stack of one greater than the value of
+<code>(rewrite-stack-limit (w state))</code>, which by default is the value of the
+constant <code>*default-rewrite-stack-limit*</code>.  The error message also explains
+how to use <code>:</code><code><a href="BRR.html">brr</a></code><code> t</code> and <code>(</code><code><a href="CW-GSTACK.html">cw-gstack</a></code><code>)</code> to find looping
+rewrite rules.<p>
+
+This limit can be changed; see <a href="SET-REWRITE-STACK-LIMIT.html">set-rewrite-stack-limit</a>.
+<p>
+For a related limit, see <a href="BACKCHAIN-LIMIT.html">backchain-limit</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

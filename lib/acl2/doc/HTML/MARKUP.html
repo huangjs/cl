@@ -1,0 +1,311 @@
+<html>
+<head><title>MARKUP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MARKUP</h2>the markup language for ACL2 <a href="DOCUMENTATION.html">documentation</a> strings
+<pre>Major Section:  <a href="DOCUMENTATION.html">DOCUMENTATION</a>
+</pre><p>
+
+ACL2 <a href="DOCUMENTATION.html">documentation</a> strings make special use of the tilde character
+(~).  In particular, we describe here a ``markup language'' for
+which the tilde character plays a special role.  The markup language
+is valuable if you want to write <a href="DOCUMENTATION.html">documentation</a> that is to be
+displayed outside your ACL2 session.  If you are not writing such
+<a href="DOCUMENTATION.html">documentation</a>, and if also you do not use the character `~', then
+there is no need to read on.
+<p>
+Three uses of the tilde character (~) in <a href="DOCUMENTATION.html">documentation</a> strings are
+as follows.  Below we explain the uses that constitute the ACL2
+markup language.
+
+<blockquote>
+<code>~/</code><br>
+
+Indicates the end of a documentation <strong>section</strong>;
+see <a href="DOC-STRING.html">doc-string</a>.<p>
+
+<code>~~</code><br>
+
+Indicates the literal insertion of a tilde character (~).<p>
+
+<code>~]</code><br>
+
+This directive in a documentation string is effective only during
+the processing of part 2, the details (see <a href="DOC-STRING.html">doc-string</a>), and
+controls how much is shown on each round of <code>:</code><code><a href="MORE.html">more</a></code> processing when
+printing to the terminal.  If the system is not doing <code>:</code><code><a href="MORE.html">more</a></code>
+processing, then it acts as though the ~] is not present.
+Otherwise, the system put out a newline and halts documentation
+printing on the present topic, which can be resumed if the user
+types <code>:</code><code><a href="MORE.html">more</a></code> at the terminal.
+</blockquote>
+
+The other uses of the tilde character are of the following form.
+
+<pre>
+  ~key[arg]
+</pre>
+
+Before launching into an explanation of how this works in detail,
+let us consider some small examples.<p>
+
+Here is a word that is code:
+
+<pre>
+  ~c[function-name].
+</pre>
+
+Here is a phrase with an ``emphasized'' word, ``not'':
+
+<pre>
+  Do ~em[not] do that.
+</pre>
+
+Here is the same phrase, but where ``not'' receives stronger
+emphasis (presumably boldface in a printed version):
+
+<pre>
+  Do ~st[not] do that.
+</pre>
+
+Here is a passage that is set off as a display, in a fixed-width
+font:
+
+<pre>
+  ~bv[]
+  This passage has been set off as ``verbatim''.
+  The present line starts just after a line break.  Normally, printed
+  text is formatted, but inside ~bv[]...~ev[], line breaks are taken
+  literally.
+  ~ev[]
+</pre>
+
+In general, the idea is to provide a ``markup language'' that can be
+reasonably interpreted not only at the terminal (via <code>:</code><code><a href="DOC.html">doc</a></code>), but
+also via translators into other languages.  In fact, translators
+have been written into Texinfo and HTML.<p>
+
+Let us turn to a more systematic consideration of how to mark text
+in <a href="DOCUMENTATION.html">documentation</a> strings using expressions of the form
+<code>~key[arg]</code>, which we will call ``<a href="DOC-STRING.html">doc-string</a> tilde directives.''
+The idea is that <code>key</code> informs the <a href="DOCUMENTATION.html">documentation</a> printer (which
+could be the terminal, a hardcopy printer, or some hypertext tool)
+about the ``style'' used to display <code>arg</code>.  The intention is that
+each such printer should do the best it can.  For example, we have
+seen above that <code>~em[arg]</code> tells the printer to <i>emphasize</i>
+<code>arg</code> if possible, using an appropriate display to indicate
+emphasis (italics, or perhaps surrounding <code>arg</code> with some character
+like <code>_</code>, or ...).  For another example, the directive for bold
+font, <code>~b[arg]</code>, says that printed text for <code>arg</code> should be in
+bold if possible, but if there is no bold font available (such as at
+the terminal), then the argument should be printed in some other
+reasonable manner (for example, as ordinary text).  The <code>key</code> part
+is case-insensitive; for example, you can use ~BV[] or ~Bv[] or ~bV[] in
+place of ~bv[].<p>
+
+Every form below may have any string as the argument (inside
+<code>[..]</code>), as long as it does not contain a newline (more on that
+below).  However, when an argument does not make much sense to us,
+we show it below as the empty string, e.g., ``<code>~bv[]</code>'' rather
+than ``<code>~bv[arg]</code>''.
+
+<pre>
+~-[]      Print the equivalent of a dash<p>
+
+~b[arg]   Print the argument in bold font, if available<p>
+
+~bid[arg]   ``Begin implementation dependent'' -- Ignores argument at
+          terminal.<p>
+
+~bf[]     Begin formatted text (respecting spaces and line breaks),
+          but in ordinary font (rather than, say, fixed-width font)
+          if possible<p>
+
+~bq[]     Begin quotation (indented text, if possible)<p>
+
+~bv[]     Begin verbatim (print in fixed-width font, respecting
+          spaces and line breaks)<p>
+
+~c[arg]   Print arg as ``code'', such as in a fixed-width font<p>
+
+~ef[]     End format; balances ~bf[]<p>
+
+~eid[arg]   ``End implementation dependent'' -- Ignores argument at
+          terminal.<p>
+
+~em[arg]  Emphasize arg, perhaps using italics<p>
+
+~eq[]     End quotation; balances ~bq[]<p>
+
+~ev[]     End verbatim; balances ~bv[]<p>
+
+~i[arg]   Print arg in italics font<p>
+
+~id[arg]   ``Implementation dependent'' -- Ignores argument at
+          terminal.<p>
+
+~il[arg]  Print argument as is, but make it a link (for true
+          hypertext environments)<p>
+
+~ilc[arg] Same as ~il[arg], except that arg should be printed as
+          with ~c[arg]<p>
+
+~l[arg]   Ordinary link; prints as ``See :DOC arg'' at the terminal
+          (but also see ~pl below, which puts ``see'' in lower case)<p>
+
+~nl[]     Print a newline<p>
+
+~par[]    Paragraph mark, of no significance at the terminal
+          (can be safely ignored; see also notes below)<p>
+
+~pl[arg]  Parenthetical link (borrowing from Texinfo):  same as
+          ~l[arg], except that ``see'' is in lower case.  This is
+          typically used at other than the beginning of a sentence.<p>
+
+~sc[arg]  Print arg in (small, if possible) capital letters<p>
+
+~st[arg]  Strongly emphasize arg, perhaps using a bold font<p>
+
+~t[arg]   Typewriter font; similar to ~c[arg], but leaves less
+          doubt about the font that will be used.<p>
+
+~terminal[arg]  Terminal only; arg is to be ignored except when
+          reading documentation at the terminal, using :DOC.
+</pre>
+<p>
+
+<em>Style notes and further details</em><p>
+
+It is not a good idea to put <a href="DOC-STRING.html">doc-string</a> tilde directives inside
+verbatim environments, <code>~bv[] ... ~ev[]</code>.<p>
+
+Do not nest <a href="DOC-STRING.html">doc-string</a> tilde directives; that is, do not write
+
+<pre>
+  The ~c[~il[append] function ...
+</pre>
+
+but note that the ``equivalent'' expression
+
+<pre>
+  The ~ilc[append] function ...
+</pre>
+
+is fine.  The following phrase is also acceptable:
+
+<pre>
+  ~bf[]This is
+  ~em[formatted] text.
+  ~ef[]
+</pre>
+
+because the nesting is only conceptual, not literal.<p>
+
+We recommend that for displayed text, <code>~bv[]</code> and <code>~ev[]</code>
+should usually each be on lines by themselves.  That way, printed
+text may be less encumbered with excessive blank lines.  Here is an
+example.
+
+<pre>
+  Here is some normal text.  Now start a display:
+  ~bv[]
+    2 + 2 = 4
+  ~ev[]
+  And here is the end of that paragraph.<p>
+
+  Here is the start of the next paragraph.
+</pre>
+
+The analogous consideration applies to <code>~bf[]</code> and <code>~ef[]</code> as
+well as <code>~bq[]</code> and <code>~eq[]</code>.<p>
+
+You may ``quote'' <a href="CHARACTERS.html">characters</a> inside the <code>arg</code> part of
+<code>~key[arg]</code>, by preceding them with ~.  This is, in fact, the
+only legal way to use a newline character or a right bracket (])
+inside the argument to a <a href="DOC-STRING.html">doc-string</a> tilde directive.<p>
+
+Write your <a href="DOCUMENTATION.html">documentation</a> strings without hyphens.  Otherwise, you
+may find your text printed on paper (via TeX, for example) like
+this --
+
+<pre>
+  Here is a hyphe- nated word.
+</pre>
+
+even if what you had in mind was:
+
+<pre>
+  Here is a hyphe-
+  nated word.
+</pre>
+
+When you want to use a dash (as opposed to a hyphen), consider using
+~-[], which is intended to be interpreted as a ``dash.''  For
+example:
+
+<pre>
+  This sentence ~-[] which is broken with dashes ~-[] is boring.
+</pre>
+
+would be written to the terminal (using <code>:</code><code><a href="DOC.html">doc</a></code>) by replacing
+<code>~-[]</code> with two hyphen <a href="CHARACTERS.html">characters</a>, but would presumably be
+printed on paper with a dash.<p>
+
+Be careful to balance the ``begin'' and ``end'' pairs, such as
+<code>~bv[]</code> and <code>~ev[]</code>.  Also, do not use two ``begin''
+directives (<code>~bf[]</code>, <code>~bq[]</code>, or <code>~bv[]</code>) without an
+intervening ``end'' directive.  It is permissible (and perhaps this
+is not surprising) to use the <a href="DOC-STRING.html">doc-string</a> part separator <code>~/</code> while
+between such a begin-end pair.<p>
+
+Because of a bug in texinfo (as of this writing), you may wish to
+avoid beginning a line with (any number of spaces followed by) the
+<code><a href="_hyphen_.html">-</a></code> character or <code>~-[]</code>.<p>
+
+The ``paragraph'' directive, <code>~par[]</code>, is rarely if ever used.
+There is a low-level capability, not presently documented, that
+interprets two successive newlines as though they were <code>~par[]</code>.
+This is useful for the HTML driver.  For further details, see the
+authors of ACL2.<p>
+
+Emacs code is available for manipulating <a href="DOCUMENTATION.html">documentation</a> strings that
+contain <a href="DOC-STRING.html">doc-string</a> tilde-directives (for example, for doing a
+reasonable job filling such <a href="DOCUMENTATION.html">documentation</a> strings).  See the authors
+if you are interested.<p>
+
+We tend to use <code>~em[arg]</code> for ``section headers,'' such as
+``Style notes and further details'' above.  We tend to use
+<code>~st[arg]</code> for emphasis of words inside text.  This division
+seems to work well for our Texinfo driver.  Note that <code>~st[arg]</code>
+causes <code>arg</code> to be printed in upper-case at the terminal (using
+<code>:</code><code><a href="DOC.html">doc</a></code>), while <code>~em[arg]</code> causes <code>arg</code> to be printed at the
+terminal as though <code>arg</code> were not marked for emphasis.<p>
+
+Our Texinfo and HTML drivers both take advantage of capabilities for
+indicating which <a href="CHARACTERS.html">characters</a> need to be ``escaped,'' and how.  Unless
+you intend to write your own driver, you probably do not need to
+know more about this issue; otherwise, contact the ACL2 authors.  We
+should probably mention, however, that Texinfo makes the following
+requirement:  when using <code>~l[arg]</code>, where <code>arg</code> contains
+one of the special <a href="CHARACTERS.html">characters</a> <code><a href="_at_.html">@</a></code>, <code>{</code>, or <code>}</code>, you must
+immediately follow this use with a period or comma.  Also, the Emacs
+``info'' <a href="DOCUMENTATION.html">documentation</a> that we generate by using our Texinfo driver
+has the property that in node names, <code>:</code> has been replaced by <code>|</code>
+(because of quirks in info); so for example, the ``<a href="PROOF-CHECKER.html">proof-checker</a>''
+simplification command, <code>s</code>, is documented under <code>acl2-pc||s</code>
+rather than under <code>acl2-pc::s</code>.<p>
+
+We have tried to keep this markup language fairly simple; in
+particular, there is no way to refer to a link by other than the
+actual name.  So for example, when we want to make <code>:</code><code><a href="DOC.html">doc</a></code> an
+invisible link in ``code'' font, we write the following form, which
+indicates that <code>:</code> should be in that font and then <code><a href="DOC.html">doc</a></code> should
+both be in that font and be an invisible link.
+
+<pre>
+  ~c[:]~ilc[doc]
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

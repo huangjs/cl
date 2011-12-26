@@ -1,0 +1,334 @@
+<html>
+<head><title>NOTE-2-5.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE-2-5</h2>ACL2 Version  2.5 (June, 2000) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Important Changes:  <p>
+
+Concurrent with the release of ACL2 Version  2.5 is the publication
+of two books about ACL2.  See the ``Books and Papers about ACL2 and Its
+Applications'' on the ACL2 Home Page.  <p>
+
+The <code>books</code> subdirectory now contains many new certifiable books,
+including solutions to the exercises in the two published books and
+full scripts for the case studies.  See <code>books/README.html</code>.<p>
+
+Improved Unix <code>Makefile</code> support for book certification has also been
+written.  See <code>books/README.html</code>.<p>
+
+The list of symbols in <code>*acl2-exports*</code> has been considerably expanded.
+If you have packages built by importing <code>*acl2-exports*</code> you might want
+to look carefully at the new value of that constant.  The new value includes
+all <code>:logic</code> mode functions as of Version  2.5, as well as all documented
+macros and all built-in theorem names.<p>
+
+<code><a href="INCLUDE-BOOK.html">Include-book</a></code> and <code><a href="CERTIFY-BOOK.html">certify-book</a></code> were modified to
+have some additional keyword arguments.  It is possible to
+certify a book containing <code><a href="DEFAXIOM.html">defaxiom</a></code> and/or <code><a href="SKIP-PROOFS.html">skip-proofs</a></code>
+events and get warning messages or errors signaled, according to
+the settings of these new flags.  In addition, it is possible to
+specify in <code>include-book</code> whether the book must be certified
+(under penalty of error if not).  The default values of these new
+arguments cause warnings to be printed rather than errors signaled.<p>
+
+The above change involved altering the form of certificate files.
+When books certified under previous versions are included, more
+warnings will be generated because these books are considered
+possibly to contain <code>defaxiom</code> and/or <code>skip-proofs</code> events.<p>
+
+We anticipate further changes to this aspect of books and consider
+the current mechanisms (for controlling whether warnings or errors
+are signaled) just a prototype.  See also the discussion below of
+``soundness related'' warnings.  Your suggestions are welcome.<p>
+
+A discrepancy between ACL2 and Common Lisp was fixed, having to do
+with <code>declare ignore</code>.  In past versions of ACL2, a formal
+parameter of a <code>defun</code> was considered ignored if it was not used
+in the body, the guard or the measure of the <code>defun</code>.  That meant
+that a variable used only in the guard could not be declared ignored
+in ACL2; but some Common Lisp compilers would complain because the
+variable was not used in the body.  Now, ACL2 considers a variable
+ignored if it is not used in the body.<p>
+
+ACL2 can now be built in releases 5.0 and later of Allegro Common
+Lisp.  (Other releases of Allegro Common Lisp and of other lisps
+continue to be supported as well.)  This includes Allegro Common
+Lisp running on Windows 98 platforms.  John Cowles helped us do
+some testing and answered questions for us.  Thanks John!<p>
+
+We incorporated Ruben Gamboa's changes to allow the building of a
+variant, ACL2(r), of ACL2, in which the user can reason about the real
+numbers using non-standard analysis.  See <a href="REAL.html">real</a>.  Note that ACL2(r)
+and ACL2 have different underlying theories, and books certified in
+one system may not be included in the other.  For backward
+compatibility and to ensure a smooth transition, ACL2 is built by
+default, not ACL2(r).  This is a compile-time switch; see the 
+makefile for instructions.  There should be no changes to ACL2
+resulting from the capability of building ACL2(r) from the same
+sources.  Also see <a href="ACKNOWLEDGMENTS.html">acknowledgments</a> for more on the history of
+ACL2(r).<p>
+
+A large number of bugs (some affecting soundness) were fixed, and
+many small new features were added.  See below.<p>
+
+
+<p>
+Less Important Changes:<p>
+
+Some warnings are now considered ``soundness related,'' namely,
+those that advise you that an uncertified book has been included
+or that a book containing <code>DEFAXIOM</code> or <code>SKIP-PROOFS</code> events.
+(Technically, <code>DEFAXIOM</code>s do not imperil soundness in the proof-
+theoretic sense, though they may imperil the validity of theorems.
+But you sould know when a book has added an axiom to your logic!)  In
+previous versions of ACL2, all warnings were inhibited if the token
+<code>warning</code> was included in the argument to
+<code><a href="SET-INHIBIT-OUTPUT-LST.html">set-inhibit-output-lst</a></code>.  Now, soundness related warnings are
+printed even if <code>warning</code>s have been inhibited.  To inhibit all
+warnings, supply the token <code>warning!</code> to <code>set-inhibit-output-lst</code>.<p>
+
+Several bugs in <code><a href="DEFSTOBJ.html">defstobj</a></code> were fixed, relating to the
+possibility that some of the subfunctions introduced by the
+<code>defstobj</code> were already defined.<p>
+
+<code>:</code><code><a href="PUFF.html">Puff</a></code> no longer tries to expand <code><a href="DEFSTOBJ.html">defstobj</a></code> events.
+Previously, the attempt would cause a hard error.
+
+A soundness bug was fixed.  The bug might have been exercised if you
+had an alternative definition (implies hyps (equiv (fn ...) body)) in
+which equiv is an equivalence relation other than EQUAL.  In this case,
+calls of fn might have been expanded to body in places that were not
+equiv-hittable.<p>
+
+An obscure soundness bug was fixed.  The bug was exercised only if
+you had a metafunction with a computed hypothesis (i.e., a ``meta
+hypothesis function''), the hypothesis contained a free variable,
+i.e., a variable not involved in the term being rewritten, and the
+free variable occurred in the output of the metafunction.  The
+possibility of this bug was brought to our attention by Robert Krug.<p>
+
+We fixed a bug in the handling of <code>hide</code> related to the question
+of whether a variable symbol occurs in a term.  The old code did not
+find the variable and could cause the system to throw away a
+hypothesis about it on the grounds that it was never mentioned.  Rob
+Sumners helped discover this problem.<p>
+
+The handling of <code>:</code><code><a href="ELIM.html">elim</a></code> rules was generalized, permitting arbitrary
+known equivalence relations instead of merely <code>equal</code> in the
+concluding equality.<p>
+
+The printing of runes (rule names; see <a href="RUNE.html">rune</a>) used has been made
+"deterministic," both in proof output and in proof attempt
+summaries, by sorting the runes before printing.<p>
+
+The handling of free variables has been improved for hypotheses such
+as <code>(&lt; 0 X)</code>, and more generally, any hypotheses involving a
+comparison with <code>0</code> (even for example <code>(&lt; X 1)</code> where <code>X</code> is known to be
+an integer, which is handled as <code>(&lt;= X 0)</code>).  Thanks to Robert Krug
+for bringing relevant examples to our attention.<p>
+
+A new value, <code>:comp</code>, has been implemented for the
+<code>:load-compiled-file</code> keyword of <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  If this
+value is supplied, then a compiled file will always be loaded, even
+if that requires creating the compiled file first.<p>
+
+The event <code>include-book</code> now generates a warning when a compiled
+file is expected but not found (see <a href="INCLUDE-BOOK.html">include-book</a>).  Formerly,
+it only did so when executed at the top level; it failed to generate
+the warning when executed on behalf of a surrounding <code>include-book</code>
+command.<p>
+
+Certain redefinition warnings generated by Allegro Common Lisp have
+been eliminated.<p>
+
+A new key has been implemented for the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>,
+<code>:bogus-mutual-recursion-ok</code>, set with <code>:</code><code><a href="SET-BOGUS-MUTUAL-RECURSION-OK.html">set-bogus-mutual-recursion-ok</a></code>.
+Thanks to David Russinoff for pointing out the utility of such a key.<p>
+
+A bug was fixed in <code><a href="DEFUN-SK.html">defun-sk</a></code> that prevented its generated events from
+being accepted when guard verification is being performed.  Thanks
+to Bill Young for bringing this problem to our attention.  A second
+bug was brought to our attention by Pete Manolios, which was causing
+certain <code><a href="DEFUN-SK.html">defun-sk</a></code> events to be rejected.  That problem has been
+fixed, and an "Infected" warning has also been eliminated.<p>
+
+The command <code><a href="GOOD-BYE.html">good-bye</a></code> now works with Allegro Common Lisp.<p>
+
+A low-level bug was fixed that could, for example, cause an error
+such as "Error: Expected 5 args but received 4 args" when
+interrupting a <code>local</code> event.<p>
+
+A bug has been fixed in the <a href="PROOF-CHECKER.html">proof-checker</a> related to definition
+expansion.  Thanks to Pete Manolios for bringing this to our attention with a
+simple example.<p>
+
+A bug has been fixed related to the <code>:</code><a href="BDD.html">bdd</a> hint in the presence of
+<a href="EQUIVALENCE.html">equivalence</a> relations.  Thanks to Pete Manolios for bringing this to our
+attention with a simple example.<p>
+
+The functions <code><a href="POSITION.html">position</a></code> and <code><a href="POSITION-EQUAL.html">position-equal</a></code> formerly
+required the second argument to be a true list.  In accordance with
+Common Lisp, we now also allow the second argument to be a string.
+This could cause earlier proofs about these functions to fail unless
+<code><a href="TRUE-LISTP.html">true-listp</a></code> is known to hold where necessary.<p>
+
+Robert Krug wrote a patch, which has been incorporated, to prevent
+certain infinite loops that can arise in linear arithmetic.  Thanks,
+Robert!<p>
+
+The macro <code><a href="LET_star_.html">let*</a></code> no longer requires the bound variables to be
+distinct.<p>
+
+An obscure bug was fixed related to congruence rules.  The bug would
+sometimes cause ACL2 to behave as though no rules (other than equality)
+were available for some argument positions.  Thanks to Pete Manolios for
+bringing this bug to our attention.<p>
+
+Documentation topics have been added for <code><a href="HARD-ERROR.html">hard-error</a></code> and <code><a href="PROG2$.html">prog2$</a></code>,
+and the documentation for <code><a href="ILLEGAL.html">illegal</a></code> has been improved.  Thanks to Rob
+Sumners for a useful suggestion in the examples in documentation for
+<code>prog2$</code> and a fix in documentation for <code><a href="SUBLIS.html">sublis</a></code>.<p>
+
+The event form <code><a href="CERTIFY-BOOK.html">certify-book</a></code> was made more secure, in that it can now
+catch attempts to write a book to disk during its certification.
+Thanks to Rob Sumners for pointing out the insecurity of the
+existing mechanism.<p>
+
+A Y2K problem was fixed with our applicative handling of dates.<p>
+
+Accessors and updaters for <code><a href="STOBJ.html">stobj</a></code>s have been made more efficient when
+the underlying lisp is Allegro Common Lisp, by the use of
+appropriate simple array declarations.<p>
+
+A raw Lisp break had been possible when a certified book that had no
+guard verification was included in a session after
+<code>(</code><code><a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a></code><code> 2)</code>.  This has been fixed.<p>
+
+The keyword command <code>:</code><code><a href="COMP.html">comp</a></code> can now be used to compile only raw
+Lisp functions, excluding executable counterparts, by supplying the
+argument <code>:raw</code>.<p>
+
+Rewrite rule <code>nth-of-character-listp</code> was removed from source file
+axioms.lisp since it is essentially subsumed by <code>characterp-nth</code>.<p>
+
+Printing has been sped up.  In one example the improvement was over
+50% in both Allegro and GCL.<p>
+
+We now allow printing in a "downcase" mode, where symbols are
+printed in lower case.  All printing functions except <code>print-object$</code>
+now print characters in lower case for a symbol when the ACL2 state
+global variable <code>print-case</code> has value <code>:downcase</code> and vertical bars are
+not necessary for printing that symbol.  See <a href="IO.html">IO</a> for a discussion of
+the macros <code>acl2-print-case</code> and <code>set-acl2-print-case</code>.  The default
+printing remains unchanged, i.e., symbols are printed in upper case
+when vertical bars are not required.<p>
+
+A low-level printing function (<code>prin1$</code>) was modified so that it is
+not sensitive to various Common Lisp globals related to printing.  So
+for example, the function <code><a href="FMT.html">fmt</a></code> is no longer sensitive to the value
+of Common Lisp global <code>*print-case*</code>.  (The preceding paragraph
+explains how to control the case for printing in ACL2.)<p>
+
+The definition of <code><a href="ARRAY1P.html">array1p</a></code> was fixed so that the <code>:maximum-length</code> of
+an array must be strictly greater than the number specified in the
+<code>:dimensions</code> field; they may no longer be equal.  This was always the
+intention; the documentation (see <a href="ARRAYS.html">arrays</a>) has remained unchanged.
+The corresponding change was also made to <code><a href="ARRAY2P.html">array2p</a></code>.  Allegro Common
+Lisp formerly caused an error when <code><a href="COMPRESS1.html">compress1</a></code> was called on an array
+where the numbers above were equal; now, we get a guard violation
+instead, which is appropriate.<p>
+
+In the context of theories, a name now represents not just the
+corresponding <code>:definition</code> <a href="RUNE.html">rune</a>, as it has done in earlier versions
+of ACL2, but also the corresponding <code>:</code><code><a href="INDUCTION.html">induction</a></code> rune.
+See <a href="THEORIES.html">theories</a> for a discussion of runic designators.  Most users
+will rarely, if ever, notice this change.  One situation where this
+change will make a difference is after executing
+<code>(in-theory (current-theory 'foo))</code> followed by
+<code>(in-theory (enable bar))</code>, where function <code>bar</code> is introduced after
+event <code>foo</code>, and <code>bar</code> is recursively defined.  The latter <code><a href="IN-THEORY.html">in-theory</a></code>
+form now enables the rune <code>(:induction bar)</code>, which implies that the
+prover can use the induction scheme stored at definition time for
+<code>bar</code>.  Formerly, the rune <code>(:induction bar)</code> was not enabled by
+<code>(in-theory (enable bar))</code>, and hence the induction scheme for <code>bar</code> was
+ignored even when explicit <code>:induct</code> hints were supplied.<p>
+
+You may now supply <code><a href="XARGS.html">xargs</a></code> keyword pair <code>:normalize nil</code> in order to
+prevent certain definitions from ``hanging'' when there are many
+<code>if</code>-subexpressions.  see <a href="DEFUN.html">defun</a>.<p>
+
+We now translate type declarations of <code>real</code> into guards, as we have
+already done for other types such as <code>rational</code>.  For example,
+<code>(declare (type real x))</code> generates the <a href="GUARD.html">guard</a> <code>(rationalp x)</code>.
+See <a href="TYPE-SPEC.html">type-spec</a>.<p>
+
+The theorem prover now behaves reasonably under the combination of
+specifying a value of <code>t</code> both for <code>:</code><code><a href="OTF-FLG.html">otf-flg</a></code> and for a hint
+<code>:do-not-induct</code>.  Previously, it aborted the first time it would have
+otherwise pushed a goal for induction, but now, it will continue and
+wait until all induction subgoals have been pushed before it aborts.<p>
+
+We changed slightly the definition of <code><a href="ROUND.html">round</a></code>.  However, we believe
+that the new definition is equivalent to the old.<p>
+
+The definition of Common Lisp function <code><a href="SUBSTITUTE.html">substitute</a></code> has been added.<p>
+
+The following changes have been made in the use of file names within
+ACL2.  We thank Warren Hunt and John Cowles for running some tests
+of these changes on Macintosh and Windows 98 platforms
+(respectively).
+<blockquote><p>
+
+(1) Names of directories and files now use a syntax like that used
+for Unix (trademark of AT&amp;T), where directories are separated using
+the ``<code>/</code>'' character even when the operating system is not Unix or
+Linux.  See <a href="PATHNAME.html">pathname</a>.  ACL2 also continues to support its notion
+of <em>structured pathnames</em> from Version  2.4 and before, but might not
+do so in future releases and hence no longer documents such syntax.<p>
+
+(2) The command <code>:</code><code><a href="SET-CBD.html">set-cbd</a></code> may now take a relative pathname
+as an argument.<p>
+
+(3) When the macro <code><a href="LD.html">ld</a></code> is given a file name as a value for
+<code><a href="STANDARD-OI.html">standard-oi</a></code>, then if that file name is a relative pathname
+it refers to the result of prepending the connected book directory
+(see <a href="PATHNAME.html">pathname</a>, see <a href="CBD.html">cbd</a>, and see <a href="SET-CBD.html">set-cbd</a>) in order to
+obtain an absolute pathname.  Simiarly for the <code>ld</code> specials
+<code><a href="STANDARD-CO.html">standard-co</a></code> and <code><a href="PROOFS-CO.html">proofs-co</a></code>.<p>
+
+</blockquote>
+It is no longer necessary to issue <code>:</code><code><a href="SET-STATE-OK.html">set-state-ok</a></code><code> t</code> if you
+include a <a href="STOBJ.html">stobj</a> declaration for <code><a href="STATE.html">state</a></code>, for example:
+
+<pre>
+(declare (xargs :stobjs state))
+</pre>
+
+See <a href="DECLARE-STOBJS.html">declare-stobjs</a>.<p>
+
+The <a href="PROOF-CHECKER.html">proof-checker</a> has been cleaned up a bit, including the
+documentation and the capability (once again) to define pc-macro
+commands (see <a href="DEFINE-PC-MACRO.html">define-pc-macro</a>) and proof-checker meta commands
+(see <a href="DEFINE-PC-META.html">define-pc-meta</a>).<p>
+
+Recall that events generate summaries that include a line beginning
+with ``<code>Warnings:</code>'', which is followed (on the same line) by zero or
+more brief strings that summarize the warnings generated by that
+event.  Formerly, this warnings summary for an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> event did not include the summary strings for
+warnings generated by subsidiary events.  This has been fixed.<p>
+
+Macro <code><a href="CW.html">cw</a></code> has been documented and now expands to a call of
+a <code>;</code><code><a href="LOGIC.html">logic</a></code> mode function.  See <a href="CW.html">cw</a> for a way to print to the screen
+without having to involve the ACL2 <code><a href="STATE.html">state</a></code>.  Thanks to Rob Sumners
+for suggesting that we document this useful utility.<p>
+
+Functions <code>duplicates</code>, <code>add-to-set-equal</code>, <code>intersection-eq</code>, <code>evens</code>, and
+<code>odds</code> are now <code>:</code><code><a href="LOGIC.html">logic</a></code> mode functions.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

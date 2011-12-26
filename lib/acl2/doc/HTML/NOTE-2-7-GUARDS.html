@@ -1,0 +1,39 @@
+<html>
+<head><title>NOTE-2-7-GUARDS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-7-GUARDS</h3>ACL2 Version  2.7 Notes on Guard-related Changes
+<pre>Major Section:  <a href="NOTE-2-7.html">NOTE-2-7</a>
+</pre><p>
+
+It was possible for guard verification to succeed where it should have
+failed.  See the discussion under <a href="NOTE-2-7-BUG-FIXES.html">note-2-7-bug-fixes</a>.<p>
+
+There have been changes in the guards generated from type declarations for
+the following cases.  Thanks to Dave Greve and Matt Wilding for suggesting
+such changes.
+
+<pre>
+(type (signed-byte n) val)
+(type (unsigned-byte n) val)
+(type (integer m n) val)
+</pre>
+
+The following examples illustrate the changes.
+
+<pre>
+(type (signed-byte 4) x)
+==&gt; [old] (AND (INTEGERP X) (&lt;= -8 X) (&lt;= X 7))
+==&gt; [new] (SIGNED-BYTE-P 4 X)<p>
+
+(type (unsigned-byte 4) x)
+==&gt; [old] (AND (INTEGERP X) (&lt;= 0 X) (&lt;= X 15))
+==&gt; [new] (UNSIGNED-BYTE-P 4 X)
+</pre>
+<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

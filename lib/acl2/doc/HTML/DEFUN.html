@@ -1,0 +1,257 @@
+<html>
+<head><title>DEFUN.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFUN</h2>define a function symbol
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defun app (x y)
+  (if (consp x)
+      (cons (car x) (app (cdr x) y))
+      y))<p>
+
+(defun fact (n)
+  (declare (xargs :guard (and (integerp n)
+                              (&gt;= n 0))))
+  (if (zp n)
+      1
+      (* n (fact (1- n)))))
+<p>
+General Form:
+(defun fn (var1 ... varn) doc-string dcl ... dcl body),
+</pre>
+
+where <code>fn</code> is the symbol you wish to define and is a new symbolic
+name (see <a href="NAME.html">name</a>), <code>(var1 ... varn)</code> is its list of formal
+parameters (see <a href="NAME.html">name</a>), and <code>body</code> is its body.  The definitional
+axiom is logically admissible provided certain restrictions are met.
+These are sketched below.<p>
+
+Note that ACL2 does not support the use of <code>lambda-list</code> keywords
+(such as <code>&amp;optional</code>) in the formals list of functions.  We do support
+some such keywords in macros and often you can achieve the desired
+syntax by defining a macro in addition to the general version of
+your function.  See <a href="DEFMACRO.html">defmacro</a>.  The <a href="DOCUMENTATION.html">documentation</a> string,
+<code><a href="DOC-STRING.html">doc-string</a></code>, is optional; for a description of its form,
+see <a href="DOC-STRING.html">doc-string</a>.<p>
+
+The <em>declarations</em> (see <a href="DECLARE.html">declare</a>), <code>dcl</code>, are also optional.
+If more than one <code>dcl</code> form appears, they are effectively grouped together
+as one.  Perhaps the most commonly used ACL2 specific declaration is
+of the form <code>(declare (xargs :guard g :measure m))</code>.  This declaration
+in the <code>defun</code> of some function <code>fn</code> has the effect of making the
+``<a href="GUARD.html">guard</a>'' for <code>fn</code> be the term <code>g</code> and the ``measure'' be the term <code>m</code>.
+The notion of ``measure'' is crucial to ACL2's definitional
+principle.  The notion of ``guard'' is not, and is discussed elsewhere;
+see <a href="VERIFY-GUARDS.html">verify-guards</a> and see <a href="SET-VERIFY-GUARDS-EAGERNESS.html">set-verify-guards-eagerness</a>.  Note that the
+<code>:measure</code> is ignored in <code>:</code><code><a href="PROGRAM.html">program</a></code> mode; see <a href="DEFUN-MODE.html">defun-mode</a>.<p>
+
+We now briefly discuss the ACL2 definitional principle, using the
+following definition form which is offered as a more or less generic
+example.
+
+<pre>
+(defun fn (x y)
+  (declare (xargs :guard (g x y)
+                  :measure (m x y)))
+  (if (test x y)
+      (stop x y)
+      (step (fn (d x) y))))
+</pre>
+
+Note that in our generic example, <code>fn</code> has just two arguments, <code>x</code> and
+<code>y</code>, the <a href="GUARD.html">guard</a> and measure terms involve both of them, and the body is
+a simple case split on <code>(test x y)</code> leading to a ``non-recursive''
+branch, <code>(stop x y)</code>, and a ``recursive'' branch.  In the recursive
+branch, <code>fn</code> is called after ``decrementing'' <code>x</code> to <code>(d x)</code> and some step
+function is applied to the result.  Of course, this generic example
+is quite specific in form but is intended to illustrate the more
+general case.<p>
+
+Provided this definition is admissible under the logic, as outlined
+below, it adds the following axiom to the logic.
+
+<pre>
+Defining Axiom:
+(fn x y)
+  =
+(if (test x y)
+    (stop x y)
+  (step (fn (d x) y)))
+</pre>
+
+Note that the <a href="GUARD.html">guard</a> of <code>fn</code> has no bearing on this logical axiom.<p>
+
+This defining axiom is actually implemented in the ACL2 system by a
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> rule, namely
+
+<pre>
+(equal (fn x y) 
+       (if (test a b)
+           (stop a b)
+         (step (fn (d a) b)))).
+</pre>
+
+See <a href="DEFINITION.html">definition</a> for a discussion of how definition rules are
+applied.  Roughly speaking, the rule causes certain instances of
+<code>(fn x y)</code> to be replaced by the corresponding instances of the
+body above.  This is called ``opening up'' <code>(fn x y)</code>.  The
+instances of <code>(fn x y)</code> opened are chosen primarily by heuristics
+which determine that the recursive calls of <code>fn</code> in the opened body
+(after simplification) are more desirable than the unopened call of
+<code>fn</code>.<p>
+
+This discussion has assumed that the definition of <code>fn</code> was
+admissible.  Exactly what does that mean?  First, <code>fn</code> must be a
+previously unaxiomatized function symbol (however,
+see <a href="LD-REDEFINITION-ACTION.html">ld-redefinition-action</a>).  Second, the formal parameters
+must be distinct variable names.  Third, the <a href="GUARD.html">guard</a>, measure, and
+body should all be terms and should mention no free variables except
+the formal parameters.  Thus, for example, body may not contain
+references to ``global'' or ``special'' variables; ACL2 constants or
+additional formals should be used instead.<p>
+
+The final conditions on admissibility concern the termination of the
+recursion.  Roughly put, all applications of <code>fn</code> must terminate.
+In particular, there must exist a binary relation, <code>rel</code>, and some
+unary predicate <code>mp</code> such that <code>rel</code> is well-founded on objects
+satisfying <code>mp</code>, the measure term <code>m</code> must always produce
+something satisfying <code>mp</code>, and the measure term must decrease
+according to <code>rel</code> in each recursive call, under the hypothesis
+that all the tests governing the call are satisfied.  By the meaning
+of well-foundedness, we know there are no infinitely descending
+chains of successively <code>rel</code>-smaller <code>mp</code>-objects.  Thus, the
+recursion must terminate.<p>
+
+The only primitive well-founded relation in ACL2 is <code><a href="O_lt_.html">o&lt;</a></code>
+(see <a href="O_lt_.html">o&lt;</a>), which is known to be well-founded on the
+<code><a href="O-P.html">o-p</a></code>s (see <a href="O-P.html">o-p</a>).  For the proof of
+well-foundedness, see <a href="PROOF-OF-WELL-FOUNDEDNESS.html">proof-of-well-foundedness</a>.  However it is
+possible to add new well-founded relations.  For details,
+see <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>.  We discuss later how to specify
+which well-founded relation is selected by <code>defun</code> and in the
+present discussion we assume, without loss of generality, that it is
+<code><a href="O_lt_.html">o&lt;</a></code> on the <code><a href="O-P.html">o-p</a></code>s.<p>
+
+For example, for our generic definition of <code>fn</code> above, with measure
+term <code>(m x y)</code>, two theorems must be proved.  The first establishes
+that <code>m</code> produces an ordinal:
+
+<pre>
+(o-p (m x y)).
+</pre>
+
+The second shows that <code>m</code> decreases in the (only) recursive call of
+<code>fn</code>:
+
+<pre>
+(implies (not (test x y))
+         (o&lt; (m (d x) y) (m x y))).
+</pre>
+
+Observe that in the latter formula we must show that the
+``<code>m</code>-size'' of <code>(d x)</code> and <code>y</code> is ``smaller than'' the <code>m</code>-size of <code>x</code> and <code>y</code>,
+provided the test, <code>(test x y)</code>, in the body fails, thus leading to
+the recursive call <code>(fn (d x) y)</code>.<p>
+
+See <a href="O_lt_.html">o&lt;</a> for a discussion of this notion of ``smaller
+than.''  It should be noted that the most commonly used ordinals are
+the natural numbers and that on natural numbers, <code><a href="O_lt_.html">o&lt;</a></code> is just
+the familiar ``less than'' relation (<code><a href="_lt_.html">&lt;</a></code>).  Thus, it is very common
+to use a measure <code>m</code> that returns a nonnegative integer, for then
+<code>(o-p (m x y))</code> becomes a simple conjecture about the type of
+<code>m</code> and the second formula above becomes a conjecture about the less-than
+relationship of nonnegative integer arithmetic.<p>
+
+The most commonly used measure function is <code><a href="ACL2-COUNT.html">acl2-count</a></code>, which
+computes a nonnegative integer size for all ACL2 objects.
+See <a href="ACL2-COUNT.html">acl2-count</a>.<p>
+
+Probably the most common recursive scheme in Lisp <a href="PROGRAMMING.html">programming</a> is
+when some formal is supposed to be a list and in the recursive call
+it is replaced by its <code><a href="CDR.html">cdr</a></code>.  For example, <code>(test x y)</code> might be simply
+<code>(atom x)</code> and <code>(d x)</code> might be <code>(cdr x)</code>.  In that case, <code>(acl2-count x)</code>
+is a suitable measure because the <code><a href="ACL2-COUNT.html">acl2-count</a></code> of a <code><a href="CONS.html">cons</a></code> is strictly
+larger than the <code><a href="ACL2-COUNT.html">acl2-count</a></code>s of its <code><a href="CAR.html">car</a></code> and <code><a href="CDR.html">cdr</a></code>.  Thus, ``recursion
+by <code><a href="CAR.html">car</a></code>'' and ``recursion by <code><a href="CDR.html">cdr</a></code>'' are trivially admitted if
+<code><a href="ACL2-COUNT.html">acl2-count</a></code> is used as the measure and the definition protects every
+recursive call by a test insuring that the decremented argument is a
+<code><a href="CONSP.html">consp</a></code>.  Similarly, ``recursion by <code><a href="1-.html">1-</a></code>'' in which a positive integer
+formal is decremented by one in recursion, is also trivially
+admissible.  See <a href="BUILT-IN-CLAUSES.html">built-in-clauses</a> to extend the class of
+trivially admissible recursive schemes.<p>
+
+We now turn to the question of which well-founded relation <code>defun</code>
+uses.  It should first be observed that <code>defun</code> must actually select
+both a relation (e.g., <code><a href="O_lt_.html">o&lt;</a></code>) and a domain predicate (e.g.,
+<code><a href="O-P.html">o-p</a></code>) on which that relation is known to be well-founded.
+But, as noted elsewhere (see <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>), every
+known well-founded relation has a unique domain predicate associated
+with it and so it suffices to identify simply the relation here.<p>
+
+The <code><a href="XARGS.html">xargs</a></code> field of a <code><a href="DECLARE.html">declare</a></code> permits the explicit specification of
+any known well-founded relation with the keyword
+<code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code>.  An example is given below.  If the <code><a href="XARGS.html">xargs</a></code>
+for a <code>defun</code> specifies a well-founded relation, that relation and its
+associated domain predicate are used in generating the termination
+conditions for the definition.<p>
+
+If no <code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code> is specified, <code>defun</code> uses the
+<code>:</code><code><a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a></code> specified in the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>.
+See <a href="SET-WELL-FOUNDED-RELATION.html">set-well-founded-relation</a> to see how to set the default
+well-founded relation (and, implicitly, its domain predicate).  The
+initial default well-founded relation is <code><a href="O_lt_.html">o&lt;</a></code> (with domain
+predicate <code><a href="O-P.html">o-p</a></code>).<p>
+
+This completes the brief sketch of the ACL2 definitional principle.<p>
+
+On very rare occasions ACL2 will seem to "hang" when processing a
+definition, especially if there are many subexpressions of the body
+whose function symbol is <code><a href="IF.html">if</a></code> (or which macroexpand to such an
+expression).  In those cases you may wish to supply the following to
+<code><a href="XARGS.html">xargs</a></code>:  <code>:normalize nil</code>.  This is an advanced feature that turns
+off ACL2's usual propagation upward of <code>if</code> tests.<p>
+
+The following example illustrates all of the available declarations,
+but is completely nonsensical.  For documentation, see <a href="XARGS.html">xargs</a> and
+see <a href="HINTS.html">hints</a>.
+
+<pre>
+(defun example (x y z a b c i j)
+  (declare (ignore a b c)
+           (type integer i j)
+           (xargs :guard (symbolp x)
+                  :measure (- i j)
+                  :well-founded-relation my-wfr
+                  :hints (("Goal"
+                           :do-not-induct t
+                           :do-not '(generalize fertilize)
+                           :expand ((assoc x a) (member y z))
+                           :restrict ((&lt;-trans ((x x) (y (foo x)))))
+                           :hands-off (length binary-append)
+                           :in-theory (set-difference-theories
+                                        (current-theory :here)
+                                        '(assoc))
+                           :induct (and (nth n a) (nth n b))
+                           :non-executable t
+                           :use ((:instance assoc-of-append
+                                            (x a) (y b) (z c))
+                                 (:functional-instance
+                                   (:instance p-f (x a) (y b))
+                                   (p consp)
+                                   (f assoc)))))
+                  :guard-hints (("Subgoal *1/3'"
+                                 :use ((:instance assoc-of-append
+                                                  (x a) (y b) (z c)))))
+                  :mode :logic
+                  :normalize nil
+                  :otf-flg t))
+  (example-body x y z i j))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

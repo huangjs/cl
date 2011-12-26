@@ -1,0 +1,658 @@
+<html><head><!-- This document was created from RTF source by rtftohtml version
+2.7.5 --><title>Tools for Incremental Development of Educational 
+Software Interfaces</title></head><body><b>Tools For Incremental
+Development of Educational Software Interfaces</b><p>
+<b></b><p>
+<b>Wolff Daniel Dobson</b><p>
+<b></b>The Institute for the Learning Sciences &amp; Department of Computer
+Science<p>
+Northwestern University<br>Evanston, IL 60201<br>+1 847 491
+3500<br>wolff@cs.nwu.edu<p>
+<b>Christopher K. Riesbeck</b><p>
+<b></b>The Institute for the Learning Sciences &amp; Department of Computer
+Science<p>
+Northwestern University<br>Evanston, IL 60201<br>+1 847 491
+3500<br>riesbeck@ils.nwu.edu<p>
+
+<h1>
+																																										</h1>
+
+<h1>
+<a name="RTFToC1">ABSTRACT</a></h1>
+In this paper we describe the evolution of an educational software tool
+designed to let non-programmers build content-rich learning environments.
+Version 1 was a wholly model-driven authoring environment, but was unpopular
+with authors as they were forced them to build up-front domain representations
+before prototyping their interfaces. Version 2 uses a GUI method of interface
+development while the model is developed incrementally and as needed.  In this
+version, authors built less of a model overall, but were more satisfied with
+the results. This paper discusses the natures of the two approaches to
+model-building and how they are authored.
+<h2>
+<a name="RTFToC2">Keywords</a></h2>
+Educational software, interface design, interface tools, intelligent systems,
+INDIE, goal-based scenario.
+<h1>
+<a name="RTFToC3">INTRODUCTION</a></h1>
+For computer-based instruction to have a noticeable effect on the world's
+educational landscape, educators will need to build thousands of software
+"lessons" in thousands of different, unrelated fields. Anyone who can write a
+textbook (or small group of such authors), if armed with a video camera and a
+good software development tool, should be able to build multimedia educational
+software.<p>
+INDIE, developed and used at ILS, is an attempt at such an
+educational-software-building tool. The systems INDIE builds have enough
+intelligence to be able to offer the student a variety of choices and to
+critique those choices. The topic of this paper is the problem of building
+tools for authors that scale easily from simple interface interactions to a
+well-represented domain model without significant re-implementation at each
+stage of design and without significant programmer involvement. Both of these
+issues, as demonstrated with the INDIE tool, tend to be difficult problems when
+building educational software.
+<h1>
+<a name="RTFToC4">INDIE:
+ WHAT THE STUDENT SEES
+</a></h1>
+INDIE builds a particular kind of educational software, a case-based,
+learning-by-doing style of program called a Goal-Based Scenario (GBS). A GBS is
+a simulated world in which students, under the watchful eyes of coaches,
+experts, and critics, try to achieve a set of goals. Students are given these
+goals, an initial situation, specific tools for information collection and
+management, and a way to communicate their claims and knowledge.  The
+pedagogical rationale behind GBSes can be found in [3,4].<p>
+<IMG SRC="CHI981.gif"><p>
+<b>Figure 1: Lake temperature results in <i>Volcano
+Investigator</i></b><i></i><p>
+<i></i>As the student works on the problems presented, the system tracks what's
+happening. As needed or requested by the student, the system uses experts
+captured on video to guide, coach, critique and give real world examples of
+similar situations. A GBS is not a typical classroom setting; it is supposed to
+be like learning on the job, only better because experts are available all the
+time for help and review.<p>
+The INDIE tool builds a certain subclass of GBS learning environments that
+centers around diagnosis tasks. Students are given an urgent problem that needs
+diagnosing (such as a patient with an unknown illness), and then given tools to
+gather information about the case (tests to run on the patient, documents to
+inspect, and so forth). After investigating the case, students make a claim
+about the case and build a report from the evidence they have collected to
+prove it.<p>
+Along the way, students can ask for help and browse a richly-indexed multimedia
+hypertext network called an ASK system[1]. The central idea in ASK systems is
+that all information is linked to other information via follow-up questions.
+For example, if an expert in a video clip mentions how volcanoes are caused by
+magma being forced to the surface during earthquakes, follow-up questions might
+be, "What is magma?" and "What causes earthquakes?"
+<h2>
+<a name="RTFToC5">INDIE
+Example: Volcano Investigator
+</a></h2>
+An example of a current INDIE project is "Volcano Investigator," where the
+student plays the role of an expert volcanologist brought in to decide whether
+or not a town at the foot of a volcano should be evacuated. <p>
+After hearing an introduction, students can run six different tests on the
+volcano. Each one provides evidence, in the form of itemized points, that
+appears in the notebook to the side of the screen. Figure 1 shows an example of
+a student seeing the result of a lake temperature test.<b><i></i></b><p>
+<b><i></i></b>After gathering this test-based information, students can submit
+their suggestion (evacuate now, don't evacuate, or evacuate soon) to the mayor
+of the town. They choose a claim, then drag points from their notebook to a
+report to support this claim. The mayor comments on the proposal, and then the
+students' work is critiqued by an on-screen co-worker. The critiquing mechanism
+(the "critiquer") comments on whether or not the claim is well-supported,
+looking for missing, irrelevant, or conflicting evidence points in the report
+(Figure 2).<p>
+<IMG SRC="CHI982.gif"><p>
+<b>Figure 2: Submitting a report in <i>Volcano Investigator</i></b>
+<h2>
+<a name="RTFToC6">Domain
+Modeling
+</a></h2>
+To have the student learn about the domain, authors need to be able to model it
+in software. A solid model gives students the opportunity to interact with "the
+real thing," so to speak, and gives the GBS a good basis for remediating the
+student. Authors then need tools to let them model the world, provide feedback
+to students, and let students have access to experts. <p>
+More importantly, the model should allow for smooth scale-up.  If a program is
+just a collection of screens with buttons connecting them, each addition of a
+scenario or a test would require linearly more information. Instead, we'd like
+development times where building the first scenario or test takes the longest,
+and building each additional scenario or test costs asymptotically less.<p>
+With this definition of INDIE and its intent, we can now answer the question,
+how do INDIE projects get built and who builds them?
+<h1>
+<a name="RTFToC7">THE
+GBS DESIGN PROCESS
+</a></h1>
+Staff and students at the Institute for the Learning Sciences have built eight
+GBSes with INDIE, and from those experiences we have revised our tool quite
+heavily to support that process. Based on these projects, we have divided
+development into the following stages of tool use:<p>
+<i>1 Pre-tool</i>. Authors collect information about their domain from experts
+and books in preparation for doing a full design. At this point, they usually
+work on white boards or notebooks.<p>
+<i>2 Storyboard:</i> Authors concretely envision what the program will look
+like. They use paper or programs like Powerpoint or Director to make a linear
+sequence of screens, each screen showing one or two mouse clicks in the
+demonstration. Although the introduction to the scenario is usually complete,
+tests and remediation are usually extremely sketchy.<p>
+<i>3 First Walkthrough:</i> Authors animate their storyboard, this time doing a
+higher-fidelity mockup of the interface. For non-tool projects, this can be
+built in Director or Supercard, with working buttons, some movies, and
+functional art. The path through the program is still mouse click to mouse
+click and extremely linear. Some expert video is shot but most of it has not
+been indexed into the ASK system.<p>
+<i>4 Prototype of first scenario: </i> A nearly-complete scenario is built. The
+conceptually hard parts are designed (such as all the tests and the structure
+of the critiquing), but the application often supports only two or three
+different paths through the content (often corresponding to different demo
+lengths for different audiences). The application is implemented on the final
+delivery platform.<p>
+<i>5 Shrinkwrapped system:</i>  This is a delivery-level system. Full content
+is available, all tests are running, the critiquer is complete, and enough
+supporting material has been entered such that all claims can be successfully
+supported or disconfirmed.<p>
+Applications will go through several iterations within stages and across
+them.<p>
+An important thing to note is that frequently projects never get past the first
+few stages. Projects developed by students, depending on the project size, last
+one to five months, which generally isn't enough time to build shrinkwrapped
+systems. Often prototypes are built as research projects or proposals, and
+after the proposal is demonstrated, the project never gets any further. <p>
+Investing time at the beginning of a project in model infrastructure can pay
+off later when finishing the program. However, if the project isn't going to be
+finished, why spend the time on infrastructure?  This problem was key to the
+failure of our first tool, INDIE 1.0.
+<h1>
+<a name="RTFToC8">INDIE
+1.0:  A MODEL-DRIVEN-APPROACH
+</a></h1>
+The first iteration had a strong task model of the tasks in a diagnosis
+scenario. The model was divided into several different modules:<p>
+*	<i>The Problem Selector:</i>  Students choose a scenario to work on-in
+Volcano, it was which mountain to work on.<p>
+*	<i>The Lab:</i>  Students run tests and talk to experts in the field,
+collecting information.<p>
+*	<i>The Argument Constructor:</i>  Students make claims to the clients in the
+simulation, suggesting different courses of action or diagnosises (i.e. "The
+volcano is going to erupt tomorrow.")<p>
+*	<i>The Critiquer:</i>  Students hear feedback from the client, telling them
+what is wrong with their submitted claims and letting them ask questions about
+them.<p>
+Each one of these modules had a default interface layout-one or two "screens"
+for each, and then specific buttons for each kind of interaction: one button
+per scenario, one button per possible thing to say back to the client, and so
+forth. If authors wanted to add a scenario button, they would edit the
+problem-selection module to add another scenario, and a button would be
+automatically added to the scenario-selection screen. Our goal was to
+automatically supply the interface so that authors could concentrate on the
+content.<p>
+Authors found INDIE 1.0 very restrictive for several reasons. First, the tool
+built applications that didn't look the way they wanted them to look, and
+changing that "look" required the INDIE programming team to reprogram the
+interface.<p>
+Also, and probably more importantly, building the modules' model
+representations didn't work well. Authors, who had been drawing screens on
+paper and Powerpoint in the late stages of the idea phase, were suddenly forced
+to understand the INDIE model representation, and construct objects in it. For
+example, to make a specific test show a specific result, authors had to
+create:<p>
+*	a test (such as finding the content of the gases emitting from a volcano)<p>
+*	a set of scenario facts (such as that the volcano is about to erupt)<p>
+*	a prop that could be tested (such as some volcanic gases)<p>
+*	a table that specifies the results that occurs when the student runs this
+test on this prop in this scenario<p>
+Unfortunately, all that the authors wanted to say was, "When this button is
+pressed, play this movie." Defining interactions in the model (such as the
+results of tests, the relationship between available help and the tests, and
+getting critiquing running) required a fair amount of time, yet authors
+frequently rebuilt them due to design changes. In other words, rapid
+prototyping was difficult. Design iterations took full-time consulting from the
+INDIE programming team and much planning by authors.<p>
+On one project slated to use this version of INDIE, project-assigned
+programmers built an interactive walkthrough in Supercard rather than INDIE.
+The walkthrough had no model. They did this because, like all teams, they had a
+limited amount of time, and it was easier and faster to mock something up in
+Supercard than to use INDIE.<a href="CHI98_fn.html#fn0">[1]</a>
+<h2>
+<a name="RTFToC9">The
+Trouble With Mock-Ups 
+</a></h2>
+The problem with building a mock-up in Supercard or Director is that turning
+such a prototype into a shippable program requires a complete re-implementation
+of the program in a new tool (probably INDIE). Supercard and Director use
+languages and representations that are largely scripting tools. To support
+INDIE questions, answers, rules, widgets, and screens, complete with
+hyperlinked data, nested structures, and modern model/interface separation is
+well beyond the scope of a scripting language. So, after spending time and
+effort building such a mock-up, helpful as it was in the early stages, there
+would be little or no reuse of this artifact in the final product outside of a
+few bits of art and video. <p>
+The major issue for product delivery is to consider the total length of time on
+the project. If the project is completely re-implemented in a new tool, a very
+large portion of the time spent building the mock-up will be wasted, thus
+increasing the total project length. If authors started building on the final
+delivery platform from the beginning, the time spent on walkthroughs isn't
+wasted; the walkthrough becomes the basis for the shippable application.
+However, authors couldn't afford to spend the time up front due to short
+deadlines at the beginning of the project.<p>
+Even worse from the perspective of final delivery, authors are likely to (and
+did) design interface and model interactions that are difficult or impossible
+to implement for real as they felt no restrictions from their mock-up tool.
+Authors, especially non-programmers, who aren't familiar with the tool's
+strengths and limits will construct almost anything.<p>
+It was clear that we needed to get the authoring of storyboard-level interfaces
+into the hands of authors and out of the hands of programmers. At the same
+time, we had to preserve the authoring of the model information that the
+full-scale application would require. <b></b>
+<h1>
+<a name="RTFToC10">INDIE
+2.0:  IF YOU CAN'T BEAT SUPERCARD...
+</a></h1>
+Thus, there were three problems with INDIE 1.0's model-driven approach to
+authoring that we needed to address:<p>
+*	Authors had trouble getting the "look" they wanted while manipulating the
+model.<p>
+*	Rapid prototyping of ideas was difficult and time-consuming.<p>
+*	Authors would duplicate effort between building prototypes and their final
+products. <p>
+Essentially, we wanted authors to have free rein to prototype, but have their
+application scale-up to a completed application without having to lose the work
+they did on their prototype.
+<h2>
+<a name="RTFToC11">Simple
+Interface Editing
+</a></h2>
+To give authors the look they wanted, we made building the interface entirely
+separate from constructing the model representation. Interfaces are now built
+with Supercard-like buttons, pictures, and movie-players. Authors can drag
+different widgets off a palette, re-size them, change their attributes, then
+test them immediately by switching from an interface-designing mode to a
+system-test mode. <p>
+<b>
+<IMG SRC="CHI983.gif">
+<P>Figure
+3: The INDIE tool visual editor</b><p>
+<b></b>In this example, the author has created a "Go to map" button and is
+editing its attributes. The attribute editor is accessed simply by
+double-clicking the widget. Widgets can be grouped into "layers," which can be
+shown or hidden as a unit, giving authors the ability to make reusable screens
+and sub-screens<b>.</b>
+<h2>
+<a name="RTFToC12">Simple
+Interface Action Editing
+</a></h2>
+Though interfaces can be very complicated, what happens in the interface in an
+INDIE application can be broken down into three classes:<p>
+*	Show  or hide a screen or some subportion of a screen, or else switch windows
+entirely.<p>
+*	Play a movie.<p>
+*	Make one or more ASK questions visible on screen as clickable buttons.<p>
+Examples of these from the Volcano project include: <p>
+*	Show the result of a lake temperature test (show a picture and play a movie
+explaining it, then add a list of follow-up questions),<p>
+*	Respond to the press of a button that says "Go to the lake" (show a group of
+widgets, then play a guide movie).<p>
+We supported this by allowing authors to create event response lists. Entries
+in a system-wide table associate an event (which can be a model- or
+interface-level event) to a list of screens, movies, and help questions that
+can appear. Each line in the table, which is a combination of event and a
+response to it, is called a "trigger." Any time an event occurs, the system
+looks up in the table for a matching event pattern and then executes what it
+finds in the response list. These triggers are constructed with a fill-out form
+that can be seen later in the paper.<p>
+The trigger-editing form is a simple visual programming system that most
+authors are able to grasp quickly. Authors don't have to learn any syntax or
+construct a list of commands from scratch; they can just fill in the blanks.
+The blanks are the same as those listed above: play a movie, show this list of
+questions, and show or hide some group of widgets on screen. If an author wants
+to show a sequence of responses (such as several introductory movies in a row),
+he or she can chain together several triggers at any length for very long
+interactions. <b></b>
+<h2>
+<a name="RTFToC13">Modgets:
+ When Triggers Aren't Enough
+</a></h2>
+Though triggers are invaluable for letting authors construct and prototype
+interface ideas, they are only useful when building navigation, introductions,
+and conclusions.  They aren't sufficient for the more complex responses
+necessary in sophisticated educational software. For example INDIE applications
+contain frequent on-screen help. It appears as clickable buttons on screen, as
+in Figure 4.<p>
+<IMG SRC="CHI984.gif"><p>
+<b>Figure 4: An ASK Modget</b><p>
+<b></b>All INDIE applications have this sort of just-in-time ASK system. It
+consists of a list of clickable question buttons and an area where answers
+appear. When a question is "asked" (i.e. the button is clicked on), a <i>media
+item </i>(movie, text, or picture) response appears in the box above the list
+of questions. After the media item plays, a list of follow-up questions to it
+appear below it. These follow-ups have their own answers with follow-ups, which
+can lead students into a vast web of interlinked questions and answers.<p>
+Authors <i>could</i> build each question as a separate button widget whose
+trigger shows the appropriate movie and then shows other widgets, but this
+would become extremely cumbersome since there are usually hundreds of ASK
+questions in an INDIE project.<p>
+Instead, authors drag out a pair of widgets from the palette. The first is
+called an "answer-viewer." Answer-viewers show answers (i.e. any kind of
+picture, text, or movie). Any answer that is "shown" is played in the
+answer-viewer widget. There can be many different viewers and authors can, for
+each answer, choose in which viewer the answer will play.<p>
+The second widget is a "question-viewer." It is resizeable and supports
+different looks and styles of question button. Authors can specify multiple
+question viewers, and then associate each question with a viewer.<p>
+Answer-viewers and question-viewers are called in INDIE parlance "modgets,"
+which is a term that combines "model" and "widget." Modgets are widgets that
+have a predefined interface interaction with the underlying model.  They show
+what is happening in the model for certain kinds of objects: questions and
+answers, in this case. <p>
+When a student clicks on a question button, the answer for the question the
+button represents is declared shown.  The answer's follow-up questions are
+declared visible. An answer-viewer then shows the correct media item while the
+buttons for follow-up questions appear in the appropriate question-viewers.
+This is shown in Figure 5.<p>
+<b>
+<IMG SRC="CHI985.gif"><P>Figure
+5: Model/interface interactions when asking questions</b><p>
+<b></b>Questions and answers are model objects that are authored separately
+with a database-like tool.<p>
+This is a big win for authors-they only have to author two widgets, yet they
+can scaleably add hundreds of questions to their ASK systems.  This sort of
+scaleability is why we have a model in the first place, and what differs INDIE
+from Supercard and its ilk.  
+<h3>
+<a name="RTFToC14">Other
+modgets
+</a></h3>
+There are other modgets, such as those that let students manipulate and edit
+lists of points in <i>notebooks</i>. A point is a sentence or two of text which
+summarizes the contents of a media item or describes the results of a test.  It
+can act as evidence for or against an argument. A point first becomes visible
+when the student has seen the answer or result that it describes. Eventually,
+students will drag these points from a working notebook (where they appear as
+the students explore) to reports that argue for or against claims.<p>
+Notebook modgets (which represent working notebooks as well as reports) work in
+a similar manner to question-viewer modgets-each point is associated with a
+notebook, and when a point is made visible, a draggable text item is added to
+the viewer. Notebooks, aside from having editable properties like font and size
+and repositionable, automatically support dragging and dropping between them.<p>
+There are also glossary modgets, trash modgets (where students drag points when
+they want to remove them from a notebook), and argument-status modgets that
+show whether or not students can go on to the next scenario. All of these
+modgets indicate the state of the model, and are quite similar to
+model-view-controllers [2].
+<h2>
+<a name="RTFToC15">Scaleable
+Representations
+</a></h2>
+The intent of modgets is almost to "sneak" representation into authors' early
+design stages. Authors of INDIE projects know they need questions, answers
+(both in response to questions and as general media items), and notebooks. The
+easiest way to put them in storyboards and walkthroughs is to use modgets. When
+making the modgets show text or movies, authors are in fact building parts of
+the model they will need in the long run. The modgets are visual enough,
+however, that authors report that they don't feel burdened with up-front
+representation building.<p>
+Some parts of an interface do not lend themselves easily to modgets. Modgets
+work best when there is a small section of the screen where some homogenous
+action will take place. It would be difficult, for instance, to come up with a
+modget that would represent tests. A test can be anything from looking through
+a microscope to feeling every part of a dog for injuries.  Conceptually, tests
+are model objects with results that are based on which scenario the student is
+currently working on, which is a structure found in most domains. However, the
+<i>look</i> of the test is quite varied.  For these, authors tend to depend on
+combination of widgets and conditional triggers.
+<h1>
+<a name="RTFToC16">SCALING
+UP CONDITIONAL BEHAVIORS
+</a></h1>
+In early design stages (up to and including first walkthrough), authors tend to
+build interfaces for non-modget interactions that work much like the simplest
+Supercard interfaces: press this button, see this movie, and then put up these
+questions. Press another button, see another movie and show another screen. In
+this manner, authors can quickly construct a demopath while not building and
+rebuilding a model.<p>
+As the program grows in complexity, authors need to make the interface respond
+conditionally to clicks, but one of the goals from the INDIE 1.0 experience is
+to make sure authors have to duplicate effort as little as possible.<p>
+There are several different kinds of conditionality in INDIE:<p>
+*	Show different introductions and conclusions when scenarios start or end.<p>
+*	Show different advice/critique movies depending on what is missing,
+conflicting, or irrelevant in the students' reports.<p>
+*	Show different test results and help questions depending on what scenario the
+student is in.<p>
+At the first walkthrough stage, the buttons that would normally handle this
+sort of conditionality are "hardwired": "On CLICKED: `Run lake temperature
+test' button, play movie #45 and show these 3 follow-up questions."  A
+scaleable authoring tool should make turning this interaction conditional a
+smooth process and require little or no re-authoring.
+<h2>
+<a name="RTFToC17">Example</a></h2>
+INDIE's event-based architecture makes it possible to make this change without
+losing the work the author already did. For the test example, an author might
+need to make the temperature test work for several different mountains instead
+of just for Mt. Andrews.<p>
+Currently, the "test" is in a push-button arrangement, as so:<p>
+<b>
+<IMG SRC="CHI986.gif"><P>Figure
+6:  A "hardwired" test</b><p>
+<b></b>The author would like to instead have the internal structure look like
+this:<p>
+<IMG SRC="CHI987.gif"><p>
+<b>Figure 7: A test that uses the model</b><p>
+<b></b>To do this, the author needs to do the following steps:<p>
+1.	Create a temperature test object.<p>
+1.	Create a scenario object, "Mt. Andrews Scenario."<p>
+2.	Create a "Lake Temperature" test object.<p>
+3.	Define a result object for the "Lake Temperature" test for the Mt. Andrews
+scenario called "15.2 [[ordmasculine]]C".<p>
+4.	Make the trigger that plays the 15.2 [[ordmasculine]]C movie execute when
+the result created in step 3 is generated.<p>
+ 5.	Make the button's trigger run the test.
+<h3>
+<a name="RTFToC18">Re-authoring
+triggers in INDIE
+</a></h3>
+At first, the author might have a hardwired trigger like this:<p>
+<b>
+<IMG SRC="CHI988.gif"><p>Figure
+8: A hardwired trigger</b><p>
+<b></b>To make this test conditional on the scenario, the author would first
+make a scenario object.  Scenario objects only consist of a name.<p>
+Then he or she would add a test object:<p>
+<b>
+<IMG SRC="CHI989.gif"><p>Figure
+9: Test editor</b><p>
+<b></b>The author then specifies a result.  Results are named, such as
+"Temperature 15.2 [[ordmasculine]]C" and "Temperature 19.0 [[ordmasculine]]C".
+Each result object has an editor like this:<p>
+<b>
+<IMG SRC="CHI9810.gif"><p>Figure
+10: Result editor</b><p>
+<b></b>For a result, authors specify what scenario will produce this result.
+Here, the "Mt. Andrews" scenario will cause the 15.2 C[[ordmasculine]] result
+to appear. <p>
+Scenarios, tests, and results are model objects that don't appear on screen nor
+do they have associated modgets. Authors make students aware of changes in
+these model objects through triggers with special kinds of events. These
+<i>model events</i> include:<p>
+*	Test-result generated event<p>
+*	Scenario chosen event<p>
+*	Critiquing-rule fired event<p>
+In this example, the author can re-author his or her old trigger to execute
+when the 15.2 [[ordmasculine]]C test result is generated. The author opens the
+trigger editor, and with a visual editor selects the event "TEST RESULT: 15.2
+C". The resulting trigger now reads:<p>
+<b>
+<IMG SRC="CHI9811.gif"><p>Figure
+11: Test result trigger</b><p>
+<b></b>Finally, the author needs to connect the clicked button to the running
+of the test. Authors edit the trigger for the "Run temperature test" button
+event by pressing the "Edit Trigger" button again on that button's attribute
+editor. Given that currently there is no trigger for this button, one is
+automatically generated.  The event slot is already filled out, but the rest of
+the trigger is blank. To fix this, authors go to the "Model Actions" section of
+the trigger editor:<p>
+<b>
+<IMG SRC="CHI9812.gif"><p>Figure
+12: Trigger with model action</b><p>
+<b></b>A model action is a command that allows the interface to connect to
+non-modget model objects.  In this case, authors would click on the
+"Create/Add" button and visually select the model action "RUN TEST" and,
+through a few dialog windows, choose the test object they have created. Now,
+pressing the "Run temperature" test will act conditionally depending on which
+scenario had been chosen. <p>
+Although in this example, the author has built a fair bit more model structure
+than the author had before, <i>no work was duplicated</i>. This author used his
+or her old trigger, and now adding a new scenario would only require authoring
+a new result and result trigger. Authors of multi-scenario applications
+reported they frequently made use of this flexibility.
+<h2>
+<a name="RTFToC19">Other
+Conditional Behaviors
+</a></h2>
+Other conditional behaviors are constructed in a similar manner to model
+actions and events. Authors can use model actions to select which set of
+critiquer rules should be used or to indicate to the model that the student has
+chosen to switch scenarios.<p>
+We restrict all conditional behavior to occur through the model.  Adding
+different kinds of conditional behavior to an INDIE application is then gradual
+and only done as needed, reducing the up-front load on authors' time, both for
+construction and for learning how the model works. And, since there is usually
+only one way to add such behavior, authors are forced at the early stages into
+building software that will scale up well.
+<h1>
+<a name="RTFToC20">PROJECTS
+BUILT IN INDIE
+</a></h1>
+Besides <i>Volcano Investigator</i>, authors have built three major projects in
+INDIE 2.0 to date:<p>
+*	<b>Immunology Consultant:</b> Medical students are in the role of an
+immunologist with a difficult case to solve, and they use tests and interviews
+to figure out what is wrong with her.<p>
+*	<b>Is It A Rembrandt?:</b> Art history students have to determine whether
+each of three paintings is painted by Rembrandt or is a forgery by inspecting
+the style of the painting, its provenance, the signature, and so on.<p>
+*	<b>Nutrition Clinician:</b> Medical students have to determine what
+nutritional deficiencies each of 3 patients has, what the medical implications
+are, and what needs to be done to remove the deficiencies.<p>
+Authors of these projects were experienced ILS staffers who had worked on one
+or more GBS projects before starting with INDIE, but had no experience with the
+INDIE tool.  They had no previous programming experience (most had liberal arts
+degrees) but had strong skills with applications such as spreadsheets and word
+processors.  They tended to contact the INDIE developers frequently when
+starting their projects and getting familiar with the tool, and then around
+once a week once they were comfortable with the tool.<p>
+All of these systems have at least 15 different screens, ranging from
+introductions, tests, interviews, ASK zoomers, ASK browsers, report-building,
+and feedback.  Each project took from 5 to 10 months to complete.<p>
+This table summarzies the relative complexity of each project:
+
+<pre>
+        Immun.   Volcano  Nutriti  Remb.    
+                          on                
+ASK     217      150      600      620      
+nodes                                       
+Trigge  162      187      612      334      
+rs                                          
+Points  120      36       1000     514      
+
+</pre>
+<b>Table
+1:  Relative sizes of four INDIE projects.</b><p>
+<b></b>INDIE application sizes are dominated by graphics and video.
+<b>Rembrandt</b>, for example, has around 60MB of pictures (largely
+uncompressed) and nearly 4 gigabytes of video consisting of nearly 500 clips of
+experts.  <b>Nutrition</b> has 3 gigabytes of video.<p>
+INDIE 2.0 has additionally been used by four groups of graduate students, both
+Ph.D. and masters, in course projects.  These projects tend to go through the
+third stage, First Walkthrough.  <b>Volcano Investigator</b> was the most
+successful of these student projects, built by first-year masters students in
+an intensive project in 4 months.  Others include <b>KERMIT</b> (ecology),
+<b>Car Repair, </b>and <b>Clinical Monitor</b> (drug testing).<p>
+Through the first few projects in INDIE, the INDIE programming team built many
+extensions to the tool as authors explored the "space" of diagnosis-style
+GBSes.  Encouragingly, INDIE 2.0 has reached a fairly stable point, where there
+are enough options to satisfy typical needs and enough examples to show how to
+use those options.
+<h1>
+<a name="RTFToC21">AUTHORING
+EXPERIENCES IN INDIE
+</a></h1>
+The INDIE development team conducted exit interviews, audio-taped free-form
+discussion focused around authoring experiences, with authors from each group.
+They reported the following major points:<p>
+*	Most teams (usually groups of 3) had one person use the tool to build the
+interface, with the other students working on contacts with experts. Frequently
+other authors on the team would use the tool briefly for some targeted task,
+such as ASK system constructing and linking.<p>
+*	Outside of using Powerpoint or paper for proposal-level storyboarding, all
+four teams used the INDIE tool as their primary development environment. This
+was one of our stated main goals of this project. Authors said that they liked
+INDIE precisely because it is so flexible in comparison to other more
+model-driven GBS tools available to them.<p>
+*	It took teams from four days to two weeks to get comfortable with the tool to
+the point where they were able to construct their demopaths for presentations
+late in the Storyboard stage. This indicated that authors  rapidly gained
+familiarity with the tool. Authors emphasized how easy they felt it was for
+them to get started with the tool.<p>
+*	Two INDIE projects, Rembrandt and Nutrition, have been scaled up from initial
+demopaths to full-fledged multi-scenario shippable applications. These projects
+will be used by Northwestern University students beginning fall of 1997.
+Neither team reported significant re-authoring while moving from a single
+scenario to several scenarios (outside of a technical point about background
+images).
+<h1>
+<a name="RTFToC22">CONCLUSION</a></h1>
+INDIE 2.0 has proven to be easy for authors to work in. With gradual scale-up,
+authors can move smoothly through the stages of educational software design,
+starting from late storyboarding and continuing to the final, shippable
+application, all without spending large amounts of time re-implementing between
+stages. Triggers provide a way for non-programmers to specify behavior in the
+"when this button is pressed, play this movie" mode, but scale gracefully up to
+the stage where authors want "when this button is pressed, do the right thing."
+We are looking forward to working on even more richer models for more complex
+interactions with INDIE.  Also, researchers in other domains that are
+interface-heavy at the beginning and content-heavy at the end could be informed
+by our experience with INDIE, such as multimedia non-educational hypertext,
+data-rich websites, and MIS database front-ends.<p>
+A general lesson can be extracted from our experiences with INDIE that applies
+to tools for authoring intelligent (or at least model-based) applications. The
+problem in such tools has always been balancing the long-term representational
+needs of the applications with the short-term needs of the authors. The authors
+want to prototype their interfaces quickly and easily, but typical interface
+builders let authors envision interactions way beyond what current intelligent
+systems can support. On the other hand, if you force authors to do up-front
+knowledge representation before interface prototyping, they will use other
+tools first and use your tool late and inefficiently, if at all.<p>
+Two techniques were used in INDIE 2.0 to resolve this conflict. First, by
+representing surface-level interface actions with event-based response
+triggers, authors can author interface actions as easily as in other systems.
+Later, as needed, they can incrementally refine these hardwired responses into
+model-based responses. Second, with modgets, authors can quickly and directly
+incorporate certain commonly used model-based widgets, such as evidence
+notebooks and lists of questions, ready for instant scale-up.
+<h1>
+<a name="RTFToC23">ACKNOWLEDGMENTS</a></h1>
+We'd like to acknowledge significant effort and contributions on the part of
+Seth Tisue (ASK network tools and software development); Steven Silverstein,
+Abigail Sher, Bridget Weise (Immunology); Brendon Towle and Joe Herman (editor
+tool kit); John Sangimino, Jeff DeSmet, Faith Fuqua-Purvis (Volcano); and Brian
+Davies and Steven Feist (graphics tools). <p>
+This work has been supported in part by the Defense Advanced Research Projects
+Agency, monitored by the Office of Naval Research, under contracts
+N00014-90-J-4117 and N00014-91-J-4092. The Institute for the Learning Sciences
+was established in 1989 with the support of Andersen Consulting.
+<h1>
+<a name="RTFToC24">REFERENCES</a></h1>
+1.	Ferguson, W., Bariess R., Birnbaum, L., and Osgood, R. ASK Systems: An
+approach to story-based teaching.  In <i>Proceedings of the 1991 International
+Conference on the Learning Sciences</i>, L. Birnbaum, Ed. Evanston, IL, Aug.
+1991), 158-164.<p>
+2.	Goldberg, A.  Information Models, Views, and Controllers.  <i>Dr. Dobb's
+Journal </i>(July 1990), 54-60.<p>
+3.	Schank, R. Goal-based scenarios: A radical look at education. <i>Journal of
+the Learning Sciences 3,</i> 4(1994), 429-453.<p>
+4.	Schank, R., Fano, A., Jona, M., and Bell, B. The design of goal-based
+scenarios, <i>Journal of the Learning Sciences 3</i>, 4(1994), 305-345.<p>
+<b></b><p>
+<b></b>
+</body></html>

@@ -1,0 +1,137 @@
+<html>
+<head><title>TYPE-PRESCRIPTION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TYPE-PRESCRIPTION</h2>make a rule that specifies the type of a term
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  Some example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formulas from which <code>:type-prescription</code> rules might be
+built are:
+
+<pre>
+Examples:
+(implies                           (nth n lst) is of type characterp
+ (and (character-listp lst)        provided the two hypotheses can
+      (&lt; n (length lst)))          be established by type reasoning
+ (characterp (nth n lst))).<p>
+
+(implies                           (demodulize a lst 'value ans) is
+ (and (atom a)                     either a nonnegative integer or
+      (true-listp lst)             of the same type as ans, provided
+      (member-equal a lst))        the hyps can be established by type
+ (or (and                          reasoning
+       (integerp
+        (demodulize a lst 'value ans))
+       (&gt;= (demodulize a lst 'value ans) 0))
+     (equal (demodulize a lst 'value ans) ans))).
+</pre>
+
+To specify the term whose type (see <a href="TYPE-SET.html">type-set</a>) is described by
+the rule, provide that term as the value of the <code>:typed-term</code> field
+of the rule class object.
+<p>
+
+<pre>
+General Form:
+(implies hyps
+         (or type-restriction1-on-pat
+             ...
+             type-restrictionk-on-pat
+             (equal pat var1)
+             ...
+             (equal pat varj)))
+</pre>
+
+where <code>pat</code> is the application of some function symbol to some
+arguments, each <code>type-restrictioni-on-pat</code> is a term involving <code>pat</code> and
+containing no variables outside of the occurrences of <code>pat</code>, and each
+<code>vari</code> is one of the variables of <code>pat</code>.  Generally speaking, the
+<code>type-restriction</code> terms ought to be terms that inform us as to the
+type of <code>pat</code>.  Ideally, they should be ``primitive recognizing
+expressions'' about <code>pat</code>; see <a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a>.<p>
+
+If the <code>:typed-term</code> is not provided in the rule class object, it is
+computed heuristically by looking for a term in the conclusion whose
+type is being restricted.  An error is caused if no such term is
+found.<p>
+
+Roughly speaking, the effect of adding such a rule is to inform the
+ACL2 typing mechanism that <code>pat</code> has the type described by the
+conclusion, when the hypotheses are true.  In particular, the type
+of <code>pat</code> is within the union of the types described by the several
+disjuncts.  The ``type described by'' <code>(equal pat vari)</code> is the type
+of <code>vari</code>.<p>
+
+More operationally, when asked to determine the type of a term that
+is an instance of <code>pat</code>, ACL2 will first attempt to establish the
+hypotheses.  <strong>This is done by type reasoning alone, not rewriting!</strong>
+Of course, if some hypothesis is to be forced, it is so
+treated; see <a href="FORCE.html">force</a> and see <a href="CASE-SPLIT.html">case-split</a>.  So-called free variables in
+hypotheses are treated specially; see <a href="FREE-VARIABLES.html">free-variables</a>.  Provided the
+hypotheses are established by type reasoning, ACL2 then unions the
+types described by the <code>type-restrictioni-on-pat</code> terms together
+with the types of those subexpressions of <code>pat</code> identified by the
+<code>vari</code>.  The final type computed for a term is the intersection of
+the types implied by each applicable rule.  Type prescription rules
+may be disabled.<p>
+
+Because only type reasoning is used to establish the hypotheses of
+<code>:type-prescription</code> rules, some care must be taken with the
+hypotheses.  Suppose, for example, that the non-recursive function
+<code>my-statep</code> is defined as
+
+<pre>
+  (defun my-statep (x)
+    (and (true-listp x)
+         (equal (length x) 2)))
+</pre>
+
+and suppose <code>(my-statep s)</code> occurs as a hypothesis of a
+<code>:type-prescription</code> rule that is being considered for use in the
+proof attempt for a conjecture with the hypothesis <code>(my-statep s)</code>.
+Since the hypothesis in the conjecture is rewritten, it will become
+the conjunction of <code>(true-listp s)</code> and <code>(equal (length s) 2)</code>.
+Those two terms will be assumed to have type <code>t</code> in the context in
+which the <code>:type-prescription</code> rule is tried.  But type reasoning will
+be unable to deduce that <code>(my-statep s)</code> has type <code>t</code> in this
+context.  Thus, either <code>my-statep</code> should be disabled
+(see <a href="DISABLE.html">disable</a>) during the proof attempt or else the occurrence
+of <code>(my-statep s)</code> in the <code>:type-prescription</code> rule should be
+replaced by the conjunction into which it rewrites.<p>
+
+While this example makes it clear how non-recursive predicates can
+cause problems, non-recursive functions in general can cause
+problems.  For example, if <code>(mitigate x)</code> is defined to be
+<code>(if (rationalp x) (1- x) x)</code> then the hypothesis
+<code>(pred (mitigate s))</code> in the conjecture will rewrite, opening
+<code>mitigate</code> and splitting the conjecture into two subgoals, one in
+which <code>(rationalp s)</code> and <code>(pred (1- x))</code> are assumed and the
+other in which <code>(not (rationalp s))</code> and <code>(pred x)</code> are assumed.
+But <code>(pred (mitigate s))</code> will not be typed as <code>t</code> in either of
+these contexts.  The moral is: beware of non-recursive functions
+occuring in the hypotheses of <code>:type-prescription</code> rules.<p>
+
+Because of the freedom one has in forming the conclusion of a
+type-prescription, we have to use heuristics to recover the pattern,
+<code>pat</code>, whose type is being specified.  In some cases our heuristics
+may not identify the intended term and the <code>:type-prescription</code>
+rule will be rejected as illegal because the conclusion is not of
+the correct form.  When this happens you may wish to specify the <code>pat</code>
+directly.  This may be done by using a suitable rule class token.
+In particular, when the token <code>:type-prescription</code> is used it means
+ACL2 is to compute pat with its heuristics; otherwise the token
+should be of the form <code>(:type-prescription :typed-term pat)</code>, where
+<code>pat</code> is the term whose type is being specified.<p>
+
+The defun event may generate a <code>:type-prescription</code> rule.  Suppose
+<code>fn</code> is the name of the function concerned.  Then
+<code>(:type-prescription fn)</code> is the rune given to the
+type-prescription, if any, generated for <code>fn</code> by <code><a href="DEFUN.html">defun</a></code>.  (The
+trivial rule, saying <code>fn</code> has unknown type, is not stored, but
+<code><a href="DEFUN.html">defun</a></code> still allocates the rune and the corollary of this rune is
+known to be <code>t</code>.)
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,963 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: CONSTRAINT,  Next: COPYRIGHT,  Prev: COMPUTED-HINTS,  Up: MISCELLANEOUS
+
+CONSTRAINT    restrictions on certain functions introduced in encapsulate events
+
+Suppose that a given theorem, thm, is to be functionally instantiated
+using a given functional substitution, alist.  (See *Note
+LEMMA-INSTANCE::, or for an example, see *note
+FUNCTIONAL-INSTANTIATION-EXAMPLE::.)  What is the set of proof
+obligations generated?  It is the set obtained by applying alist to all
+terms, tm, such that (a) tm mentions some function symbol in the domain
+of alist, and (b) either (i) tm arises from the "constraint" on a
+function symbol ancestral in thm or in some defaxiom or (ii) tm is the
+body of a defaxiom.  Here, a function symbol is "ancestral" in thm if
+either it occurs in thm, or it occurs in the definition of some
+function symbol that occurs in thm, and so on.
+
+The remainder of this note explains what we mean by "constraint" in the
+words above.
+
+In a certain sense, function symbols are introduced in essentially two
+ways.  The most common way is to use defun (or when there is mutual
+recursion, mutual-recursion or defuns).  There is also a mechanism for
+introducing "witness functions"; see *note DEFCHOOSE::.  The
+documentation for these events describes the axioms they introduce,
+which we will call here their "definitional axioms."  These
+definitional axioms are generally the constraints on the function
+symbols that these axioms introduce.
+
+However, when a function symbol is introduced in the scope of an
+encapsulate event, its constraints may differ from the definitional
+axioms introduced for it.  For example, suppose that a function's
+definition is local to the encapsulate; that is, suppose the function
+is introduced in the signature of the encapsulate.  Then its
+constraints include, at the least, those non-local theorems and
+definitions in the encapsulate that mention the function symbol.
+
+Actually, it will follow from the discussion below that if the
+signature is empty for an encapsulate, then the constraint on each of
+its new function symbols is exactly the definitional axiom introduced
+for it.  Intuitively, we view such encapsulates just as we view
+include-book events.  But the general case, where the signature is not
+empty, is more complicated.
+
+In the discussion that follows we describe in detail exactly which
+constraints are associated with which function symbols that are
+introduced in the scope of an encapsulate event.  In order to simplify
+the exposition we make two cuts at it.  In the first cut we present an
+over-simplified explanation that nevertheless captures the main ideas.
+In the second cut we complete our explanation by explaining how we view
+certain events as being "lifted" out of the encapsulate, resulting in a
+possibly smaller encapsulate, which becomes the target of the algorithm
+described in the first cut.
+
+At the end of this note we present an example showing why a more naive
+approach is unsound.
+
+Finally, before we start our "first cut," we note that constrained
+functions always have guards of T.  This makes sense when one considers
+that a constrained function's "guard" only appears in the context of a
+local defun, which is skipped.  Note also that any information you want
+"exported" outside an encapsulate event must be there as an explicit
+definition or theorem.  For example, even if a function foo has output
+type (mv t t) in its signature, the system will not know (true-listp
+(foo x)) merely on account of this information.  Thus, if you are using
+functions like foo (constrained mv functions) in a context where you
+are verifying guards, then you should probably provide a
+:type-prescription rule for the constrained function, for example, the
+:type-prescription rule (true-listp (foo x)).
+
+_First cut at constraint-assigning algorithm._  Quite simply, the
+formulas introduced in the scope of an encapsulate are conjoined, and
+each function symbol introduced by the encapsulate is assigned that
+conjunction as its constraint.
+
+Clearly this is a rather severe algorithm.  Let us consider two
+possible optimizations in an informal manner before presenting our
+second cut.
+
+Consider the (rather artificial) event below.  The function before1
+does not refer at all, even indirectly, to the locally-introduced
+function sig-fn, so it is unfortunate to saddle it with constraints
+about sig-fn.
+
+     (encapsulate
+      (((sig-fn *) => *))
+     
+      (defun before1 (x)
+        (if (consp x)
+            (before1 (cdr x))
+          x))
+     
+      (local (defun sig-fn (x) (cons x x)))
+     
+      (defthm sig-fn-prop
+        (consp (sig-fn x)))
+      )
+
+We would like to imagine moving the definition of before1 to just in
+front of this encapsulate, as follows.
+
+     (defun before1 (x)
+       (if (consp x)
+           (before1 (cdr x))
+         x))
+     
+     (encapsulate
+      (((sig-fn *) => *))
+     
+      (local (defun sig-fn (x) (cons x x)))
+     
+      (defthm sig-fn-prop
+        (consp (sig-fn x)))
+      )
+
+Thus, we will only assign the constraint (consp (sig-fn x)), from the
+theorem sig-fn-prop, to the function sig-fn, not to the function
+before1.
+
+More generally, suppose an event in an encapsulate event does not
+mention any function symbol in the signature of the encapsulate, nor
+any function symbol that mentions any such function symbol, and so on.
+(We might say that no function symbol from the signature is an
+"ancestor" of any function symbol occurring in the event.)  Then we
+imagine moving the event, so that it appears in front of the
+encapsulate.  We don't actually move it, but we pretend we do when it
+comes time to assign constraints.  Thus, such definitions only
+introduce definitional axioms as the constraints on the function
+symbols being defined, and such theorems introduce no constraints.
+
+Once this first optimization is performed, we have in mind a set of
+"constrained functions."  These are the functions introduced in the
+encapsulate that would remain after moving some of them out, as
+indicated above.  Consider the collection of all formulas introduced by
+the encapsulate, except the definitional axioms, that mention these
+constrained functions.  So for example, in the event below, no such
+formula mentions the function symbol after1.
+
+     (encapsulate
+      (((sig-fn *) => *))
+     
+      (local (defun sig-fn (x) (cons x x)))
+     
+      (defthm sig-fn-prop
+        (consp (sig-fn x)))
+     
+      (defun after1 (x)
+        (sig-fn x))
+      )
+
+We can see that there is really no harm in imagining that we move the
+definition of after1 out of the encapsulate, to just after the
+encapsulate.
+
+Many subtle aspects of this rearrangement process have been omitted.
+For example, suppose the function fn uses sig-fn, the latter being a
+function in the signature of the encapsulation.  Suppose a formula
+about fn is proved in the encapsulation.  Then from the discussion
+above fn is among the constrained functions of the encapsulate:  it
+cannot be moved before the encapsulate and it cannot be moved after the
+encapsulation.  But why is fn constrained?  The reason is that the
+theorem proved about fn may impose or express constraints on sig-fn.
+That is, the theorem proved about fn may depend upon properties of the
+witness used for sig-fn.  Here is a simple example:
+
+     (encapsulate
+      (((sig-fn *) => *))
+     
+      (local (defun sig-fn (x) (declare (ignore x)) 0))
+     
+      (defun fn (lst)
+        (if (endp lst)
+            t
+            (and (integerp (sig-fn (car lst)))
+                 (fn (cdr lst)))))
+     
+      (defthm fn-always-true
+        (fn lst)))
+
+In this example, there are no explicit theorems about sig-fn, i.e., no
+theorems about it explicitly.  One might therefore conclude that it is
+completely unconstrained.  But the witness we chose for it always
+returns an integer.  The function fn uses sig-fn and we prove that fn
+always returns true.  Of course, the proof of this theorem depends upon
+the properties of the witness for sig-fn, even though those properties
+were not explicitly "called out" in theorems proved about sig-fn. It
+would be unsound to move fn after the encapsulate.  It would also be
+unsound to constrain sig-fn to satisfy just fn-always-true without
+including in the constraint the relation between sig-fn and fn.  Hence
+both sig-fn and fn are constrained by this encapsulation and the
+constraint imposed on each is the same and states the relation between
+the two as characterized by the equation defining fn as well as the
+property that fn always returns true.  Suppose, later, one proved a
+theorem about sig-fn and wished to functional instantiate it.  Then one
+must also functionally instantiate fn, even if it is not involved in
+the theorem, because it is only through fn that sig-fn inherits its
+constrained properties.
+
+This is a pathological example that illustrate a trap into which one
+may easily fall: rather than identify the key properties of the
+constrained function the user has foreshadowed its intended application
+and constrained those notions.  Clearly, the user wishing to introduce
+the sig-fn above would be well-advised to use the following instead:
+
+     (encapsulate
+      (((sig-fn *) => *))
+      (local (defun sig-fn (x) (declare (ignore x)) 0))
+      (defthm integerp-sig-fn
+        (integerp (sig-fn x))))
+     
+     (defun fn (lst)
+       (if (endp lst)
+           t
+         (and (integerp (sig-fn (car lst)))
+              (fn (cdr lst)))))
+     
+     (defthm fn-always-true
+        (fn lst)))
+
+Note that sig-fn is constrained merely to be an integer.  It is the
+only constrained function.  Now fn is introduced after the
+encapsulation, as a simple function that uses sig-fn.  We prove that fn
+always returns true, but this fact does not constrain sig-fn.  Future
+uses of sig-fn do not have to consider fn at all.
+
+Sometimes it is necessary to introduce a function such as fn within the
+encapsulate merely to state the key properties of the undefined
+function sig-fn.  But that is unusual and the user should understand
+that both functions are being constrained.
+
+Another subtle aspect of encapsulation that has been brushed over so
+far has to do with exactly how functions defined within the
+encapsulation use the signature functions.  For example, above we say
+"Consider the collection of all formulas introduced by the encapsulate,
+_except the definitional axioms_, that mention these constrained
+functions."  We seem to suggest that a definitional axiom which
+mentions a constrained function can be moved out of the encapsulation
+and considered part of the "post-encapsulation" extension of the logic,
+if the defined function is not used in any non-definitional formula
+proved in the encapsulation.  For example, in the encapsulation above
+that constrained sig-fn and introduced fn within the encapsulation, fn
+was constrained because we proved the formula fn-always-true within the
+encapsulation.  Had we not proved fn-always-true within the
+encapsulation, fn could have been moved after the encapsulation.  But
+this suggests an unsound rule because whether such a function can be
+moved after the encapsulate depend on whether its _admission_ used
+properties of the witnesses!  In particular, we say a function is
+"subversive" if any of its governing tests or the actuals in any
+recursive call involve a function in which the signature functions are
+ancestral.
+
+Another aspect we have not discussed is what happens to nested
+encapsulations when each introduces constrained functions.  We say an
+encapsulate event is "trivial" if it introduces no constrained
+functions, i.e., if its signatures is nil.  Trivial encapsulations are
+just a way to wrap up a collection of events into a single event.
+
+From the foregoing discussion we see we are interested in exactly how
+we can "rearrange" the events in a non-trivial encapsulation - moving
+some "before" the encapsulation and others "after" the encapsulation.
+We are also interested in which functions introduced by the
+encapsulation are "constrained" and what the "constraints" on each are.
+
+We may summarize the observations above as follows, after which we
+conclude with a more elaborate example.
+
+_Second cut at constraint-assigning algorithm._  First, we focus only
+on non-trivial encapsulations that neither contain nor are contained in
+non-trivial encapsulations.  (Nested non-trivial encapsulations are not
+rearranged at all: do not put anything in such a nest unless you mean
+for it to become part of the constraints generated.)  Second, in what
+follows we only consider the non-local events of such an encapsulate,
+assuming that they satisfy the restriction of using no locally defined
+function symbols other than the signature functions.  Given such an
+encapsulate event, move, to just in front of it and in the same order,
+all definitions and theorems for which none of the signature functions
+is ancestral.  Now collect up all formulas (theorems) introduced in the
+encapsulate other than definitional axioms.  Add to this set any of
+those definitional equations that is either subversive or defines a
+function used in a formula in the set.  The conjunction of the
+resulting set of formulas is called the "constraint" and the set of all
+the signature functions of the encapsulate together with all function
+symbols defined in the encapsulate and mentioned in the constraint is
+called the "constrained functions."  Assign the constraint to each of
+the constrained functions.  Move, to just after the encapsulate, the
+definitions of all function symbols defined in the encapsulate that
+have been omitted from the constraint.
+
+Implementation note.  In the implementation we do not actually move
+events, but we create constraints that pretend that we did.
+
+Here is an example illustrating our constraint-assigning algorithm.  It
+builds on the preceding examples.
+
+     (encapsulate
+      (((sig-fn *) => *))
+     
+      (defun before1 (x)
+        (if (consp x)
+            (before1 (cdr x))
+          x))
+     
+      (local (defun sig-fn (x) (cons x x)))
+     
+      (defthm sig-fn-prop
+        (consp (sig-fn x)))
+     
+      (defun during (x)
+        (if (consp x)
+            x
+          (cons (car (sig-fn x))
+                17)))
+     
+      (defun before2 (x)
+        (before1 x))
+     
+      (defthm before2-prop
+        (atom (before2 x)))
+     
+      (defthm during-prop
+        (implies (and (atom x)
+                      (before2 x))
+                 (equal (car (during x))
+                        (car (sig-fn x)))))
+     
+      (defun after1 (x)
+        (sig-fn x))
+     
+      (defchoose after2 (x) (u)
+        (and (< u x) (during x)))
+      )
+
+Only the functions sig-fn and during receive extra constraints.  The
+functions before1 and before2 are viewed as moving in front of the
+encapsulate, as is the theorem before2-prop.  The functions after1 and
+after2 are viewed as being moved past the encapsulate.  Notice that the
+formula (consp (during x)) is a conjunct of the constraint.  It comes
+from the :type-prescription rule deduced during the definition of the
+function during.  The implementation reports the following.
+
+     (SIG-FN X) is axiomatized to return one result.
+     
+     In addition, we export AFTER2, AFTER1, DURING-PROP, BEFORE2-PROP, BEFORE2,
+     DURING, SIG-FN-PROP and BEFORE1.
+     
+     The following constraint is associated with both of the functions DURING
+     and SIG-FN:
+     
+     (AND (EQUAL (DURING X)
+                 (IF (CONSP X)
+                     X (CONS (CAR (SIG-FN X)) 17)))
+          (CONSP (DURING X))
+          (CONSP (SIG-FN X))
+          (IMPLIES (AND (ATOM X) (BEFORE2 X))
+                   (EQUAL (CAR (DURING X))
+                          (CAR (SIG-FN X)))))
+
+We conclude by asking (and to a certain extent, answering) the
+following question:  Isn't there an approach to assigning constraints
+that avoids over-constraining more simply than our "second cut" above?
+Perhaps it seems that given an encapsulate, we should simply assign to
+each locally defined function the theorems exported about that
+function.  If we adopted that simple approach the events below would be
+admissible.
+
+     (encapsulate
+      (((foo *) => *))
+      (local (defun foo (x) x))
+      (defun bar (x)
+        (foo x))
+      (defthm bar-prop
+        (equal (bar x) x)
+        :rule-classes nil))
+     
+     (defthm foo-id
+       (equal (foo x) x)
+       :hints (("Goal" :use bar-prop)))
+     
+     ; The following event is not admissible in ACL2.
+     
+     (defthm ouch!
+       nil
+       :rule-classes nil
+       :hints
+       (("Goal" :use
+         ((:functional-instance foo-id
+                                (foo (lambda (x) (cons x x))))))))
+
+Under the simple approach we have in mind, bar is constrained to
+satisfy both its definition and bar-prop because bar mentions a
+function declared in the signature list of the encapsulation.  In fact,
+bar is so-constrained in the ACL2 semantics of encapsulation and the
+first two events above (the encapsulate and the consequence that foo
+must be the identity function) are actually admissible.  But under the
+simple approach to assigning constraints, foo is unconstrained because
+no theorem about it is exported.  Under that approach, ouch! is
+proveable because foo can be instantiated in foo-id to a function other
+than the identity function.
+
+It's tempting to think we can fix this by including definitions, not
+just theorems, in constraints.  But consider the following slightly
+more elaborate example.  The problem is that we need to include as a
+constraint on foo not only the definition of bar, which mentions foo
+explicitly, but also abc, which has foo as an ancestor.
+
+     (encapsulate
+      (((foo *) => *))
+      (local (defun foo (x) x))
+      (local (defthm foo-prop
+               (equal (foo x) x)))
+      (defun bar (x)
+        (foo x))
+      (defun abc (x)
+        (bar x))
+      (defthm abc-prop
+        (equal (abc x) x)
+        :rule-classes nil))
+     
+     (defthm foo-id
+       (equal (foo x) x)
+       :hints (("Goal" :use abc-prop)))
+     
+     ; The following event is not admissible in ACL2.
+     
+     (defthm ouch!
+       nil
+       :rule-classes nil
+       :hints
+       (("Goal" :use
+         ((:functional-instance foo-id
+                                (foo (lambda (x) (cons x x)))
+                                (bar (lambda (x) (cons x x))))))))
+
+
+File: acl2-doc-emacs.info,  Node: COPYRIGHT,  Next: COROLLARY,  Prev: CONSTRAINT,  Up: MISCELLANEOUS
+
+COPYRIGHT    ACL2 copyright, license, sponsorship
+
+ACL2 Version 3.1 - A Computational Logic for Applicative Common Lisp
+Copyright (C) 2006  University of Texas at Austin
+
+This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright (C)
+1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program.  See the file LICENSE.  If not, write to the Free
+Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann               and J Strother Moore email:
+  Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu Department of
+Computer Sciences University of Texas at Austin Austin, TX 78712-1188
+U.S.A.
+
+Please also see *note ACKNOWLEDGMENTS::.
+
+
+File: acl2-doc-emacs.info,  Node: COROLLARY,  Next: CURRENT-PACKAGE,  Prev: COPYRIGHT,  Up: MISCELLANEOUS
+
+COROLLARY    the corollary formula of a rune
+
+This is a low-level system function at the present time.  See *Note
+PR:: and see *note PR!:: instead.  Also see *note RULE-CLASSES:: for
+the use of the symbol :corollary in specifying a rule class.
+
+
+File: acl2-doc-emacs.info,  Node: CURRENT-PACKAGE,  Next: DEFAULT-BACKCHAIN-LIMIT,  Prev: COROLLARY,  Up: MISCELLANEOUS
+
+CURRENT-PACKAGE    the package used for reading and printing
+
+Current-package is an ld special (see *note LD::).  The accessor is
+(current-package state) and the updater is (set-current-package val
+state), or more conventionally, (in-package val).  The value of
+current-package is actually the string that names the package.  (Common
+Lisp's "package" objects do not exist in ACL2.)  The current package
+must be known to ACL2, i.e., it must be one of the initial packages or
+a package defined with defpkg by the user.
+
+When printing symbols, the package prefix is displayed if it is not the
+current-package and may be optionally displayed otherwise.  Thus, if
+current-package is "ACL2" then the symbol 'ACL2::SYMB may be printed as
+SYMB or ACL2::SYMB, while 'MY-PKG::SYMB must be printed as
+MY-PKG::SYMB.  But if current-package is "MY-PKG" then the former
+symbol must be printed as ACL2::SYMB while the latter may be printed as
+SYMB.
+
+In Common Lisp, current-package also affects how objects are read from
+character streams.  Roughly speaking, read and print are inverses if
+the current-package is fixed, so reading from a stream produced by
+printing an object must produce an equal object.
+
+In ACL2, the situation is more complicated because we never read
+objects from character streams, we only read them from object "streams"
+(channels).  Logically speaking, the objects in such a channel are
+fixed regardless of the setting of current-package.  However, our host
+file systems do not support the idea of Lisp object files and instead
+only support character files.  So when you open an object input channel
+to a given (character file) we must somehow convert it to a list of
+ACL2 objects.  This is done by a deus ex machina ("a person or thing
+that appears or is introduced suddenly and unexpectedly and provides a
+contrived solution to an apparently insoluble difficulty," Webster's
+Ninth New Collegiate Dictionary).  Roughly speaking, the deus ex
+machina determines what sequence of calls to read-object will occur in
+the future and what the current-package will be during each of those
+calls, and then produces a channel containing the sequence of objects
+produced by an analogous sequence of Common Lisp reads with
+*current-package* bound appropriately for each.
+
+A simple rule suffices to make sane file io possible:  before you read
+an object from an object channel to a file created by printing to a
+character channel, make sure the current-package at read-time is the
+same as it was at print-time.
+
+
+File: acl2-doc-emacs.info,  Node: DEFAULT-BACKCHAIN-LIMIT,  Next: DEFAULT-DEFUN-MODE,  Prev: CURRENT-PACKAGE,  Up: MISCELLANEOUS
+
+DEFAULT-BACKCHAIN-LIMIT    specifying the backchain limit for a rule
+
+See *Note BACKCHAIN-LIMIT::.
+
+The initial value is nil.
+
+
+File: acl2-doc-emacs.info,  Node: DEFAULT-DEFUN-MODE,  Next: DEFAULT-HINTS,  Prev: DEFAULT-BACKCHAIN-LIMIT,  Up: MISCELLANEOUS
+
+DEFAULT-DEFUN-MODE    the default defun-mode of defun'd functions
+
+When a defun is processed and no :mode xarg is supplied, the function
+default-defun-mode is used.  To find the default defun-mode of the
+current ACL2 world, type (default-defun-mode (w state)).  See *Note
+DEFUN-MODE:: for a discussion of defun-modes.  To change the default
+defun-mode of the ACL2 world, type one of the keywords :program or
+:logic.
+
+The default ACL2 prompt displays the current default defun-mode by
+showing the character p for :program mode, and omitting it for :logic
+mode; see *note DEFAULT-PRINT-PROMPT::.  The default defun-mode may be
+changed using the keyword commands :program and :logic, which are
+equivalent to the commands (program) and (logic).  Each of these names
+is documented separately:  see *note PROGRAM:: and see *note LOGIC::.
+The default defun-mode is stored in the table acl2-defaults-table and
+hence may also be changed by a table command.  See *Note TABLE:: and
+also see *note ACL2-DEFAULTS-TABLE::.  Both mode-changing commands are
+events.
+
+While events that change the default defun-mode are permitted within an
+encapsulate or the text of a book, their effects are local in scope to
+the duration of the encapsulation or inclusion.  For example, if the
+default defun-mode is :logic and a book is included that contains the
+event (program), then subsequent events within the book are processed
+with the default defun-mode :program; but when the include-book event
+completes, the default defun-mode will still be :logic.  Commands that
+change the default defun-mode are not permitted inside local forms.
+
+
+File: acl2-doc-emacs.info,  Node: DEFAULT-HINTS,  Next: DEFAULT-PRINT-PROMPT,  Prev: DEFAULT-DEFUN-MODE,  Up: MISCELLANEOUS
+
+DEFAULT-HINTS    a list of hints added to every proof attempt
+
+     Examples:
+     ACL2 !>(default-hints (w state))
+     ((computed-hint-1 clause)
+      (computed-hint-2 clause stable-under-simplificationp))
+
+The value returned by this function is added to the :hints argument of
+every defthm and thm command, and to hints provided to defuns as well
+(:hints, :guard-hints, and (for ACL2(r)) :std-hints).
+
+See *Note SET-DEFAULT-HINTS:: for a more general discussion.
+
+
+File: acl2-doc-emacs.info,  Node: DEFAULT-PRINT-PROMPT,  Next: DEFUN-MODE,  Prev: DEFAULT-HINTS,  Up: MISCELLANEOUS
+
+DEFAULT-PRINT-PROMPT    the default prompt printed by ld
+
+     Example prompt:
+     ACL2 p!s>
+
+The prompt printed by ACL2 displays the current package, followed by a
+space, followed by zero or more of the three characters as specified
+below, followed by the character > printed one or more times,
+reflecting the number of recursive calls of ld.  The three characters
+in the middle are as follows:
+
+     p     ; when (default-defun-mode (w state)) is :program
+     !     ; when guard checking is on
+     s     ; when (ld-skip-proofsp state) is t
+
+See *Note DEFAULT-DEFUN-MODE::, see *note SET-GUARD-CHECKING::, and see
+*note LD-SKIP-PROOFSP::.
+
+Also see *note LD-PROMPT:: to see how to install your own prompt.
+
+Here are some examples with ld-skip-proofsp nil.
+
+     ACL2 !>    ; logic mode with guard checking on
+     ACL2 >     ; logic mode with guard checking off
+     ACL2 p!>   ; program mode with guard checking on
+     ACL2 p>    ; program mode with guard checking off
+
+Here are some examples with default-defun-mode of :logic.
+
+     ACL2 >     ; guard checking off, ld-skip-proofsp nil
+     ACL2 s>    ; guard checking off, ld-skip-proofsp t
+     ACL2 !>    ; guard checking on, ld-skip-proofsp nil
+     ACL2 !s>   ; guard checking on, ld-skip-proofsp t
+
+Finally, here is the prompt in raw mode (see *note SET-RAW-MODE::),
+regardless of the settings above:
+
+     ACL2 P>
+
+
+File: acl2-doc-emacs.info,  Node: DEFUN-MODE,  Next: DEFUN-MODE-CAVEAT,  Prev: DEFAULT-PRINT-PROMPT,  Up: MISCELLANEOUS
+
+DEFUN-MODE    determines whether a function definition is a logical act
+
+Two "defun-modes" are supported, :program and :logic.  Roughly
+speaking, :program mode allows you to prototype a function for
+execution without any proof burdens, while :logic mode allows you to
+add a new definitional axiom to the logic.  The system comes up in
+:logic mode.  Execution of functions whose defun-mode is :program may
+render ACL2 unsound!  See *Note DEFUN-MODE-CAVEAT::.
+
+When you define a function in the ACL2 logic, that function can be run
+on concrete data.  But it is also possible to reason deductively about
+the function because each definition extends the underlying logic with
+a definitional axiom.  To ensure that the logic is sound after the
+addition of this axiom, certain restrictions have to be met, namely
+that the recursion terminates.  This can be quite challenging.
+
+Because ACL2 is a programming language, you often may wish simply to
+program in ACL2.  For example, you may wish to define your system and
+test it, without any logical burden.  Or, you may wish to define
+"utility" functions -- functions that are executed to help manage the
+task of building your system but functions whose logical properties are
+of no immediate concern.  Such functions might be used to generate test
+data or help interpret the results of tests.  They might create files
+or explore the ACL2 data base.  The termination arguments for such
+functions are an unnecessary burden provided no axioms about the
+functions are ever used in deductions.
+
+Thus, ACL2 introduces the idea of the "defun-mode" of a function.  The
+:mode keyword of defun's declare xarg allows you to specify the
+defun-mode of a given definition.  If no :mode keyword is supplied, the
+default defun-mode is used; see *note DEFAULT-DEFUN-MODE::.
+
+There are two defun-modes, each of which is written as a keyword:
+
+:program -- logically undefined but executable outside deductive
+contexts.
+
+:logic -- axiomatically defined as per the ACL2 definitional principle.
+
+It is possible to change the defun-mode of a function from :program to
+:logic.  We discuss this below.
+
+We think of functions having :program mode as "dangerous" functions,
+while functions having :logic mode are "safe."  The only requirement
+enforced on :program mode functions is the syntactic one:  each
+definition must be well-formed ACL2.  Naively speaking, if a :program
+mode function fails to terminate then no harm is done because no axiom
+is added (so inconsistency is avoided) and some invocations of the
+function may simply never return.  This simplistic justification of
+:program mode execution is faulty because it ignores the damage that
+might be caused by "mis-guarded" functions.  See *Note
+DEFUN-MODE-CAVEAT::.
+
+We therefore implicitly describe an imagined implementation of
+defun-modes that is safe and, we think, effective.  But please see
+*note DEFUN-MODE-CAVEAT::.
+
+The default defun-mode is :logic.  This means that when you defun a
+function the system will try to prove termination.  If you wish to
+introduce a function of a different defun-mode use the :mode xargs
+keyword.  Below we show fact introduced as a function in :program mode.
+
+     (defun fact (n)
+       (declare (xargs :mode :program))
+       (if (or (not (integerp n)) (= n 0))
+           1
+         (* n (fact (1- n)))))
+
+No axiom is added to the logic as a result of this definition.  By
+introducing fact in :program mode we avoid the burden of a termination
+proof, while still having the option of executing the function.  For
+example, you can type
+
+     ACL2 !>(fact 3)
+
+and get the answer 6.  If you type (fact -1) you will get a hard lisp
+error due to "infinite recursion."
+
+However, the ACL2 theorem prover knows no axioms about fact.  In
+particular, if the term (fact 3) arises in a proof, the theorem prover
+is unable to deduce that it is 6.  From the perspective of the theorem
+prover it is as though fact were an undefined function symbol of arity
+1.  Thus, modulo certain important issues (see *note
+DEFUN-MODE-CAVEAT::), the introduction of this function in :program
+mode does not imperil the soundness of the system -- despite the fact
+that the termination argument for fact was omitted -- because nothing
+of interest can be proved about fact.  Indeed, we do not allow fact to
+be used in logical contexts such as conjectures submitted for proof.
+
+It is possible to convert a function from :program mode to :logic mode
+at the cost of proving that it is admissible.  This can be done by
+invoking
+
+     (verify-termination fact)
+
+which is equivalent to submitting the defun of fact, again, but in
+:logic mode.
+
+     (defun fact (n)
+       (declare (xargs :mode :logic))
+       (if (or (not (integerp n)) (= n 0))
+           1
+         (* n (fact (1- n)))))
+
+This particular event will fail because the termination argument
+requires that n be nonnegative.  A repaired defun, for example with =
+replaced by <=, will succeed, and an axiom about fact will henceforth
+be available.
+
+Technically, verify-termination submits a redefinition of the :program
+mode function.  This is permitted, even when ld-redefinition-action is
+nil, because the new definition is identical to the old (except for its
+:mode and, possibly, other non-logical properties).
+
+See *Note GUARD:: for a discussion of how to restrict the execution of
+functions.  Guards may be "verified" for functions in :logic mode; see
+*note VERIFY-GUARDS::.
+
+
+File: acl2-doc-emacs.info,  Node: DEFUN-MODE-CAVEAT,  Next: DEFUNS,  Prev: DEFUN-MODE,  Up: MISCELLANEOUS
+
+DEFUN-MODE-CAVEAT    functions with defun-mode of :program considered unsound
+
+Technically speaking, in the current implementation, the execution of
+functions having defun-mode :program may damage the ACL2 system in a
+way that renders it unsound.  See *Note DEFUN-MODE:: for a discussion
+of defun-modes.  That discussion describes an imagined implementation
+that is slightly different from this one.  This note explains that the
+current implementation is open to unsoundness.
+
+For discussion of a different soundness issue that is also related to
+function execution, see *note GENERALIZED-BOOLEANS::.
+
+The execution of a function having defun-mode :program may violate
+Common Lisp guards on the subroutines used.  (This may be true even for
+calls of a function on arguments that satisfy its guard, because ACL2
+has not verified that its guard is sufficient to protect its
+subroutines.)  When a guard is violated at runtime all bets are off.
+That is, no guarantees are made either about the answer being "right"
+or about the continued rationality of the ACL2 system itself.
+
+For example, suppose you make the following defun:
+
+
+     (defun crash (i)
+       (declare (xargs :mode :program :guard (integerp i)))
+       (car i))
+
+Note that the declared guard does not in fact adequately protect the
+subroutines in the body of crash; indeed, satisfying the guard to crash
+will guarantee that the car expression is in violation of its guard.
+Because this function is admitted in :program-mode, no checks are made
+concerning the suitability of the guard.  Furthermore, in the current
+ACL2 implementation, crash is executed directly in Common Lisp.  Thus
+if you call crash on an argument satisfying its guard you will cause an
+erroneous computation to take place.
+
+     ACL2 !>(crash 7)
+     
+     Error: Caught fatal error [memory may be damaged]
+     ...
+
+There is no telling how much damage is done by this errant computation.
+In some lisps your ACL2 job may actually crash back to the operating
+system.  In other lisps you may be able to recover from the "hard
+error" and resume ACL2 in a damaged but apparently functional image.
+
+THUS, HAVING A FUNCTION WITH DEFUN-MODE :PROGRAM IN YOUR SYSTEM
+ABSOLVES US, THE ACL2 IMPLEMENTORS, FROM RESPONSIBILITY FOR THE
+SOUNDNESS OF OUR SYSTEM.
+
+Furthermore
+
+ACL2 DOES NOT YET PROVIDE ANY MEANS OF REGAINING ASSURANCES OF
+SOUNDNESS AFTER THE INTRODUCTION OF A FUNCTION IN :PROGRAM MODE, EVEN
+IF IT IS ULTIMATELY CONVERTED TO :LOGIC MODE (since its execution could
+have damaged the system in a way that makes it possible to verify its
+termination and guards unsoundly).
+
+Finally,
+
+THE VAST MAJORITY OF ACL2 SYSTEM CODE IS IN :PROGRAM MODE AND SO ALL
+BETS ARE OFF FROM BEFORE YOU START!
+
+This hopeless state of current affairs will change, we think.  We think
+we have defined our functions "correctly" in the sense that they can be
+converted, without "essential" modification, to :logic mode.  We think
+it very unlikely that a mis-guarded function in :program mode (whether
+ours or yours) will cause unsoundness without some sort of hard lisp
+error accompanying it.  We think that ultimately we can make it
+possible to execute your functions (interpretively) without risk to the
+system, even when some have :program mode.  In that imagined
+implementation, code using functions having :program mode would run
+more slowly, but safely.  These functions could be introduced into the
+logic ex post facto, whereupon the code's execution would speed up
+because Common Lisp would be allowed to execute it directly.  We
+therefore ask that you simply pretend that this is that imagined
+implementation, introduce functions in :program mode, use them as
+convenient and perhaps ultimately introduce some of them in :logic mode
+and prove their properties.  If you use the system this way we can
+develop (or dismiss) this style of formal system development.  BUT BE
+ON THE LOOKOUT FOR SCREWUPS DUE TO DAMAGE CAUSED BY THE EXECUTION OF
+YOUR FUNCTIONS HAVING :PROGRAM MODE!
+
+
+File: acl2-doc-emacs.info,  Node: DEFUNS,  Next: DISABLE-FORCING,  Prev: DEFUN-MODE-CAVEAT,  Up: MISCELLANEOUS
+
+DEFUNS    an alternative to mutual-recursion
+
+     Example:
+     (DEFUNS
+      (evenlp (x)
+        (if (consp x) (oddlp (cdr x)) t))
+      (oddlp (x)
+        (if (consp x) (evenlp (cdr x)) nil)))
+     
+     General Form:
+     (DEFUNS defuns-tuple1 ... defuns-tuplen)
+
+is equivalent to
+
+     (MUTUAL-RECURSION
+       (DEFUN . defuns-tuple1)
+       ...
+       (DEFUN . defuns-tuplen))
+
+In fact, defuns is the more primitive of the two and mutual-recursion
+is just a macro that expands to a call of defun after stripping off the
+defun at the car of each argument to mutual-recursion.  We provide and
+use mutual-recursion rather than defuns because by leaving the defuns
+in place, mutual-recursion forms can be processed by the Emacs tags
+program.  See *Note MUTUAL-RECURSION::.
+
+
+File: acl2-doc-emacs.info,  Node: DISABLE-FORCING,  Next: DISABLE-IMMEDIATE-FORCE-MODEP,  Prev: DEFUNS,  Up: MISCELLANEOUS
+
+DISABLE-FORCING    to disallow forced case-splits
+
+     General Form:
+     ACL2 !>:disable-forcing   ; disallow forced case splits
+
+See *Note FORCE:: and see *note CASE-SPLIT:: for a discussion of forced
+case splits, which are inhibited by this command.
+
+Disable-forcing is actually a macro that disables the executable
+counterpart of the function symbol force; see *note FORCE::.  When you
+want to use hints to turn off forced case splits, use a form such as:
+
+     :in-theory (disable (:executable-counterpart force))
+
+
+File: acl2-doc-emacs.info,  Node: DISABLE-IMMEDIATE-FORCE-MODEP,  Next: DISABLEDP,  Prev: DISABLE-FORCING,  Up: MISCELLANEOUS
+
+DISABLE-IMMEDIATE-FORCE-MODEP    forced hypotheses are not attacked immediately
+
+     General Form:
+     ACL2 !>:disable-immediate-force-modep
+
+This event causes ACL2 to delay forced hypotheses to the next forcing
+round, rather than attacking them immediately.  See *Note
+IMMEDIATE-FORCE-MODEP::.  Or for more basic information, first see
+*note FORCE:: for a discussion of forced case splits.
+
+Disable-immediate-force-modep is a macro that disables the executable
+counterpart of the function symbol immediate-force-modep.  When you
+want to disable this mode in hints, use a form such as:
+
+     :in-theory (disable (:executable-counterpart immediate-force-modep))
+
+
+File: acl2-doc-emacs.info,  Node: DISABLEDP,  Next: DO-NOT,  Prev: DISABLE-IMMEDIATE-FORCE-MODEP,  Up: MISCELLANEOUS
+
+DISABLEDP    determine whether a given name or rune is disabled
+
+     Examples:
+     
+     :disabledp foo   ; returns a list of all disabled runes whose base
+                      ; symbol is foo (see *note RUNE::)
+     (disabledp 'foo) ; same as above (i.e., :disabledp foo)
+     :disabledp (:rewrite bar . 1) ; returns t if the indicated rune is
+                                   ; disabled, else nil
+     (disabledp (:rewrite bar . 1)); same as immediately above
+
+Also see *note PR::, which gives much more information about the rules
+associated with a given event.
+
+Disabledp takes one argument, an event name (see *note EVENTS::) other
+than nil or a rune.  In the former case it returns the list of disabled
+runes associated with that name, in the sense that the rune's "base
+symbol" is that name (see *note RUNE::) or, if the event named is a
+defmacro event, then the list of disabled runes associated with the
+function corresponding to that macro name, if any (see *note
+MACRO-ALIASES-TABLE::).  In the latter case, where the argument is a
+rune, disabledp returns t if the rune is disabled, and nil otherwise.
+
+
+File: acl2-doc-emacs.info,  Node: DO-NOT,  Next: DO-NOT-INDUCT,  Prev: DISABLEDP,  Up: MISCELLANEOUS
+
+DO-NOT    hints keyword :DO-NOT
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: DO-NOT-INDUCT,  Next: DOUBLE-REWRITE,  Prev: DO-NOT,  Up: MISCELLANEOUS
+
+DO-NOT-INDUCT    hints keyword :DO-NOT-INDUCT
+
+See *Note HINTS::.
+

@@ -1,0 +1,95 @@
+/* A nice test of the translator would be to translate the entire test suite ...
+ * In the meantime here are some tests to verify some specific bugs are fixed.
+ */
+
+(kill (all), 0);
+0;
+
+/* SF [ 1728888 ] translator bugs: no mnot mprogn */
+
+(foo (e,v) := block([vi], for vi in v while not(emptyp(e)) do (print(vi), e : rest(e)), e),
+ foo ([1, 2, 3], [a, b]));
+[3];
+
+(translate (foo), ?funcall (foo, [1, 2, 3], [a, b]));
+[3];
+
+/* simpler function featuring mprogn and mnot */
+
+(bar (x) := (x : 2*x, x : 3*x, not (x < 100)), bar (3));
+false;
+
+(translate (bar), ?funcall (bar, 3));
+false;
+
+/* SF [ 1646525 ] no function mdoin */
+
+(try_me(x) := block([acc : 0], for i in x while i > 5 do acc : acc + i, acc),
+ try_me ([10, 9, 8, 7, 6, 5, 4, 5, 6, 7, 8, 9, 10]));
+40;
+
+(translate (try_me), ?funcall (try_me, [10, 9, 8, 7, 6, 5, 4, 5, 6, 7, 8, 9, 10]));
+40;
+
+/* SF [ 1818645 ] Compiled maxima code containing $ARRAY gets a Lisp error. */
+
+(test_array_comp (x) :=
+  block ([abc, i],
+    array (abc, 3),
+    for i thru 3 do (abc[i]: i*i),
+    abc[3] : x, 
+    [abc, abc[3], abc[2]]),
+  test_array_comp (100));
+[abc, 100, 4];
+
+(translate (test_array_comp), ?funcall (test_array_comp, 100));
+[abc, 100, 4];
+
+/* SF [ 545794 ] Local Array does not compile properly */
+
+(trial (a) :=
+  block ([myvar, i],
+    local(myvar),
+    array (myvar, 7),
+    for i : 0 thru 7 do myvar [i] : a^i,
+    [member (myvar, arrays), listarray (myvar)]),
+ trial (2));
+[true, [1, 2, 4, 8, 16, 32, 64, 128]];
+
+(translate (trial), ?funcall (trial, 2));
+[true, [1, 2, 4, 8, 16, 32, 64, 128]];
+
+/* Next test fails because local(myvar) in translated code doesn't clean up properties ... */
+
+[member (myvar, arrays), errcatch (listarray (myvar))];
+[false, []];
+
+/* for loop variable not special
+ * reported to mailing list 2009-08-13 "Why won't this compile?"
+ */
+
+(kill (foo1, bar1),
+ foo1 () := bar1 + 1,
+ baz1 (n) := block ([S : 0], for bar1:0 thru n - 1 do S : S + foo1 (), S),
+ translate (baz1),
+ baz1 (10));
+55;
+
+/* original example */
+
+(fun(A,b,s,VF,x,h):= block
+ ([Y],
+   Y[1]:  x,
+   for i:2 thru s do
+    Y[i]:  x + h*(sum(A[i,j]*VF(Y[j]),j,1,i-1)),
+   x: expand(x + h*sum(b[i]*VF(Y[i]),i,1,s))),
+  A: matrix([1,1],[1,1]),
+  b: [1,1],
+ 0);
+0;
+
+fun(A,b,2,f,[1,1],.01);
+0.01*f(0.01*f([1,1])+[1,1])+0.01*f([1,1])+[1,1]$
+
+(translate (fun), fun(A,b,2,f,[1,1],.01));
+0.01*f(0.01*f([1,1])+[1,1])+0.01*f([1,1])+[1,1]$

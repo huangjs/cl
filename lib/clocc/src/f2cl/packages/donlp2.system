@@ -1,0 +1,749 @@
+;;; -*- Mode: Lisp -*-
+
+(eval-when (compile load eval)
+  (defpackage #:donlp2
+    (:use "COMMON-LISP")))
+
+(defun donlp2-compiler (filename &rest args)
+  (apply #'f2cl:f2cl-compile filename args))
+
+(mk:define-language :f2cl
+    :compiler #'donlp2-compiler
+    :source-extension "f")
+
+
+
+;; CMUCL on a 1.5 GHz sparc takes about 30 minutes to compile this
+;; file.  Let's byte-cmompile it so it doesn't take so long.  Does
+;; slow runtime down, though.
+;;
+;; Enable the below to byte-compile that file.
+
+;;#+cmu
+;;(pushnew :byte-compile-o8opti *features*)
+
+(defparameter *donlp2-root*
+  (make-pathname :host (pathname-host *load-pathname*) :directory (pathname-directory *load-pathname*)))
+
+;; To run any test, use (donlp2).  This means you have to
+;; reload/recompile if you want to run a different test.
+;;
+;; The output goes wherever the current directoy is for the Lisp that
+;; executes the test.
+
+;; Works.  Output in ANTENNA1.*
+(mk:defsystem ex-antenna1
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "antenna1"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in HS101XXX.*
+(mk:defsystem ex-hs101
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "hs101"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in HS102XXX.*
+(mk:defsystem ex-hs102
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "hs102"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in HS103XXX.*
+(mk:defsystem ex-hs103
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "hs103"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Output in AMPLEXAM.*
+;;
+;; Appears to work.  Output, though, is a little different from the
+;; Fortran code.  Some numbers appear to be only agree to about 6
+;; digits or so.
+;;
+;; If you've been running the tests above in the same session (which
+;; works), you may have problems running this one.  Start this in a
+;; fresh lisp.
+(mk:defsystem ex-amplqp
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "amplqp"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Output in ALKYLATI.*.  Works.
+(mk:defsystem ex-alkylati
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "alkylati"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Output in FRACXOPT.*
+;;
+;; Runs ok, but the optimal F and solution X are somewhat different.
+;; The multipliers are quite a bit different. and the number of
+;; evaluations are too.
+(mk:defsystem ex-fractf77new
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "fractf77new"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works just fine.  Output in GIRDERDE.*.
+(mk:defsystem ex-girder
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "girder"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in NMCFQMHH.*
+(mk:defsystem ex-irreg1
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "irreg1"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in NMFCQ11X.*
+(mk:defsystem ex-irreg2
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "irreg2"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in NET1AMPL.*
+(mk:defsystem ex-net1
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "net1"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Output in HIMMELBL.*
+;;
+;; This incompatibly defines the common block o8xdat, so this won't
+;; work until that is fixed, if possible.
+;;
+;; If we modify O8BLO1.INC and O8BLOC.INC to include O8XDAT instead of
+;; O8XBLO.INC, this compiles ok.  (Note that O8XDAT.INC and O8XBLO.INC
+;; appear to be exactly the same, except that the elements of the
+;; common block have different names.)  When run, the results mostly
+;; match except for a very small difference in one intermediate
+;; result.
+(mk:defsystem ex-chemequi
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "chemequi"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Call (/blockdata/) before running (donlp2)
+;; Output in BOXPARID.*.
+(mk:defsystem ex-boxparam
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "boxparam"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Output in BETTING8.*
+;;
+;; This works, but you have to be sure to run (/blockdata/) before
+;; running (donlp2) so that the block data subprogram actually
+;; initializes the necessary items.
+(mk:defsystem ex-betting
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "betting"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; HS85ORIG.*
+;;
+;; .Works.
+(mk:defsystem ex-barnes
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "barnes"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; DEMBO1AS.*
+;;
+;; .Works.
+(mk:defsystem ex-dembo1as
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "dembo1as"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; DEMBO4CX.*
+;;
+;; .Works.
+(mk:defsystem ex-dembo4
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "dembo4"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; DEMBO7XX.*
+;;
+;; .Works.
+(mk:defsystem ex-dembo7
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "dembo7"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; HS109*.*
+;;
+;; Works.
+(mk:defsystem ex-hs109
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "hs109"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; MARATOS0.*
+;;
+;; .Works.
+(mk:defsystem ex-maratos
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "maratos"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Output in
+;; PAVIANI2.*
+;;
+;; .Works.
+(mk:defsystem ex-paviani2
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "paviani2"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in TP383MOD.*
+(mk:defsystem ex-tp383mod
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "tp383mod"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Works.  Output in UNDEFEXA.*.
+(mk:defsystem ex-undefexa
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "undefexa"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (/blockdata/) before running (donlp2).  Takes a while to
+;; run (several minutes or more).  Works.  Output in WEAPONH2.*.
+(mk:defsystem ex-weaponas
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "weaponas"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (donlp2::/blockdata/) before running (donlp2::donlp2).
+;; Output in ROBOTAXXX.*.
+;;
+;; Doesn't appear to work.  It hangs with a zero gradient.
+(mk:defsystem "ex-robota"
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "robota"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+;; Must call (donlp2::/blockdata/) before running (donlp2::donlp2).
+;; Output in ROBOTCXXX.*.
+;;
+;; Doesn't appear to work.  It hangs with a zero gradient.
+(mk:defsystem "ex-robotc"
+  :source-pathname *donlp2-root*
+  :depends-on ("donlp2")
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :components
+	    (
+	     (:file "robotc"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array))))))
+
+(mk:defsystem donlp2
+  :source-pathname *donlp2-root*
+  :components
+  ((:module support
+	    :source-pathname "donlp2"
+	    :source-extension "lisp"
+	    :components
+	    ((:file "support")))
+   (:module donlp2
+	    :source-extension "f"
+	    :language :f2cl
+	    :compiler-options (:package :donlp2 :array-slicing nil :array-type :simple-array)
+	    :components
+	    (
+	     
+	     ;; Default dummy routines.  These are default versions
+	     ;; that the user can modify.
+	     (:file "eval_extern")
+	     (:file "user_eval")
+	     (:file "solchk")
+	     ;;(:file "dummy-usr")
+	     ;; The core donlp2 routines.
+	     (:file "donlp2"
+		    :compiler-options (:package :donlp2 :declare-common t
+						       :array-slicing nil
+						       :array-type :simple-array)
+		    :depends-on ("esgradf"
+				 "esgradh"
+				 "esgradg"
+				 "o8vecn"
+				 ))
+	     (:file "o8st"
+		    :depends-on ("esg"
+				 "esh"
+				 "o8msg"))
+	     (:file "o8fin")
+	     (:file "o8info"
+		    :depends-on ("o8mdru"))
+	     (:file "o8sce")
+	     (:file "o8bfgs"
+		    :depends-on ("o8sc2"
+				 "o8vecn"
+				 "o8msg"
+				 "o8sc3"
+				 "o8sc1"
+				 "o8upd"))
+	     (:file "o8shms")
+	     (:file "o8msg")
+	     (:file "o8opti"
+		    #+byte-compile-o8opti
+		    :compiler-options
+		    #+byte-compile-o8opti
+		    (:byte-compile t :array-slicing nil
+				   :array-type :simple-array)
+		    :depends-on ("esh"
+				 "esgradh"
+				 "esg"
+				 "esgradg"
+				 "o8vecn"
+				 "esf"
+				 "esgradf"
+				 "o8left"
+				 "o8ht"
+				 "o8sol"
+				 "o8dec"
+				 "o8ht"
+				 "o8solt"
+				 "o8rght"
+				 "esh"
+				 "esg"
+				 "o8unim"
+				 "o8egph"))
+	     (:file "o8inim")
+	     (:file "o8dird"
+		    :depends-on ("o8sc1"
+				 "o8sc3"))
+	     (:file "o8cutd"
+		    :depends-on ("o8vecn"
+				 "o8sc1"))
+	     (:file "o8smax")
+	     (:file "o8rest")
+	     (:file "o8save")
+	     (:file "o8eval"
+		    :depends-on ("esh"
+				 "esg"
+				 "esf"))
+	     (:file "o8unim"
+		    :depends-on ("o8eval" "o8rest" "o8save"))
+	     (:file "o8sc1")
+	     (:file "o8sc2")
+	     (:file "o8sc3")
+	     (:file "o8mdru")
+	     (:file "o8egph")
+	     (:file "o8dec"
+		    :depends-on ("o8left"
+				 "o8ht"
+				 "o8vecn"))
+	     (:file "o8ht")
+	     (:file "o8sol")
+	     (:file "o8solt")
+	     (:file "o8dsq1")
+	     (:file "o8upd"
+		    :depends-on ("o8left"
+				 "o8dsq1"))
+	     (:file "o8rght")
+	     (:file "o8left")
+	     (:file "o8vecn")
+	     (:file "o8qpdu"
+		    :compiler-options (:package :donlp2 :declare-common t
+				       :array-slicing nil :array-type :simple-array)
+		    :depends-on ("o8rinv"
+				 "o8zup"
+				 "o8rup"
+				 "o8dlcd"))
+	     (:file "o8zup")
+	     (:file "o8rup")
+	     (:file "o8dlcd")
+	     (:file "o8adcd")
+	     (:file "o8rinv")
+	     (:file "esf")
+	     (:file "esgradf")
+	     (:file "esh")
+	     (:file "esgradh")
+	     (:file "esg")
+	     (:file "esgradg")))))
+
+
+
+;;; The following system converts the Fortran code to Lisp and places
+;;; all of the code in the donlp2 package, with a float-format of
+;;; 'double-float.  Thus, this code could be used with maxima.
+
+(mk:define-language :f2cl-lisp
+    :compiler #'f2cl:f2cl
+    :loader #'identity
+    :source-extension "f"
+    :binary-extension "lisp")
+
+
+(mk:defsystem donlp2-maxima
+  :source-pathname *donlp2-root*
+  :components
+  ((:module donlp2
+	    :source-extension "f"
+	    :binary-pathname (make-pathname :directory '(:relative "donlp2" "lisp")
+					    :defaults *donlp2-root*)
+	    :binary-extension "lisp"
+	    :language :f2cl-lisp
+	    :compile-only t
+	    :compiler-options (:package :donlp2
+			       :array-slicing nil
+			       :array-type :simple-array
+			       :float-format double-float)
+	    :components
+	    (
+	     (:file "support.lisp"
+		    :language :lisp
+		    :compiler-options nil)
+	     ;; Default dummy routines.  These are default versions
+	     ;; that the user can modify.
+	     (:file "eval_extern")
+	     (:file "user_eval")
+	     (:file "solchk")
+	     ;;(:file "dummy-usr")
+	     ;; The core donlp2 routines.
+	     (:file "donlp2"
+		    :compiler-options (:package :donlp2 :declare-common t
+				       :array-slicing nil
+				       :array-type :simple-array
+				       :float-format double-float
+				       :common-block-file t)
+		    :depends-on ("esgradf"
+				 "esgradh"
+				 "esgradg"
+				 "o8vecn"
+				 ))
+	     (:file "o8st"
+		    :depends-on ("esg"
+				 "esh"
+				 "o8msg"))
+	     (:file "o8fin")
+	     (:file "o8info"
+		    :depends-on ("o8mdru"))
+	     (:file "o8sce")
+	     (:file "o8bfgs"
+		    :depends-on ("o8sc2"
+				 "o8vecn"
+				 "o8msg"
+				 "o8sc3"
+				 "o8sc1"
+				 "o8upd"))
+	     (:file "o8shms")
+	     (:file "o8msg")
+	     (:file "o8opti"
+		    :depends-on ("esh"
+				 "esgradh"
+				 "esg"
+				 "esgradg"
+				 "o8vecn"
+				 "esf"
+				 "esgradf"
+				 "o8left"
+				 "o8ht"
+				 "o8sol"
+				 "o8dec"
+				 "o8ht"
+				 "o8solt"
+				 "o8rght"
+				 "esh"
+				 "esg"
+				 "o8unim"
+				 "o8egph"))
+	     (:file "o8inim")
+	     (:file "o8dird"
+		    :depends-on ("o8sc1"
+				 "o8sc3"))
+	     (:file "o8cutd"
+		    :depends-on ("o8vecn"
+				 "o8sc1"))
+	     (:file "o8smax")
+	     (:file "o8rest")
+	     (:file "o8save")
+	     (:file "o8eval"
+		    :depends-on ("esh"
+				 "esg"
+				 "esf"))
+	     (:file "o8unim"
+		    :depends-on ("o8eval" "o8rest" "o8save"))
+	     (:file "o8sc1")
+	     (:file "o8sc2")
+	     (:file "o8sc3")
+	     (:file "o8mdru")
+	     (:file "o8egph")
+	     (:file "o8dec"
+		    :depends-on ("o8left"
+				 "o8ht"
+				 "o8vecn"))
+	     (:file "o8ht")
+	     (:file "o8sol")
+	     (:file "o8solt")
+	     (:file "o8dsq1")
+	     (:file "o8upd"
+		    :depends-on ("o8left"
+				 "o8dsq1"))
+	     (:file "o8rght")
+	     (:file "o8left")
+	     (:file "o8vecn")
+	     (:file "o8qpdu"
+		    :compiler-options (:package :donlp2 :declare-common t
+				       :array-slicing nil
+				       :array-type :simple-array
+				       :float-format double-float
+				       :common-block-file t)
+		    :depends-on ("o8rinv"
+				 "o8zup"
+				 "o8rup"
+				 "o8dlcd"))
+	     (:file "o8zup")
+	     (:file "o8rup")
+	     (:file "o8dlcd")
+	     (:file "o8adcd")
+	     (:file "o8rinv")
+	     (:file "esf")
+	     (:file "esgradf")
+	     (:file "esh")
+	     (:file "esgradh")
+	     (:file "esg")
+	     (:file "esgradg")))))
+
+

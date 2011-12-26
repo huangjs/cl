@@ -1,0 +1,176 @@
+<html>
+<head><title>STOBJ-EXAMPLE-1-PROOFS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-1-PROOFS</h2>some proofs involving the <code>counters</code> stobj
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+Consider again the event  
+
+<pre>
+(defstobj counters
+  (NodeCnt     :type integer :initially 0)
+  (TipCnt      :type integer :initially 0)
+  (IntTipsSeen :type t       :initially nil))
+</pre>
+
+discussed in <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a>, followed by the definition
+
+<pre>
+(defun reset-counters (counters)
+  (declare (xargs :stobjs (counters)))
+  (seq counters
+       (update-NodeCnt 0 counters)
+       (update-TipCnt 0 counters)
+       (update-IntTipsSeen nil counters)))
+</pre>
+
+which, because of the <code>seq</code> macro in <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a>, is just
+syntactic sugar for
+
+<pre>
+(defun reset-counters (counters)
+  (declare (xargs :stobjs (counters)))
+  (let ((counters (update-NodeCnt 0 counters)))
+    (let ((counters (update-TipCnt 0 counters)))
+      (update-IntTipsSeen nil counters)))).
+</pre>
+<p>
+
+Here is a simple theorem about <code>reset-counters</code>.<p>
+
+
+<pre>
+(defthm reset-counters-is-constant
+  (implies (countersp x)
+           (equal (reset-counters x)
+                  '(0 0 nil))))
+</pre>
+
+
+<p>
+Before we talk about how to prove this theorem, note that the theorem
+is unusual in two respects.<p>
+
+First, it calls <code>reset-counters</code> on an argument other than the
+variable <code>counters</code>!  That is allowed in theorems; logically
+speaking, the stobj functions are indistinguishable from ordinary
+functions.  Their use is syntactically restricted only in
+<code>defun</code>s, which might be compiled and run in raw Lisp.  Those
+restrictions allow us to implement stobj modification destructively.
+But logically speaking, <code>reset-counters</code> and other stobj
+``modifying'' functions just create new objects, constructively.<p>
+
+Second, the theorem above explicitly provides the hypothesis that
+<code>reset-counters</code> is being applied to an object satisfying
+<code>countersp</code>.  Such a hypothesis is not always required:
+<code>reset-counters</code> is total and will do something no matter what
+<code>x</code> is.  But in this particular case, the result is not <code>'(0 0 nil)</code>
+unless <code>x</code> is, at least, a true-list of length three.<p>
+
+To make a long story short, to prove theorems about stobj functions you
+behave in exactly the way you would to prove the same theorems about the
+same functions defined without the stobj features.<p>
+
+How can we prove the above theorem?  Unfolding the definition of
+<code>reset-counters</code> shows that <code>(reset-counters x)</code> is equal to
+
+<pre>
+(update-IntTipsSeen nil
+  (update-TipCnt 0 
+    (update-NodeCnt 0 x)))
+</pre>
+
+which in turn is
+
+<pre>
+(update-nth 2 nil
+ (update-nth 1 0
+  (update-nth 0 0 x))).
+</pre>
+
+Opening up the definition of <code>update-nth</code> reduces this to
+
+<pre>
+(list* 0 0 nil (cdddr x)).
+</pre>
+
+This is clearly equal to <code>'(0 0 nil)</code>, provided we know that <code>(cdddr x)</code>
+is <code>nil</code>.<p>
+
+Unfortunately, that last fact requires a lemma.  The most specific lemma we
+could provide is
+
+<pre>
+(defthm special-lemma-for-counters
+  (implies (countersp x)
+           (equal (cdddr x) nil)))
+</pre>
+
+but if you try to prove that lemma you will find that it requires some
+reasoning about <code>len</code> and <code>true-listp</code>.  Furthermore, the special
+lemma above is of interest only for <code>counters</code>.<p>
+
+The following lemma about <code>len</code> is the one we prefer.
+
+<pre>
+(defthm equal-len-n
+  (implies (syntaxp (quotep n))
+           (equal (equal (len x) n)
+                  (if (integerp n)
+                      (if (&lt; n 0)
+                          nil
+                        (if (equal n 0)
+                            (atom x)
+                          (and (consp x)
+                               (equal (len (cdr x)) (- n 1)))))
+                    nil))))
+</pre>
+
+This lemma will simplify any equality in which a <code>len</code> expression
+is equated to any explicitly given constant <em>n</em>, e.g.,
+<code>3</code>, reducing the equation to a conjunction of <code>consp</code> terms
+about the first <em>n</em> <code>cdr</code>s.<p>
+
+If the above lemma is available then ACL2 immediately proves
+
+<pre>
+(defthm reset-counters-is-constant
+  (implies (countersp x)
+           (equal (reset-counters x)
+                  '(0 0 nil))))
+</pre>
+<p>
+
+The point is presumably well made: proving theorems about
+single-threaded object accessors and updaters is no different than
+proving theorems about other recursively defined functions on lists.<p>
+
+As we have seen, operations on <a href="STOBJ.html">stobj</a>s turn into definitions
+involving <code><a href="NTH.html">nth</a></code> and <code><a href="UPDATE-NTH.html">update-nth</a></code> in the logic.  Here are two lemmas
+that are useful for simplifying terms involving <code>nth</code> and <code>update-nth</code>,
+which are therefore useful in reasoning about single-threaded objects.
+
+<pre>
+(defthm update-nth-update-nth-same
+  (implies (equal (nfix i1) (nfix i2))
+           (equal (update-nth i1 v1 (update-nth i2 v2 l))
+                  (update-nth i1 v1 l))))<p>
+
+(defthm update-nth-update-nth-diff
+  (implies (not (equal (nfix i1) (nfix i2)))
+           (equal (update-nth i1 v1 (update-nth i2 v2 l))
+                  (update-nth i2 v2 (update-nth i1 v1 l))))
+  :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
+</pre>
+
+These lemmas are due to Matt Wilding.  See <a href="NU-REWRITER.html">nu-rewriter</a> for a
+discussion of the efficient simplification of terms of the form
+<code>(nth n (update-nth key val lst))</code>, which can be critical in
+settings involving sequential bindings that commonly arise in
+operations involving stobjs.<p>
+
+We now recommend that you see <a href="STOBJ-EXAMPLE-2.html">stobj-example-2</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

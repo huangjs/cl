@@ -1,0 +1,60 @@
+<html>
+<head><title>TTREE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>TTREE</h2>tag trees
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Many low-level ACL2 functions take and return ``tag trees'' or
+``ttrees'' (pronounced ``tee-trees'') which contain various useful
+bits of information such as the lemmas used, the linearize
+assumptions made, etc.
+<p>
+Let a ``tagged pair'' be a list whose car is a symbol, called the
+``tag,'' and whose cdr is an arbitrary object, called the ``tagged
+object.''  A ``tag tree'' is either nil, a tagged pair consed onto a
+tag tree, or a non-nil tag tree consed onto a tag tree.<p>
+
+Abstractly a tag tree represents a list of sets, each member set
+having a name given by one of the tags occurring in the ttree.  The
+elements of the set named <code>tag</code> are all of the objects tagged
+<code>tag</code> in the tree.  To cons a tagged pair <code>(tag . obj)</code> onto a
+tree is to <code>add-to-set-equal</code> <code>obj</code> to the set corresponding to
+<code>tag</code>.  To <code>cons</code> two tag trees together is to union-equal the
+corresponding sets.  The concrete representation of the union so
+produced has duplicates in it, but we feel free to ignore or delete
+duplicates.<p>
+
+The beauty of this definition is that to combine two non-<code>nil</code> tag
+trees you need do only one <code>cons</code>.<p>
+
+The following function accumulates onto ans the set associated with
+a given tag in a ttree:
+
+<pre>
+(defun tagged-objects (tag ttree ans)
+ (cond
+  ((null ttree) ans)
+  ((symbolp (caar ttree))             ; ttree = ((tag . obj) . ttree)
+   (tagged-objects tag (cdr ttree)
+                   (cond ((eq (caar ttree) tag)
+                          (add-to-set-equal (cdar ttree) ans))
+                         (t ans))))
+  (t                                  ; ttree = (ttree . ttree)
+     (tagged-objects tag (cdr ttree)
+                         (tagged-objects tag (car ttree) ans)))))
+</pre>
+
+This function is defined as a :<code><a href="PROGRAM.html">PROGRAM</a></code> mode function in ACL2.<p>
+
+The rewriter, for example, takes a term and a ttree (among other
+things), and returns a new term, term', and new ttree, ttree'.
+Term' is equivalent to term (under the current assumptions) and the
+ttree' is an extension of ttree.  If we focus just on the set
+associated with the tag <code>LEMMA</code> in the ttrees, then the set for
+ttree' is the extension of that for ttree obtained by unioning into
+it all the runes used by the rewrite.  The set associated with
+<code>LEMMA</code> can be obtained by <code>(tagged-objects 'LEMMA ttree nil)</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

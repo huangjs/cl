@@ -1,0 +1,94 @@
+<html>
+<head><title>LINEAR-ARITHMETIC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LINEAR-ARITHMETIC</h2>A description of the linear arithmetic decision procedure
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+We describe the procedure very roughly here.
+Fundamental to the procedure is the notion of a linear polynomial
+inequality.  A ``linear polynomial'' is a sum of terms, each of
+which is the product of a rational constant and an ``unknown.''  The
+``unknown'' is permitted to be <code>1</code> simply to allow a term in the sum
+to be constant.  Thus, an example linear polynomial is
+<code>3*x + 7*a + 2</code>; here <code>x</code> and <code>a</code> are the (interesting) unknowns.
+However, the unknowns need not be variable symbols.  For
+example, <code>(length x)</code> might be used as an unknown in a linear
+polynomial.  Thus, another linear polynomial is <code>3*(length x) + 7*a</code>.
+A ``linear polynomial inequality'' is an inequality 
+(either <code><a href="_lt_.html">&lt;</a></code> or <code><a href="_lt_=.html">&lt;=</a></code>)
+relation between two linear polynomials.  Note that an equality may
+be considered as a pair of inequalities; e.q., <code>3*x + 7*a + 2 = 0</code>
+is the same as the conjunction of <code>3*x + 7*a + 2 &lt;= 0</code> and
+<code>0 &lt;= 3*x + 7*a + 2</code>.<p>
+
+Certain linear polynomial
+inequalities can be combined by cross-multiplication and addition to
+permit the deduction of a third inequality with
+fewer unknowns.  If this deduced inequality is manifestly false, a
+contradiction has been deduced from the assumed inequalities.<p>
+
+For example, suppose we have two assumptions
+
+<pre>
+p1:       3*x + 7*a &lt;  4 
+p2:               3 &lt;  2*x
+</pre>
+
+and we wish to prove that, given <code>p1</code> and <code>p2</code>, <code>a &lt; 0</code>.  As
+suggested above, we proceed by assuming the negation of our goal
+
+<pre>
+p3:               0 &lt;= a.
+</pre>
+
+and looking for a contradiction.<p>
+
+By cross-multiplying and adding the first two inequalities, (that is,
+multiplying <code>p1</code> by <code>2</code>, <code>p2</code> by <code>3</code> and adding the respective
+sides), we deduce the intermediate result
+
+<pre>
+p4:  6*x + 14*a + 9 &lt; 8 + 6*x
+</pre>
+
+which, after cancellation, is:
+
+<pre>
+p4:        14*a + 1 &lt;  0.
+</pre>
+
+If we then cross-multiply and add <code>p3</code> to <code>p4</code>, we get
+
+<pre>
+p5:               1 &lt;= 0,
+</pre>
+
+a contradiction.  Thus, we have proved that <code>p1</code> and <code>p2</code> imply the
+negation of <code>p3</code>.<p>
+
+All of the unknowns of an inequality must be eliminated by
+cancellation in order to produce a constant inequality.  We can
+choose to eliminate the unknowns in any order, but we eliminate them in
+term-order, largest unknowns first.  (See <a href="TERM-ORDER.html">term-order</a>.)  That is, two
+polys are cancelled against each other only when they have the same
+largest unknown.  For instance, in the above example we see that <code>x</code>
+is the largest unknown in each of <code>p1</code> and <code>p2</code>, and <code>a</code> in
+<code>p3</code> and <code>p4</code>.<p>
+
+Now suppose that this procedure does not produce a contradiction but
+instead yields a set of nontrivial inequalities.  A contradiction
+might still be deduced if we could add to the set some additional
+inequalities allowing further cancellations.  That is where
+<code>:linear</code> lemmas come in.  When the set of inequalities has stabilized
+under cross-multiplication and addition and no contradiction is
+produced, we search the data base of <code>:</code><code><a href="LINEAR.html">linear</a></code> rules for rules about
+the unknowns that are candidates for cancellation (i.e., are the
+largest unknowns in their respective inequalities).  See <a href="LINEAR.html">linear</a>
+for a description of how <code>:</code><code><a href="LINEAR.html">linear</a></code> rules are used.<p>
+
+See also <code><a href="NON-LINEAR-ARITHMETIC.html">non-linear-arithmetic</a></code> for a description of an extension
+to the linear-arithmetic procedure described here.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

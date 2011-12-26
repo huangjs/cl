@@ -1,0 +1,116 @@
+<html>
+<head><title>MBT.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MBT</h2>introduce a test not to be evaluated
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+The macro <code>mbt</code> (``must be true'') can be used in order to add code in
+order to admit function definitions in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode, without paying
+a cost in execution efficiency.  Examples below illustrate its intended use.<p>
+
+Semantically, <code>(mbt x)</code> equals <code>x</code>.  However, in raw Lisp <code>(mbt x)</code>
+ignores <code>x</code> entirely, and macroexpands to <code>t</code>.  ACL2's <a href="GUARD.html">guard</a>
+verification mechanism ensures that the raw Lisp code is only evaluated when
+appropriate, since a guard proof obligation <code>(equal x t)</code> is generated.
+See <a href="VERIFY-GUARDS.html">verify-guards</a> and, for general discussion of guards, see <a href="GUARD.html">guard</a>.<p>
+
+Also see <a href="MBE.html">mbe</a>, which stands for ``must be equal.''  Although <code>mbt</code> is more
+natural in many cases, <code>mbe</code> has more general applicability.  In fact,
+<code>(mbt x)</code> is essentially defined to be <code>(mbe :logic x :exec t)</code>.
+<p>
+We can illustrate the use of <code>mbt</code> on the following generic example, where
+<code>&lt;g&gt;</code>, <code>&lt;test&gt;</code>, <code>&lt;rec-x&gt;</code>, and <code>&lt;base&gt;</code> are intended to be terms
+involving only the variable <code>x</code>.
+
+<pre>
+(defun foo (x)
+  (declare (xargs :guard &lt;g&gt;))
+  (if &lt;test&gt;
+      (foo &lt;rec-x&gt;)
+    &lt;base&gt;))
+</pre>
+
+In order to admit this function, ACL2 needs to discharge the proof obligation
+that <code>&lt;rec-x&gt;</code> is smaller than <code>x</code>, namely:
+
+<pre>
+(implies &lt;test&gt;
+         (o&lt; (acl2-count <code>&lt;rec-x&gt;</code>)
+              (acl2-count x)))
+</pre>
+
+But suppose we need to know that <code>&lt;g&gt;</code> is true in order to prove this.
+Since <code>&lt;g&gt;</code> is only the <a href="GUARD.html">guard</a>, it is not part of the logical
+definition of <code>foo</code>.  A solution is to add the guard to the definition of
+<code>foo</code>, as follows.
+
+<pre>
+(defun foo (x)
+  (declare (xargs :guard &lt;g&gt;))
+  (if (mbt &lt;g&gt;)
+      (if &lt;test&gt;
+          (foo &lt;rec-x&gt;)
+        &lt;base&gt;)
+    nil))
+</pre>
+
+If we do this using <code>&lt;g&gt;</code> rather than <code>(mbt &lt;g&gt;)</code>, then evaluation of
+every recursive call of <code>foo</code> will cause the evaluation of (the appropriate
+instance of) <code>&lt;g&gt;</code>.  But since <code>(mbt &lt;g&gt;)</code> expands to <code>t</code> in raw Lisp,
+then once we verify the guards of <code>foo</code>, the evaluations of <code>&lt;g&gt;</code> will be
+avoided (except at the top level, when we check the guard before allowing
+evaluation to take place in Common Lisp).<p>
+
+Other times, the guard isn't the issue, but rather, the problem is that a
+recursive call has an argument that itself is a recursive call.  For example,
+suppose that <code>&lt;rec-x&gt;</code> is of the form <code>(foo &lt;expr&gt;)</code>.  There is no way we
+can hope to discharge the termination proof obligation shown above.  A
+standard solution is to add some version of this test:
+
+<pre>
+(mbt (o&lt; (acl2-count <code>&lt;rec-x&gt;</code>) (acl2-count x)))
+</pre>
+
+Here is a specific example based on one sent by Vernon Austel.
+
+<pre>
+(defun recurX2 (n)
+  (declare (xargs :guard (and (integerp n) (&lt;= 0 n))
+                  :verify-guards nil))
+  (cond ((zp n) 0)
+        (t (let ((call (recurX2 (1- n))))
+             (if (mbt (&lt; (acl2-count call) n))
+                 (recurX2 call)
+               1 ;; this branch is never actually taken
+               )))))<p>
+
+(defthm recurX2-0
+ (equal (recurX2 n) 0))<p>
+
+(verify-guards recurX2)
+</pre>
+
+If you <code>(</code><code><a href="TRACE$.html">trace$</a></code><code> acl2-count)</code>, you will see that evaluation of
+<code>(recurX2 2)</code> causes several calls of <code><a href="ACL2-COUNT.html">acl2-count</a></code> before the
+<code><a href="VERIFY-GUARDS.html">verify-guards</a></code>.  But this evaluation does not call <code>acl2-count</code> after
+the <code>verify-guards</code>, because the ACL2 evaluation mechanism uses raw Lisp to
+do the evaluation, and the form <code>(mbt (&lt; (acl2-count call) n))</code>
+macroexpands to <code>t</code> in Common Lisp.<p>
+
+You may occasionally get warnings when you compile functions defined using
+<code>mbt</code>.  (For commands that invoke the compiler, see <a href="COMP.html">comp</a> and
+see <a href="CERTIFY-BOOK.html">certify-book</a>.)  These can be inhibited by using an <code>ignorable</code>
+<code><a href="DECLARE.html">declare</a></code> form.  Here is a simple but illustrative example.  Note that
+the declarations can optionally be separated into two <code><a href="DECLARE.html">declare</a></code> forms.
+
+<pre>
+(defun foo (x y)
+  (declare (ignorable x)
+           (xargs :guard (equal x t)))
+  (and (mbt x) y))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<html>
+<head><title>BRR.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BRR</h2>to enable or disable the breaking of rewrite rules
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+
+<pre>
+Example:
+:brr t       ; enable
+:brr nil     ; disable
+<p>
+General Form:
+(brr flg)
+</pre>
+
+where <code>flg</code> evaluates to <code>t</code> or <code>nil</code>.  This function modifies
+<code><a href="STATE.html">state</a></code> so that the attempted application of certain rewrite rules are
+``broken.'' ``<code>Brr</code>'' stands for ``break-rewrite'' and can be thought of as
+a mode with two settings.  The normal mode is ``disabled.''<p>
+
+When <code>brr</code> mode is ``enabled'' the ACL2 rewriter monitors the attempts to
+apply certain rules and advises the user of those attempts by entering an
+interactive wormhole break.  From within this break the user can watch
+selected application attempts.  See <a href="BREAK-REWRITE.html">break-rewrite</a>.  The user can also
+interact with the system during <code>brr</code> breaks via <code><a href="BRR-COMMANDS.html">brr-commands</a></code>.<p>
+
+The rules monitored are selected by using the <code><a href="MONITOR.html">monitor</a></code> and
+<code><a href="UNMONITOR.html">unmonitor</a></code> commands.  It is possible to break a rune ``conditionally''
+in the sense that an interactive break will occur only if a specified
+predicate is true of the environment at the time of the attempted
+application.  See <a href="MONITOR.html">monitor</a> and see <a href="UNMONITOR.html">unmonitor</a>.<p>
+
+Even if a non-empty set of rules has been selected, no breaks will occur
+unless <code>brr</code> mode is enabled.  Thus, the first time in a session that you
+wish to monitor a rewrite rule, use <code>:brr</code> <code>t</code> to enable <code>brr</code> mode.
+Thereafter you may select runes to be monitored with <code><a href="MONITOR.html">monitor</a></code> and
+<code><a href="UNMONITOR.html">unmonitor</a></code> with the effect that whenever monitored rules are tried (and
+their break conditions are met) an interactive break will occur.  Be advised
+that when <code>brr</code> mode is enabled the rewriter is somewhat slower than
+normal.  Furthermore, that sluggishness persists even if no runes are
+monitored.  You may regain normal performance -- regardless of what runes
+are monitored -- by disabling <code>brr</code> mode with <code>:brr</code> <code>nil</code>.<p>
+
+Why isn't <code>brr</code> mode disabled automatically when no runes are monitored?
+More generally, why does ACL2 have <code>brr</code> mode at all?  Why not just test
+whether there are monitored runes?  If you care about the answers,
+see <a href="WHY-BRR.html">why-brr</a>.<p>
+
+BRR Mode and Console Interrupts: If the system is operating in <code>brr</code> mode
+and you break into raw Lisp (as by causing a console interrupt or happening
+upon a signalled Lisp error; see <a href="BREAKS.html">breaks</a>), you can return to the ACL2
+top-level, outside any <code>brr</code> environment, by executing
+<code>(</code><code><a href="ABORT_bang_.html">abort!</a></code><code>)</code>.  Otherwise, the normal way to quit from such a break
+(for example <code>:q</code> in GCL, <code>:reset</code> in Allegro CL, and <code>q</code> in CMU CL)
+will return to the innermost ACL2 read-eval-print loop, which may or may not
+be the top-level of your ACL2 session!  In particular, if the break happens
+to occur while ACL2 is within the <code>brr</code> environment (in which it is
+preparing to read <code><a href="BRR-COMMANDS.html">brr-commands</a></code>), the abort will merely return to that
+<code>brr</code> environment.  Upon exiting that environment, normal theorem proving
+is continued (and the <code>brr</code> environment may be entered again in response to
+subsequent monitored rule applications).  Before returning to the <code>brr</code>
+environment, ACL2 ``cleans up'' from the interrupted <code>brr</code> processing.
+However, it is not possible (given the current implementation) to clean up
+perfectly.  This may have two side-effects.  First, the system may
+occasionally print the self-explanatory ``Cryptic BRR Message 1'' (or 2),
+informing you that the system has attempted to recover from an aborted
+<code>brr</code> environment.  Second, it is possible that subsequent <code>brr</code> behavior
+in that proof will be erroneous because the cleanup was done incorrectly.
+The moral is that you should not trust what you learn from <code>brr</code> if you
+have interrupted and aborted <code>brr</code> processing during the proof.  These
+issues do not affect the behavior or soundness of the theorem prover.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

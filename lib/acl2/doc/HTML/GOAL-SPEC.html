@@ -1,0 +1,104 @@
+<html>
+<head><title>GOAL-SPEC.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>GOAL-SPEC</h2>to indicate where a hint is to be used
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+"Goal"
+"goal"
+"Subgoal *1/3''"
+"subgoal *1/3''"
+"[2]Subgoal *1/3''"
+</pre>
+
+<p>
+When <a href="HINTS.html">hints</a> are given to the theorem prover, a goal-spec is provided
+to specify the goal to which the <a href="HINTS.html">hints</a> are to be applied.  The <a href="HINTS.html">hints</a>
+provided are carried along innocuously until the named goal arises.
+When it arises, the <a href="HINTS.html">hints</a> are ``activated'' for that goal and its
+descendents.<p>
+
+A legal goal specification may be extracted from the theorem
+prover's output.  Certain lines clearly label formulas, as in
+
+<pre>
+Subgoal *1/3.2'
+(IMPLIES ... ...)
+</pre>
+
+and these lines all give rise to goal specifications.  In general,
+these lines all start either with ``Goal'' or ``Subgoal'' or else
+with those words preceded by a number in square brackets, as in
+
+<pre>
+[1]Subgoal *1/3.2'
+(IMPLIES ... ...).
+</pre>
+
+A goal specification may be obtained by deleting any surrounding
+whitespace from such a line and embedding the text in string
+quotation marks.  Thus
+
+<pre>
+"[1]Subgoal *1/3.2'"
+</pre>
+
+is the goal specifier for the goal above.<p>
+
+As noted, a hint is applied to a goal when the hint's goal
+specification matches the name ACL2 assigns to the goal.  The
+matching algorithm is case-insensitive.  Thus, alternative goal
+specifications for the goal above are <code>"[1]subgoal *1/3.2'"</code> and
+<code>"[1]SUBGOAL *1/3.2'"</code>.  The matching algorithm does not tolerate
+non-case discrepancies.  Thus, <code>"[1]Subgoal*1/3.2'"</code> and
+<code>" [1]Subgoal *1/3.2'"</code> are unacceptable.<p>
+
+Sometimes a formula is given two names, e.g.,
+
+<pre>
+Subgoal *1/14.2'
+(IMPLIES ... 
+         ...)
+Name the formula above *1.1.
+</pre>
+
+It is the first name (the one that starts with ``Goal'' or
+``Subgoal'') and not the second which constitutes a legal goal-spec.
+Roughly speaking, when the system prints the line containing the
+goal specification, it activates any <a href="HINTS.html">hints</a> that are attached to that
+goal-spec.  Consider the example above.  Suppose <code>Subgoal *1/14.2'</code>
+could be proved by using a certain lemma instance.  Then the
+appropriate entry in the <a href="HINTS.html">hints</a> would be:
+
+<pre>
+("Subgoal *1/14.2'" :use ...)
+</pre>
+
+This might surprise you because the system appears to do nothing
+to <code>*1/14.2'</code> besides push it for a subsequent induction.  But
+actually between the time the system printed the goal-spec line and
+the time it decides to push the goal, you can think of the system as
+trying everything it has.  So a <code>use</code> hint activated when
+<code>Subgoal *1/14.2'</code> arises is just what you want.<p>
+
+But what if you want to give an <code>:induct</code> hint?  By the time induction
+is tried, the formula has been given the name <code>*1.1</code>.  Well, this is
+one you just have to remember:
+
+<pre>
+("Subgoal *1/14.2'" :induct ...).
+</pre>
+
+When the above hint is activated the <code>:induct</code> directive
+short-circuits the rest of the processing and sends immediately the
+formula into the pool of goals to prove by induction.  The induct
+hint is attached to the formula in the pool and when the time comes
+to turn our attention to that goal, the induct advice is
+followed.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

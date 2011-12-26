@@ -1,0 +1,122 @@
+<html>
+<head><title>NOTE-2-6-OTHER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-6-OTHER</h3>ACL2 Version  2.6 Notes on Other (Minor) Changes
+<pre>Major Section:  <a href="NOTE-2-6.html">NOTE-2-6</a>
+</pre><p>
+
+Warning strings are now case-insensitive.
+See <a href="SET-INHIBIT-WARNINGS.html">set-inhibit-warnings</a>.<p>
+
+ACL2 causes a warning when an <a href="IN-THEORY.html">in-theory</a> hint or event causes a 0-ary
+function's definition to be disabled but its <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code>
+to be enabled.<p>
+
+A minor modification has been made to <code><a href="DEFSTOBJ.html">defstobj</a></code> that can have a
+positive impact on performance in Allegro Common Lisp.  (For Lisp
+hackers:  the stobj name was formerly declared special, and that was
+disabling Allegro's tail-merging routing for compilation of some
+recursive functions using stobjs.)  The downside is that stobj names
+can no longer be evaluated in raw Lisp.  However, raw Lisp is not
+the right place to be evaluating ACL2 forms anyhow;
+see <a href="SET-RAW-MODE.html">set-raw-mode</a>.  We thank Rob Sumners for bringing this issue
+to our attention.<p>
+
+Before Version  2.6, there has been the following problem with
+<code><a href="DEFSTUB.html">defstub</a></code> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> in the case that the current package is not
+the ACL2 package.  If a <a href="SIGNATURE.html">signature</a> was specified using the symbol <code>=&gt;</code>,
+then that symbol had have been imported into the current package
+from the ACL2 package when the current package was defined.  There
+are no longer any package restrictions on the use of <code>=&gt;</code>.  Thanks to
+John Cowles for bringing this problem to our attention.<p>
+
+Bugs in <code><a href="DEFUN-SK.html">defun-sk</a></code> have been fixed.  <code>Defun-sk</code> forms introducing
+functions of no arguments were failing to be admitted, for example:
+<code>(defun-sk always-p1 () (forall (x) (p1 x)))</code>.
+Thanks to John Cowles for bringing this problem to our attention.
+Also, <code>defun-sk</code> failed on an example in the documentation
+(see <a href="TUTORIAL4-DEFUN-SK-EXAMPLE.html">tutorial4-defun-sk-example</a>), as pointed out by Matyas
+Sustik; this bug has been fixed as well.<p>
+
+The trace mechanism has been fixed to handle <a href="STOBJ.html">stobj</a>s, and to
+avoid the printing of so-called <em>enabled structures</em>.<p>
+
+The <code><a href="BRR.html">brr</a></code> command <code>:type-alist</code> now produces more readable output.<p>
+
+An <code><a href="INCLUDE-BOOK.html">include-book</a></code> of an uncertified book no longer loads an associated
+compiled file.<p>
+
+We added a few checks to make sure that the underlying lisp is
+suitable, for example checking that the reader is case-insensitive
+and reads in symbols with upper-case names where appropriate.<p>
+
+We now warn when forcing (see <a href="FORCE.html">force</a>) or immediate force mode
+(see <a href="IMMEDIATE-FORCE-MODEP.html">immediate-force-modep</a>) change state between enabled and
+disabled.  Also see <a href="ENABLE-IMMEDIATE-FORCE-MODEP.html">enable-immediate-force-modep</a> and
+see <a href="DISABLE-IMMEDIATE-FORCE-MODEP.html">disable-immediate-force-modep</a> for information about these
+new macros, which may be used to control immediate force mode.<p>
+
+We have eliminated the use of a low-level raw Lisp constant,
+<code>*most-recent-multiplicity*</code>.  Our test suite saw a speed-up
+of approximately 2% as a result for an ACL2 image built on GCL
+(but no significant speed-up for an ACL2 image built on Allegro
+Common Lisp).  We thank Rob Sumners for suggesting this improvement.<p>
+
+Fixnum declarations are now realized as <code>(signed-byte 29)</code> instead of
+<code>(signed-byte 27)</code>.  We check that the underlying Common Lisp
+recognizes objects of type <code>(signed-byte 29)</code> as fixnums, with
+the exception of CLISP, which is said to have an efficient bignum
+implementation.<p>
+
+A new documentation topic <a href="FUNCTIONAL-INSTANTIATION-EXAMPLE.html">functional-instantiation-example</a>
+illustrates functional instantiation.<p>
+
+A bug has been fixed in the monitoring of runes (see <a href="MONITOR.html">monitor</a>).
+Thanks to Dave Greve for sending an example that clearly showed
+the problem.<p>
+
+A warning is now issued when it is detected that a
+<code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rule may not be as strong as it appears because
+it is not sufficient to prove itself by type reasoning.<p>
+
+An error is caused for rules of class <code>:</code><code><a href="META.html">meta</a></code> when the function symbol
+<code>IF</code> is among the <code>:trigger-fns</code>.  (<code>IF</code> was ignored anyhow; the point of
+this change is to avoid misleading the user.)<p>
+
+A minor bug has been fixed in <code>:</code><code><a href="PR.html">pr</a></code>, evident for example if this
+command was applied to <code>IF</code>.<p>
+
+A minor hole in <code>:</code><code><a href="SET-BOGUS-MUTUAL-RECURSION-OK.html">set-bogus-mutual-recursion-ok</a></code> did not permit the
+acceptance of <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> forms that include constant function
+definitions.  This has been fixed.  Thanks to Eric Smith for coming
+up with a simple example illustrating the problem.<p>
+
+The temporary files "TMP.lisp" and "TMP1.lisp" written out by <code>:</code><code><a href="COMP.html">comp</a></code>
+are now written to the connected book directory (see <a href="CBD.html">cbd</a>).<p>
+
+Previously, the Allegro compiler was not eliminating tail recursion
+for executable counterparts of functions, because of the way one of
+its flags had been set.  As a result, calls of functions whose
+guards had not been verified could run out of stack space when this
+was not necessary.  This situation has been fixed.<p>
+
+Executable counterparts could have slow array accesses.  This has
+been fixed (specifically, constants are no longer replaced with
+their values in the definitions of executable counterparts).<p>
+
+Various improvements have been made to the documentation.  Thanks in
+particular to Eric Smith for pointing out a numbers of places where
+fixes were in order.<p>
+
+File "mcl-acl2-startup.lisp" has been updated, thanks to feedback
+from Philippe Georgelin.<p>
+
+Inefficiencies in GCL fixnum computations were remedied for macros <code>+f</code> and
+<code>*f</code>.  Thanks to Rob Sumners for pointing out this issue.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

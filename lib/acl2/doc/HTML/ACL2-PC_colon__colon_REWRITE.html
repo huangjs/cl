@@ -1,0 +1,115 @@
+<html>
+<head><title>ACL2-PC_colon__colon_REWRITE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::REWRITE</h3>(primitive)
+<code>   </code>apply a rewrite rule
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(rewrite reverse-reverse)
+   -- apply the rewrite rule `reverse-reverse'
+(rewrite (:rewrite reverse-reverse))
+   -- same as above
+(rewrite 2)
+   -- apply the second rewrite rule, as displayed by show-rewrites
+rewrite
+   -- apply the first rewrite rule, as displayed by show-rewrites
+(rewrite transitivity-of-&lt; ((y 7)))
+   -- apply the rewrite rule transitivity-of-&lt; with the substitution
+      that associates 7 to the ``free variable'' y
+(rewrite foo ((x 2) (y 3)) t)
+   -- apply the rewrite rule foo by substituting 2 and 3 for free
+      variables x and y, respectively, and also binding all other
+      free variables possible by using the current context
+      (hypotheses and governors)
+<p>
+General Form:
+(rewrite &amp;optional rule-id substitution instantiate-free)
+</pre>
+
+Replace the current subterm with a new term by applying a rewrite
+rule.  The replacement will be done according to the information provided by
+the <code>show-rewrites</code> (<code>sr</code>) command.<p>
+
+If <code>rule-id</code> is a positive integer <code>n</code>, then the <code>n</code>th rewrite
+rule as displayed by <code>show-rewrites</code> is the one that is applied.  If
+<code>rule-id</code> is <code>nil</code> or is not supplied, then it is treated as the number
+1.  Otherwise, <code>rule-id</code> should be either a rune of or name of a
+rewrite rule.  If a name is supplied, then any rule of that name may
+be used.  We say more about this, and describe the other optional arguments,
+below.<p>
+
+Consider first the following example.  Suppose that the current subterm is
+<code>(reverse (reverse y))</code> and that there is a rewrite rule called
+<code>reverse-reverse</code> of the form
+
+<pre>
+(implies (true-listp x)
+         (equal (reverse (reverse x)) x)) .
+</pre>
+
+Then the instruction <code>(rewrite reverse-reverse)</code> would cause the current
+subterm to be replaced by <code>y</code> and would create a new goal with conclusion
+<code>(true-listp y)</code>.  An exception is that if the top-level hypotheses imply
+<code>(true-listp y)</code> using only ``trivial reasoning''
+(more on this below), then no new goal is created.<p>
+
+If the <code>rule-id</code> argument is a number or is not supplied, then the system
+will store an instruction of the form <code>(rewrite name ...)</code>, where <code>name</code>
+is the name of a rewrite rule; this is in order to make it easier to replay
+instructions when there have been changes to the history.  Actually, instead
+of the name (whether the name is supplied or calculated), the system stores
+the <a href="RUNE.html">rune</a> if there is any chance of ambiguity.  (Formally, ``ambiguity''
+here means that the rune being applied is of the form
+<code>(:rewrite name . index)</code>, where index is not <code>nil</code>.)<p>
+
+Speaking in general, then, a <code>rewrite</code> instruction works as follows:<p>
+
+First, a rewrite rule is selected according to the arguments of the
+<code>rewrite</code> instruction.  The selection is made as explained under ``General
+Form'' above.<p>
+
+Next, the left-hand side of the rule is matched with the current subterm,
+i.e., a substitution <code>unify-subst</code> is found such that if one instantiates
+the left-hand side of the rule with <code>unify-subst</code>, then one obtains the
+current subterm.  If this match fails, then the instruction fails.<p>
+
+Next, an attempt is made to relieve (discharge) the hypotheses, much as the
+theorem prover relieves hypotheses except that there is no call to the
+rewriter.  First, the substitution <code>unify-subst</code> is extended with the
+<code>substitution</code> argument, which may bind free variables
+(see <a href="FREE-VARIABLES.html">free-variables</a>).  Each hypothesis of the <a href="REWRITE.html">rewrite</a> rule is then
+considered in turn, from first to last.  For each hypothesis, first the
+current substitution is applied, and then the system checks whether the
+hypothesis is ``clearly'' true in the current context.  If there are
+variables in the hypotheses of the rewrite rule that are not bound by the
+current substitution, then a weak attempt is made to extend that substitution
+so that the hypothesis is present in the current context (see the
+documentation for the proof-checker <code>hyps</code> command under
+<a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a>), much as would be done by the theorem prover's
+rewriter.<p>
+
+If in the process above there are free variables, but the proof-checker can
+see how to bind them to relieve all hypotheses, then it will do so in both
+the <code>show-rewrites</code> (<code>sr</code>) and <code>rewrite</code> commands.  But normally, if
+even one hypothesis remains unrelieved, then no automatic extension of the
+substitution is made.  Except, if <code>instantiate-free</code> is not <code>nil</code>, then
+that extension to the substitution is kept.<p>
+
+Finally, the instruction is applied as follows.  The current subterm is
+replaced by applying the final substitution described above to the right-hand
+side of the selected rewrite rule.  And, one new subgoal is created for each
+unrelieved hypothesis of the rule, whose top-level hypotheses are the
+governors and top-level hypotheses of the current goal and whose conclusion
+and current subterm are the instance, by that same final substitution, of
+that unrelieved hypothesis.<p>
+
+<strong>Note:</strong>  The substitution argument should be a list whose elements
+have the form <code>(variable term)</code>, where <code>term</code> may contain
+abbreviations.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

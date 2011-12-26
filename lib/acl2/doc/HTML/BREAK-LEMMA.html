@@ -1,0 +1,95 @@
+<html>
+<head><title>BREAK-LEMMA.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BREAK-LEMMA</h2>a quick introduction to breaking rewrite rules in ACL2
+<pre>Major Section:  <a href="BREAK-REWRITE.html">BREAK-REWRITE</a>
+</pre><p>
+
+
+<pre>
+Example:
+:brr t                          ; if you haven't done that yet
+:monitor (:rewrite lemma12) t   ; to install a break point on the
+                                ; rule named (:rewrite lemma12)
+</pre>
+
+<p>
+ACL2 does not support Nqthm's <code>break-lemma</code> but supports a very
+similar and more powerful break facility.  Suppose some proof is
+failing; apparently some particular rule is not being used and you
+wish to learn why.  Then you need the ACL2 <a href="BREAK-REWRITE.html">break-rewrite</a> facility.
+See <a href="BREAK-REWRITE.html">break-rewrite</a> and all of its associated <code>:</code><code><a href="DOC.html">doc</a></code> topics for
+details.  The following basic steps are required.<p>
+
+(1) To enable the ``break rewrite'' feature, you must first execute
+
+<pre>
+ACL2 !&gt;:brr t
+</pre>
+
+at the top-level of ACL2.  Equivalently, evaluate <code>(brr t)</code>.
+<a href="BREAK-REWRITE.html">Break-rewrite</a> stays enabled until you disable it with <code>(brr nil)</code>.
+When <a href="BREAK-REWRITE.html">break-rewrite</a> is enabled the ACL2 rewriter will run slower than
+normal but you will be able to <a href="MONITOR.html">monitor</a> the attempts to apply
+specified rules.<p>
+
+(2) Decide what <a href="RUNE.html">rune</a>s (see <a href="RUNE.html">rune</a>) you wish to <a href="MONITOR.html">monitor</a>.  For
+example, you might want to know why <code>(:rewrite lemma12 . 2)</code> is not
+being used in the attempted proof.  That, by the way, is the name of
+the second rewrite rule generated from the event named <code>lemma12</code>.<p>
+
+The command
+
+<pre>
+ACL2 !&gt;:monitor (:rewrite lemma12 . 2) t
+</pre>
+
+will install an ``unconditional'' break point on that rule.  The
+``<code>t</code>'' at the end of the command means it is unconditional, i.e., a
+break will occur every time the rule is tried.  ACL2 supports
+conditional breaks also, in which case the <code>t</code> is replaced by an
+expression that evaluates to non-<code>nil</code> when you wish for a break to
+occur.  See <a href="MONITOR.html">monitor</a>.  The above keyword command is, of course,
+equivalent to
+
+<pre>
+ACL2 !&gt;(monitor '(:rewrite lemma12 . 2) t)
+</pre>
+
+which you may also type.  You may install breaks on as many rules
+as you wish.  You must use <code><a href="MONITOR.html">monitor</a></code> on each rule.  You may also
+change the break condition on a rule with <code><a href="MONITOR.html">monitor</a></code>.  Use <code><a href="UNMONITOR.html">unmonitor</a></code>
+(see <a href="UNMONITOR.html">unmonitor</a>) to remove a rule from the list of <a href="MONITOR.html">monitor</a>ed
+rules.<p>
+
+(3) Then try the proof again.  When a <a href="MONITOR.html">monitor</a>ed rule is tried by the
+rewriter you will enter an interactive break, called <a href="BREAK-REWRITE.html">break-rewrite</a>.
+See <a href="BREAK-REWRITE.html">break-rewrite</a> for a detailed description.  Very simply,
+<a href="BREAK-REWRITE.html">break-rewrite</a> lets you inspect the context of the attempted
+application both before and after the attempt.  When <a href="BREAK-REWRITE.html">break-rewrite</a>
+is entered it will print out the ``target'' term being rewritten.
+If you type <code>:go</code> <a href="BREAK-REWRITE.html">break-rewrite</a> will try the rule and then exit,
+telling you (a) whether the rule was applied, (b) if so, how the
+target was rewritten, and (c) if not, why the rule failed.  There
+are many other commands.  See <a href="BRR-COMMANDS.html">brr-commands</a>.<p>
+
+(4) When you have finished using the <a href="BREAK-REWRITE.html">break-rewrite</a> feature you
+should disable it to speed up the rewriter.  You can disable it with
+
+<pre>
+ACL2 !&gt;:brr nil
+</pre>
+
+The list of <a href="MONITOR.html">monitor</a>ed rules and their break conditions persists
+but is ignored.  If you enable <a href="BREAK-REWRITE.html">break-rewrite</a> later, the list of
+<a href="MONITOR.html">monitor</a>ed rules will be displayed and will be used again by rewrite.<p>
+
+You should disable the <a href="BREAK-REWRITE.html">break-rewrite</a> feature whenever you are not
+intending to use it, even if the list of <a href="MONITOR.html">monitor</a>ed rules is empty,
+because the rewriter is slowed down as long as <a href="BREAK-REWRITE.html">break-rewrite</a> is
+enabled.<p>
+
+If you get a stack overflow, see <a href="CW-GSTACK.html">cw-gstack</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,122 @@
+# Work in progress - xmaxima support files for windows  
+#
+# Following files are to be installed in $(prefix)/bin
+#
+# - xmaxima.exe
+# - winkill.exe
+# - tclwinkill.dll
+prefix=@prefix@
+TCLKITSH = tclkitsh.exe
+TCLKITDIR = ../../../../programs/star
+SDXDIR = $(TCLKITDIR)
+GNUPLOTDIR = ../../../../programs/gnuplot
+WXMAXIMADIR = ../../../../programs/wxMaxima
+
+GCCPREFIX=/mingw
+GCCVER=3.3.1
+
+CHMLANGS = es pt pt_BR
+
+all: xmaxima.exe winkill.exe tclwinkill.dll
+
+../xmaxima: 
+	(cd ..; $(MAKE) xmaxima)
+
+xmaxima.tcl: ../xmaxima
+	cp ../xmaxima xmaxima.tcl
+
+xmaxima.exe: xmaxima.tcl
+	rm -rf xmaxima.vfs
+	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit qwrap xmaxima.tcl && \
+	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit unwrap xmaxima.kit && \
+	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit wrap xmaxima.exe \
+		-runtime $(TCLKITDIR)/tclkit.exe xmaxima.kit
+
+winkill.exe: winkill.c
+	gcc -Wall -o winkill.exe winkill.c 
+
+tclwinkill.dll: tclwinkill.c
+	gcc -Wall -shared tclwinkill.c -ltclstub84 -o tclwinkill.dll
+
+gcccopy:
+	test -d "$(prefix)/bin" || mkdir -p "$(prefix)/bin"
+	test -d "$(prefix)/include" || mkdir -p "$(prefix)/include"
+	test -d "$(prefix)/include/sys" || mkdir -p "$(prefix)/include/sys"
+	test -d "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)" \
+		|| mkdir -p "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)"
+	test -d "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include" \
+		|| mkdir -p "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include"
+	cp $(GCCPREFIX)/bin/gcc.exe $(prefix)/bin
+	cp $(GCCPREFIX)/bin/mingwm10.dll $(prefix)/bin
+	cp $(GCCPREFIX)/bin/tclpip84.dll $(prefix)/bin
+	cp $(GCCPREFIX)/include/stdio.h $(prefix)/include
+	cp $(GCCPREFIX)/include/stdlib.h $(prefix)/include
+	cp $(GCCPREFIX)/include/varargs.h $(prefix)/include
+	cp $(GCCPREFIX)/include/setjmp.h $(prefix)/include
+	cp $(GCCPREFIX)/include/stddef.h $(prefix)/include
+	cp $(GCCPREFIX)/include/_mingw.h $(prefix)/include
+	cp $(GCCPREFIX)/include/math.h $(prefix)/include
+	cp $(GCCPREFIX)/include/unistd.h $(prefix)/include
+	cp $(GCCPREFIX)/include/io.h $(prefix)/include
+	cp $(GCCPREFIX)/include/process.h $(prefix)/include
+	cp $(GCCPREFIX)/include/getopt.h $(prefix)/include
+	cp $(GCCPREFIX)/include/stdint.h $(prefix)/include
+	cp $(GCCPREFIX)/include/sys/*.h $(prefix)/include/sys
+	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/cc1.exe \
+		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
+	cp $(GCCPREFIX)/bin/as.exe \
+		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
+	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/specs  \
+		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
+	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/include/*.h  \
+		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include
+
+# Install the gnuplot binary files in bin
+gnuplot: 
+	mkdir -p $(prefix)/bin/share/PostScript
+	cp $(GNUPLOTDIR)/bin/wgnuplot.exe $(prefix)/bin
+	cp $(GNUPLOTDIR)/bin/wgnuplot.hlp $(prefix)/bin
+	cp $(GNUPLOTDIR)/bin/wgnuplot.mnu $(prefix)/bin
+	cp $(GNUPLOTDIR)/bin/share/PostScript/prologue.ps $(prefix)/bin/share/PostScript
+
+# Install wxMaxima
+wxmaxima:
+	cp -r $(WXMAXIMADIR) $(prefix)/wxMaxima
+
+# Create CHM files
+chm:
+	mkdir -p $(prefix)/share/maxima/@VERSION@/doc/chm/figures
+	cp ../../../doc/info/*.html $(prefix)/share/maxima/@VERSION@/doc/chm
+	cp ../../../doc/info/maxima.hhp $(prefix)/share/maxima/@VERSION@/doc/chm
+	cp ../../../doc/info/contents.hhc $(prefix)/share/maxima/@VERSION@/doc/chm
+	cp ../../../doc/info/index.hhk $(prefix)/share/maxima/@VERSION@/doc/chm
+	cp ../../../doc/info/figures/* $(prefix)/share/maxima/@VERSION@/doc/chm/figures
+	( cd $(prefix)/share/maxima/@VERSION@/doc/chm ; hhc maxima.hhp ; echo en )
+	list='$(CHMLANGS)' ; \
+	for chml in $$list; do \
+	    mkdir -p $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml/figures ; \
+	    cp ../../../doc/info/$$chml/*.html $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml ; \
+	    for hfile in $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml/*.html ; do \
+		sed -e 's|../figures|figures|g' < $$hfile > foo ; mv -f foo $$hfile ; \
+	    done ; \
+	    cp ../../../doc/info/$$chml/maxima.hhp $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml ; \
+	    cp ../../../doc/info/$$chml/contents.hhc $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml ; \
+	    cp ../../../doc/info/$$chml/index.hhk $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml ; \
+	    cp ../../../doc/info/figures/* $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml/figures ; \
+	    ( cd $(prefix)/share/maxima/@VERSION@/doc/chm/$$chml ; hhc maxima.hhp ; echo $$chml ) ; \
+	done
+
+
+# Some little hacks for Windows
+fixes: fix_maxima_bat
+
+# Installed maxima.bat must have DOS line termination on win9x
+fix_maxima_bat: 
+		unix2dos "@prefix@/bin/maxima.bat"
+		rm -f "@prefix@/bin/foo.bat" 2> /dev/null
+		sed -e 's|GCCVER|$(GCCVER)|g' < "@prefix@/bin/maxima.bat" > "@prefix@/bin/foo.bat"
+		mv -f "@prefix@/bin/foo.bat" "@prefix@/bin/maxima.bat"
+
+install: xmaxima.exe winkill.exe tclwinkill.dll gnuplot wxmaxima chm fixes
+	cp xmaxima.exe winkill.exe tclwinkill.dll "@prefix@/bin"
+	cp readme*.txt "@prefix@"

@@ -1,0 +1,65 @@
+<html>
+<head><title>PSEUDO-TERMP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PSEUDO-TERMP</h2>a predicate for recognizing term-like s-expressions
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(pseudo-termp '(car (cons x 'nil)))      ; has value t
+(pseudo-termp '(car x y z))              ; also has value t!
+(pseudo-termp '(delta (h x)))            ; has value t
+(pseudo-termp '(delta (h x) . 7))        ; has value nil (not a true-listp)
+(pseudo-termp '((lambda (x) (car x)) b)) ; has value t
+(pseudo-termp '(if x y 123))             ; has value nil (123 is not quoted)
+(pseudo-termp '(if x y '123))            ; has value t
+</pre>
+
+If <code>x</code> is the quotation of a term, then <code>(pseudo-termp x)</code> is <code>t</code>.
+However, if <code>x</code> is not the quotation of a term it is not necessarily
+the case that <code>(pseudo-termp x)</code> is <code>nil</code>.
+<p>
+See <a href="TERM.html">term</a> for a discussion of the various meanings of the word
+``term'' in ACL2.  In its most strict sense, a term is either a
+legal variable symbol, a quoted constant, or the application of an
+<code>n</code>-ary function symbol or closed <code>lambda</code>-expression to <code>n</code> terms.  By
+``legal variable symbol'' we exclude constant symbols, such as <code>t</code>,
+<code>nil</code>, and <code>*ts-rational*</code>.  By ``quoted constants'' we include <code>'t</code> (aka
+<code>(quote t)</code>), <code>'nil</code>, <code>'31</code>, etc., and exclude constant names such as <code>t</code>,
+<code>nil</code> and <code>*ts-rational*</code>, unquoted constants such as <code>31</code> or <code>1/2</code>, and
+ill-formed <code>quote</code> expressions such as <code>(quote 3 4)</code>.  By ``closed
+lambda expression'' we exclude expressions, such as
+<code>(lambda (x) (cons x y))</code>, containing free variables in their bodies.
+Terms typed by the user are translated into strict terms for
+internal use in ACL2.<p>
+
+The predicate <code>termp</code> checks this strict sense of ``term'' with
+respect to a given ACL2 logical world; See <a href="WORLD.html">world</a>.  Many ACL2
+functions, such as the rewriter, require certain of their arguments
+to satisfy <code>termp</code>.  However, as of this writing, <code>termp</code> is in <code>:</code><code><a href="PROGRAM.html">program</a></code>
+mode and thus cannot be used effectively in conjectures to be
+proved.  Furthermore, if regarded simply from the perspective of an
+effective <a href="GUARD.html">guard</a> for a term-processing function, <code>termp</code> checks many
+irrelevant things.  (Does it really matter that the variable symbols
+encountered never start and end with an asterisk?)  For these
+reasons, we have introduced the notion of a ``pseudo-term'' and
+embodied it in the predicate <code>pseudo-termp</code>, which is easier to
+check, does not require the logical <a href="WORLD.html">world</a> as input, has <code>:</code><code><a href="LOGIC.html">logic</a></code>
+mode, and is often perfectly suitable as a <a href="GUARD.html">guard</a> on term-processing
+functions.<p>
+
+A <code>pseudo-termp</code> is either a symbol, a true list of length 2
+beginning with the word <code>quote</code>, the application of an <code>n</code>-ary
+pseudo-<code>lambda</code> expression to a true list of <code>n</code> pseudo-terms, or
+the application of a symbol to a true list of <code>n</code> <code>pseudo-termp</code>s.
+By an ``<code>n</code>-ary pseudo-<code>lambda</code> expression'' we mean an expression
+of the form <code>(lambda (v1 ... vn) pterm)</code>, where the <code>vi</code> are
+symbols (but not necessarily distinct legal variable symbols) and
+<code>pterm</code> is a <code>pseudo-termp</code>.<p>
+
+Metafunctions may use <code>pseudo-termp</code> as a <a href="GUARD.html">guard</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

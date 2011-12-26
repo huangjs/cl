@@ -1,0 +1,1303 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-1,  Next: STOBJ-EXAMPLE-1-DEFUNS,  Prev: RESIZE-LIST,  Up: STOBJ
+
+STOBJ-EXAMPLE-1    an example of the use of single-threaded objects
+
+Suppose we want to sweep a tree and (1) count the number of interior
+nodes, (2) count the number of tips and (3) keep a record of every tip
+we encounter that is an integer.  We could use a single-threaded object
+as our "accumulator".  Such an object would have three fields, one
+holding the number of nodes seen so far, one holding the number of
+tips, and one holding all the integer tips seen.
+
+The following event declares counters to be a single-threaded object.
+
+     (defstobj counters
+       (NodeCnt     :type integer :initially 0)
+       (TipCnt      :type integer :initially 0)
+       (IntTipsSeen :type t       :initially nil))
+
+It has three fields, NodeCnt, TipCnt, and IntTipsSeen.  (As always in
+ACL2, capitalization is irrelevant in simple symbol names, so the first
+name could be written nodecnt or NODECNT, etc.) Those are the name of
+the accessor functions for the object.  The corresponding update
+functions are named update-NodeCnt, update-TipCnt and
+update-IntTipsSeen.
+
+If you do not like the default function names chosen above, there is a
+feature in the defstobj event that allows you to specify other names.
+
+If you want to see the ACL2 definitions of all the functions defined by
+this event, look at stobj-example-1-defuns.
+
+If, after this event, we evaluate the top-level "global variable"
+counters in the ACL2 read-eval-print loop we get:
+
+     ACL2 !>counters
+     <counters>
+
+Note that the value printed is "<counters>".  Actually, the value of
+counters in the logic is (0 0 NIL).  But ACL2 always prints
+single-threaded objects in this non-informative way because they are
+usually so big that to do otherwise would be unpleasant.
+
+Had you tried to evaluate the "global variable" counters before
+declaring it a single-threaded object, ACL2 would have complained that
+it does not support global variables.  So a lesson here is that once
+you have declared a new single-threaded object your top-level forms can
+reference it.  In versions of ACL2 prior to Version  2.4 the only
+variable enjoying this status was STATE.  single-threaded objects are a
+straightforward generalization of the long-implemented von Neumann
+state feature of ACL2.
+
+We can access the fields of counters as with:
+
+     ACL2 !>(NodeCnt counters)
+     0
+     ACL2 !>(IntTipsSeen counters)
+     NIL
+
+and we can set the fields of counters as with:
+
+     ACL2 !>(update-NodeCnt 3 counters)
+     <counters>
+     ACL2 !>(NodeCnt counters)
+     3
+
+Observe that when we evaluate an expression that returns a counter
+object, that object becomes the "current value" of counters.
+
+Here is a function that "converts" the counters object to its
+"ordinary" representation:
+
+     (defun show-counters (counters)
+       (declare (xargs :stobjs (counters)))
+       (list (NodeCnt counters)
+             (TipCnt counters)
+             (IntTipsSeen counters)))
+
+Observe that we _must_ declare, at the top of the defun, that we mean
+to use the formal parameter counters as a single-threaded object!  If
+we did not make this declaration, the body of show-counters would be
+processed as though counters were an ordinary object.  An error would
+be caused because the accessors used above cannot be applied to
+anything but the single-threaded object counters.  If you want to know
+why we insist on this declaration, see *note DECLARE-STOBJS::.
+
+When show-counters is admitted, the following message is printed:
+
+     Since SHOW-COUNTERS is non-recursive, its admission is trivial.  We
+     observe that the type of SHOW-COUNTERS is described by the theorem
+     (AND (CONSP (SHOW-COUNTERS COUNTERS))
+          (TRUE-LISTP (SHOW-COUNTERS COUNTERS))).
+     We used primitive type reasoning.
+     
+     (SHOW-COUNTERS COUNTERS) => *.
+     
+     The guard conjecture for SHOW-COUNTERS is trivial to prove.
+     SHOW-COUNTERS is compliant with Common Lisp.
+
+The line above containing the "=>" is called the "signature" of
+show-counters; it conveys the information that the first argument is
+the single-threaded object counters and the only result is an ordinary
+object.  Here is an example of another signature:
+
+     (PROCESSOR * * COUNTERS) => (MV * COUNTERS)
+
+which indicates that the function PROCESSOR (which we haven't shown
+you) takes three arguments, the third of which is the COUNTERS stobj,
+and returns two results, the second of which is the modified COUNTERS.
+
+Returning to the admission of show-counters above, the last sentence
+printed indicates that the guard conjectures for the function were
+proved.  When some argument of a function is declared to be a
+single-threaded object via the xargs :stobj, we automatically add
+(conjoin) to the guard the condition that the argument satisfy the
+recognizer for that single-threaded object.  In the case of
+show-counters the guard is (countersp counters).
+
+Here is an example of show-counters being called:
+
+     ACL2 !>(show-counters counters)
+     (3 0 NIL)
+
+This is what we would see had we set the NodeCnt field of the initial
+value of counters to 3, as we did earlier in this example.
+
+We next wish to define a function to reset the counters object.  We
+could define it this way:
+
+     (defun reset-counters (counters)
+       (declare (xargs :stobjs (counters)))
+       (let ((counters (update-NodeCnt 0 counters)))
+         (let ((counters (update-TipCnt 0 counters)))
+           (update-IntTipsSeen nil counters))))
+
+which "successively" sets the NodeCnt field to 0, then the TipCnt field
+to 0, and then the IntTipsSeen field to nil and returns the resulting
+object.
+
+However, the nest of let expressions is tedious and we use this
+definition instead.  This definition exploits a macro, here named "seq"
+(for "sequentially") which evaluates each of the forms given, binding
+their results successively to the stobj name given.
+
+     (defun reset-counters (counters)
+       (declare (xargs :stobjs (counters)))
+       (seq counters
+            (update-NodeCnt 0 counters)
+            (update-TipCnt 0 counters)
+            (update-IntTipsSeen nil counters)))
+
+This definition is syntactically identical to the one above, after macro
+expansion.  Our definition of seq is shown below and is not part of
+native ACL2.
+
+     (defmacro seq (stobj &rest rst)
+       (cond ((endp rst) stobj)
+             ((endp (cdr rst)) (car rst))
+             (t `(let ((,stobj ,(car rst)))
+                  (seq ,stobj ,@(cdr rst))))))
+
+The signature printed for reset-counters is
+
+     (RESET-COUNTERS COUNTERS) => COUNTERS.
+
+Here is an example.
+
+     ACL2 !>(show-counters counters)
+     (3 0 NIL)
+     ACL2 !>(reset-counters counters)
+     <counters>
+     ACL2 !>(show-counters counters)
+     (0 0 NIL)
+
+Here finally is a function that uses counters as a single-threaded
+accumulator to collect the desired information about the tree x.
+
+     (defun sweep-tree (x counters)
+       (declare (xargs :stobjs (counters)))
+       (cond ((atom x)
+              (seq counters
+                   (update-TipCnt (+ 1 (TipCnt counters)) counters)
+                   (if (integerp x)
+                       (update-IntTipsSeen (cons x (IntTipsSeen counters))
+                                       counters)
+                     counters)))
+             (t (seq counters
+                     (update-NodeCnt (+ 1 (NodeCnt counters)) counters)
+                     (sweep-tree (car x) counters)
+                     (sweep-tree (cdr x) counters)))))
+
+We can paraphrase this definition as follows.  If x is an atom, then
+increment the TipCnt field of counters and _then_, if x is an integer,
+add x to the IntTipsSeen field, and return counters.  On the other
+hand, if x is not an atom, then increment the NodeCnt field of
+counters, and _then_ sweep the car of x and _then_ sweep the cdr of x
+and return the result.
+
+Here is an example of its execution.  We have displayed the input tree
+in full dot notation so that the number of interior nodes is just the
+number of dots.
+
+     ACL2 !>(sweep-tree '((((a . 1) . (2 . b)) . 3)
+                          . (4 . (5 . d)))
+                        counters)
+     <counters>
+     ACL2 !>(show-counters counters)
+     (7 8 (5 4 3 2 1))
+     ACL2 !>(reset-counters counters)
+     <counters>
+     ACL2 !>(show-counters counters)
+     (0 0 NIL)
+
+The counters object has two integer fields and a field whose type is
+unrestricted.  single-threaded objects support other types of fields,
+such as arrays.  We deal with that in the stobj-example-2.  But we
+recommend that you first consider the implementation issues for the
+counters example (in stobj-example-1-implementation) and then consider
+the proof issues (in stobj-example-1-proofs).
+
+To continue the stobj tour, see *note STOBJ-EXAMPLE-2::.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-1-DEFUNS,  Next: STOBJ-EXAMPLE-1-IMPLEMENTATION,  Prev: STOBJ-EXAMPLE-1,  Up: STOBJ
+
+STOBJ-EXAMPLE-1-DEFUNS    the defuns created by the counters stobj
+
+Consider the event shown in stobj-example-1:
+
+     (defstobj counters
+       (NodeCnt     :type integer :initially 0)
+       (TipCnt      :type integer :initially 0)
+       (IntTipsSeen :type t       :initially nil))
+
+Here is a complete list of the defuns added by the event.
+
+The careful reader will note that the counters argument below is _not_
+declared with the :stobjs xarg even though we insist that the argument
+be a stobj in calls of these functions.  This "mystery" is explained
+below.
+
+     (defun NodeCntp (x)                 ;;; Recognizer for 1st field
+       (declare (xargs :guard t :verify-guards t))
+       (integerp x))
+     
+     (defun TipCntp (x)                  ;;; Recognizer for 2nd field
+       (declare (xargs :guard t :verify-guards t))
+       (integerp x))
+     
+     (defun IntTipsSeenp (x)             ;;; Recognizer for 3rd field
+       (declare (xargs :guard t :verify-guards t) (ignore x))
+       t)
+     
+     (defun countersp (counters)         ;;; Recognizer for object
+       (declare (xargs :guard t :verify-guards t))
+       (and (true-listp counters)
+            (= (length counters) 3)
+            (NodeCntp (nth 0 counters))
+            (TipCntp (nth 1 counters))
+            (IntTipsSeenp (nth 2 counters))
+            t))
+     
+     (defun create-counters ()           ;;; Creator for object
+       (declare (xargs :guard t :verify-guards t))
+       (list '0 '0 'nil))
+     
+     (defun NodeCnt (counters)           ;;; Accessor for 1st field
+       (declare (xargs :guard (countersp counters) :verify-guards t))
+       (nth 0 counters))
+     
+     (defun update-NodeCnt (v counters)  ;;; Updater for 1st field
+       (declare (xargs :guard
+                       (and (integerp v)
+                            (countersp counters))
+                       :verify-guards t))
+       (update-nth 0 v counters))
+     
+     (defun TipCnt (counters)            ;;; Accessor for 2nd field
+       (declare (xargs :guard (countersp counters) :verify-guards t))
+       (nth 1 counters))
+     
+     (defun update-TipCnt (v counters)   ;;; Updater for 2nd field
+       (declare (xargs :guard
+                       (and (integerp v)
+                            (countersp counters))
+                       :verify-guards t))
+       (update-nth 1 v counters))
+     
+     (defun IntTipsSeen (counters)       ;;; Accessor for 3rd field
+       (declare (xargs :guard (countersp counters) :verify-guards t))
+       (nth 2 counters))
+     
+     (defun update-IntTipsSeen (v counters) ;;; Updater for 3rd field
+       (declare (xargs :guard (countersp counters) :verify-guards t))
+       (update-nth 2 v counters))
+
+Observe that there is a recognizer for each of the three fields and
+then a recognizer for the counters object itself.  Then, for each
+field, there is an accessor and an updater.
+
+Observe also that the functions are guarded so that they expect a
+countersp for their counters argument and an appropriate value for the
+new field values.
+
+You can see all of the defuns added by a defstobj event by executing
+the event and then using the :pcb! command on the stobj name.  E.g.,
+
+     ACL2 !>:pcb! counters
+
+will print the defuns above.
+
+We now clear up the "mystery" mentioned above.  Note, for example in
+TipCnt, that the formal counters is used.  From the discussion in
+stobj-example-1 it has been made clear that TipCnt can only be called
+on the counters object.  And yet, in that same discussion it was said
+that an argument is so treated only if it it declared among the :stobjs
+in the definition of the function.  So why doesn't TipCnt include
+something like (declare (xargs :stobjs (counters)))?
+
+The explanation of this mystery is as follows.  At the time TipCnt was
+defined, during the introduction of the counters stobj, the name
+"counters" was not yet a single-threaded object.  The introduction of a
+new single-threaded object occurs in three steps: (1) The new primitive
+recognizers, accessors, and updaters are introduced as "ordinary
+functions," producing their logical axiomatizations.  (2) The
+executable counterparts are defined in raw Lisp to support destructive
+updating.  (3) The new name is declared a single-threaded object to
+ensure that all future use of these primitives respects the
+single-threadedness of the object.  The functions defined as part of
+the introduction of a new single-threaded object are the only functions
+in the system that have undeclared stobj formals other than state.
+
+You may return to stobj-example-1 here.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-1-IMPLEMENTATION,  Next: STOBJ-EXAMPLE-1-PROOFS,  Prev: STOBJ-EXAMPLE-1-DEFUNS,  Up: STOBJ
+
+STOBJ-EXAMPLE-1-IMPLEMENTATION    the implementation of the counters stobj
+
+the event
+
+     (defstobj counters
+       (NodeCnt     :type integer :initially 0)
+       (TipCnt      :type integer :initially 0)
+       (IntTipsSeen :type t       :initially nil))
+
+discussed in stobj-example-1, creates a Common Lisp object to represent
+the current value of counters.  That object is created by evaluating
+either of the following "raw" (non-ACL2) Common Lisp forms:
+
+     (create-counters)
+     
+     (vector (make-array 1 :element-type 'integer
+                           :initial-element '0)
+             (make-array 1 :element-type 'integer
+                           :initial-element '0)
+             'nil)
+
+and the value is stored in the Common Lisp global variable named
+*the-live-counters*.
+
+Thus, the counters object is an array of length three.  The first two
+elements are arrays of size 1 and are used to hold the NodeCnt and
+TipCnt fields.  The third element is the IntTipsSeen field.  The first
+two fields are represented by arrays so that we can implement the
+integer type specification efficiently.  Generally, integers are
+"boxed" in some Common Lisp implementations, for example, GCL.
+Creating a new integer requires creating a new box to put it in.  But
+in some lisps, including GCL, the integers inside arrays of integers
+are not boxed.
+
+The function NodeCnt is defined in raw Lisp as:
+
+     (defun NodeCnt (counters)
+       (the integer
+            (aref (the (simple-array integer (1))
+                       (svref counters 0))
+                  0)))
+
+Observe that the form (svref counters 0) is evaluated to get an array
+of size 1, which is followed by a call of aref to access the 0th
+element of that array.
+
+The function update-NodeCnt is defined in raw Lisp as:
+
+     (defun update-NodeCnt (v counters)
+       (declare (type integer v))
+       (progn
+        (setf (aref (the (simple-array integer (1))
+                         (svref counters 0))
+                    0)
+              (the integer v))
+        counters))
+
+Note that when this function is called, it does not create a new vector
+of length three, but "smashes" the existing one.
+
+One way to see all the raw Lisp functions defined by a given defstobj is
+to evaluate the defstobj event and then evaluate, in the ACL2 loop, the
+expression (nth 4 (global-val 'cltl-command (w state))).  Those
+functions that contain (DECLARE (STOBJ-INLINE-FN T)) will generate
+defabbrev forms because the :inline keyword of defstobj was supplied the
+value t.  The rest will generate defuns.
+
+We now recommend that you look at stobj-example-1-proofs.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-1-PROOFS,  Next: STOBJ-EXAMPLE-2,  Prev: STOBJ-EXAMPLE-1-IMPLEMENTATION,  Up: STOBJ
+
+STOBJ-EXAMPLE-1-PROOFS    some proofs involving the counters stobj
+
+Consider again the event
+
+     (defstobj counters
+       (NodeCnt     :type integer :initially 0)
+       (TipCnt      :type integer :initially 0)
+       (IntTipsSeen :type t       :initially nil))
+
+discussed in stobj-example-1, followed by the definition
+
+     (defun reset-counters (counters)
+       (declare (xargs :stobjs (counters)))
+       (seq counters
+            (update-NodeCnt 0 counters)
+            (update-TipCnt 0 counters)
+            (update-IntTipsSeen nil counters)))
+
+which, because of the seq macro in stobj-example-1, is just syntactic
+sugar for
+
+     (defun reset-counters (counters)
+       (declare (xargs :stobjs (counters)))
+       (let ((counters (update-NodeCnt 0 counters)))
+         (let ((counters (update-TipCnt 0 counters)))
+           (update-IntTipsSeen nil counters)))).
+
+Here is a simple theorem about reset-counters.
+
+     (defthm reset-counters-is-constant
+       (implies (countersp x)
+                (equal (reset-counters x)
+                       '(0 0 nil))))
+
+Before we talk about how to prove this theorem, note that the theorem
+is unusual in two respects.
+
+First, it calls reset-counters on an argument other than the variable
+counters!  That is allowed in theorems; logically speaking, the stobj
+functions are indistinguishable from ordinary functions.  Their use is
+syntactically restricted only in defuns, which might be compiled and
+run in raw Lisp.  Those restrictions allow us to implement stobj
+modification destructively.  But logically speaking, reset-counters and
+other stobj "modifying" functions just create new objects,
+constructively.
+
+Second, the theorem above explicitly provides the hypothesis that
+reset-counters is being applied to an object satisfying countersp.
+Such a hypothesis is not always required: reset-counters is total and
+will do something no matter what x is.  But in this particular case,
+the result is not '(0 0 nil) unless x is, at least, a true-list of
+length three.
+
+To make a long story short, to prove theorems about stobj functions you
+behave in exactly the way you would to prove the same theorems about the
+same functions defined without the stobj features.
+
+How can we prove the above theorem?  Unfolding the definition of
+reset-counters shows that (reset-counters x) is equal to
+
+     (update-IntTipsSeen nil
+       (update-TipCnt 0
+         (update-NodeCnt 0 x)))
+
+which in turn is
+
+     (update-nth 2 nil
+      (update-nth 1 0
+       (update-nth 0 0 x))).
+
+Opening up the definition of update-nth reduces this to
+
+     (list* 0 0 nil (cdddr x)).
+
+This is clearly equal to '(0 0 nil), provided we know that (cdddr x) is
+nil.
+
+Unfortunately, that last fact requires a lemma.  The most specific
+lemma we could provide is
+
+     (defthm special-lemma-for-counters
+       (implies (countersp x)
+                (equal (cdddr x) nil)))
+
+but if you try to prove that lemma you will find that it requires some
+reasoning about len and true-listp.  Furthermore, the special lemma
+above is of interest only for counters.
+
+The following lemma about len is the one we prefer.
+
+     (defthm equal-len-n
+       (implies (syntaxp (quotep n))
+                (equal (equal (len x) n)
+                       (if (integerp n)
+                           (if (< n 0)
+                               nil
+                             (if (equal n 0)
+                                 (atom x)
+                               (and (consp x)
+                                    (equal (len (cdr x)) (- n 1)))))
+                         nil))))
+
+This lemma will simplify any equality in which a len expression is
+equated to any explicitly given constant _n_, e.g., 3, reducing the
+equation to a conjunction of consp terms about the first _n_ cdrs.
+
+If the above lemma is available then ACL2 immediately proves
+
+     (defthm reset-counters-is-constant
+       (implies (countersp x)
+                (equal (reset-counters x)
+                       '(0 0 nil))))
+
+The point is presumably well made: proving theorems about
+single-threaded object accessors and updaters is no different than
+proving theorems about other recursively defined functions on lists.
+
+As we have seen, operations on stobjs turn into definitions involving
+nth and update-nth in the logic.  Here are two lemmas that are useful
+for simplifying terms involving nth and update-nth, which are therefore
+useful in reasoning about single-threaded objects.
+
+     (defthm update-nth-update-nth-same
+       (implies (equal (nfix i1) (nfix i2))
+                (equal (update-nth i1 v1 (update-nth i2 v2 l))
+                       (update-nth i1 v1 l))))
+     
+     (defthm update-nth-update-nth-diff
+       (implies (not (equal (nfix i1) (nfix i2)))
+                (equal (update-nth i1 v1 (update-nth i2 v2 l))
+                       (update-nth i2 v2 (update-nth i1 v1 l))))
+       :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
+
+These lemmas are due to Matt Wilding.  See *Note NU-REWRITER:: for a
+discussion of the efficient simplification of terms of the form (nth n
+(update-nth key val lst)), which can be critical in settings involving
+sequential bindings that commonly arise in operations involving stobjs.
+
+We now recommend that you see *note STOBJ-EXAMPLE-2::.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-2,  Next: STOBJ-EXAMPLE-3,  Prev: STOBJ-EXAMPLE-1-PROOFS,  Up: STOBJ
+
+STOBJ-EXAMPLE-2    an example of the use of arrays in single-threaded objects
+
+The following event
+
+     (defstobj ms
+       (pcn  :type integer                  :initially 0)
+       (mem  :type (array integer (100000)) :initially -1)
+       (code :type t                        :initially nil))
+
+introduces a single-threaded object named ms (which stands for "machine
+state").  The object has three fields, a pcn or program counter, a mem
+or memory, and a code field.
+
+The mem field is occupied by an object initially of type (array integer
+(100000)).  Logically speaking, this is a list of length 100000, each
+element of which is an integer.  But in the underlying implementation
+of the ms object, this field is occupied by a raw Lisp array, initially
+of size 100000.
+
+You might expect the above defstobj to define the accessor function mem
+and the updater update-mem.  _That does not happen!_.
+
+The above event defines the accessor function memi and the updater
+update-memi.  These functions do not access/update the mem field of the
+ms object; they access/update the individual elements of the array in
+that field.
+
+In particular, the logical definitions of the two functions are:
+
+     (defun memi (i ms)
+       (declare (xargs :guard
+                       (and (msp ms)
+                            (integerp i)
+                            (<= 0 i)
+                            (< i (mem-length ms)))))
+       (nth i (nth 1 ms)))
+     
+     (defun update-memi (i v ms)
+       (declare (xargs :guard
+                       (and (msp ms)
+                            (integerp i)
+                            (<= 0 i)
+                            (< i (mem-length ms))
+                            (integerp v))))
+       (update-nth-array 1 i v ms))
+
+For example, to access the 511th (0-based) memory location of the
+current ms you could evaluate:
+
+     ACL2 !>(memi 511 ms)
+     -1
+
+The answer is -1 initially, because that is the above-specified initial
+value of the elements of the mem array.
+
+To set that element you could do
+
+     ACL2 !>(update-memi 511 777 ms)
+     <ms>
+     ACL2 !>(memi 511 ms)
+     777
+
+The raw Lisp implementing these two functions is shown below.
+
+     (defun memi (i ms)
+       (declare (type (integer 0 268435455) i))
+       (the integer
+            (aref (the (simple-array integer (*))
+                       (svref ms 1))
+                  (the (integer 0 268435455) i))))
+     
+     (defun update-memi (i v ms)
+       (declare (type (integer 0 268435455) i)
+                (type integer v))
+       (progn
+        (setf (aref (the (simple-array integer (*))
+                         (svref ms 1))
+                    (the (integer 0 268435455) i))
+              (the integer v))
+        ms))
+
+If you want to see the raw Lisp supporting a defstobj, execute the
+defstobj and then evaluate the ACL2 form (nth 4 (global-val
+'cltl-command (w state))).
+
+To continue the stobj tour, see *note STOBJ-EXAMPLE-3::.
+
+
+File: acl2-doc-emacs.info,  Node: STOBJ-EXAMPLE-3,  Next: WITH-LOCAL-STOBJ,  Prev: STOBJ-EXAMPLE-2,  Up: STOBJ
+
+STOBJ-EXAMPLE-3    another example of a single-threaded object
+
+The event
+
+     (defstobj $s
+       (x :type integer :initially 0)
+       (a :type (array (integer 0 9) (3)) :initially 9 :resizable t))
+
+introduces a stobj named $S.  The stobj has two fields, X and A.  The A
+field is an array.  The X field contains an integer and is initially 0.
+The A field contains a list of integers, each between 0 and 9,
+inclusively.  (Under the hood, this "list" is actually implemented as
+an array.)  Initially, the A field has three elements, each of which is
+9.
+
+This event introduces the following sequence of function definitions:
+
+     (DEFUN XP (X) ...)               ; recognizer for X field
+     (DEFUN AP (X) ...)               ; recognizer of A field
+     (DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
+     (DEFUN CREATE-$S NIL ...)        ; creator for stobj $S
+     (DEFUN X ($S) ...)               ; accessor for X field
+     (DEFUN UPDATE-X (V $S) ...)      ; updater for X field
+     (DEFUN A-LENGTH ($S) ...)        ; length of A field
+     (DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
+     (DEFUN AI (I $S) ...)            ; accessor for A field at index I
+     (DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
+
+Here is the definition of $SP:
+
+     (DEFUN $SP ($S)
+       (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T))
+       (AND (TRUE-LISTP $S)
+            (= (LENGTH $S) 2)
+            (XP (NTH 0 $S))
+            (AP (NTH 1 $S))
+            T))
+
+This reveals that in order to satisfy $SP an object must be a true list
+of length 2 whose first element satisfies XP and whose second satisfies
+AP.  By printing the definition of AP one learns that it requires its
+argument to be a true list, each element of which is an integer between
+0 and 9.
+
+The initial value of stobj $S is given by zero-ary "creator" function
+CREATE-$S.  Creator functions may only be used in limited contexts.
+See *Note WITH-LOCAL-STOBJ::.
+
+Here is the definition of UPDATE-AI, the updater for the A field at
+index I:
+
+     (DEFUN UPDATE-AI (I V $S)
+       (DECLARE (XARGS :GUARD
+                       (AND ($SP $S)
+                            (INTEGERP I)
+                            (<= 0 I)
+                            (< I (A-LENGTH $S))
+                            (AND (INTEGERP V) (<= 0 V) (<= V 9)))
+                       :VERIFY-GUARDS T))
+       (UPDATE-NTH-ARRAY 1 I V $S))
+
+By definition (UPDATE-NTH-ARRAY 1 I V $S) is (UPDATE-NTH 1 (UPDATE-NTH
+I V (NTH 1 $S)) $S).  This may be a little surprising but should be
+perfectly clear.
+
+First, ignore the guard, since it is irrelevant in the logic.  Reading
+from the inside out, (UPDATE-AI I V $S) extracts (NTH 1 $S), which is
+array a of $S.  (Recall that NTH is 0-based.)  The next higher
+expression in the definition above, (UPDATE-NTH I V a), "modifies" a by
+setting its Ith element to V.  Call this a'.  The next higher
+expression, (UPDATE-NTH 1 a' $S), "modifies" $S by setting its 1st
+component to a'.  Call this result $s'.  Then $s' is the result
+returned by UPDATE-AI.
+
+So the first useful observation is that from the perspective of the
+logic, the type "restrictions" on stobjs are irrelevant.  They are
+"enforced" by ACL2's guard mechanism, not by the definitions of the
+updater functions.
+
+As one might also imagine, the accessor functions do not really "care,"
+logically, whether they are applied to well-formed stobjs or not.  For
+example, (AI I $S) is defined to be (NTH I (NTH 1 $S)).
+
+Thus, you will not be able to prove that (AI 2 $S) is an integer.  That
+is,
+
+     (integerp (AI 2 $S))
+
+is not a theorem, because $S may not be well-formed.
+
+Now (integerp (AI 2 $S)) will always evaluate to T in the top-level
+ACL2 command loop, because we insist that the current value of the
+stobj $S always satisfies $SP by enforcing the guards on the updaters,
+independent of whether guard checking is on or off; see *note
+SET-GUARD-CHECKING::.  But in a theorem $S is just another variable,
+implicitly universally quantified.
+
+So (integerp (AI 2 $S)) is not a theorem because it is not true when
+the variable $S is instantiated with, say,
+
+     '(1 (0 1 TWO))
+
+because, logically speaking, (AI 2 '(1 (0 1 TWO))) evaluates to the
+symbol TWO.  That is,
+
+     (equal (AI 2 '(1 (0 1 TWO))) 'TWO)
+
+is true.
+
+However,
+
+     (implies (and ($SP $S) (< 2 (A-LENGTH $S))) (integerp (AI 2 $S)))
+
+is a theorem.  To prove it, you will have to prove a lemma about AP.
+The following will do:
+
+     (defthm ap-nth
+       (implies (and (AP x)
+                     (integerp i)
+                     (<= 0 i)
+                     (< i (len x)))
+                (integerp (nth i x)))).
+
+Similarly,
+
+     (implies (and (integerp i)
+                   (<= 0 i)
+                   (< i (A-LENGTH $S))
+                   (integerp v)
+                   (<= 0 v)
+                   (<= v 9))
+              ($SP (UPDATE-AI i v $S)))
+
+is not a theorem until you add the additional hypothesis ($SP $S).  To
+prove the resulting theorem, you will need a lemma such as the
+following.
+
+     (defthm ap-update-nth
+       (implies (and (AP a)
+                     (integerp v)
+                     (<= 0 v)
+                     (<= v 9)
+                     (integerp i)
+                     (<= 0 i)
+                     (< i (len a)))
+                (AP (update-nth i v a))))
+
+The moral here is that from the logical perspective, you must provide
+the hypotheses that, as a programmer, you think are implicit on the
+structure of your stobjs, and you must prove their invariance.  This is
+a good area for further support, perhaps in the form of a library of
+macros.
+
+_Resizing Array Fields_
+
+Recall the specification of the array field, A for the stobj $S
+introduced above:
+
+     (a :type (array (integer 0 9) (3)) :initially 9 :resizable t)
+
+Logically, this field is a list, initially of length 3.  Under the
+hood, this field is implemented using a Common Lisp array with 3
+elements.  In some applications, one may wish to lengthen an array
+field, or even (to reclaim space) to shrink an array field.  The
+defstobj event provides functions to access the current length of an
+array field and to change the array field, with default names obtained
+by suffixing the field name with "LENGTH-" or prefixing it with
+"RESIZE-," respectively.  The following log shows the uses of these
+fields in the above example.
+
+     ACL2 !>(A-LENGTH $S)
+     3
+     ACL2 !>(RESIZE-A 10 $S) ; change length of A to 10
+     <$s>
+     ACL2 !>(A-LENGTH $S)
+     10
+     ACL2 !>(AI 7 $S)        ; new elements get value from :initially
+     9
+     ACL2 !>(RESIZE-A 2 $S)  ; truncate A down to first 2 elements
+     <$s>
+     ACL2 !>(A-LENGTH $S)
+     2
+     ACL2 !>(AI 7 $S)        ; error:  access past array bound
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol AI, which
+     is (AND ($SP $S) (INTEGERP I) (<= 0 I) (< I (A-LENGTH $S))), is violated
+     by the arguments in the call (AI 7 $S).
+     
+     ACL2 !>
+
+Here are the definitions of the relevant functions for the above
+example; also see *note RESIZE-LIST::.
+
+     (DEFUN A-LENGTH ($S)
+       (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
+       (LEN (NTH 1 $S)))
+     
+     (DEFUN RESIZE-A (K $S)
+       (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
+       (UPDATE-NTH 1
+                   (RESIZE-LIST (NTH 1 $S) K 9)
+                   $S))
+
+It is important to note that the implementation of array resizing in
+ACL2 involves copying the entire array into a newly allocated space and
+thus can be quite costly if performed often.  This approach was chosen
+in order to make array access and update as efficient as possible, with
+the suspicion that for most applications, array access and update are
+considerably more frequent than resizing (especially if the programmer
+is aware of the relative costs beforehand).
+
+It should also be noted that computations of lengths of stobj array
+fields should be fast (constant-time) in all or most Common Lisp
+implementations.
+
+Finally, if :resizable t is not supplied as shown above, then an
+attempt to resize the array will result in an error.  If you do not
+intend to resize the array, it is better to omit the :resizable option
+(or to supply :resizable nil), since then the length function will be
+defined to return a constant, namely the initial length, which can
+simplify guard proofs (compare with the definition of A-LENGTH above).
+
+This completes the tour through the documentation of stobjs.  However,
+you may now wish to read the documentation for the event that
+introduces a new single-threaded object; see *note DEFSTOBJ::.
+
+
+File: acl2-doc-emacs.info,  Node: WITH-LOCAL-STOBJ,  Prev: STOBJ-EXAMPLE-3,  Up: STOBJ
+
+WITH-LOCAL-STOBJ    locally bind a single-threaded object
+
+See *Note STOBJ:: for an introduction to single-threaded objects.
+
+     Example Form:
+     (with-local-stobj
+      st
+      (mv-let (result st)
+              (compute-with-st x st)
+              result))
+
+With-local-stobj can be thought of as a macro, where the example form
+above expands as follows.
+
+     (mv-let (result st)
+             (let ((st (create-st)))
+               (compute-with-st x st))
+             (declare (ignore st))
+             result)
+
+However, ACL2 expects you to use with-local-stobj, not its expansion.
+More precisely, stobj creator functions are not allowed except
+(implicitly) via with-local-stobj and in logic-only situations (like
+theorems and hints).  Moreover, neither with-local-stobj nor its
+expansions are legal when typed directly at the top-level loop.
+
+     General Forms:
+     (with-local-stobj stobj-name mv-let-form)
+     (with-local-stobj stobj-name mv-let-form creator-name)
+
+where stobj-name is the name of a stobj other than state, mv-let-form
+is a call of mv-let, and if creator-name is supplied then it should be
+the  name of the creator function for stobj-name; see *note DEFSTOBJ::.
+For the example form above, its expansion would use creator-name, if
+supplied, in place of create-st.
+
+With-local-stobj can be useful when a stobj is used to memoize
+intermediate results during a computation, yet it is desired not to
+make the stobj a formal parameter for the function and its callers.
+
+ACL2 can reason about these "local stobjs," and in particular about
+stobj creator functions.  For technical reasons, ACL2 will not allow
+you to enable the :EXECUTABLE-COUNTERPART rune of a stobj creator
+function.
+
+Finally, here is a small example concocted ino rder to illustrate that
+with-local-stobj calls can be nested.
+
+     (defstobj st fld1)
+     
+     (defun foo ()
+       (with-local-stobj
+        st ; Let us call this the ``outer binding of st''.
+        (mv-let (val10 val20 st)
+          (let ((st (update-fld1 10 st)))
+            ;; At this point the outer binding of st has fld1 = 10.
+            (let ((result (with-local-stobj
+                           st ; Let us call this the ``inner binding of st''.
+                           (mv-let (val st)
+                             (let ((st (update-fld1 20 st)))
+                               ;; Now fld1 = 20 for the inner binding of st.
+                               (mv (fld1 st) st))
+                             val))))
+              ;; So result has been bound to 20 above, but here we are once again
+              ;; looking at the outer binding of st, where fld1 is still 10.
+              (mv (fld1 st) result st)))
+          (mv val10 val20))))
+     
+     (thm (equal (foo) (mv 10 20))) ; succeeds
+
+
+File: acl2-doc-emacs.info,  Node: THEORIES,  Next: TRACE,  Prev: STOBJ,  Up: Top
+
+THEORIES    sets of runes to enable/disable in concert
+
+     Example: '((:definition app)
+                (:executable-counterpart app)
+                rv
+                (rv)
+                assoc-of-app)
+
+See:
+
+* Menu:
+
+* ACTIVE-RUNEP:: check that a rune exists and is enabled
+
+* CURRENT-THEORY:: currently enabled rules as of logical name
+
+* DISABLE:: deletes names from current theory
+
+* E/D:: enable/disable rules
+
+* ENABLE:: adds names to current theory
+
+* EXECUTABLE-COUNTERPART-THEORY:: executable counterpart rules as of logical name
+
+* FUNCTION-THEORY:: function symbol rules as of logical name
+
+* GROUND-ZERO:: enabled rules in the startup theory
+
+* INCOMPATIBLE:: declaring that two rules should not both be enabled
+
+* INTERSECTION-THEORIES:: intersect two theories
+
+* MINIMAL-THEORY:: a minimal theory to enable
+
+* RULE-NAMES:: How rules are named.
+
+* RUNE:: a rule name
+
+* SET-DIFFERENCE-THEORIES:: difference of two theories
+
+* THEORY:: retrieve named theory
+
+* THEORY-FUNCTIONS:: functions for obtaining or producing theories
+
+* UNION-THEORIES:: union two theories
+
+* UNIVERSAL-THEORY:: all rules as of logical name
+
+
+Related topics other than immediate subtopics:
+* DEFTHEORY:: define a theory (to enable or disable a set of rules)
+
+A theory is a list of "runic designators" as described below.  Each
+runic designator denotes a set of "runes" (see *note RUNE::) and by
+unioning together the runes denoted by each member of a theory we
+define the set of runes corresponding to a theory.  Theories are used
+to control which rules are "enabled," i.e., available for automatic
+application by the theorem prover.  There is always a "current" theory.
+A rule is enabled precisely if its rune is an element of the set of
+runes corresponding to the current theory.  At the top-level, the
+current theory is the theory selected by the most recent in-theory
+event, extended with the rule names introduced since then.  Inside the
+theorem prover, the :in-theory hint (see *note HINTS::) can be used to
+select a particular theory as current during the proof attempt for a
+particular goal.
+
+Theories are generally constructed by "theory expressions."  Formally,
+a theory expression is any term, containing at most the single free
+variable world, that when evaluated with world bound to the current
+ACL2 world (see *note WORLD::) produces a theory.  ACL2 provides
+various functions for the convenient construction and manipulation of
+theories.  These are called "theory functions" (see *note
+THEORY-FUNCTIONS::).  For example, the theory function union-theories
+takes two theories and produces their union.  The theory function
+universal-theory returns the theory containing all known rule names as
+of the introduction of a given logical name.  But a theory expression
+can contain constants, e.g.,
+
+     '(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+
+and user-defined functions.  The only important criterion is that a
+theory expression mention no variable freely except world and evaluate
+to a theory.
+
+More often than not, theory expressions typed by the user do not
+mention the variable world.  This is because user-typed theory
+expressions are generally composed of applications of ACL2's theory
+functions.  These "functions" are actually macros that expand into
+terms in which world is used freely and appropriately.  Thus, the
+technical definition of "theory expression" should not mislead you into
+thinking that interestng theory expressions must mention world; they
+probably do and you just didn't know it!
+
+One aspect of this arrangement is that theory expressions cannot
+generally be evaluated at the top-level of ACL2, because world is not
+bound.  To see the value of a theory expression, expr, at the
+top-level, type
+
+     ACL2 !>(LET ((WORLD (W STATE))) expr).
+
+However, because the built-in theories are quite long, you may be sorry
+you printed the value of a theory expression!
+
+A theory is a true list of runic designators and to each theory there
+corresponds a set of runes, obtained by unioning together the sets of
+runes denoted by each runic designator.  For example, the theory
+constant
+
+        '(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+
+corresponds to the set of runes
+
+        {(:definition assoc)
+         (:induction assoc)
+         (:executable-counterpart assoc)
+         (:elim car-cdr-elim)
+         (:rewrite car-cons)} .
+
+Observe that the theory contains four elements but its runic
+correspondent contains five.  That is because some designators denote
+sets of several runes.  If the above theory were selected as current
+then the five rules named in its runic counterpart would be enabled and
+all other rules would be disabled.
+
+We now precisely define the runic designators and the set of runes
+denoted by each.
+
+     o A rune is a runic designator and denotes the singleton set
+     containing that rune.
+
+     o If symb is a function symbol introduced with a defun (or defuns)
+     event, then symb is a runic designator and denotes the set
+     containing the runes (:definition symb) and (:induction symb),
+     omitting the latter if no such induction rule exists (presumably
+     because the function's definition is not singly recursive).
+
+     o If symb is a function symbol introduced with a defun (or defuns)
+     event, then (symb) is a runic designator and denotes the singleton
+     set containing the rune (:executable-counterpart symb).
+
+     o If symb is the name of a defthm (or defaxiom) event that
+     introduced at least one rule, then symb is a runic designator and
+     denotes the set of the names of all rules introduced by the named
+     event.
+
+     o If str is the string naming some defpkg event and symb is the
+     symbol returned by (intern str "ACL2"), then symb is a runic
+     designator and denotes the singleton set containing (:rewrite
+     symb), which is the name of the rule stating the conditions under
+     which the symbol-package-name of (intern x str) is str.
+
+     o If symb is the name of a deftheory event, then symb is a runic
+     designator and denotes the runic theory corresponding to symb.
+
+These conventions attempt to implement the Nqthm-1992 treatment of
+theories.  For example, including a function name, e.g., assoc, in the
+current theory enables that function but does not enable the executable
+counterpart.  Similarly, including (assoc) enables the executable
+counterpart (Nqthm's *1*assoc) but not the symbolic definition.  And
+including the name of a proved lemma enables all of the rules added by
+the event.  These conventions are entirely consistent with Nqthm usage.
+Of course, in ACL2 one can include explicitly the runes naming the
+rules in question and so can avoid entirely the use of non-runic
+elements in theories.
+
+Because a rune is a runic designator denoting the set containing that
+rune, a list of runes is a theory and denotes itself.  We call such
+theories "runic theories."  To every theory there corresponds a runic
+theory obtained by unioning together the sets denoted by each
+designator in the theory.  When a theory is selected as "current" it is
+actually its runic correspondent that is effectively used.  That is, a
+rune is enabled iff it is a member of the runic correspondent of the
+current theory.  The value of a theory defined with deftheory is the
+runic correspondent of the theory computed by the defining theory
+expression.  The theory manipulation functions, e.g., union-theories,
+actually convert their theory arguments to their runic correspondents
+before performing the required set operation.  The manipulation
+functions always return runic theories.  Thus, it is sometimes
+convenient to think of (non-runic) theories as merely abbreviations for
+their runic correspondents, abbreviations which are "expanded" at the
+first opportunity by theory manipulation functions and the "theory
+consumer" functions such as in-theory and deftheory.
+
+
+File: acl2-doc-emacs.info,  Node: ACTIVE-RUNEP,  Next: CURRENT-THEORY,  Prev: THEORIES,  Up: THEORIES
+
+ACTIVE-RUNEP    check that a rune exists and is enabled
+
+     Example:
+     (active-runep '(:rewrite left-to-right))
+     
+     General Form:
+     (active-runep rune)
+
+where rune has the shape of a rune.  This macro expands to an
+expression using the variables ens and state, and returns non-nil when
+the given rune exists and is enabled (according to the given "enabled
+structure," ens, and the current logical world of the given state).
+See *Note THEORY-INVARIANT:: for how this macro can be of use.
+
+
+File: acl2-doc-emacs.info,  Node: CURRENT-THEORY,  Next: DISABLE,  Prev: ACTIVE-RUNEP,  Up: THEORIES
+
+CURRENT-THEORY    currently enabled rules as of logical name
+
+     Examples:
+     (current-theory :here)
+     (current-theory 'lemma3)
+
+See *Note LOGICAL-NAME::.
+
+     General Form:
+     (current-theory logical-name)
+
+Returns the current theory as it existed immediately after the
+introduction of logical-name provided it is evaluated in an environment
+in which the variable symbol WORLD is bound to the current ACL2 logical
+world, (w state).  Thus,
+
+     ACL2 !>(current-theory :here)
+
+will cause an (unbound variable) error while
+
+     ACL2 !>(let ((world (w state))) (current-theory :here))
+
+will return the current theory in world.
+
+See *Note THEORIES:: and see *note LOGICAL-NAME:: for a discussion of
+theories in general and why the commonly used "theory functions" such
+as current-theory are really macros that expand into terms involving
+the variable world.
+
+The theory returned by current-theory is in fact the theory selected by
+the in-theory event most recently preceding logical name, extended by
+the rules introduced up through logical-name.
+
+You may experience a fencepost problem in deciding which logical name
+to use.  Deflabel can always be used to mark unambiguously for future
+reference a particular point in the development of your theory.  The
+order of events in the vicinity of an encapsulate is confusing.  See
+*Note ENCAPSULATE::.
+
+This "function" is actually a macro that expands to a term mentioning
+the single free variable world.  When theory expressions are evaluated
+by in-theory or the :in-theory hint, world is bound to the current ACL2
+world.
+
+
+File: acl2-doc-emacs.info,  Node: DISABLE,  Next: E/D,  Prev: CURRENT-THEORY,  Up: THEORIES
+
+DISABLE    deletes names from current theory
+
+     Example:
+     (disable fact (fact) associativity-of-app)
+     
+     General Form:
+     (disable name1 name2 ... namek)
+
+where each namei is a runic designator; see *note THEORIES::.  The
+result is the theory that contains all the names in the current theory
+except those listed.  Note that this is merely a function that returns
+a theory.  The result is generally a very long list of runes and you
+will probably regret printing it.
+
+The standard way to "disable" a fixed set of names, is:
+
+     (in-theory (disable name1 name2 ... namek)) ; globally
+     :in-theory (disable name1 name2 ... namek)  ; locally
+
+Note that all the names are implicitly quoted.  If you wish to disable
+a computed list of names, lst, use the theory expression
+(set-difference-theories (current-theory :here) lst).
+
+
+File: acl2-doc-emacs.info,  Node: E/D,  Next: ENABLE,  Prev: DISABLE,  Up: THEORIES
+
+E/D    enable/disable rules
+
+The macro e/d creates theory expressions for use in in-theory hints and
+events.  It provides a convenient way to enable and disable
+simultaneously, without having to write arcane theory expressions.
+
+     Examples:
+     (e/d (lemma1 lemma2))          ; equivalent to (enable lemma1 lemma2)
+     (e/d () (lemma))               ; equivalent to (disable lemma)
+     (e/d (lemma1) (lemma2 lemma3)) ; Enable lemma1 then disable lemma2, lemma3.
+     (e/d () (lemma1) (lemma2))     ; Disable lemma1 then enable lemma2.
+     
+     General Form:
+     (e/d enables-0 disables-0 ... enables-n disables-n)
+
+where each enables-i and disables-i is a list of runic designators; see
+*note THEORIES::, see *note ENABLE::, and see *note DISABLE::.
+
+The e/d macro takes any number of lists suitable for the enable and
+disable macros, and creates a theory that is equal to (current-theory
+:here) after executing the following commands.
+
+(in-theory (enable . enables-0)) (in-theory (disable . disables-0))
+[etc.]  (in-theory (enable . enables-n)) (in-theory (disable .
+disables-n))
+
+
+File: acl2-doc-emacs.info,  Node: ENABLE,  Next: EXECUTABLE-COUNTERPART-THEORY,  Prev: E/D,  Up: THEORIES
+
+ENABLE    adds names to current theory
+
+     Example:
+     (enable fact (fact) associativity-of-app)
+     
+     General Form:
+     (enable name1 name2 ... namek)
+
+where each namei is a runic designator; see *note THEORIES::.  The
+result is the theory that contains all the names in the current theory
+plus those listed.  Note that this is merely a function that returns a
+theory.  The result is generally a very long list of runes and you will
+probably regret printing it.
+
+The standard way to "enable" a fixed set of names, is
+
+     (in-theory (enable name1 name2 ... namek)) ; globally
+     :in-theory (enable name1 name2 ... namek)  ; locally
+
+Note that all the names are implicitly quoted.  If you wish to enable a
+computed list of names, lst, use the theory expression (union-theories
+(current-theory :here) lst).
+

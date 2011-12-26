@@ -1,0 +1,672 @@
+<html><head><!-- This document was created from RTF source by rtftohtml version
+2.7.5 --><title>IUI98: Critiquing for Intelligent Educational Systems</title></head><body><b>Authorable
+Critiquing for Intelligent Educational Systems<P>Christopher K. 
+Riesbeck</b><br>
+<b></b>The Institute for the Learning Sciences<br>
+&amp; Department of Computer Science<br>
+Northwestern University<br>
+Evanston, IL 60201 USA<br>
++1 847 491 3500<br>
+riesbeck@ils.nwu.edu<br>
+<b>Wolff Dobson</b><br>
+<b></b>The Institute for the Learning Sciences<br>
+&amp; Department of Computer Science<br>
+Northwestern University<br>
+Evanston, IL 60201 USA<br>
++1 847 491 3500<br>
+wolff@cs.nwu.edu
+<h1>
+<a name="RTFToC1">ABSTRACT</a></h1>
+An important issue in intelligent interfaces is making them as authorable as
+non-intelligent interfaces. In this paper, we describe <b>Indie</b>, an
+authoring tool for intelligent interactive education and training environments,
+with particular emphasis on how authors create knowledge bases for critiquing
+student arguments. A central problem was providing authors with tools that
+supported the entire development process from mock-up to final product. Two key
+ideas are: (1) MVC-based event-action <b>triggers</b> to support a gradual
+migration from interface-based to model-driven interactions (2) rule-based
+evidence assessment events.
+<h2>
+<a name="RTFToC2">Keywords</a></h2>
+Intelligent learning environments, educational systems, authoring tools,
+goal-based scenarios
+<h1>
+<a name="RTFToC3">INTRODUCTION</a></h1>
+Since 1989, the Institute for the Learning Sciences has been developing a
+number of intelligent interactive environments for education and training,
+called <b>goal-based scenarios</b> (GBS's)[4, 5]. A GBS is a simulated world in
+which students learn by doing under the watchful eye of coaches, critics, and
+experts. In a GBS, a student is given a specific role, a set of goals, an
+initial scenario, and tools for collecting information, taking action, and
+making arguments.<p>
+As the student acts and recommends, the system tracks what is happening. As
+needed or as requested by the student, the system uses experts captured on
+video to guide, coach, critique, and give real world examples of similar
+situations.<p>
+<p>
+A GBS system is not intended to model a teacher or tutor and is not supposed to
+be like a classroom. A GBS system is supposed to be like learning on the job,
+only better because experts are available all the time for help and review. <p>
+Intelligent critiquing of the student's actions and conclusions is an important
+element of a GBS. Herein lies the rub. On the one hand, it's important to give
+the student the same kinds of options that the real-world task would have. On
+the other hand, the more complex and varied the student's choices, the more
+complex the critiquing module has to be, and hence the more complex the
+knowledge engineering needs. <p>
+We believe GBS systems for thousands of domains will need to be built and
+maintained. Therefore, an important goal for us is the development of authoring
+tools to let  content experts create GBS's with complex student activities with
+modest knowledge engineering costs and little or no programming.<p>
+This paper describes a tool, called <b>Indie</b>, for authoring <b>Investigate
+and Decide</b> GBS's. In particular, we focus on how <b>Indie</b> is used to
+author knowledge bases, with special emphasis on the knowledge base used to
+critique evidence-based arguments.
+<h1>
+<a name="RTFToC4">INVESTIGATE
+AND DECIDE
+</a></h1>
+In a particular subclass of GBS's, called <b>Investigate and Decide</b>,
+students have to make a decision based on information gathered from performing
+experimental tests, interviews, document review, inspections, and so on. When
+students feel ready, they submit a recommendation, along with whatever evidence
+they've gathered so far that they feel supports their conclusion.<p>
+Along the way, students can ask for help and browse a richly-indexed multimedia
+hypertext network called an <b>ASK system</b> [1]. The central idea in ASK
+systems is that all information is linked to other information via follow-up
+questions. For example, if an expert in a video clip mentions how an
+immunofluorescence test can be used detect immune system problems, one
+follow-up question might be "How does the immunofluorescence test work?"<p>
+Several examples of <b>Investigate and Decide</b> systems that have been built
+with <b>Indie</b> are:<p>
+* <b>Immunology Consultant</b>: Medical school students have to determine what
+has gone wrong with a patient's immune system by interviewing the patient,
+running lab tests, and collecting information on how the immune system works
+and sometimes malfunctions.<p>
+* <b>Is It A Rembrandt?</b>: Art history students have to determine whether a
+painting is actually by Rembrandt or a forgery, by inspecting the style of the
+painting, its materials, the signature, and so on.<p>
+* <b>Volcano Investigator</b>: High school students learning geology run
+experiments in order  to estimate the likelihood of a Mt. St. Helens-like
+volcano erupting, in order to decide whether a nearby town has to evacuate
+immediately or not.<p>
+* <b>Nutrition Clinician</b>: Medical school students have to determine what
+nutritional deficiencies a patient has, what the medical implications are, and
+what needs to be done to remove the deficiencies.<p>
+For brevity, in this paper we'll refer to these systems as <b>Immunology</b>,
+<b>Rembrandt</b>, <b>Volcano</b>, and <b>Nutrition</b>. 
+<h1>
+<a name="RTFToC5">INDIE
+APPLICATION ARCHITECTURE
+</a></h1>
+Here is a simplified diagram of <b>Indie</b>-based GBS systems:<p>
+<IMG SRC="iui_98_formatted1.gif"><p>
+The student works with  four important interface elements:<p>
+* The <b>lab</b> screens, where the student gathers facts about the scenario by
+interacting with the simulated world. "Lab" is a very broad term here,
+including screens for running experiments, interviewing patients, reading
+documents, and so on.<p>
+* The <b>notebook</b>, which contains all evidence that has been collected so
+far. Evidence is added automatically for the student.<p>
+* The  <b>report</b> screen, where the student constructs an argument  for or
+against one or more of the possible choices, using the evidence gathered in the
+notebook.<p>
+* The <b>ASK browser</b> screens, where the student talks to experts, gets
+background information about the task and domain, asks follow-up questions
+about critiques and coaching advice, and so on.<p>
+The notebook is usually on-screen all the time. The student switches between
+the lab, report, and browser screens with a mouse click or two.<p>
+Internally, there are three important modules:<p>
+* The <b>Simulator</b> produces responses for student actions on the lab
+screens. These responses include not only interface events such as movies and
+graphics, but also the pieces of evidence that such actions reveal and that get
+stored in the student's notebook.<p>
+* The <b>Critiquer</b> analyzes the arguments made by the student in the
+report. Problems found are used to retrieve the relevant responses in the ASK
+network.<p>
+* The <b>ASK system</b> retrieves information from the ASK network and supports
+browsing through that network. It keeps track of what the student has seen so
+far so that the same information is not shown twice unless the student asks to
+review it.<p>
+Each module has a knowledge base:<p>
+* The <b>domain model</b> holds facts about the particular scenario, e.g.,
+"Mary has sickle cell anemia," and facts and rules about the domain in general,
+such as "if a patient has sickle cell anemia, the microscope test will show
+sickle-shaped blood cells."<p>
+* The <b>argument models</b> describe what makes good and bad arguments for
+each possible decision.<b> </b><p>
+<b>*</b> The <b>ASK network</b> links questions to answers (in video or text)
+and answers to follow-up questions in a large graph. In <b>Indie</b> systems,
+ASK systems hold any information that should be presented with follow-up
+questions. This includes not only background reference material, but also
+critiques. <p>
+<b>Indie</b> provides tools for authoring:<p>
+* the interface screens<p>
+* the domain model<p>
+* the argument models<p>
+* the ASK network<p>
+In this paper, we will focus on how argument models are authored and used for
+critiquing. More specifically, we'll present the first approach we designed and
+implemented, its strengths and weaknesses, then the approach we're currently
+using.
+<h1>
+<a name="RTFToC6">ARGUMENT
+CRITIQUING IN INDIE
+</a></h1>
+Our first model of how to represent and critique evidence-based arguments in
+<b>Indie</b> was very simple. A student's argument consisted of <p>
+* a <b>claim</b> about the scenario, e.g., "Mary has acute rheumatic fever,"<p>
+* a set of <b>presented evidence</b>, consisting of <b>scenario facts</b>
+(usually test results) supporting the claim, e.g., "Mary has a high fever, and
+Mary had strep throat recently."<p>
+When a student submitted an argument, it was compared against an <b>argument
+model</b>. Every claim had an argument model, consisting of<p>
+* the claim<p>
+* one or more <b>proof sets</b>, each a set of scenario facts <p>
+* one or more <b>disproof sets</b>, each a set of scenario facts<p>
+* a set of <b>relevant fact types</b> (usually types of tests, e.g., "take
+temperature")<p>
+For an argument to be acceptable, the set of presented evidence had to<p>
+*&nbsp;be a superset of at least one proof set in the argument model<p>
+*&nbsp;not be a superset of any disproof set<p>
+* include only facts of the relevant fact types<p>
+A typical model would have <p>
+* one proof set with several facts that needed to be true for the claim to be
+true. <p>
+* a default set of disproof sets, generated automatically by making a singleton
+set of the negation of each fact in the proof set. <p>
+Disproof sets were intended to give authors some control over how much evidence
+it took to disprove a claim.<p>
+Given an argument, argument model, and the scenario facts currently available
+to the student in the notebook, the Critiquer looked for<p>
+* <b>Contradictions</b>, i.e., evidence used to support a claim when in fact it
+argues against it, or vice versa.<p>
+* <b>Overlooked</b> necessary evidence, in the notebook but not used in the
+argument.<p>
+* <b>Missing</b> necessary evidence, not in the notebook because some tests had
+not yet been run<p>
+* <b>Irrelevancies</b>, i.e., evidence used for or against a claim not in the
+list of relevant fact types<p>
+Our model of critiquing had the following steps:<p>
+* The student constructed an argument.<p>
+* The Critiquer analyzed the argument and created a set of <b>categorized
+critiques</b>, such as "Overlooked: High ASO Titer; Irrelevant: Age is young"<p>
+* The ASK system retrieved the most relevant responses for each critique.<p>
+Our intent was that authors would write responses for the top-level critique
+categories, such as<p>
+* <b>Contradictions exist: "</b>I'm confused. Are you sure all the evidence
+implies what you say it does?"<p>
+* <b>Omissions exist: "</b>Maybe, but it seems like you need a stronger
+case."<p>
+* <b>Irrelevancies exist: "</b>Seems right but I don't see why you mentioned
+some of the things you did."<p>
+* <b>None of the above: "</b>Makes sense. Good job!"<p>
+In addition, authors could also write more specific responses for particular
+problems, such as "You seem to be confused about how the ASO titer test
+works..." The ASK system would take care of finding the most relevant of the
+authored responses for each critique.
+<h2>
+<a name="RTFToC7">Advantages
+Of The Initial Model
+</a></h2>
+This initial model was:<p>
+* Simple: Since, for pedagogical reasons, there are usually only a handful of
+claims in an <b>Indie</b> GBS and less than a dozen tests necessary to prove
+any particular claim, the amount of knowledge engineering was fairly small.<p>
+* Robust: Using the critique taxonomy to organize responses meant that all
+student arguments would be handled gracefully, even silly ones.<p>
+* Tailorable: Authors could easily add remediation responses for very specific
+argument errors.
+<h1>
+<a name="RTFToC8">Problems
+With The Initial Model
+</a></h1>
+The above model, implemented in <b>Indie, version 1.0</b>, was used to build
+<b>Immunology Consultant</b>. We spent a fair amount of time early on showing
+the content team how to represent and connect claims and arguments. Our hope
+was that <b>Immunology</b> would be an exemplar for later projects.<p>
+Problems arose almost at once, however, when the authors tried to adapt the
+<b>Immunology</b> examples to <b>Volcano</b>, <b>Rembrandt</b>, and
+<b>Nutrition</b>. They felt that the <b>Indie 1.0</b> model didn't support<p>
+* the simple things they wanted to do<p>
+*&nbsp;the complicated things they wanted to do
+<h1>
+<a name="RTFToC9">SUPPORTING
+THE SIMPLE THINGS
+</a></h1>
+Of great concern to us was the mismatch between what the authors <i>wanted</i>
+to write and what we, the developers, thought they <i>needed</i> to write. The
+authors wanted to write rules like<p>
+* IF the student says that a high fever is a sign of acute rheumatic fever,
+THEN play the movie that says fever can be a symptom of many things.<p>
+or even, while building a mock-up to demonstrate the interface, a rule like<p>
+* IF the student clicks on the "submit report" button, THEN play the movie that
+says "This isn't enough evidence. You need to collect some real data."<p>
+Instead, to make a movie play in response to clicking on submit report, authors
+had to<p>
+* determine the appropriate critique category for the mock-up student
+argument<p>
+* develop an argument model that would generate that critique category <p>
+* index the desired movie in the ASK network under that critique category <p>
+This is a lot of steps (and thinking) compared to what you need to do to play a
+movie in a typical interface authoring tool. Of course, such tools provide no
+support for intelligent critiquing.<p>
+There was clearly a serious conflict between our knowledge engineering approach
+and how goal-based scenario systems were actually being developed. The
+challenge was making <b>Indie</b> usable for authors without compromising the
+needs of the final GBS.
+<h2>
+<a name="RTFToC10">PHASES
+OF AUTHORING
+</a></h2>
+Authors of scenario-based systems go through the following phases of
+development:<p>
+<b>1. Single scenario mock-up</b>: In this initial phase, authors develop key
+segments for one scenario, for design review purposes. They want to specify as
+simply and directly as possible a (mostly) linear sequence of events, triggered
+by button clicks. Interface concerns dominate the design and implementation
+process.<p>
+<b>2.</b> <b>Single scenario run-through</b>: In this phase, all the scenes for
+the scenario are specified, to make sure all functionality is available,
+feasible and consistent. Enough branches are defined to do some brief usability
+assessments with test users. The authors need to be able to specify a few
+conditional responses, especially for remediation, but they want to be able to
+leave other transitions "hard-wired." Interface work slowly gives way to
+scenario building.<p>
+<b>3.</b> <b>Single scenario completion</b>: In this phase, the authors finish
+all the branches and the ASK system content for the scenario. The authors need
+bookkeeping tools to check for consistency, completeness, redundancies, and so
+on. Some systems stop at this phase. Scenario building and ASK content work
+dominate.<p>
+<b>4.</b> <b>Multiple scenario development</b>: In this phase, the authors
+specify sequel scenarios. Most of the interface remains the same, as well as
+some of the artwork, but many of the system responses, especially remedial,
+have to be significantly changed. Authors need support for replacement,
+generalization, and reuse of response rules. Scenario building and support
+content work dominate.<p>
+This prototype-based development sequence is very typical with modern
+interactive systems. A key point for intelligent systems is that <p>
+* In the early phases, authors want total control over what happens. The system
+isn't intended to stand on its own yet. The auctorial attitude is "I want it to
+do this!"<p>
+* In the later phases, authors want to the system to be intelligent, or, more
+accurately, not stupid [3]. The auctorial attitude is "I want it to be able to
+handle this new stuff, along with the old stuff."<p>
+Our knowledge engineering approach did not support the direct control of system
+behavior needed in the first two phases. It only supported the robust response
+handling needed in the latter phases. Though we thought our critiquing model
+was a "good value" in terms of intelligence gained for work required, it was
+still more work to make something happen than, say, simply attaching "play
+movie" to a button. <p>
+Not surprisingly, it doesn't matter if an authoring system supports Phases 3
+and 4 if authors don't want to use it in Phases 1 and 2. An author wants to say
+"when I click here, it does this." That's it. Given how rapidly things change
+in the first phase, doing more work than this is simply not in the author's
+interest.<p>
+The problem with giving our authors exactly what they want is that what works
+in the first two phases falls apart in the last two phases. In Phase 1, when
+building a mock-up, it's nice to be able to just attach the command "play the
+`needs more work' movie" to the button labelled "Submit report." Unfortunately,
+by the start of Phase 3, which movie to play depends in a non-trivial way on
+what the report being submitted actually contains. By the end of Phase 3,
+interface issues are mostly irrelevant to what the authors are trying to
+specify.
+<h2>
+<a name="RTFToC11">TRIGGERS
+AND INCREMENTAL AUTHORING
+</a></h2>
+<b>Indie, version 2.0</b>, was designed to allow authors start with
+interface-based authoring and support (and encourage) a gradual migration to
+model-based authoring. A key addition was the concept of <b>triggers</b>. A
+trigger connects <b>events</b> to <b>actions</b>. Event and actions can occur
+in the <b>interface</b> or in the underlying <b>model</b>. By interface and
+model we mean the same distinction found in the Model-View-Controller paradigm
+[2]. Some examples of each are:
+
+<pre>
+        Interface          Model              
+Event   button click,      rule fired, test   
+        item dragged       result generated   
+        onto a list                           
+Action  play movie,        fill test tube,    
+        update button      critique           
+        state              argument, set      
+                           current topic      
+
+</pre>
+<p>
+Authors create triggers using a form-based editor that lets them select from
+lists of available actions and events. Triggers for events on interface objects
+can be edited by simply clicking on the interface object.<p>
+In Phase 1, an author can make the "submit report" button play a particular
+movie by creating a trigger that goes from interface event to interface action.
+Schematically, it looks like this:<p>
+<IMG SRC="iui_98_formatted2.gif"><p>
+Later, in Phase 2 or 3, when the author wants the movie that gets played to be
+selected based on some property of the student argument, the author <p>
+* changes the trigger on the submit button to call the model action "critique
+report" rather than "play movie," <p>
+* creates a critiquing rule (as described below) to catch the relevant
+property,<p>
+* creates a new trigger that goes from the rule firing to "play movie."<p>
+Schematically, the new triggers look like this:<p>
+<IMG SRC="iui_98_formatted3.gif"><p>
+<p>
+If, later, the authors want to add follow-up questions to the movie, they<p>
+* link the movie into the ASK network<p>
+* link the appropriate follow-up questions and answers to the movie in the
+network<p>
+* add a "set topic" model action to the second trigger<p>
+Schematically, the second trigger above becomes:<p>
+<IMG SRC="iui_98_formatted4.gif"><p>
+The ASK Browser interface then takes care of presenting the follow-up questions
+after the movie plays. <p>
+In this way, <b>Indie</b> supports migration from hard-wired button responses
+to full-fledged critiquing. 
+<h1>
+<a name="RTFToC12">SUPPORTING
+THE COMPLICATED THINGS
+</a></h1>
+The other area in which <b>Indie 1.0</b> fell short was in how complicated
+arguments and argument analysis could be. Our authors wanted:<p>
+* more in a student argument than just claim plus evidence,<p>
+* more complex analysis of arguments than the proof and disproof set model
+could provide <p>
+In particular, authors wanted students to be able to include in their
+reports:<p>
+* <b>contrary evidence</b>, e.g., in <b>Volcano</b> and <b>Rembrandt</b>,
+students needed to be able to show that they were aware of test results that
+didn't fit the claim, e.g., "X is true, because ..., <i>despite</i>  the fact
+that ..."<p>
+* <b>categorized evidence</b>, e.g., in <b>Nutrition</b> some evidence is from
+scenario-dependent test results and some is from scenario-independent
+background information<p>
+* <b>non-evidence</b>, e.g., in <b>Nutrition</b>, the argument for a particular
+nutritional deficiency is part of a bigger report that also includes medical
+implications and recommended actions, all of which need critiquing.<p>
+Furthermore, authors wanted more control over the argument analysis. In
+<b>Rembrandt</b>, where evidence about a painting's authorship can be quite
+fuzzy and subjective, a student's argument has to be based on a preponderance
+of evidence, not a simple all-or-none logic. In addition, pieces of evidence
+can interact in complex ways with other points. For example, one of the claims
+in <b>Rembrandt</b> had the following relationships between its evidence points
+A, B, C, D, E, F and G:<p>
+* <b>Necessary</b>: Any two of the following groups: (A and B), (C and D), E,
+or F.<p>
+* <b>Irrelevant</b>: If (A and B) are present, then E is irrelevant. If (C and
+D) are present then F is irrelevant. <p>
+* <b>Conflicting</b>: G conflicts with B, so if B is mentioned G shouldn't be.
+<h2>
+<a name="RTFToC13">ARGUMENT
+CRITIQUING RULES
+</a></h2>
+In response to these needs, in <b>Indie, version 2.0</b>, we <p>
+* added support for multiple lists of evidence in arguments, and<p>
+* replaced proof and disproof sets with <b>critiquing rules</b>
+<h3>
+<a name="RTFToC14">Multiple
+Lists of Evidence
+</a></h3>
+In <b>Indie 2.0</b>, student arguments can have one or more BECAUSE lists, zero
+or more DESPITE lists, and zero or more other labelled lists. BECAUSE lists
+should contain evidence supporting the claim, while DESPITE lists should
+contain evidence against the claim. Critiquer rules have predefined slots for
+dealing with BECAUSE and DESPITE lists. The other labelled lists can contain
+anything. They are used for things like <b>Nutrition</b>'s lists of medical
+implications and recommendations.
+<h3>
+<a name="RTFToC15">Critiquing
+Rules
+</a></h3>
+Critiquing rules check for the presence or absence of different evidence points
+in an argument or in the notebook. A critiquing rule can check if<p>
+* <b>at least</b> (or <b>at most</b>) M points from a set of N possible points
+<p>
+* are (or are not) in a BECAUSE list, a DESPITE list, some other labelled list,
+or the notebook<p>
+For example, a rule in <b>Volcano Investigator</b> is:<p>
+CLAIM: the volcano will erupt in the next 24 hours, <p>
+CHECK IF: BECAUSE does NOT include data from <u>either</u> of two ground
+deformation tests OR <u>either</u> of the strainmeter results<p>
+Since many critiques are based on missing evidence, many rules check for the
+absence of evidence. Checks for presence of evidence are usually to catch
+common errors, e.g., "If the students said that a high blood pressure is
+associated with underweight patients, show them this movie about causes of high
+BP."
+<h3>
+<a name="RTFToC16">Conditions</a></h3>
+Checks on evidence are nested in groups called conditions. A condition is
+recursively defined as either<p>
+* an evidence point, <p>
+* at least M of N conditions being true, or<p>
+* at most M of N conditions being true.<p>
+In the <b>Volcano</b> example above, the <i>rule</i> says "CHECK IF: BECAUSE
+does NOT include" and the <i>condition</i> says <p>
+* at least 1 of<p>
+* at least 1 of 2 ground deformation test results<p>
+* at least 1 of 2 strainmeter results<p>
+Conditions can simulate various logical connectives:<p>
+*&nbsp;OR is "at least 1 of N conditions" <p>
+*&nbsp;AND is "at least N of N conditions."<p>
+* NOT is "at most 0 of N conditions."  <p>
+The use of "at least" and "at most" is similar in approach to SNePS [6]. SNePS
+is more powerful, because it lets you specify at least and at most
+simultaneously, but this hasn't been needed by our authors. On the other hand,
+<b>Indie</b> authors do frequently go beyond AND and OR by asking for 2 of 6
+possible conditions to be true or 3 of 7 possible points to be present.<p>
+In <b>Indie</b>, the rule specifies what evidence lists are being checked and
+whether the check is for presence or absence. The conditions specify the logic
+of the check.<p>
+<b>Indie</b> has form-based editors for rules and conditions. The rule editor
+looks like this:<p>
+<IMG SRC="iui_98_formatted5.gif"><p>
+and the condition editor looks like this:<p>
+<IMG SRC="iui_98_formatted6.gif"><p>
+Almost everything is selected from lists, rather than typed in. The only time
+something is typed is when something new is created, e.g., a new kind of test
+result. Anything that's created automatically becomes available for later
+re-use.
+<h3>
+<a name="RTFToC17">Controlling
+Rules
+</a></h3>
+Authors have three simple mechanisms to control how rules fire:<p>
+* Rules can be marked "once only," which means they fire at most once.<p>
+* Rules can be collected into <b>rule sets</b>. Rules in a rule set are checked
+in order and checking stops when an author-specified number of rules has fired.
+<p>
+*&nbsp;Each scenario has its own <b>rule collection</b>. It's easy to share
+rule sets across collections.<p>
+<b>Rembrandt</b>'s authors used once-only rules and rule sets to give different
+hints on different rounds of critiquing. The first time a student forgot to
+analyze the signature on the painting, the first rule in a rule set fired and
+said the report was incomplete. That rule was once-only and the rule set
+allowed only one rule to fire. Therefore, the second time the student submitted
+a report with the same mistake, the second (once-only) rule in that set fired
+and suggested looking at the signature. If this happened a third time, the
+third rule said the signature was atypical and the student needed to analyze it.
+<h3>
+<a name="RTFToC18">Non-exclusive
+claims
+</a></h3>
+In <b>Nutrition</b>, several claims can apply in one scenario. A patient might
+be overweight, folate deficient, and calcium deficient. Supporting this
+involved several classes of change to <b>Indie</b>:<p>
+*&nbsp;Adding an interface by which the student can specify a set of claims.<p>
+* Allowing two kinds of claims:<p>
+deg. The usual kind of claim and argument, e.g., an argument for calcium
+deficiency<p>
+deg. The claim that all problems have been found.<p>
+The second kind of claim (usually labelled "I'm done") leads to three possible
+categories of critique:<p>
+* Yes, you're done.<p>
+* At least one of your arguments still has problems.<p>
+* The arguments you've given are OK, but there's at least one more claim that
+can be made
+<h3>
+<a name="RTFToC19">Inverse
+sets
+</a></h3>
+In <b>Nutrition</b>, there are many irrelevant points for a given claim than
+relevant ones. Writing and maintaining rules to catch irrelevancies was tedious
+because of the length of the list of points. This was solved by allowing
+authors to indicate for each list of points in a condition whether they want
+the point list itself or its inverse, i.e., all the points in the system
+besides the ones listed.
+<h3>
+<a name="RTFToC20">Special
+conditions
+</a></h3>
+In <b>Nutrition Clinician</b>, the authors wanted to have their students also
+choose risks and treatments that are associated with the conditions that they
+were proving about their patients. For example, overweight patients are at risk
+of high blood pressure, which can be treated with medication and regular
+exercise.<p>
+They wanted to represent these risks and treatments as points that can be
+dragged from predefined notebooks into evidence lists associated with an
+argument. These evidence lists really aren't BECAUSE or DESPITE, or even
+NOTEBOOKS, exactly. Rather than remove the BECAUSE and DESPITE formalisms from
+the rules, which saved authoring effort in more traditional critiquers, we
+added "special conditions" as a final slot on the rule editor which is hidden
+on a twist-down menu so as not to confuse novice authors.<p>
+A special condition is just like a normal condition except it relates directly
+to some evidence list that may or may not be part of the argument. 
+<h1>
+<a name="RTFToC21">STATUS
+AND ASSESSMENT
+</a></h1>
+<b>Indie</b> is a complete tool, including <p>
+* the Critiquer focussed on here and the various rule editors<p>
+* an interface editor<p>
+* an ASK network editor and browser<p>
+* a very lightweight experiment simulator<p>
+<b>Indie</b> is implemented in Digitool's Macintosh Common LISP 4.1, and
+generates stand-alone MCL applications.<p>
+In terms of complexities of the <b>Indie</b> systems built so far:
+
+<pre>
+         Immun.   Volcano  Nutriti  Remb.    
+                           on                
+Points   120      36       1000     514      
+Rules    15       30       150      77       
+ASK      217      150      600      620      
+nodes                                        
+
+</pre>
+<p>
+<b>Indie</b> application sizes are dominated by graphics and video.
+<b>Rembrandt</b>, for example, has around 60MB of pictures (largely
+uncompressed) and nearly 4 gigabytes of video consisting of nearly 500 clips of
+experts talking about Rembrandt. <b>Nutrition</b> has 3 gigabytes of video.<p>
+All of these systems have at least 15 different screens, ranging from
+introductions, tests, interviews, ASK zoomers, ASK browsers, report-building,
+and feedback. Each project took a team of 2 to 3 content analysts about 5
+months  to complete, with guidance and tool support by two graduate students.
+<b>Immunology</b> took almost twice as long, largely because it was the first
+<b>Indie </b>project, and had a programmer whose main role was to work around
+gaps in the first interface editor.<p>
+On average, the <b>Indie</b> team spent less than 3 hours a week communicating
+with each team, though more at the beginning or end of each project. Most of
+the interactions after the first week working with the tool were emails with
+suggestions, bug reports, or questions about what the best way to
+"<b>Indie</b>-engineer" a critiquer rule or interface interaction.<p>
+The <b>Indie</b> tool has also been used by several groups of graduate
+students, both PhD and masters, in course projects. These projects go through
+Phase 2, building at least half of a complete scenario, including video and
+artwork. <b>Volcano Investigator</b> is one of the more successful student
+projects, built by first-year masters students in an intensive project in 4
+months. A similar MS project underway now is <b>Clinical Monitor</b> (drug
+testing). Two recent class projects were <b>Car Repair</b> and <b>KERMIT</b>
+(the ecology of polluted ponds). <p>
+These many projects have helped us explore the "space" of Investigate and
+Decide GBS's.  Encouragingly, <b>Indie</b> did not need any major change for
+the most recent student projects. It seems to have reached a stable point where
+there are enough options to satisfy typical needs and enough concrete examples
+to show how to use those options.
+<h1>
+<a name="RTFToC22">RELATED
+WORK
+</a></h1>
+In the space available, we'd like to bracket <b>Indie</b> with two argument
+evaluation systems, one relatively early and AI-intensive, and the other
+relatively new and AI-lite.<p>
+ACE [7] was an early interesting effort to apply natural language understanding
+and argument interpretation to the analysis of student explanations of Nuclear
+Magnetic Resonance (NMR) spectra. The focus was on finding incorrect and
+incomplete arguments with the pedagogical goal of making the student resolve
+the problems and re-articulate the argument Conceptually, ACE is similar to the
+<b>Indie 1.0 </b>Critiquer, in that it matched the student argument against
+correct arguments. ACE used a great deal of domain knowledge in a narrow area.
+No attention was given to authoring such knowledge for new domains.<p>
+Belvedere [8] is a very recent effort to allow students to collaboratively
+articulate arguments about scientific issues using a graphical argument tool.
+Like <b>Indie 2.0, </b>Belvedere uses rules to analyze student arguments in
+order to suggest areas where the student needs to flesh things out or repair
+logical problems. Unlike an <b>Indie</b> GBS and ACE, Belvedere has no domain
+knowledge and doesn't try to understand the propositions in the arguments. On
+the one hand, this means Belvedere needs little or no knowledge engineering. On
+the other hand, it can only critique structural problems, such as missing
+support links or circular reasoning chains. <p>
+<b>Indie </b>GBS's in particular, and GBS's in general sit between these two
+approaches to educational software. GBS's are neither as knowledge-intensive
+and closed as AI-based systems like ACE (and many other early systems), nor as
+knowledge-free and open-ended as Belvedere (and many other recent educational
+systems). The purpose of GBS tools is to make it possible to easily author
+large numbers of scenarios in many domains with a cost-effective level of
+knowledge engineering. 
+<h1>
+<a name="RTFToC23">SUMMARY
+AND FUTURE WORK
+</a></h1>
+The history of the development of the <b>Indie</b> tool illustrates what
+appears to be a common phenomenon:<p>
+The usefulness of a tool is inversely proportional to its intelligence.<p>
+Authors don't want smart tools, they want tools that aren't stupid [3].
+Stupidity can come from missing knowledge, but it can also come from tools that
+require knowledge engineering at the wrong time. In some important ways, the
+current <b>Indie </b>Critiquer is stupider than its predecessor. It's less
+robust and more prone to allowing logical inconsistencies and gaps. But it
+seems less stupid because it lets authors do what they want to do. It doesn't
+require knowledge to be authored until the need for that knowledge is clear.<p>
+<b>Indie 2.0</b> lets authors move at their own pace from interface authoring
+to model authoring. It is our hope to be able to develop a version of the tool
+which will support gradual on-demand migration from the current rule model,
+with gives control but not robustness, to an argument model similar to <b>Indie
+1.0</b>.
+<h1>
+<a name="RTFToC24">ACKNOWLEDGMENTS</a></h1>
+We'd like to acknowledge the significant contributions of Seth Tisue (ASK
+network tools), Steven Silverstein (Immunology), Brendon Towle and Joe Herman
+(editor tool kit), and Brian Davies (graphic tools). <p>
+This work has been supported in part by the Defense Advanced Research Projects
+Agency, monitored by the Office of Naval Research, under contracts
+N00014-90-J-4117 and N00014-91-J-4092. The Institute for the Learning Sciences
+was established in 1989 with the support of Andersen Consulting.
+<h1>
+<a name="RTFToC25">REFERENCES</a></h1>
+1.&nbsp;Ferguson, W., Bareiss, R., Birnbaum, L., and Osgood, R. ASK Systems: An
+approach to story-based teaching. In <i>Proceedings of the 1991 International
+Conference on the Learning Sciences,</i> L. Birnbaum, Ed. (Evanston, IL, Aug.
+1991), 158-164.<p>
+2.&nbsp;Goldberg, A. Information Models, Views, and Controllers. <i>Dr. Dobb's
+Journal</i> (July 1990), 54-60.<p>
+3.&nbsp;Riesbeck, C. What Next? The Future of Case-Based Reasoning in
+Postmodern AI. In <i>Case-Based Reasoning: Experiences, Lessons, and Future
+Directions</i>, D. Leake, Ed. AAAI Press/The MIT Press, Menlo Park, CA., 1996,
+371-388.<p>
+4.&nbsp;Schank, R. Goal-based scenarios: A radical look at education.
+<i>Journal of the Learning Sciences 3, </i>4(1994), 429-453.<p>
+5.&nbsp;Schank, R., Fano, A., Jona, M., and Bell, B. The design of goal-based
+scenarios. <i>Journal of the Learning Sciences 3, </i>4(1994), 305-345.<p>
+6.&nbsp;Shapiro, S. The SNePS semantic network processing system. In
+<i>Associative Networks: The Representation and Use of Knowledge by
+Computers</i>, N.&nbsp;V. Findler, Ed. Academic Press, New York, 1979,
+179-203.<p>
+7.&nbsp;Sleeman, D., and Hendley, R. ACE: A system which Analyzes Complex
+Explanations. In <i>Intelligent Tutoring Systems</i>, D. Sleeman and J. Brown
+Eds. Academic Press, London, 1982, 99-118.<p>
+8.&nbsp;Suthers, D., Weiner, A., Connelly, J. and Paolucci, M. Belvedere:
+Engaging students in critical discussion of science and public policy issues.
+In <i>Proceedings AI-Ed 95, the 7th World Conference on Artificial Intelligence
+in Education</i> (Washington DC, August 16-19, 1995) 266-273. <p>
+<p>
+</body></html>

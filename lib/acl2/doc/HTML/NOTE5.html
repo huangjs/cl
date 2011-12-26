@@ -1,0 +1,250 @@
+<html>
+<head><title>NOTE5.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE5</h2>Acl2 Version 1.5 Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Acl2 now allows ``complex rationals,'' which are complex numbers
+whose real parts are rationals and whose imaginary parts are
+non-zero rationals.  See <a href="COMPLEX.html">complex</a>.<p>
+
+A new way of handling <code><a href="FORCE.html">force</a></code>d hypotheses has been implemented.
+Rather than cause a case split at the time the <code><a href="FORCE.html">force</a></code> occurs, we
+complete the main proof and then embark on one or more ``forcing
+rounds'' in which we try to prove the <a href="FORCE.html">force</a>d hypotheses.
+See <a href="FORCING-ROUND.html">forcing-round</a>.  To allow us to compare the new handling of
+<code><a href="FORCE.html">force</a></code> with the old, Version 1.5 implements both and uses a flag in
+<code><a href="STATE.html">state</a></code> to determine which method should be used.  Do
+<code>(assign old-style-forcing t)</code> if you want <code><a href="FORCE.html">force</a></code> to be handled
+as it was in Version 1.4.  However, we expect to eliminate the
+old-style forcing eventually because we think the new style is more
+effective.  To see the difference between the two approaches to
+forcing, try proving the associativity of <a href="APPEND.html">append</a> under both settings
+of <code>old-style-forcing</code>.  To get the new behavior invoke:
+
+<pre>
+(thm (implies (and (true-listp a) (true-listp b))
+              (equal (append (append a b) c)
+                     (append a (append b c)))))
+</pre>
+
+Then <code>(assign old-style-forcing t)</code> and invoke the <code>thm</code> <a href="COMMAND.html">command</a> above
+again.<p>
+
+A new <code>:cases</code> <a href="HINTS.html">hints</a> allows proof by cases.  See <a href="HINTS.html">hints</a>.<p>
+
+<code><a href="INCLUDE-BOOK.html">Include-book</a></code> and <code><a href="ENCAPSULATE.html">encapsulate</a></code> now restore the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>
+when they complete.  See <a href="INCLUDE-BOOK.html">include-book</a> and see <a href="ENCAPSULATE.html">encapsulate</a>.<p>
+
+The <a href="GUARD.html">guard</a>s on many Acl2 primitives defined in <code>axioms.lisp</code> have been
+weakened to permit them to be used in accordance with lisp custom
+and tradition.<p>
+
+It is possible to attach heuristic filters to <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules to
+limit their applicability.  See <a href="SYNTAXP.html">syntaxp</a>.<p>
+
+A tutorial has been added; see <a href="ACL2-TUTORIAL.html">acl2-tutorial</a>.<p>
+
+<a href="EVENTS.html">Events</a> now print the Summary paragraph listing <a href="RUNE.html">rune</a>s used, time,
+etc., whether they succeed or fail.  The format of the ``<a href="FAILURE.html">failure</a>
+banner'' has been changed but still has multiple asterisks in it.
+<code>Thm</code> also prints a Summary, whether it succeeds or fails; but <code>thm</code> is
+not an event.<p>
+
+A new event form <code><a href="SKIP-PROOFS.html">skip-proofs</a></code> has been added; see <a href="SKIP-PROOFS.html">skip-proofs</a>.<p>
+
+A user-specific customization facility has been added in the form of
+a book that is automatically included, if it exists on the current
+directory.  See <a href="ACL2-CUSTOMIZATION.html">acl2-customization</a>.<p>
+
+A facility for conditional metalemmas has been implemented;
+see <a href="META.html">meta</a>.<p>
+
+The acceptable values for <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> have changed.  In the old
+version (Version 1.4), a value of <code>t</code> meant that proofs and <code><a href="LOCAL.html">local</a></code>
+<a href="EVENTS.html">events</a> are to be skipped.  In Version 1.5, a value of <code>t</code> means proofs
+(but not <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a>) are to be skipped.  A value of <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>
+means proofs and <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> are to be skipped.  There are two
+other, more obscure, acceptable values.  See <a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a>.<p>
+
+In order to turn off the forcing of assumptions, one should now
+<a href="DISABLE.html">disable</a> the <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of <code><a href="FORCE.html">force</a></code> (rather than the
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> of <code><a href="FORCE.html">force</a></code>, as in the previous release); see <a href="FORCE.html">force</a>.<p>
+
+The macros <code><a href="ENABLE-FORCING.html">enable-forcing</a></code> and <code><a href="DISABLE-FORCING.html">disable-forcing</a></code> make it convenient to
+<a href="ENABLE.html">enable</a> or <a href="DISABLE.html">disable</a> forcing.  See <a href="ENABLE-FORCING.html">enable-forcing</a> and
+see <a href="DISABLE-FORCING.html">disable-forcing</a>.<p>
+
+The new commands <code>:</code><code><a href="PR.html">pr</a></code> and <code>:</code><code><a href="PR_bang_.html">pr!</a></code> print the rules created by an event or
+command.  See <a href="PR.html">pr</a> and see <a href="PR_bang_.html">pr!</a>.<p>
+
+The new <a href="HISTORY.html">history</a> <a href="COMMAND.html">command</a>s <code>:</code><code><a href="PUFF.html">puff</a></code> and <code>:</code><code><a href="PUFF_star_.html">puff*</a></code> will replace a compound
+<a href="COMMAND.html">command</a> such as an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code> by the sequence of
+<a href="EVENTS.html">events</a> in it.  That is, they ``<a href="PUFF.html">puff</a> up'' or ``lift'' the subevents
+of a <a href="COMMAND.html">command</a> to the <a href="COMMAND.html">command</a> level, eliminating the formerly superior
+<a href="COMMAND.html">command</a> and lengthening the <a href="HISTORY.html">history</a>.  This is useful if you want to
+``partially undo'' an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or book or other compound <a href="COMMAND.html">command</a>
+so you can experiment.  See <a href="PUFF.html">puff</a> and see <a href="PUFF_star_.html">puff*</a>.<p>
+
+Theory expressions now are allowed to use the free variable <code><a href="WORLD.html">world</a></code>
+and prohibited from using the free variable <code><a href="STATE.html">state</a></code>.
+See <a href="THEORIES.html">theories</a>, although it is essentially the same as before
+except it mentions <code><a href="WORLD.html">world</a></code> instead of <code><a href="STATE.html">state</a></code>.  See <a href="WORLD.html">world</a> for a
+discussion of the Acl2 logical <a href="WORLD.html">world</a>.  Allowing <code><a href="IN-THEORY.html">in-theory</a></code> <a href="EVENTS.html">events</a> to
+be state-sensitive violated an important invariant about how <a href="BOOKS.html">books</a>
+behaved.<p>
+
+<code><a href="TABLE.html">Table</a></code> keys and values now are allowed to use the free variable <code><a href="WORLD.html">world</a></code>
+and prohibited from using the free variable <code><a href="STATE.html">state</a></code>.  See the note
+above about theory expressions for some explanation.<p>
+
+The macro for minus, <code><a href="_hyphen_.html">-</a></code>, used to expand <code>(- x 3)</code> to <code>(+ x -3)</code> and now
+expands it to <code>(+ -3 x)</code> instead.  The old macro, if used in the
+left-hand sides of rewrite rules, produced inapplicable rules
+because the constant occurs in the second argument of the <code><a href="+.html">+</a></code>, but
+potential target terms generally had the constant in the first
+argument position because of the effect of <code>commutativity-of-+</code>.<p>
+
+A new class of rule, <code>:linear-alias</code> rules, allows one to implement
+the nqthm package and similar hacks in which a <a href="DISABLE.html">disable</a>d function is
+to be known equivalent to an arithmetic function.<p>
+
+A new class of rule, <code>:built-in-clause</code> rules, allows one to extend
+the set of clauses proved silently by <code><a href="DEFUN.html">defun</a></code> during measure and <a href="GUARD.html">guard</a>
+processing.  See <a href="BUILT-IN-CLAUSES.html">built-in-clauses</a>.<p>
+
+The new command <code><a href="PCB_bang_.html">pcb!</a></code> is like <code><a href="PCB.html">pcb</a></code> but sketches the <a href="COMMAND.html">command</a> and then
+prints its subsidiary <a href="EVENTS.html">events</a> in full.  See <a href="PCB_bang_.html">pcb!</a>.<p>
+
+<code>:</code><code><a href="REWRITE.html">Rewrite</a></code> class rules may now specify the <code>:</code><code><a href="LOOP-STOPPER.html">loop-stopper</a></code> field.
+See <a href="RULE-CLASSES.html">rule-classes</a> and see <a href="LOOP-STOPPER.html">loop-stopper</a>.<p>
+
+The rules for how <a href="LOOP-STOPPER.html">loop-stopper</a>s control permutative rewrite rules
+have been changed.  One effect of this change is that now when the
+built-in commutativity rules for <code><a href="+.html">+</a></code> are used, the terms <code>a</code> and <code>(- a)</code>
+are permuted into adjacency.  For example, <code>(+ a b (- a))</code> is now
+normalized by the commutativity rules to <code>(+ a (- a) b)</code>; in Version
+1.4, <code>b</code> was considered syntactically smaller than <code>(- a)</code> and so
+<code>(+ a b (- a))</code> is considered to be in normal form.  Now it is
+possible to arrange for unary functions be be considered
+``invisible'' when they are used in certain contexts.  By default,
+<code><a href="UNARY--.html">unary--</a></code> is considered invisible when its application appears in
+the argument list of <code><a href="BINARY-+.html">binary-+</a></code>.  See <a href="LOOP-STOPPER.html">loop-stopper</a> and
+see :DOC set-invisible-fns-table.<p>
+
+Extensive documentation has been provided on the topic of Acl2's
+``term ordering.''  See <a href="TERM-ORDER.html">term-order</a>.<p>
+
+Calls of <code><a href="LD.html">ld</a></code> now default <code><a href="LD-ERROR-ACTION.html">ld-error-action</a></code> to <code>:return</code> rather than to
+the current setting.<p>
+
+The <a href="COMMAND.html">command</a> descriptor <code>:x</code> has been introduced and is synonymous with
+<code>:</code><code><a href="MAX.html">max</a></code>, the most recently executed <a href="COMMAND.html">command</a>.  <a href="HISTORY.html">History</a> <a href="COMMAND.html">command</a>s such as
+<code>:</code><code><a href="PBT.html">pbt</a></code> print a <code>:x</code> beside the most recent <a href="COMMAND.html">command</a>, simply to indicate
+that it <strong>is</strong> the most recent one.<p>
+
+The <a href="COMMAND.html">command</a> descriptor <code>:x-23</code> is synonymous with <code>(:x -23)</code>.  More
+generally, every symbol in the keyword package whose first character
+is <code>#\x</code> and whose remaining <a href="CHARACTERS.html">characters</a> parse as a negative integer
+is appropriately understood.  This allows <code>:</code><code><a href="PBT.html">pbt</a></code> <code>:x-10</code> where <code>:</code><code><a href="PBT.html">pbt</a></code>
+<code>(:max -10)</code> or <code>:</code><code><a href="PBT.html">pbt</a></code> <code>(:here -10)</code> were previously used.  The old forms
+are still legal.<p>
+
+The order of the arguments to <code><a href="DEFCONG.html">defcong</a></code> has been changed.<p>
+
+The simplifier now reports the use of unspecified built-in type
+information about the primitives with the phrase ``primitive type
+reasoning.''  This phrase may sometimes occur in situations where
+``propositional calculus'' was formerly credited with the proof.<p>
+
+The function <code><a href="PAIRLIS.html">pairlis</a></code> has been replaced in the code by a new function
+<code><a href="PAIRLIS$.html">pairlis$</a></code>, because Common Lisp does not adequately specify its
+<code><a href="PAIRLIS.html">pairlis</a></code> function.<p>
+
+Some new Common Lisp functions have been added, including <code><a href="LOGTEST.html">logtest</a></code>,
+<code><a href="LOGCOUNT.html">logcount</a></code>, <code><a href="INTEGER-LENGTH.html">integer-length</a></code>, <code><a href="MAKE-LIST.html">make-list</a></code>, <code><a href="REMOVE-DUPLICATES.html">remove-duplicates</a></code>, <code><a href="STRING.html">string</a></code>, and
+<code><a href="CONCATENATE.html">concatenate</a></code>.  The source file <code>/slocal/src/acl2/axioms.lisp</code> is the
+ultimate reference regarding Common Lisp functions in Acl2.<p>
+
+The functions <code><a href="DEFUNS.html">defuns</a></code> and <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> have been documented.
+See <a href="DEFUNS.html">defuns</a> and see <a href="THEORY-INVARIANT.html">theory-invariant</a>.<p>
+
+A few symbols have been added to the list <code>*acl2-exports*</code>.<p>
+
+A new key has been implemented for the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>,
+<code>:irrelevant-formals-ok</code>.  See <a href="SET-IRRELEVANT-FORMALS-OK.html">set-irrelevant-formals-ok</a>.<p>
+
+The connected book directory, <code><a href="CBD.html">cbd</a></code>, must be nonempty and begin and
+end with a slash.  It is set (and displayed) automatically upon your
+first entry to <code><a href="LP.html">lp</a></code>.  You may change the setting with <code><a href="SET-CBD.html">set-cbd</a></code>.
+See <a href="CBD.html">cbd</a>.<p>
+
+<code>:</code><code><a href="OOPS.html">oops</a></code> will undo the last <code>:</code><code><a href="UBT.html">ubt</a></code>.  See <a href="OOPS.html">oops</a>.<p>
+
+Documentation has been written about the ordinals.  See :DOC <code>e0-ordinalp</code>
+and see :DOC <code>e0-ord-&lt;</code>.  [Note added later: Starting with Version_2.8,
+instead see <a href="O-P.html">o-p</a> and see <a href="O_lt_.html">o&lt;</a>.
+<p>
+The color <a href="EVENTS.html">events</a> -- (red), (pink), (blue), and (gold) -- may no
+longer be enclosed inside calls of <code><a href="LOCAL.html">local</a></code>, for soundness reasons.  In
+fact, neither may any event that sets the <code><a href="ACL2-DEFAULTS-TABLE.html">acl2-defaults-table</a></code>.
+See <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>.<p>
+
+See <a href="LD-KEYWORD-ALIASES.html">ld-keyword-aliases</a> for an example of how to change the exit
+keyword from <code>:</code><code><a href="Q.html">q</a></code> to something else.<p>
+
+The attempt to install a <a href="MONITOR.html">monitor</a> on <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rules stored as simple
+abbreviations now causes an error because the application of
+abbreviations is not tracked.<p>
+
+A new message is sometimes printed by the theorem prover, indicating
+that a given simplification is ``specious'' because the subgoals it
+produces include the input goal.  In Version 1.4 this was detected
+but not reported, causing behavior some users found bizarre.
+See <a href="SPECIOUS-SIMPLIFICATION.html">specious-simplification</a>.<p>
+
+<code>:</code><code><a href="DEFINITION.html">Definition</a></code> rules are no longer always required to specify the
+<code>:clique</code> and <code>:controller-alist</code> fields; those fields can be defaulted
+to system-determined values in many common instances.
+See <a href="DEFINITION.html">definition</a>.<p>
+
+A warning is printed if a macro form with keyword arguments is given
+duplicate keyword values.  Execute <code>(thm t :doc nil :doc "ignored")</code>
+and read the warning printed.<p>
+
+A new restriction has been placed on <code><a href="ENCAPSULATE.html">encapsulate</a></code>.  Non-<code><a href="LOCAL.html">local</a></code>
+recursive definitions inside the <code><a href="ENCAPSULATE.html">encapsulate</a></code> may not use, in their
+tests and recursive calls, the constrained functions introduced by
+the <code><a href="ENCAPSULATE.html">encapsulate</a></code>.  See <a href="SUBVERSIVE-RECURSIONS.html">subversive-recursions</a>.  (Note added in
+Version  2.3:  Subversive recursions were first recognized by us here
+in Version 1.5, but our code for recognizing them was faulty and the
+bug was not fixed until Version  2.3.) <p>
+
+The <a href="EVENTS.html">events</a> <code><a href="DEFEQUIV.html">defequiv</a></code>, <code><a href="DEFCONG.html">defcong</a></code>, <code><a href="DEFREFINEMENT.html">defrefinement</a></code>, and <code><a href="DEFEVALUATOR.html">defevaluator</a></code> have
+been reimplemented so that they are just macros that expand into
+appropriate <code><a href="DEFTHM.html">defthm</a></code> or <code><a href="ENCAPSULATE.html">encapsulate</a></code> <a href="EVENTS.html">events</a>; they are no longer
+primitive <a href="EVENTS.html">events</a>.  See the <a href="DOCUMENTATION.html">documentation</a> of each affected event.<p>
+
+The <code>defcor</code> event, which was a shorthand for a <code><a href="DEFTHM.html">defthm</a></code> that
+established a <a href="COROLLARY.html">corollary</a> of a named, previously proved event, has
+been eliminated because its implementation relied on a technique we
+have decided to ban from our code.  If you want the effect of a
+<code>defcor</code> in Version 1.5 you must submit the corresponding <code><a href="DEFTHM.html">defthm</a></code> with
+a <code>:by</code> hint naming the previously proved event.<p>
+
+Error reporting has been improved for inappropriate <code><a href="IN-THEORY.html">in-theory</a></code> <a href="HINTS.html">hints</a>
+and <a href="EVENTS.html">events</a>, and for syntax errors in rule classes, and for
+non-existent filename arguments to <code><a href="LD.html">ld</a></code>.<p>
+
+Technical Note:  We now maintain the Third Invariant on <code>type-alists</code>,
+as described in the Essay on the Invariants on Type-alists, and
+Canonicality.  This change will affect some proofs, for example, by
+causing a to rewrite more quickly to <code>c</code> when <code>(equiv a b)</code> and
+<code>(equiv b c)</code> are both known and <code>c</code> is the canonical
+representative of the three.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

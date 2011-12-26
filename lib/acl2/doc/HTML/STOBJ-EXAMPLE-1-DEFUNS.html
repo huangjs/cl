@@ -1,0 +1,128 @@
+<html>
+<head><title>STOBJ-EXAMPLE-1-DEFUNS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>STOBJ-EXAMPLE-1-DEFUNS</h2>the defuns created by the <code>counters</code> stobj
+<pre>Major Section:  <a href="STOBJ.html">STOBJ</a>
+</pre><p>
+
+Consider the event shown in <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a>:
+
+<pre>
+(defstobj counters
+  (NodeCnt     :type integer :initially 0)
+  (TipCnt      :type integer :initially 0)
+  (IntTipsSeen :type t       :initially nil))
+</pre>
+<p>
+
+Here is a complete list of the defuns added by the event.
+<p>
+The careful reader will note that the <code>counters</code> argument below is
+<em>not</em> declared with the <code>:stobjs</code> <code>xarg</code> even though we
+insist that the argument be a stobj in calls of these functions.
+This ``mystery'' is explained below.<p>
+
+
+<pre>
+(defun NodeCntp (x)                 ;;; Recognizer for 1st field
+  (declare (xargs :guard t :verify-guards t))
+  (integerp x))<p>
+
+(defun TipCntp (x)                  ;;; Recognizer for 2nd field
+  (declare (xargs :guard t :verify-guards t))
+  (integerp x))<p>
+
+(defun IntTipsSeenp (x)             ;;; Recognizer for 3rd field
+  (declare (xargs :guard t :verify-guards t) (ignore x))
+  t)<p>
+
+(defun countersp (counters)         ;;; Recognizer for object
+  (declare (xargs :guard t :verify-guards t))
+  (and (true-listp counters)
+       (= (length counters) 3)
+       (NodeCntp (nth 0 counters))
+       (TipCntp (nth 1 counters))
+       (IntTipsSeenp (nth 2 counters))
+       t))<p>
+
+(defun create-counters ()           ;;; Creator for object
+  (declare (xargs :guard t :verify-guards t))
+  (list '0 '0 'nil))<p>
+
+(defun NodeCnt (counters)           ;;; Accessor for 1st field
+  (declare (xargs :guard (countersp counters) :verify-guards t))
+  (nth 0 counters))<p>
+
+(defun update-NodeCnt (v counters)  ;;; Updater for 1st field
+  (declare (xargs :guard
+                  (and (integerp v)
+                       (countersp counters))
+                  :verify-guards t))
+  (update-nth 0 v counters))<p>
+
+(defun TipCnt (counters)            ;;; Accessor for 2nd field
+  (declare (xargs :guard (countersp counters) :verify-guards t))
+  (nth 1 counters))<p>
+
+(defun update-TipCnt (v counters)   ;;; Updater for 2nd field
+  (declare (xargs :guard
+                  (and (integerp v)
+                       (countersp counters))
+                  :verify-guards t))
+  (update-nth 1 v counters))<p>
+
+(defun IntTipsSeen (counters)       ;;; Accessor for 3rd field
+  (declare (xargs :guard (countersp counters) :verify-guards t))
+  (nth 2 counters))<p>
+
+(defun update-IntTipsSeen (v counters) ;;; Updater for 3rd field
+  (declare (xargs :guard (countersp counters) :verify-guards t))
+  (update-nth 2 v counters))
+</pre>
+<p>
+
+Observe that there is a recognizer for each of the three fields and
+then a recognizer for the <code>counters</code> object itself.  Then, for each
+field, there is an accessor and an updater.<p>
+
+Observe also that the functions are guarded so that they expect a
+<code>countersp</code> for their <code>counters</code> argument and an appropriate value
+for the new field values.<p>
+
+You can see all of the <code>defuns</code> added by a <code>defstobj</code> event by
+executing the event and then using the <code>:pcb!</code> command on the stobj
+name.  E.g.,
+
+<pre>
+ACL2 !&gt;:pcb! counters
+</pre>
+
+will print the defuns above.<p>
+
+We now clear up the ``mystery'' mentioned above.  Note, for example
+in <code>TipCnt</code>, that the formal <code>counters</code> is used.  From the
+discussion in <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a> it has been made clear that
+<code>TipCnt</code> can only be called on the <code>counters</code> object.  And yet,
+in that same discussion it was said that an argument is so treated
+only if it it declared among the <code>:stobjs</code> in the definition of
+the function.  So why doesn't <code>TipCnt</code> include something like
+<code>(declare (xargs :stobjs (counters)))</code>?<p>
+
+The explanation of this mystery is as follows.  At the time
+<code>TipCnt</code> was defined, during the introduction of the <code>counters</code>
+stobj, the name ``<code>counters</code>'' was not yet a single-threaded
+object.  The introduction of a new single-threaded object occurs in
+three steps: (1) The new primitive recognizers, accessors, and
+updaters are introduced as ``ordinary functions,'' producing their
+logical axiomatizations.  (2) The executable counterparts are
+defined in raw Lisp to support destructive updating.  (3) The new
+name is declared a single-threaded object to ensure that all future
+use of these primitives respects the single-threadedness of the
+object.  The functions defined as part of the introduction of a new
+single-threaded object are the only functions in the system that
+have undeclared stobj formals other than <code>state</code>.<p>
+
+You may return to <a href="STOBJ-EXAMPLE-1.html">stobj-example-1</a> here.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

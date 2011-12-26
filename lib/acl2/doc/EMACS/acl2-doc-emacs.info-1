@@ -1,0 +1,869 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: Top,  Up: (DIR)
+
+This manual documents ACL2 Version 3.1.
+
+* Menu:
+
+
+* ACL2-TUTORIAL:: tutorial introduction to ACL2
+
+* BDD:: ordered binary decision diagrams with rewriting
+
+* BOOKS:: files of ACL2 event forms
+
+* BREAK-REWRITE:: the read-eval-print loop entered to monitor rewrite rules
+
+* DOCUMENTATION:: functions that display documentation at the terminal
+
+* EVENTS:: functions that extend the logic
+
+* HISTORY:: functions that display or change history
+
+* MISCELLANEOUS:: a miscellany of documented functions and concepts
+               (often cited in more accessible documentation)
+
+* OTHER:: other commonly used top-level functions
+
+* PROGRAMMING:: built-in ACL2 functions
+
+* PROOF-CHECKER:: support for low-level interaction
+
+* PROOF-TREE:: proof tree displays
+
+* Pages Written Especially for the Tours:: Pages Written Especially for the Tours
+
+* REAL:: ACL2(r) support for real numbers
+
+* RELEASE-NOTES:: pointers to what has changed
+
+* RULE-CLASSES:: adding rules to the data base
+
+* STOBJ:: single-threaded objects or ``von Neumann bottlenecks''
+
+* THEORIES:: sets of runes to enable/disable in concert
+
+* TRACE:: tracing functions in ACL2
+
+* Index:: An item for each documented ACL2 item.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-TUTORIAL,  Next: BDD,  Prev: Top,  Up: Top
+
+ACL2-TUTORIAL    tutorial introduction to ACL2
+
+This section contains a tutorial introduction to ACL2, some examples of
+the use of ACL2, and pointers to additional information.
+
+* Menu:
+
+* INTRODUCTION:: introduction to ACL2
+
+* STARTUP:: How to start using ACL2; the ACL2 command loop
+
+* TIDBITS:: some basic hints for using ACL2
+
+* TIPS:: some hints for using the ACL2 prover
+
+* TUTORIAL-EXAMPLES:: examples of ACL2 usage
+
+You might also find CLI Technical Report 101 helpful for a high-level
+view of the design goals of ACL2.
+
+If you are already familiar with Nqthm, see *note NQTHM-TO-ACL2:: for
+help in making the transition from Nqthm to ACL2.
+
+If you would like more familiarity with Nqthm, we suggest CLI Technical
+Report 100, which works through a non-trivial example.  A short version
+of that paper, which is entitled "Interaction with the Boyer-Moore
+Theorem Prover:  A Tutorial Study Using the Arithmetic-Geometric Mean
+Theorem," is to appear in the Journal of Automated Reasoning's special
+issue on induction, probably in 1995 or 1996.  Readers may well find
+that this paper indirectly imparts useful information about the
+effective use of ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: INTRODUCTION,  Next: STARTUP,  Prev: ACL2-TUTORIAL,  Up: ACL2-TUTORIAL
+
+INTRODUCTION    introduction to ACL2
+
+This section contains introductory material on ACL2 including what ACL2
+is, how to get started using the system, how to read the output, and
+other introductory topics.  It was written almost entirely by Bill
+Young of Computational Logic, Inc.
+
+You might also find CLI Technical Report 101 helpful, especially if you
+are familiar with Nqthm.  If you would like more familiarity with
+Nqthm, we suggest CLI Technical Report 100.
+
+_OVERVIEW_
+
+ACL2 is an automated reasoning system developed (for the first 9 years)
+at Computational Logic, Inc. and (from January, 1997) at the University
+of Texas at Austin.  It is the successor to the Nqthm (or Boyer-Moore)
+logic and proof system and its Pc-Nqthm interactive enhancement.  The
+acronym ACL2 actually stands for "A Computational Logic for Applicative
+Common Lisp".  This title suggests several distinct but related aspects
+of ACL2.
+
+We assume that readers of the ACL2 documentation have at least a very
+slight familiarity with some Lisp-like language.  We will address the
+issue of prerequisites further, in "ABOUT THIS TUTORIAL" below.
+
+As a *logic*, ACL2 is a formal system with rigorously defined syntax
+and semantics.  In mathematical parlance, the ACL2 logic is a
+first-order logic of total recursive functions providing mathematical
+induction on the ordinals up to epsilon-0 and two extension principles:
+one for recursive definition and one for constrained introduction of
+new function symbols, here called encapsulation.  The syntax of ACL2 is
+that of Common Lisp; ACL2 specifications are "also" Common Lisp
+programs in a way that we will make clear later.  In less formal
+language, the ACL2 logic is an integrated collection of rules for
+defining (or axiomatizing) recursive functions, stating properties of
+those functions, and rigorously establishing those properties.  Each of
+these activities is mechanically supported.
+
+As a *specification language*, ACL2 supports modeling of systems of
+various kinds.  An ACL2 function can equally be used to express purely
+formal relationships among mathematical entities, to describe
+algorithms, or to capture the intended behavior of digital systems.
+For digital systems, an ACL2 specification is a mathematical *model*
+that is intended to formalize relevant aspects of system behavior.
+Just as physics allows us to model the behavior of continuous physical
+systems, ACL2 allows us to model digital systems, including many with
+physical realizations such as computer hardware.  As early as the
+1930's Church, Kleene, Turing and others established that recursive
+functions provide an expressive formalism for modeling digital
+computation.  Digital computation should be understood in a broad
+sense, covering a wide variety of activities including almost any
+systematic or algorithmic activity, or activity that can be reasonably
+approximated in that way.  This ranges from the behavior of a digital
+circuit to the behavior of a programming language compiler to the
+behavior of a controller for a physical system (as long as the system
+can be adequately modeled discretely).  All of these have been modeled
+using ACL2 or its predecessor Nqthm.
+
+ACL2 is a *computational* logic in at least three distinct senses.
+First, the theory of recursive functions is often considered the
+mathematics of computation.  Church conjectured that any "effective
+computation" can be modeled as a recursive function.  Thus, ACL2
+provides an expressive language for modeling digital systems.  Second,
+many ACL2 specifications are executable.  In fact, recursive functions
+written in ACL2 *are* Common Lisp functions that can be submitted to
+any compliant Common Lisp compiler and executed (in an environment
+where suitable ACL2-specific macros and functions are defined).  Third,
+ACL2 is computational in the sense that calculation is heavily
+integrated into the reasoning process.  Thus, an expression with
+explicit constant values but no free variables can be simplified by
+calculation rather than by complex logical manipulations.
+
+ACL2 is a powerful, automated *theorem prover* or proof checker.  This
+means that a competent user can utilize the ACL2 system to discover
+proofs of theorems stated in the ACL2 logic or to check previously
+discovered proofs.  The basic deductive steps in an ACL2-checked proof
+are often quite large, due to the sophisticated combination of decision
+procedures, conditional rewriting, mathematical and structural
+induction, propositional simplification, and complex heuristics to
+orchestrate the interactions of these capabilities.  Unlike some
+automated proof systems, ACL2 does not produce a formal proof.
+However, we believe that if ACL2 certifies the "theoremhood" of a given
+conjecture, then such a formal proof exists and, therefore, the theorem
+is valid.  The ultimate result of an ACL2 proof session is a collection
+of "events," possibly grouped into "books," that can be replayed in
+ACL2.  Therefore, a proof can be independently validated by any ACL2
+user.
+
+ACL2 may be used in purely automated mode in the shallow sense that
+conjectures are submitted to the prover and the user does not interact
+with the proof attempt (except possibly to stop it) until the proof
+succeeds or fails.  However, any non-trivial proof attempt is actually
+interactive, since successful proof "events" influence the subsequent
+behavior of the prover.  For example, proving a lemma may introduce a
+rule that subsequently is used automatically by the prover.  Thus, any
+realistic proof attempt, even in "automatic" mode, is really an
+interactive dialogue with the prover to craft a sequence of events
+building an appropriate theory and proof rules leading up to the proof
+of the desired result.  Also, ACL2 supports annotating a theorem with
+"hints" designed to guide the proof attempt.  By supplying appropriate
+hints, the user can suggest proof strategies that the prover would not
+discover automatically.  There is a "proof-tree" facility (see *note
+PROOF-TREE::) that allows the user to monitor the progress and
+structure of a proof attempt in real-time.  Exploring failed proof
+attempts is actually where heavy-duty ACL2 users spend most of their
+time.
+
+ACL2 can also be used in a more explicitly interactive mode.  The
+"proof-checker" subsystem of ACL2 allows exploration of a proof on a
+fairly low level including expanding calls of selected function
+symbols, invoking specific rewrite rules, and selectively navigating
+around the proof.  This facility can be used to gain sufficient insight
+into the proof to construct an automatic version, or to generate a
+detailed interactive-style proof that can be replayed in batch mode.
+
+Because ACL2 is all of these things -- computational logic,
+specification language, programming system, and theorem prover -- it is
+more than the sum of its parts.  The careful integration of these
+diverse aspects has produced a versatile automated reasoning system
+suitable for building highly reliable digital systems.  In the
+remainder of this tutorial, we will illustrate some simple uses of this
+automated reasoning system.
+
+_ABOUT THIS TUTORIAL_
+
+ACL2 is a complex system with a vast array of features, bells and
+whistles.  However, it is possible to perform productive work with the
+system using only a small portion of the available functionality.  The
+goals of this tutorial are to:
+
+     familiarize the new user with the most basic features of and modes
+     of interaction with ACL2;
+
+     familiarize her with the form of output of the system; and
+
+     work through a graduated series of examples.
+
+
+The more knowledge the user brings to this system, the easier it will
+be to become proficient.  On one extreme:  the *ideal* user of ACL2 is
+an expert Common Lisp programmer, has deep understanding of automated
+reasoning, and is intimately familiar with the earlier Nqthm system.
+Such ideal users are unlikely to need this tutorial.  However, without
+some background knowledge, the beginning user is likely to become
+extremely confused and frustrated by this system.  We suggest that a
+new user of ACL2 should:
+
+     (a) have a little familiarity with Lisp, including basic Lisp
+     programming and prefix notation (a Lisp reference manual such as
+     Guy Steele's "Common Lisp:  The Language" is also helpful);
+
+     (b) be convinced of the utility of formal modeling; and
+
+     (c) be willing to gain familiarity with basic automated theorem
+     proving topics such as rewriting and algebraic simplification.
+
+
+We will not assume any deep familiarity with Nqthm (the so-called
+"Boyer-Moore Theorem Prover"), though the book "A Computational Logic
+Handbook" by Boyer and Moore (Academic Press, 1988) is an extremely
+useful reference for many of the topics required to become a competent
+ACL2 user.  We'll refer to it as ACLH below.
+
+As we said in the introduction, ACL2 has various facets.  For example,
+it can be used as a Common Lisp programming system to construct
+application programs.  In fact, the ACL2 system itself is a large
+Common Lisp program constructed almost entirely within ACL2.  Another
+use of ACL2 is as a specification and modeling tool.  That is the
+aspect we will concentrate on in the remainder of this tutorial.
+
+_GETTING STARTED_
+
+This section is an abridged version of what's available elsewhere; feel
+free to see *note STARTUP:: for more details.
+
+How you start ACL2 will be system dependent, but you'll probably type
+something like "acl2" at your operating system prompt.  Consult your
+system administrator for details.
+
+When you start up ACL2, you'll probably find yourself inside the ACL2
+command loop, as indicated by the following prompt.
+
+
+       ACL2 !>
+
+If not, you should type (LP).  See *Note LP::, which has a lot more
+information about the ACL2 command loop.
+
+There are two "modes" for using ACL2, :logic and :program.  When you
+begin ACL2, you will ordinarily be in the :logic mode.  This means that
+any new function defined is not only executable but also is
+axiomatically defined in the ACL2 logic.  (See *Note DEFUN-MODE:: and
+see *note DEFAULT-DEFUN-MODE::.)  Roughly speaking, :program mode is
+available for using ACL2 as a programming language without some of the
+logical burdens necessary for formal reasoning.  In this tutorial we
+will assume that we always remain in :logic mode and that our purpose is
+to write formal models of digital systems and to reason about them.
+
+Now, within the ACL2 command loop you can carry out various kinds of
+activities, including the folllowing.  (We'll see examples later of
+many of these.)
+
+     define new functions (see *note DEFUN::);
+
+     execute functions on concrete data;
+
+     pose and attempt to prove conjectures about previously defined
+     functions (see *note DEFTHM::);
+
+     query the ACL2 "world" or database (e.g., see *note PE::); and
+
+     numerous other things.
+
+
+In addition, there is extensive on-line documentation, of which this
+tutorial introduction is a part.
+
+_INTERACTING WITH ACL2_
+
+The standard means of interacting with ACL2 is to submit a sequence of
+forms for processing by the ACL2 system.  These forms are checked for
+syntactic and semantic acceptability and appropriately processed by the
+system.  These forms can be typed directly at the ACL2 prompt.
+However, most successful ACL2 users prefer to do their work using the
+Emacs text editor, maintaining an Emacs "working" buffer in which forms
+are edited.  Those forms are then copied to the ACL2 interaction
+buffer, which is often the "*shell*" buffer.
+
+In some cases, processing succeeds and makes some change to the ACL2
+"logical world," which affects the processing of subsequent forms.  How
+can this processing fail?  For example, a proposed theorem will be
+rejected unless all function symbols mentioned have been previously
+defined.  Also the ability of ACL2 to discover the proof of a theorem
+may depend on the user previously having proved other theorems.  Thus,
+the order in which forms are submitted to ACL2 is quite important.
+Maintaining forms in an appropriate order in your working buffer will
+be helpful for re-playing the proof later.
+
+One of the most common events in constructing a model is introducing
+new functions.  New functions are usually introduced using the defun
+form; we'll encounter some exceptions later.  Proposed function
+definitions are checked to make sure that they are syntactically and
+semantically acceptable (e.g., that all mentioned functions have been
+previously defined) and, for recursive functions, that their recursive
+calls *terminate*.  A recursive function definition is guaranteed to
+terminate if there is some some "measure" of the arguments and a
+"well-founded" ordering such that the arguments to the function get
+smaller in each recursive call.  See *Note WELL-FOUNDED-RELATION::.
+
+For example, suppose that we need a function that will append two lists
+together.  (We already have one in the ACL2 append function; but
+suppose perversely that we decide to define our own.)  Suppose we
+submit the following definition (you should do so as well and study the
+system output):
+
+
+       (defun my-app (x y)
+         (if (atom x)
+             y
+           (cons (car x) (my-app x y))))
+
+The system responds with the following message:
+
+
+       ACL2 Error in ( DEFUN MY-APP ...):  No :MEASURE was supplied with
+       the definition of MY-APP.  Our heuristics for guessing one have not
+       made any suggestions.  No argument of the function is tested along
+       every branch and occurs as a proper subterm at the same argument
+       position in every recursive call.  You must specify a :MEASURE.  See
+       :DOC defun.
+
+This means that the system could not find an expression involving the
+formal parameters x and y that decreases under some well-founded order
+in every recursive call (there is only one such call).  It should be
+clear that there is no such measure in this case because the only
+recursive call doesn't change the arguments at all.  The definition is
+obviously flawed; if it were accepted and executed it would loop
+forever.  Notice that a definition that is rejected is not stored in
+the system database; there is no need to take any action to have it
+"thrown away."  Let's try again with the correct definition.  The
+interaction now looks like (we're also putting in the ACL2 prompt; you
+don't type that):
+
+
+       ACL2 !>(defun my-app (x y)
+                (if (atom x)
+                    y
+                  (cons (car x) (my-app (cdr x) y))))
+     
+       The admission of MY-APP is trivial, using the relation O<
+       (which is known to be well-founded on the domain recognized by
+       O-P) and the measure (ACL2-COUNT X).  We observe that the
+       type of MY-APP is described by the theorem
+       (OR (CONSP (MY-APP X Y)) (EQUAL (MY-APP X Y) Y)).
+       We used primitive type reasoning.
+     
+       Summary
+       Form:  ( DEFUN MY-APP ...)
+       Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+       Warnings:  None
+       Time:  0.07 seconds (prove: 0.00, print: 0.00, other: 0.07)
+       MY-APP
+
+Notice that this time the function definition was accepted.  We didn't
+have to supply a measure explicitly; the system inferred one from the
+form of the definition.  On complex functions it may be necessary to
+supply a measure explicitly.  (See *Note XARGS::.)
+
+The system output provides several pieces of information.
+
+     The revised definition is acceptable.  The system realized that
+     there is a particular measure (namely, (acl2-count x)) and a
+     well-founded relation (o<) under which the arguments of my-app get
+     smaller in recursion.  Actually, the theorem prover proved several
+     theorems to admit my-app.  The main one was that when (atom x) is
+     false the acl2-count of (cdr x) is less than (in the o< sense) the
+     acl2-count of x.  Acl2-count is the most commonly used measure of
+     the "size" of an ACL2 object.  o< is the ordering relation on
+     ordinals less than epsilon-0.  On the natural numbers it is just
+     ordinary "<".
+
+     The observation printed about "the type of MY-APP" means that
+     calls of the function my-app will always return a value that is
+     either a cons pair or is equal to the second parameter.
+
+     The summary provides information about which previously introduced
+     definitions and lemmas were used in this proof, about some notable
+     things to watch out for (the Warnings), and about how long this
+     event took to process.
+
+
+Usually, it's not important to read this information.  However, it is a
+good habit to scan it briefly to see if the type information is
+surprising to you or if there are Warnings.  We'll see an example of
+them later.
+
+After a function is accepted, it is stored in the database and
+available for use in other function definitions or lemmas.  To see the
+definition of any function use the :pe command (see *note PE::).  For
+example,
+
+
+       ACL2 !>:pe my-app
+        L       73:x(DEFUN MY-APP (X Y)
+                           (IF (ATOM X)
+                               Y (CONS (CAR X) (MY-APP (CDR X) Y))))
+
+This displays the definition along with some other relevant
+information.  In this case, we know that this definition was processed
+in :logic mode (the "L") and was the 73rd command processed in the
+current session.
+
+We can also try out our newly defined function on some sample data.  To
+do that, just submit a form to be evaluated to ACL2.  For example,
+
+
+       ACL2 !>(my-app '(0 1 2) '(3 4 5))
+       (0 1 2 3 4 5)
+       ACL2 !>(my-app nil nil)
+       NIL
+       ACL2 !>
+
+Now suppose we want to prove something about the function just
+introduced.  We conjecture, for example, that the length of the append
+of two lists is the sum of their lengths.  We can formulate this
+conjecture in the form of the following ACL2 defthm form.
+
+
+       (defthm my-app-length
+         (equal (len (my-app x y))
+                (+ (len x) (len y))))
+
+First of all, how did we know about the functions len and +, etc.?  The
+answer to that is somewhat unsatisfying -- we know them from our past
+experience in using Common Lisp and ACL2.  It's hard to know that a
+function such as len exists without first knowing some Common Lisp.  If
+we'd guessed that the appropriate function was called length (say, from
+our knowledge of Lisp) and tried :pe length, we would have seen that
+length is defined in terms of len, and we could have explored from
+there.  Luckily, you can write a lot of ACL2 functions without knowing
+too many of the primitive functions.
+
+Secondly, why don't we need some "type" hypotheses?  Does it make sense
+to append things that are not lists?  Well, yes.  ACL2 and Lisp are
+both quite weakly typed.  For example, inspection of the definition of
+my-app shows that if x is not a cons pair, then (my-app x y) always
+returns y, no matter what y is.
+
+Thirdly, would it matter if we rewrote the lemma with the equality
+reversed, as follows?
+
+
+       (defthm my-app-length2
+         (equal (+ (len x) (len y))
+                (len (my-app x y)))).
+
+The two are *logically* equivalent, but...yes, it would make a big
+difference.  Recall our remark that a lemma is not only a "fact" to be
+proved; it also is used by the system to prove other later lemmas.  The
+current lemma would be stored as a rewrite rule.  (See *Note
+RULE-CLASSES::.)  For a rewrite rule, a conclusion of the form (EQUAL
+LHS RHS) means to replace instances of the LHS by the appropriate
+instance of the RHS.  Presumably, it's better to rewrite (len (my-app x
+y)) to (+ (len x) (len y)) than the other way around.  The reason is
+that the system "knows" more about + than it does about the new
+function symbol my-app.
+
+So let's see if we can prove this lemma.  Submitting our preferred
+defthm to ACL2 (do it!), we get the following interaction:
+
+               --------------------------------------------------
+     ACL2 !>(defthm my-app-length
+       (equal (len (my-app x y))
+              (+ (len x) (len y))))
+     
+     Name the formula above *1.
+     
+     Perhaps we can prove *1 by induction.  Three induction schemes are
+     suggested by this conjecture.  These merge into two derived
+     induction schemes.  However, one of these is flawed and so we are
+     left with one viable candidate.
+     
+     We will induct according to a scheme suggested by (LEN X), but
+     modified to accommodate (MY-APP X Y).  If we let (:P X Y) denote *1
+     above then the induction scheme we'll use is
+     (AND (IMPLIES (NOT (CONSP X)) (:P X Y))
+          (IMPLIES (AND (CONSP X) (:P (CDR X) Y))
+                   (:P X Y))).
+     This induction is justified by the same argument used to admit LEN,
+     namely, the measure (ACL2-COUNT X) is decreasing according to the
+     relation O< (which is known to be well-founded on the domain
+     recognized by O-P).  When applied to the goal at hand the
+     above induction scheme produces the following two nontautological
+     subgoals.
+     
+     Subgoal *1/2
+     (IMPLIES (NOT (CONSP X))
+              (EQUAL (LEN (MY-APP X Y))
+                     (+ (LEN X) (LEN Y)))).
+     
+     But simplification reduces this to T, using the :definitions of FIX,
+     LEN and MY-APP, the :type-prescription rule LEN, the :rewrite rule
+     UNICITY-OF-0 and primitive type reasoning.
+     
+     Subgoal *1/1
+     (IMPLIES (AND (CONSP X)
+                   (EQUAL (LEN (MY-APP (CDR X) Y))
+                          (+ (LEN (CDR X)) (LEN Y))))
+              (EQUAL (LEN (MY-APP X Y))
+                     (+ (LEN X) (LEN Y)))).
+     
+     This simplifies, using the :definitions of LEN and MY-APP, primitive
+     type reasoning and the :rewrite rules COMMUTATIVITY-OF-+ and
+     CDR-CONS, to
+     
+     Subgoal *1/1'
+     (IMPLIES (AND (CONSP X)
+                   (EQUAL (LEN (MY-APP (CDR X) Y))
+                          (+ (LEN Y) (LEN (CDR X)))))
+              (EQUAL (+ 1 (LEN (MY-APP (CDR X) Y)))
+                     (+ (LEN Y) 1 (LEN (CDR X))))).
+     
+     But simplification reduces this to T, using linear arithmetic,
+     primitive type reasoning and the :type-prescription rule LEN.
+     
+     That completes the proof of *1.
+     
+     Q.E.D.
+     
+     Summary
+     Form:  ( DEFTHM MY-APP-LENGTH ...)
+     Rules: ((:REWRITE UNICITY-OF-0)
+             (:DEFINITION FIX)
+             (:REWRITE COMMUTATIVITY-OF-+)
+             (:DEFINITION LEN)
+             (:REWRITE CDR-CONS)
+             (:DEFINITION MY-APP)
+             (:TYPE-PRESCRIPTION LEN)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL)
+             (:FAKE-RUNE-FOR-LINEAR NIL))
+     Warnings:  None
+     Time:  0.30 seconds (prove: 0.13, print: 0.05, other: 0.12)
+      MY-APP-LENGTH
+               --------------------------------------------------
+
+Wow, it worked!  In brief, the system first tried to rewrite and
+simplify as much as possible.  Nothing changed; we know that because it
+said "Name the formula above *1."  Whenever the system decides to name
+a formula in this way, we know that it has run out of techniques to use
+other than proof by induction.
+
+The induction performed by ACL2 is structural or "Noetherian"
+induction.  You don't need to know much about that except that it is
+induction based on the structure of some object.  The heuristics infer
+the structure of the object from the way the object is recursively
+decomposed by the functions used in the conjecture.  The heuristics of
+ACL2 are reasonably good at selecting an induction scheme in simple
+cases.  It is possible to override the heuristic choice by providing an
+:induction hint (see *note HINTS::).  In the case of the theorem above,
+the system inducts on the structure of x as suggested by the
+decomposition of x in both (my-app x y) and (len x).  In the base case,
+we assume that x is not a consp.  In the inductive case, we assume that
+it is a consp and assume that the conjecture holds for (cdr x).
+
+There is a close connection between the analysis that goes on when a
+function like my-app is accepted and when we try to prove something
+inductively about it.  That connection is spelled out well in Boyer and
+Moore's book "A Computational Logic," if you'd like to look it up.  But
+it's pretty intuitive.  We accepted my-app because the "size" of the
+first argument x decreases in the recursive call.  That tells us that
+when we need to prove something inductively about my-app, it's a good
+idea to try an induction on the size of the first argument.  Of course,
+when you have a theorem involving several functions, it may be
+necessary to concoct a more complicated induction schema, taking
+several of them into account.  That's what's meant by "merging" the
+induction schemas.
+
+The proof involves two cases: the base case, and the inductive case.
+You'll notice that the subgoal numbers go *down* rather than up, so you
+always know how many subgoals are left to process.  The base case
+(Subgoal *1/2) is handled by opening up the function definitions,
+simplifying, doing a little rewriting, and performing some reasoning
+based on the types of the arguments.  You'll often encounter references
+to system defined lemmas (like unicity-of-0).  You can always look at
+those with :pe; but, in general, assume that there's a lot of
+simplification power under the hood that's not too important to
+understand fully.
+
+The inductive case (Subgoal *1/1) is also dispatched pretty easily.
+Here we assume the conjecture true for the cdr of the list and try to
+prove it for the entire list.  Notice that the prover does some
+simplification and then prints out an updated version of the goal
+(Subgoal *1/1').  Examining these gives you a pretty good idea of
+what's going on in the proof.
+
+Sometimes one goal is split into a number of subgoals, as happened with
+the induction above.  Sometimes after some initial processing the
+prover decides it needs to prove a subgoal by induction; this subgoal
+is given a name and pushed onto a stack of goals.  Some steps, like
+generalization (see ACLH), are not necessarily validity preserving;
+that is, the system may adopt a false subgoal while trying to prove a
+true one.  (Note that this is ok in the sense that it is not "unsound."
+The system will fail in its attempt to establish the false subgoal and
+the main proof attempt will fail.)  As you gain facility with using the
+prover, you'll get pretty good at recognizing what to look for when
+reading a proof script.  The prover's proof-tree utility helps with
+monitoring an ongoing proof and jumping to designated locations in the
+proof (see *note PROOF-TREE::).  See *Note TIPS:: for a number of useful
+pointers on using the theorem prover effectively.
+
+When the prover has successfully proved all subgoals, the proof is
+finished.  As with a defun, a summary of the proof is printed.  This
+was an extremely simple proof, needing no additional guidance.  More
+realistic examples typically require the user to look carefully at the
+failed proof log to find ways to influence the prover to do better on
+its next attempt.  This means either:  proving some rules that will
+then be available to the prover, changing the global state in ways that
+will affect the proof, or providing some hints locally that will
+influence the prover's behavior.  Proving this lemma (my-app-length) is
+an example of the first.  Since this is a rewrite rule, whenever in a
+later proof an instance of the form (LEN (MY-APP X Y)) is encountered,
+it will be rewritten to the corresponding instance of (+ (LEN X) (LEN
+Y)).  Disabling the rule by executing the command
+
+
+       (in-theory (disable my-app-length)),
+
+is an example of a global change to the behavior of the prover since
+this rewrite will not be performed subsequently (unless the rule is
+again enabled).  Finally, we can add a (local) disable "hint" to a
+defthm, meaning to disable the lemma only in the proof of one or more
+subgoals.  For example:
+
+
+       (defthm my-app-length-commutativity
+         (equal (len (my-app x y))
+                (len (my-app y x)))
+         :hints (("Goal" :in-theory (disable my-app-length))))
+
+In this case, the hint supplied is a bad idea since the proof is much
+harder with the hint than without it.  Try it both ways.
+
+By the way, to undo the previous event use :u (see *note U::).  To undo
+back to some earlier event use :ubt (see *note UBT::).  To view the
+current event use :pe :here.  To list several events use :pbt (see
+*note PBT::).
+
+Notice the form of the hint in the previous example (see *note
+HINTS::).  It specifies a goal to which the hint applies.  "Goal"
+refers to the top-level goal of the theorem.  Subgoals are given unique
+names as they are generated.  It may be useful to suggest that a
+function symbol be disabled only for Subgoal 1.3.9, say, and a
+different function enabled only on Subgoal 5.2.8.  Overuse of such
+hints often suggests a poor global proof strategy.
+
+We now recommend that you visit documentation on additional examples.
+See *Note TUTORIAL-EXAMPLES::.
+
+
+File: acl2-doc-emacs.info,  Node: STARTUP,  Next: TIDBITS,  Prev: INTRODUCTION,  Up: ACL2-TUTORIAL
+
+STARTUP    How to start using ACL2; the ACL2 command loop
+
+When you start up ACL2, you'll probably find yourself inside the ACL2
+command loop, as indicated by the following prompt.
+
+
+       ACL2 !>
+
+If not, you should type (LP).  See *Note LP::, which has a lot more
+information about the ACL2 command loop.
+
+You should now be in ACL2.  The current "default-defun-mode" is :logic;
+the other mode is :program, which would cause the letter p to be
+printed in the prompt.  :Logic means that any function we define is not
+only executable but also is axiomatically defined in the ACL2 logic.
+See *Note DEFUN-MODE:: and see *note DEFAULT-DEFUN-MODE::.  For example
+we can define a function my-cons as follows.  (You may find it useful
+to start up ACL2 and submit this and other commands below to the ACL2
+command loop, as we won't include output below.)
+
+
+       ACL2 !>(defun my-cons (x y) (cons x y))
+
+An easy theorem may then be proved:  the car of (my-cons a b) is A.
+
+
+       ACL2 !>(defthm car-my-cons (equal (car (my-cons a b)) a))
+
+You can place raw Lisp forms to evaluate at start-up into file
+acl2-init.lsp in your home directory.  For example, if you put the
+following into acl2-init.lsp, then ACL2 will print "HI" when it starts
+up.
+
+     (print "HI")
+
+But be careful; all bets are off when you submit forms to raw Lisp, so
+this capability should only be used when you are hacking or when you
+are setting some Lisp parameters (e.g., (setq si::*notify-gbc* nil) to
+turn off garbage collection notices in GCL).
+
+Notice that unlike Nqthm, the theorem command is defthm rather than
+prove-lemma.  See *Note DEFTHM::, which explains (among other things)
+that the default is to turn theorems into rewrite rules.
+
+Various keyword commands are available to query the ACL2 "world", or
+database.  For example, we may view the definition of my-cons by
+invoking a command to print events, as follows.
+
+
+       ACL2 !>:pe my-cons
+
+Also see *note PE::.  We may also view all the lemmas that rewrite
+terms whose top function symbol is car by using the following command,
+whose output will refer to the lemma car-my-cons proved above.
+
+
+       ACL2 !>:pl car
+
+Also see *note PL::.  Finally, we may print all the commands back
+through the initial world as follows.
+
+
+       ACL2 !>:pbt 0
+
+See *Note HISTORY:: for a list of commands, including these, for
+viewing the current ACL2 world.
+
+Continue with the documentation for tutorial-examples to see a simple
+but illustrative example in the use of ACL2 for reasoning about
+functions.
+
+
+File: acl2-doc-emacs.info,  Node: TIDBITS,  Next: TIPS,  Prev: STARTUP,  Up: ACL2-TUTORIAL
+
+TIDBITS    some basic hints for using ACL2
+
+See *Note BOOKS:: for a discussion of books.  Briefly, a book is a file
+whose name ends in ".lisp" that contains ACL2 events; see *note
+EVENTS::.
+
+See *Note HISTORY:: for a list of useful commands.  Some examples:
+
+
+       :pbt :here      ; print the current event
+       :pbt (:here -3) ; print the last four events
+       :u              ; undo the last event
+       :pe append      ; print the definition of append
+
+See *Note DOCUMENTATION:: to learn how to print documentation to the
+terminal.  There are also versions of the documentation for Mosaic,
+Emacs Info, and hardcopy.
+
+There are quite a few kinds of rules allowed in ACL2 besides :rewrite
+rules, though we hope that beginners won't usually need to be aware of
+them.  See *Note RULE-CLASSES:: for details.  In particular, there is
+support for congruence rewriting.  See *Note RUNE:: ("RUle NamE") for a
+description of the various kinds of rules in the system.  Also see
+*note THEORIES:: for a description of how to build theories of runes,
+which are often used in hints; see *note HINTS::.
+
+A "programming mode" is supported; see *note PROGRAM::, see *note
+DEFUN-MODE::, and see *note DEFAULT-DEFUN-MODE::.  It can be useful to
+prototype functions after executing the command :program, which will
+cause definitions to be syntaxed-checked only.
+
+ACL2 supports mutual recursion, though this feature is not tied into
+the automatic discovery of induction schemas and is often not the best
+way to proceed when you expect to be reasoning about the functions.
+See *Note DEFUNS::; also see *note MUTUAL-RECURSION::.
+
+See *Note LD:: for discussion of how to load files of events.  There
+are many options to ld, including ones to suppress proofs and to
+control output.
+
+The :otf-flg (Onward Thru the Fog FLaG) is a useful feature that Nqthm
+users have often wished for.  It prevents the prover from aborting a
+proof attempt and inducting on the original conjecture.  See *Note
+OTF-FLG::.
+
+ACL2 supports redefinition and redundancy in events; see *note
+LD-REDEFINITION-ACTION:: and see *note REDUNDANT-EVENTS::.
+
+A proof-tree display feature is available for use with Emacs.  This
+feature provides a view of ACL2 proofs that can be much more useful
+than reading the stream of characters output by the theorem prover as
+its "proof."  See *Note PROOF-TREE::.
+
+An interactive feature similar to Pc-Nqthm is supported in ACL2.  See
+*Note VERIFY:: and see *note PROOF-CHECKER::.
+
+ACL2 allows you to monitor the use of rewrite rules.  See *Note
+BREAK-REWRITE::.
+
+See *Note ARRAYS:: to read about applicative, fast arrays in ACL2.
+
+To quit the ACL2 command loop, or (in akcl) to return to the ACL2
+command loop after an interrupt, type :q.  To continue (resume) after
+an interrupt (in akcl), type :r.  To cause an interrupt (in akcl under
+Unix (trademark of AT&T)), hit control-C (twice, if inside Emacs).  To
+exit ACL2 altogether, first type :q to exit the ACL2 command loop, and
+then exit Lisp (by typing (user::bye) in akcl).
+
+See *Note STATE:: to read about the von Neumannesque ACL2 state object
+that records the "current state" of the ACL2 session.  Also see *note
+@: atsign., and see *note ASSIGN::, to learn about reading and setting
+global state variables.
+
+If you want your own von Neumannesque object, e.g., a structure that
+can be "destructively modified" but which must be used with some
+syntactic restrictions, see *note STOBJ::.
+

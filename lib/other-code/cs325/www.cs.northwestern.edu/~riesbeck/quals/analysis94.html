@@ -1,0 +1,159 @@
+<!--This file created 7/2/97 10:23 AM by Claris Home Page version 2.0-->
+<HTML>
+<HEAD>
+   <TITLE>94 Programming Analysis</TITLE>
+   <META NAME=GENERATOR CONTENT="Claris Home Page 2.0">
+   <X-SAS-WINDOW TOP=90 BOTTOM=624 LEFT=12 RIGHT=542>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<H1 ALIGN=CENTER>Analysis and Self-Assessment</H1>
+
+<H1 ALIGN=CENTER>94 Programming Question</H1>
+
+<P>The conditions in the question can be described more abstractly as
+follows. You are given:</P>
+
+<UL>
+   <LI>a set of <EM>fact sets</EM> of the form
+   
+   <UL>
+      {fact1, fact2, ...}
+   </UL>
+   
+   <P>where exactly one fact in each set must be true,</P>
+   
+   <LI>a set of <EM>rule sets</EM>, each of the form
+   
+   <UL>
+      result1 IF fact1 AND fact2 ...
+      
+      <P>result2 IF fact1 AND fact2 ...</P>
+      
+      <P>...</P>
+   </UL>
+   
+   <P>where there may be more than one set of facts leading to the
+   same result, and exactly one result is possible for each rule set
+   in any scenario,</P>
+   
+   <LI>and a <EM>scenario</EM>, which is a proposition of the form
+   
+   <UL>
+      fact1 AND fact2 AND ...
+   </UL>
+</UL>
+
+<P>With these abstractions, we can describe the two functions asked
+for as follows:</P>
+
+<UL>
+   <LI><TT>do-probe</TT> should select the result whose facts all
+   appear in the current scenario, and
+   
+   <LI><TT>consistent-p</TT> should return true for a given fact only
+   if that fact can't be proven false by the results seen so far.
+</UL>
+
+<H1>Assess Your Comments</H1>
+
+<P><B>Self-check</B> <U>Did you specify in your documentation what
+should happen if more than one rule for a test applies in a
+scenario?</U> Just implementing one possibility is not enough. A
+clarification of the original specification should be given. It might
+be "all results implied by a scenario will be returned," "the rules
+are checked in order and the first result is returned," or "only one
+result should be possible." The latter implies that the
+implementation should signal an error to the implementors if it finds
+more than one possible result.</P>
+
+<P><B>Self-check</B> <U>Did you specify whether a fact could appear
+in more than one fact set?</U> Either way might make sense. If fact
+sets are intended to represent values of an attribute, which is what
+they sort of look like in the given example, then a particular fact
+should appear in only one fact set. If fact sets are intended to
+represent propositions of the form "one and only one of the following
+must be true," then a particular fact could appear in many fact sets.
+Again, an implementation could support either interpretation. It's
+the specification that needs fixing.</P>
+
+<H1>AI Issues</H1>
+
+<P>This problem was inspired by work that was being done with the
+GBS-Lite Tool. That tool is intended to make it simple for course
+authors to create goal-based scenarios where, among other things,
+students run experiments and deriving a valid conclusion from the
+results.</P>
+
+<P>More generally, this problem has the typical elements of an AI
+diagnosis system. There are hidden internal states, e.g., diseases,
+and visible external results, e.g., symptoms. The system under
+consideration is <EM>model-based</EM>, because the causal rules go
+from states to symptoms, not about from symptoms to states.</P>
+
+<P>It should be obvious from the summary that propositional logic is
+a central issue here. One direct approach to the problem is to build
+a propositional theorem prover. There are significant limits in the
+"theorems" that are actually needed. For example, there is no
+chaining of inferences. Each "theorem" is one inference long. Hence,
+simpler solutions should exist. One of them is to
+<A HREF="solution94.html">build a table</A>.</P>
+
+<H1>Assess Your Solution</H1>
+
+<H2><TT>do-probe</TT></H2>
+
+<P><B>Self-check</B> <U>Did you get a working implementation of
+</U><TT><U>do-probe</U></TT><U>?</U> It's a very straightforward
+search for an element or elements of a list.</P>
+
+<P><B>Self-check</B> <U>Did you use the right rule for picking a
+result?</U> The right rule is that the set of facts in the rule is a
+<STRONG>subset</STRONG> of the set of facts in the scenario? Possible
+mistakes: using intersection instead of subset, requiring only one
+fact to be true, failing to check for more than one fact in a rule.
+</P>
+
+<P><B>Self-check</B> <U>Was your loop consistent with your explicit
+or implicit resolution to the multiple results issue?</U> Several
+people wrote loops for <TT>do-probe</TT> that could easily return
+more than one result, but only two people noted that this was an
+issue.</P>
+
+<H2><TT>consistent-p</TT></H2>
+
+<P>As should be clear from the above discussion,
+<TT>consistent-p</TT> is hard. No one got a correct working solution,
+but I didn't expect one. I was hoping for an outline of a simple
+propositional reasoner. I didn't get that either.</P>
+
+<P><B>Self-check</B> <U>Did your code work by seeing if the fact in
+question causes the results seen so far?</U> This doesn't work. A
+result that's been seen might depend on other facts in the scenario.
+</P>
+
+<P><B>Self-check</B> <U>Did your code work by deleting facts from a
+list of possible facts, when the results they implied failed to
+occur?</U> This is wrong. It only works for test results that are
+caused by only one fact. The question explicitly said this was not
+always the case. In general, if a test result is false, then all you
+know is that at least of the facts that can cause it is false, but
+not which one. It's the accumulation of these disjunctions that makes
+the problem tricky.</P>
+
+<P><A NAME="example-return"></A>In fact, even if you assume that all
+rules only have one fact in them, this approach doesn't work. Gregg
+Collins generated <A HREF="counterexample94.html">a simple
+example</A> showing that this approach will fail to notice some facts
+are inconsistent.</P>
+
+<P><B>Self-check</B> <U>Did you note the logical deficiencies of your
+solution?</U> I would have awarded full, or almost full credit, to
+anyone who wrote the "delete facts" code, had they included a decent
+description of the many things it didn't handle.</P>
+
+<P>
+<HR>
+</P>
+</BODY>
+</HTML>

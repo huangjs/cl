@@ -1,0 +1,206 @@
+<html>
+<head><title>NOTE7.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE7</h2>ACL2 Version 1.7 (released October 1994) Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+<code><a href="INCLUDE-BOOK.html">Include-book</a></code> now takes (optionally) an additional keyword
+argument, indicating whether a compiled file is to be loaded.  The
+default behavior is unchanged, except that a warning is printed when
+a compiled file is not loaded.  See <a href="INCLUDE-BOOK.html">include-book</a>.<p>
+
+A <a href="MARKUP.html">markup</a> language for <a href="DOCUMENTATION.html">documentation</a> strings has been implemented,
+and many of the source files have been marked up using this language
+(thanks largely to the efforts of Laura Lawless).  See <a href="MARKUP.html">markup</a>.
+Moreover, there are translators that we have used to provide
+versions of the ACL2 <a href="DOCUMENTATION.html">documentation</a> in info (for use in emacs), html
+(for Mosaic), and tex (for hardcopy) formats.<p>
+
+A new event <code><a href="DEFDOC.html">defdoc</a></code> has been implemented.  It is like <code><a href="DEFLABEL.html">deflabel</a></code>,
+but allows redefinition of <a href="DOC.html">doc</a> strings and has other advantages.
+See <a href="DEFDOC.html">defdoc</a>.<p>
+
+We used to ignore corollaries when collecting up the axioms
+introduced about constrained functions.  That bug has been fixed.
+We thank John Cowles for bringing this bug to our attention.<p>
+
+The macro <code><a href="DEFSTUB.html">defstub</a></code> now allows a <code>:</code><code><a href="DOC.html">doc</a></code> keyword argument, so that
+<a href="DOCUMENTATION.html">documentation</a> may be attached to the name being introduced.<p>
+
+A new command <code><a href="NQTHM-TO-ACL2.html">nqthm-to-acl2</a></code> has been added to help Nqthm users to
+make the transition to ACL2.  See <a href="NQTHM-TO-ACL2.html">nqthm-to-acl2</a>, which also
+includes a complete listing of the relevant tables.<p>
+
+Many function names, especially of the form ``foo<code>-lst</code>'', have been
+changed in order to support the following convention, for any
+``foo'':
+
+<pre>
+<code>(foo-listp lst)</code> represents the notion <code>(for x in lst always foop x)</code>.
+</pre>
+
+A complete list of these changes may be found at the end of this
+note.  All of them except <code>symbolp-listp</code> and
+<code>list-of-symbolp-listp</code> have the string ``<code>-lst</code>'' in their names.
+Note also that <code>keyword-listp</code> has been renamed <code><a href="KEYWORD-VALUE-LISTP.html">keyword-value-listp</a></code>.<p>
+
+Accumulated persistence has been implemented.  It is not connected
+to <code>:</code><code><a href="BRR.html">brr</a></code> or rule monitoring.  See <a href="ACCUMULATED-PERSISTENCE.html">accumulated-persistence</a>.<p>
+
+<code>:Trigger-terms</code> has been added for <code>:</code><code><a href="LINEAR.html">linear</a></code> rule classes, so you
+can hang a <a href="LINEAR.html">linear</a> rule under any addend you want.  See <a href="LINEAR.html">linear</a>,
+which has been improved and expanded.<p>
+
+ACL2 now accepts <code>256</code> <a href="CHARACTERS.html">characters</a> and includes the Common Lisp
+functions <code><a href="CODE-CHAR.html">code-char</a></code> and <code><a href="CHAR-CODE.html">char-code</a></code>.  However, ACL2 controls the lisp
+reader so that <code>#\c</code> may only be used when <code>c</code> is a single standard
+character or one of <code>Newline</code>, <code>Space</code>, <code>Page</code>, <code>Rubout</code>, <code>Tab</code>.  If you want
+to enter other <a href="CHARACTERS.html">characters</a> use <code><a href="CODE-CHAR.html">code-char</a></code>, e.g.,
+<code>(coerce (list (code-char 7) (code-char 240) #a) 'string)</code>.
+See <a href="CHARACTERS.html">characters</a>.  Note:  our current handling of <a href="CHARACTERS.html">characters</a>
+makes the set of theorems different under Macintosh Common Lisp
+(MCL) than under other Common Lisps.  We hope to rectify this
+situation before the final release of ACL2.<p>
+
+A new <a href="TABLE.html">table</a>, <code><a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a></code>, has been implemented, that
+associates macro names with function names.  So for example, since
+<code><a href="APPEND.html">append</a></code> is associated with <code><a href="BINARY-APPEND.html">binary-append</a></code>, the form <code>(disable append)</code>
+it is interpreted as though it were <code>(disable binary-append)</code>.
+See <a href="MACRO-ALIASES-TABLE.html">macro-aliases-table</a>, see <a href="ADD-MACRO-ALIAS.html">add-macro-alias</a> and
+see <a href="REMOVE-MACRO-ALIAS.html">remove-macro-alias</a>.<p>
+
+The implementation of conditional metalemmas has been modified so
+that the metafunction is applied before the hypothesis metafunction
+is applied.  See <a href="META.html">meta</a>.<p>
+
+The Common Lisp functions <code><a href="ACONS.html">acons</a></code> and <code><a href="ENDP.html">endp</a></code> have been defined in
+the ACL2 logic.<p>
+
+We have added the symbol <code><a href="DECLARE.html">declare</a></code> to the list <code>*acl2-exports*</code>,
+and hence to the package <code>"ACL2-USER"</code>.<p>
+
+A new hint, <code>:restrict</code>, has been implemented.  See <a href="HINTS.html">hints</a>.<p>
+
+It used to be that if <code>:</code><code><a href="UBT.html">ubt</a></code> were given a number that is greater
+than the largest current <a href="COMMAND.html">command</a> number, it treated that number the
+same as <code>:</code><code><a href="MAX.html">max</a></code>.  Now, an error is caused.<p>
+
+The <a href="TABLE.html">table</a> <code>:force-table</code> has been eliminated.<p>
+
+A command <code>:</code><code><a href="DISABLEDP.html">disabledp</a></code> (and macro <code><a href="DISABLEDP.html">disabledp</a></code>) has been added;
+see <a href="DISABLEDP.html">disabledp</a>.<p>
+
+<a href="COMPILATION.html">Compilation</a> via <code>:</code><code><a href="SET-COMPILE-FNS.html">set-compile-fns</a></code> is now suppressed during
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>.  In fact, whenever the <a href="STATE.html">state</a> global variable
+<code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> has value <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+
+<p>
+Here are some less important changes, additions, and so on.<p>
+
+Unlike previous releases, we have not proved all the theorems in
+<code>axioms.lisp</code>; instead we have simply assumed them.  We have deferred
+such proofs because we anticipate a fairly major changed in Version
+1.8 in how we deal with <a href="GUARD.html">guard</a>s.<p>
+
+We used to (accidentally) prohibit the ``redefinition'' of a <a href="TABLE.html">table</a>
+as a function.  That is no longer the case.<p>
+
+The check for whether a <a href="COROLLARY.html">corollary</a> follows tautologically has been
+sped up, at the cost of making the check less ``smart'' in the
+following sense:  no longer do we expand primitive functions such as
+<code><a href="IMPLIES.html">implies</a></code> before checking this propositional implication.<p>
+
+The <a href="COMMAND.html">command</a> <code><a href="UBT_bang_.html">ubt!</a></code> has been modified so that it never causes or
+reports an error.  See <a href="UBT_bang_.html">ubt!</a>.<p>
+
+ACL2 now works in Harlequin Lispworks.<p>
+
+The user can now specify the <code>:trigger-terms</code> for <code>:</code><code><a href="LINEAR.html">linear</a></code> rules.
+See <a href="LINEAR.html">linear</a>.<p>
+
+The name of the system is now ``ACL2''; no longer is it ``Acl2''.<p>
+
+The raw lisp counterpart of <code><a href="THEORY-INVARIANT.html">theory-invariant</a></code> is now defined to be a
+no-op as is consistent with the idea that it is just a call of
+<code><a href="TABLE.html">table</a></code>.<p>
+
+A bug was fixed that caused <a href="PROOF-CHECKER.html">proof-checker</a> <a href="INSTRUCTIONS.html">instructions</a> to be
+executed when <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> was <code>t</code>.<p>
+
+The function <code><a href="RASSOC.html">rassoc</a></code> has been added, along with a corresponding
+function used in its <a href="GUARD.html">guard</a>, <code>r-eqlable-alistp</code>.<p>
+
+The <code><a href="IN-THEORY.html">in-theory</a></code> event and hint now print a warning not only when
+certain ``primitive'' <code>:</code><code><a href="DEFINITION.html">definition</a></code> rules are <a href="DISABLE.html">disable</a>d, but also when
+certain ``primitive'' <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> rules are <a href="DISABLE.html">disable</a>d.<p>
+
+The modified version of <code>trace</code> provided by ACL2, for use in raw
+Lisp, has been modified so that the lisp special variable
+<code>*trace-alist*</code> is consulted.  This alist associates, using <code><a href="EQ.html">eq</a></code>,
+values with their print representations.  For example, initially
+<code>*trace-alist*</code> is a one-element list containing the pair
+<code>(cons state '|*the-live-state*|)</code>.<p>
+
+The system now prints an observation when a form is skipped because
+the default color is <code>:red</code> or <code>:pink</code>.  (Technically:  <code>when-cool</code> has
+been modified.)<p>
+
+Additional protection exists when you submit a form to raw Common
+Lisp that should only be submitted inside the ACL2 read-eval-print
+loop.<p>
+
+Here is a complete list of the changes in function names described
+near the top of this note, roughly of the form
+
+<pre>
+foo-lst --&gt; foo-listp
+</pre>
+
+meaning:  the name ``<code>foo-lst</code>'' has been changed to ``<code>foo-listp</code>.''
+
+<pre>
+symbolp-listp    --&gt; symbol-listp
+list-of-symbolp-listp  --&gt; symbol-list-listp
+                       {for consistency with change to symbol-listp}
+rational-lst     --&gt; rational-listp
+                     {which in fact was already defined as well}
+integer-lst      --&gt; integer-listp
+character-lst    --&gt; character-listp
+stringp-lst      --&gt; string-listp
+32-bit-integer-lst   --&gt; 32-bit-integer-listp
+typed-io-lst     --&gt; typed-io-listp
+open-channel-lst --&gt; open-channel-listp
+readable-files-lst   --&gt; readable-files-listp
+written-file-lst --&gt; written-file-listp
+read-file-lst    --&gt; read-file-listp
+writeable-file-lst   --&gt; writable-file-listp
+                     {note change in spelling of ``writable''}
+writeable-file-lst1  --&gt; writable-file-listp1
+pseudo-termp-lst     --&gt; pseudo-term-listp
+hot-termp-lst --&gt; hot-term-listp {by analogy with pseudo-term-listp}
+weak-termp-lst   --&gt; weak-term-listp
+weak-termp-lst-lst   --&gt; weak-termp-list-listp
+ts-builder-case-lstp -&gt; ts-builder-case-listp
+quotep-lst       --&gt; quote-listp
+termp-lst        --&gt; term-listp
+instr-lst        --&gt; instr-listp
+spliced-instr-lst    --&gt; spliced-instr-listp
+rewrite-fncallp-lst  --&gt; rewrite-fncallp-listp
+every-occurrence-equiv-hittablep1-lst --&gt;
+            every-occurrence-equiv-hittablep1-listp
+some-occurrence-equiv-hittablep1-lst  --&gt;
+            some-occurrence-equiv-hittablep1-listp
+            {by analogy with the preceding, even though it's a
+             ``some'' instead of ``all'' predicate]
+almost-quotep1-lst   --&gt; almost-quotep1-listp
+ffnnames-subsetp-lst --&gt; ffnnames-subsetp-listp
+boolean-lstp     --&gt; boolean-listp
+subst-expr1-lst-okp  --&gt; subst-expr1-ok-listp
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

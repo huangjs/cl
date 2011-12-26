@@ -1,0 +1,236 @@
+<html>
+<head><title>REDUNDANT-EVENTS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>REDUNDANT-EVENTS</h2>allowing a name to be introduced ``twice''
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Sometimes an event will announce that it is ``redundant''.  When
+this happens, no change to the logical <a href="WORLD.html">world</a> has occurred.  This
+happens when the logical name being defined is already defined and
+has exactly the same definition, from the logical point of view.
+This feature permits two independent <a href="BOOKS.html">books</a>, each of which defines
+some name, to be included sequentially provided they use exactly the
+same definition.
+<p>
+When are two <a href="LOGICAL-NAME.html">logical-name</a> definitions considered exactly the same?
+It depends upon the kind of name being defined.<p>
+
+A <code><a href="DEFLABEL.html">deflabel</a></code> event is never redundant.  This means that if you have a
+<code><a href="DEFLABEL.html">deflabel</a></code> in a book and that book has been included (without error),
+then references to that label denote the point in <a href="HISTORY.html">history</a> at which
+the book introduced the label.  See the note about shifting logical
+names, below.<p>
+
+A <code><a href="DEFUN.html">defun</a></code> or <code><a href="MUTUAL-RECURSION.html">mutual-recursion</a></code> (or <code><a href="DEFUNS.html">defuns</a></code>) event is redundant
+if for each function to be introduced, there has already been introduced a
+function with the same name, the same formals, and syntactically identical
+<code>:</code><code><a href="GUARD.html">guard</a></code>, <code>:measure</code>, type declarations, <code><a href="STOBJ.html">stobj</a></code><code>s</code>
+declarations and <code>body</code> (before macroexpansion), and an appropriate
+<code>mode</code> (see the discussion of ``appropriate <code>mode</code>s'' below).
+Exceptions: (1) If either definition is declared <code>:non-executable</code>
+(see <a href="XARGS.html">xargs</a>), then the two events must be identical.  (2) It is permissible
+for one definition to have a <code>:</code><a href="GUARD.html">guard</a> of <code>t</code> and the other to have
+no explicit guard (hence, the guard is implicitly <code>t</code>).  (3) The
+<code>:measure</code> check is avoided if we are skipping proofs (for example, during
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>), and otherwise, the new definition may have a
+<code>:measure</code> of <code>(:? v1 ... vk)</code>, where <code>(v1 ... vk)</code> enumerates the
+variables occurring in the measure stored for the old definition.<p>
+
+A <code><a href="VERIFY-GUARDS.html">verify-guards</a></code> event is redundant if the function has already had
+its <a href="GUARD.html">guard</a>s verified.<p>
+
+A <code><a href="DEFAXIOM.html">defaxiom</a></code> or <code><a href="DEFTHM.html">defthm</a></code> event is redundant if there is already an axiom
+or theorem of the given name and both the formula (after
+macroexpansion) and the <a href="RULE-CLASSES.html">rule-classes</a> are syntactically identical.
+Note that a <code><a href="DEFAXIOM.html">defaxiom</a></code> can make a subsequent <code><a href="DEFTHM.html">defthm</a></code> redundant, and a
+<code><a href="DEFTHM.html">defthm</a></code> can make a subsequent <code><a href="DEFAXIOM.html">defaxiom</a></code> redundant as well.<p>
+
+A <code><a href="DEFCONST.html">defconst</a></code> is redundant if the name is already defined either with a
+syntactically identical <code>defconst</code> event or one that defines it to have the
+same value.<p>
+
+A <code><a href="DEFSTOBJ.html">defstobj</a></code> is redundant if there is already a <code>defstobj</code> event with
+the same name that has exactly the same field descriptors (see <a href="DEFSTOBJ.html">defstobj</a>), in
+the same order, and with the same <code>:renaming</code> value if <code>:renaming</code> is
+supplied for either event.<p>
+
+A <code><a href="DEFMACRO.html">defmacro</a></code> is redundant if there is already a macro defined with the
+same name and syntactically identical arguments, <a href="GUARD.html">guard</a>, and body.<p>
+
+A <code><a href="DEFPKG.html">defpkg</a></code> is redundant if a package of the same name with exactly the
+same imports has been defined.<p>
+
+A <code><a href="DEFTHEORY.html">deftheory</a></code> is never redundant.  The ``natural'' notion of
+equivalent <code><a href="DEFTHEORY.html">deftheory</a></code> forms is that the names and values of the two
+theory expressions are the same.  But since most theory expressions are
+sensitive to the context in which they occur, it seems unlikely to
+us that two <code><a href="DEFTHEORY.html">deftheory</a></code>s coming from two sequentially included <a href="BOOKS.html">books</a>
+will ever have the same values.  So we prohibit redundant theory
+definitions.  If you try to define the same theory name twice, you
+will get a ``name in use'' error.<p>
+
+An <code><a href="IN-THEORY.html">in-theory</a></code> event is never redundant because it doesn't define any
+name.<p>
+
+A <code><a href="PUSH-UNTOUCHABLE.html">push-untouchable</a></code> event is redundant if every name supplied is
+already a member of the corresponding list of untouchable symbols.<p>
+
+A <code><a href="REMOVE-UNTOUCHABLE.html">remove-untouchable</a></code> event is redundant if no name supplied is
+a member of the corresponding list of untouchable symbols.<p>
+
+A <code><a href="RESET-PREHISTORY.html">reset-prehistory</a></code> event is redundant if it does not cause any change.<p>
+
+A <code><a href="SET-BODY.html">set-body</a></code> event is redundant if the indicated body is already the
+current body.<p>
+
+<code><a href="TABLE.html">Table</a></code> and <code><a href="DEFDOC.html">defdoc</a></code> <a href="EVENTS.html">events</a> are never redundant because they don't
+define any name.<p>
+
+An <code><a href="ENCAPSULATE.html">encapsulate</a></code> event is redundant if and only if a syntactically
+identical <code><a href="ENCAPSULATE.html">encapsulate</a></code> has already been executed under the same
+<code><a href="DEFAULT-DEFUN-MODE.html">default-defun-mode</a></code>.<p>
+
+An <code><a href="INCLUDE-BOOK.html">include-book</a></code> is redundant if the book has already been included.<p>
+
+<em>Note About Appropriate Modes:</em><p>
+
+Suppose a function is being redefined and that the formals, guards, types,
+stobjs, and bodies are identical.  When are the modes (<code>:</code><code><a href="PROGRAM.html">program</a></code>
+or <code>:</code><code><a href="LOGIC.html">logic</a></code>) ``appropriate?''  Identical modes are appropriate.
+But what if the old mode was <code>:program</code> and the new mode is <code>:logic</code>?
+This is appropriate, provided the definition meets the requirements of the
+logical definitional principle.  That is, you may redefine ``redundantly''
+a <code>:program</code> mode function as a <code>:logic</code> mode function provide the
+measure conjectures can be proved.  This is what <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code>
+does.  Now consider the reverse style of redefinition.  Suppose the
+function was defined in <code>:logic</code> mode and is being identically redefined
+in <code>:program</code> mode.  This is inappropriate.  We do not permit the
+downgrading of a function from <code>:logic</code> mode to <code>:program</code> mode, since
+that might produce a logical world in which there were theorems about a
+<code>:program</code> mode function, violating one of ACL2's basic assumptions.<p>
+
+<em>Note About Shifting Logical Names:</em><p>
+
+Suppose a book defines a function <code>fn</code> and later uses <code>fn</code> as a logical
+name in a theory expression.  Consider the value of that theory
+expression in two different sessions.  In session A, the book is
+included in a <a href="WORLD.html">world</a> in which <code>fn</code> is not already defined, i.e., in a
+<a href="WORLD.html">world</a> in which the book's definition of <code>fn</code> is not redundant.  In
+session B, the book is included in a <a href="WORLD.html">world</a> in which <code>fn</code> is already
+identically defined.  In session B, the book's definition of <code>fn</code> is
+redundant.  When <code>fn</code> is used as a logical name in a theory
+expression, it denotes the point in <a href="HISTORY.html">history</a> at which <code>fn</code> was
+introduced.  Observe that those points are different in the two
+sessions.  Hence, it is likely that theory expressions involving <code>fn</code>
+will have different values in session A than in session B.<p>
+
+This may adversely affect the user of your book.  For example,
+suppose your book creates a theory via <code><a href="DEFTHEORY.html">deftheory</a></code> that is advertised
+just to contain the names generated by the book.  But suppose you
+compute the theory as the very last event in the book using:
+
+<pre>
+(set-difference-theories (universal-theory :here) 
+                         (universal-theory fn))
+</pre>
+
+where <code>fn</code> is the very first event in the book and happens to be a
+<code><a href="DEFUN.html">defun</a></code> event.  This expression returns the advertised set if <code>fn</code> is
+not already defined when the book is included.  But if <code>fn</code> were
+previously (identically) defined, the theory is larger than
+advertised.<p>
+
+The moral of this is simple: when building <a href="BOOKS.html">books</a> that other people
+will use, it is best to describe your <a href="THEORIES.html">theories</a> in terms of logical
+names that will not shift around when the <a href="BOOKS.html">books</a> are included.  The
+best such names are those created by <code><a href="DEFLABEL.html">deflabel</a></code>.<p>
+
+<em>Note About Unfortunate Redundancies:</em><p>
+
+Notice that our syntactic criterion for redundancy of <code><a href="DEFUN.html">defun</a></code> <a href="EVENTS.html">events</a>
+does not allow redefinition to take effect unless there is a syntactic change
+in the definition.  The following example shows how an attempt to redefine a
+function can fail to make any change.
+
+<pre>
+(set-ld-redefinition-action '(:warn . :overwrite) state)
+(defmacro mac (x) x)
+(defun foo (x) (mac x))
+(defmacro mac (x) (list 'car x))
+(defun foo (x) (mac x)) ; redundant, unfortunately; foo does not change
+(thm (equal (foo 3) 3)) ; succeeds, showing that redef of foo didn't happen
+</pre>
+
+The call of macro <code>mac</code> was expanded away when the first definition of
+<code>foo</code> was processed, so the new definition of <code>mac</code> is not seen in
+<code>foo</code> unless <code>foo</code> is redefined; yet our attempt at redefinition failed!
+An easy workaround is first to supply a different definition of <code>foo</code>, just
+before the last definition of <code>foo</code> above.  Then that final definition will
+no longer be redundant.<p>
+
+The phenomenon illustrated above can occur even without macros.  Here is a
+more complex example, based on one supplied by Grant Passmore.
+
+<pre>
+(defun n3 () 0)
+(defun n4 () 1)
+(defun n5 () (&gt; (n3) (n4))) ; body is normalized to nil
+(thm (equal (n5) nil)) ; succeeds, trivially
+(set-ld-redefinition-action '(:warn . :overwrite) state)
+(defun n3 () 2)
+</pre>
+
+If now we execute <code>(thm (equal (n5) nil))</code>, it still succeeds even though
+we expect <code>(n5)</code> = <code>(&gt; (n3) (n4))</code> = <code>(&gt; 2 1)</code> = <code>t</code>.  That is
+because the body of <code>n5</code> was normalized to <code>nil</code>.  (Such normalization
+can be avoided; see the brief discussion of <code>:normalize</code> in the
+documentation for <code><a href="DEFUN.html">defun</a></code>.)  So, given this unfortunate situation, one
+might expect at this point simply to redefine <code>n5</code> using the same
+definition as before, in order to pick up the new definition of <code>n3</code>.  Such
+``redefinition'' would, however, be redundant, for the same reason as in the
+previous example:  no syntactic change was made to the definition.  The same
+workaround applies as before: redefine <code>n5</code> to be something different, and
+then redefine <code>n5</code> again to be as desired.<p>
+
+A related phenomenon can occur for <code><a href="ENCAPSULATE.html">encapsulate</a></code>.  As explained above, an
+<code>encapsulate</code> event is redundant if it is identical to one already in the
+database.  Consider then the following contrived example.
+
+<pre>
+(encapsulate () (defun foo (x) x))
+(set-ld-redefinition-action '(:warn . :overwrite) state)
+(defun foo (x) (cons x x))
+(encapsulate () (defun foo (x) x)) ; redundant!
+</pre>
+
+The last <code>encapsulate</code> event is redundant because it meets the criterion
+for redundancy: it is identical to the earlier <code>encapsulate</code> event.  A
+workaround can be to add something trivial to the <code>encapsulate</code>, for
+example:
+
+<pre>
+(encapsulate () 
+  (deflabel try2) ; ``Increment'' to try3 next time, and so on.
+  (defun foo (x) x))
+</pre>
+<p>
+
+The examples above are suggestive but by no means exhaustive.  Consider the
+following example.
+
+<pre>
+(defstub f1 () =&gt; *)
+(set-ld-redefinition-action '(:warn . :overwrite) state)
+(defun f1 () 3)
+(defstub f1 () =&gt; *) ; redundant -- has no effect
+</pre>
+
+The reason that the final <code><a href="DEFSTUB.html">defstub</a></code> is redundant is that <code>defstub</code> is
+a macro that expands to a call of <code>encapsulate</code>; so this is very similar to
+the immediately preceding example.<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

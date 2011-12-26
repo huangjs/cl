@@ -1,0 +1,176 @@
+<html>
+<head><title>FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING</h4>examples pertaining to free variables in <a href="FORWARD-CHAINING.html">forward-chaining</a> rules
+<pre>Major Section:  <a href="FREE-VARIABLES-EXAMPLES.html">FREE-VARIABLES-EXAMPLES</a>
+</pre><p>
+
+The following examples illustrate ACL2's handling of free variables in
+<a href="FORWARD-CHAINING.html">forward-chaining</a> rules, as well as user control over how such free
+variables are handled.  See <a href="FREE-VARIABLES.html">free-variables</a> for a background discussion.
+<p>
+
+<pre>
+; First let us introduce a transitive operation, op, and prove a
+; forward-chaining rule stating the transitivity of op.<p>
+
+(encapsulate
+ (((op * *) =&gt; *))
+ (local (defun op (x y) (&lt; x y)))
+ (defthm transitivity-of-op
+   (implies (and (op x y) (op y z)) (op x z))
+   :rule-classes :forward-chaining))<p>
+
+; The following theorem is proved by forward chaining, using the above rule.<p>
+
+(thm
+ (implies (and (op u v) (op v w) (op v a))
+          (op u w)))<p>
+
+; The proof of the theorem just above succeeds because the term (op u v)
+; triggers the application of forward-chaining rule transitivity-of-op,
+; binding x to u and y to v.  Free variable z of that rule is bound to both w
+; and to a, resulting in the addition of both (op u w) and (op u a) to the
+; context.  However, (op v a) happens to be at the front of the context, so
+; if only one free-variable binding had been allowed, then z would have only
+; been bound to a, not to w, as we now illustrate.<p>
+
+(add-match-free-override :once (:forward-chaining transitivity-of-op))<p>
+
+(thm ; FAILS!
+ (implies (and (op u v) (op v w) (op v a))
+          (op u w)))<p>
+
+:ubt! 1<p>
+
+; Starting over, this time we prove transitivity-of-op as a :match-free :once
+; forward-chaining rule.  Note that the presence of :match-free eliminates
+; the free-variables warning that we got the first time.<p>
+
+(encapsulate
+ (((op * *) =&gt; *))
+ (local (defun op (x y) (&lt; x y)))
+ (defthm transitivity-of-op
+   (implies (and (op x y) (op y z)) (op x z))
+   :rule-classes ((:forward-chaining :match-free :once))))<p>
+
+(thm ; FAILS!
+ (implies (and (op u v) (op v w) (op v a))
+          (op u w)))<p>
+
+; Notice that if we swap the order of the last two hypotheses the theorem
+; goes through, because this time (op v w) is first in the context.<p>
+
+(thm ; SUCCEEDS!
+ (implies (and (op u v) (op v a) (op v w))
+          (op u w)))<p>
+
+:u<p>
+
+; Now let's try setting the default to :once.<p>
+
+(set-match-free-default :once)<p>
+
+; We still get a free-variables warning when we admit this forward-chaining rule.<p>
+
+(encapsulate
+ (((op * *) =&gt; *))
+ (local (defun op (x y) (&lt; x y)))
+ (defthm transitivity-of-op
+   (implies (and (op x y) (op y z)) (op x z))
+   :rule-classes ((:forward-chaining))))<p>
+
+; This theorem fails--as it should.<p>
+
+(thm ; FAILS!
+ (implies (and (op u v) (op v w) (op v a))
+          (op u w)))<p>
+
+; But if we convert this rule (or here, all possible rules) to :all rules,
+; then the proof succeeds.<p>
+
+(add-match-free-override :all t)<p>
+
+(thm ; SUCCEEDS!
+ (implies (and (op u v) (op v w) (op v a))
+          (op u w)))<p>
+
+; Now let's test a relatively slow :all case (the next thm below).<p>
+
+:ubt! 1<p>
+
+(encapsulate
+ (((op1 *) =&gt; *)
+  ((op3 * * *) =&gt; *))
+ (local (defun op1 (x) (declare (ignore x)) t))
+ (local (defun op3 (x0 x1 x2)
+          (declare (ignore x0 x1 x2))
+          t))
+ (defthm op1-op3-property
+   (implies (and (op1 x0) (op1 x1) (op1 x2))
+            (op3 x0 x1 x2)) 
+   :rule-classes ((:forward-chaining :match-free :all))))<p>
+
+; The following succeeds, but takes a little time (about a second in one run).<p>
+
+(thm (implies
+      (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+           (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+           (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+           (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+      (op3 a5 a6 a0)))<p>
+
+(add-match-free-override :once t)<p>
+
+; The same theorem now fails because of the add-match-free-override, but is
+; more than an order of magnitude faster.<p>
+
+(thm (implies
+      (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+           (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+           (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+           (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+      (op3 a5 a6 a0)))<p>
+
+; A slight variant succeeds in a negligible amount of time (still with the
+; :once override above).<p>
+
+(thm (implies
+      (and (op1 a0) (op1 a1) (op1 a2) (op1 a3) (op1 a4) (op1 a5)
+           (op1 a6) (op1 a7) (op1 a8) (op1 a9) (op1 a10) (op1 a11)
+           (op1 a12) (op1 a13) (op1 a14) (op1 a15) (op1 a16)
+           (op1 a17) (op1 a18) (op1 a19) (op1 a20))
+      (op3 a5 a20 a20)))<p>
+
+; Reality check: This shouldn't give a free-variables warning, and everything
+; should work great since there are no free variables with this trigger term.<p>
+
+:ubt! 1<p>
+
+(encapsulate
+ (((op1 *) =&gt; *)
+  ((op7 * * * * * * *) =&gt; *))
+ (local (defun op1 (x)
+          (declare (ignore x))
+          t))
+ (local (defun op7 (x0 x1 x2 x3 x4 x5 x6)
+          (declare (ignore x0 x1 x2 x3 x4 x5 x6))
+          t))
+ (defthm op1-op7-property
+   (implies (and (op1 x0) (op1 x1) (op1 x2)
+                 (op1 x3) (op1 x4) (op1 x5) (op1 x6))
+            (op7 x0 x1 x2 x3 x4 x5 x6))
+   :rule-classes ((:forward-chaining
+                   :trigger-terms ((op7 x0 x1 x2 x3 x4 x5 x6))))))<p>
+
+; The following then succeeds, and very quickly.<p>
+
+(thm (implies (and (op1 a0) (op1 a1) (op1 a2)
+                   (op1 a3) (op1 a4) (op1 a5) (op1 a6))
+              (op7 a4 a6 a5 a6 a6 a6 a6)))<p>
+
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

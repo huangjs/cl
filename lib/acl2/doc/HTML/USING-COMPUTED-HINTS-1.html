@@ -1,0 +1,66 @@
+<html>
+<head><title>USING-COMPUTED-HINTS-1.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>USING-COMPUTED-HINTS-1</h2>Driving Home the Basics
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+<p>
+The common hint
+
+<pre>
+("Subgoal 3.2.1''" :use lemma42)
+</pre>
+
+has the same effect as the computed hint
+
+<pre>
+(if (equal id '((0) (3 2 1) . 2))
+    '(:use lemma42)
+    nil)
+</pre>
+
+which, of course, is equivalent to
+
+<pre>
+(and (equal id '((0) (3 2 1) . 2))
+     '(:use lemma42))
+</pre>
+
+which is also equivalent to the computed hint
+
+<pre>
+my-special-hint
+</pre>
+
+provided the following <code>defun</code> has first been executed
+
+<pre>
+(defun my-special-hint (id clause world)
+  (declare (xargs :mode :program)
+           (ignore clause world))
+  (if (equal id '((0) (3 2 1) . 2))
+      '(:use lemma42)
+      nil))
+</pre>
+
+It is permitted for the <code>defun</code> to be in :LOGIC mode
+(see <a href="DEFUN-MODE.html">defun-mode</a>) also.<p>
+
+Just to be concrete, the following three events all behave the same
+way (if <code>my-special-hint</code> is as above):<p>
+
+
+<pre>
+(defthm main (big-thm a b c)
+  :hints (("Subgoal 3.2.1''" :use lemma42)))
+
+(defthm main (big-thm a b c)
+  :hints ((and (equal id '((0) (3 2 1) . 2)) '(:use lemma42))))<p>
+
+(defthm main (big-thm a b c)
+  :hints (my-special-hint))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

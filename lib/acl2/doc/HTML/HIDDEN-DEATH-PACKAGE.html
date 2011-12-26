@@ -1,0 +1,68 @@
+<html>
+<head><title>HIDDEN-DEATH-PACKAGE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>HIDDEN-DEATH-PACKAGE</h3>handling <code><a href="DEFPKG.html">defpkg</a></code> <a href="EVENTS.html">events</a> that are <code><a href="LOCAL.html">local</a></code>
+<pre>Major Section:  <a href="DEFPKG.html">DEFPKG</a>
+</pre><p>
+
+This documentation topic explains a little bit about certain errors users may
+see when attempting to evaluate a <code><a href="DEFPKG.html">defpkg</a></code> event.  In brief, if you see
+an error that refers you to this topic, you are probably trying to admit a
+<code><a href="DEFPKG.html">defpkg</a></code> event, and you should change the name of the package to be
+introduced by that event.<p>
+
+Recall that <code>defpkg</code> events introduce axioms, for example as follows.
+
+<pre>
+ACL2 !&gt;(defpkg "PKG0" '(a b))<p>
+
+Summary
+Form:  ( DEFPKG "PKG0" ...)
+Rules: NIL
+Warnings:  None
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+ "PKG0"
+ACL2 !&gt;:pr! "PKG0"<p>
+
+Rune:       (:REWRITE PKG0-PACKAGE)
+Status:     Enabled
+Lhs:        (SYMBOL-PACKAGE-NAME (INTERN-IN-PACKAGE-OF-SYMBOL X Y))
+Rhs:        "PKG0"
+Hyps:       (AND (STRINGP X)
+                 (NOT (MEMBER-SYMBOL-NAME X '(A B)))
+                 (SYMBOLP Y)
+                 (EQUAL (SYMBOL-PACKAGE-NAME Y) "PKG0"))
+Equiv:      EQUAL
+Backchain-limit-lst:    NIL
+Subclass:   BACKCHAIN
+Loop-stopper: NIL
+ACL2 !&gt;
+</pre>
+
+Now, a <code><a href="DEFPKG.html">defpkg</a></code> event may be executed underneath an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> form that is marked <code><a href="LOCAL.html">local</a></code>.  In that case, traces of
+the added axiom will disappear after the surrounding <code><a href="ENCAPSULATE.html">encapsulate</a></code> or
+<code><a href="INCLUDE-BOOK.html">include-book</a></code> form is admitted.  This can cause inconsistencies.  (You
+can take our word for it, or you can look at the example shown in the
+``Essay on Hidden Packages'' in source file <code>axioms.lisp</code>.)<p>
+
+In order to prevent unsoundness, then, ACL2 maintains the following
+invariant.  Let us say that a <code>defpkg</code> event is ``hidden'' if it is in
+support of the current logical <a href="WORLD.html">world</a> but is not present in that world as
+an event, because it is <code><a href="LOCAL.html">local</a></code> as indicated above.  We maintain the
+invariant that all <code><a href="DEFPKG.html">defpkg</a></code> <a href="EVENTS.html">events</a>, even if ``hidden'', are tracked
+under-the-hood in the current logical <a href="WORLD.html">world</a>.  Sometimes this property
+causes <code><a href="DEFPKG.html">defpkg</a></code> events to be written to the <a href="PORTCULLIS.html">portcullis</a> of a book's
+<a href="CERTIFICATE.html">certificate</a> (see <a href="BOOKS.html">books</a>).  At any rate, if you then try to define the
+package in a manner inconsistent with the earlier such definition, that is,
+with a different imports list, you will see an error because of the
+above-mentioned tracking.<p>
+
+(By the way, this topic's name comes from Holly Bell, who heard
+"hidden death package" instead of "hidden defpkg".  The description
+seemed to fit.  Thanks, Holly!)
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

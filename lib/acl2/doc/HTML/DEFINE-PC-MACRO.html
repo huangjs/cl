@@ -1,0 +1,45 @@
+<html>
+<head><title>DEFINE-PC-MACRO.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFINE-PC-MACRO</h2>define a proof-checker macro command
+<pre>Major Section:  <a href="PROOF-CHECKER.html">PROOF-CHECKER</a>
+</pre><p>
+
+
+<pre>
+Example:
+(define-pc-macro ib (&amp;optional term)
+  (value
+   (if term
+       `(then (induct ,term) bash)
+     `(then induct bash))))
+</pre>
+
+The example above captures a common paradigm:  one attempts to prove
+the current goal by inducting and then simplifying the resulting
+goals.  (see <a href="PROOF-CHECKER-COMMANDS.html">proof-checker-commands</a> for documentation of the
+command <code>then</code>, which is itself a pc-macro command, and commands
+<code>induct</code> and <code>bash</code>.)  Rather than issuing <code>(then induct bash)</code>, or
+worse yet issuing <code>induct</code> and then issuing <code>bash</code> for each resulting
+goals, the above definition of <code>ib</code> would let you issue <code>ib</code> and get the
+same effect.
+<p>
+
+<pre>
+General Form:
+(define-pc-macro cmd args doc-string dcl ... dcl body)
+</pre>
+
+where <code>cmd</code> is the name of the pc-macro than you want to define,
+<code>args</code> is its list of formal parameters.  <code>Args</code> may include lambda-list
+keywords <code>&amp;optional</code> and <code>&amp;rest</code>; see <a href="MACRO-ARGS.html">macro-args</a>, but note that
+here, <code>args</code> may not include <code>&amp;key</code> or <code>&amp;whole</code>.<p>
+
+The value of <code>body</code> should be an ACL2 ``error triple,'' i.e., have the
+form <code>(mv erp xxx state)</code> for some <code>erp</code> and <code>xxx</code>.  If <code>erp</code> is
+<code>nil</code>, then <code>xxx</code> is handed off to the proof-checker's instruction
+interpreter.  Otherwise, evaluation typically halts.  We may write
+more on the full story later if there is interest in reading it.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

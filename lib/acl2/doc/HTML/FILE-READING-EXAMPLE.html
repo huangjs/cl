@@ -1,0 +1,61 @@
+<html>
+<head><title>FILE-READING-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>FILE-READING-EXAMPLE</h4>example of reading files in ACL2
+<pre>Major Section:  <a href="TUTORIAL5-MISCELLANEOUS-EXAMPLES.html">TUTORIAL5-MISCELLANEOUS-EXAMPLES</a>
+</pre><p>
+
+This example illustrates the use of ACL2's <a href="IO.html">IO</a> primitives to read the
+forms in a file.  See <a href="IO.html">io</a>.
+<p>
+This example provides a solution to the following problem.  Let's
+say that you have a file that contains s-expressions.  Suppose that
+you want to build a list by starting with <code>nil</code>, and updating it
+``appropriately'' upon encountering each successive s-expression in
+the file.  That is, suppose that you have written a function
+<code>update-list</code> such that <code>(update-list obj current-list)</code> returns
+the list obtained by ``updating'' <code>current-list</code> with the next
+object, <code>obj</code>, encountered in the file.  The top-level function for
+processing such a file, returning the final list, could be defined
+as follows.  Notice that because it opens a channel to the given
+file, this function modifies <a href="STATE.html">state</a> and hence must return <a href="STATE.html">state</a>.
+Thus it actually returns two values:  the final list and the new
+<a href="STATE.html">state</a>.
+
+<pre><p>
+
+  (defun process-file (filename state)
+    (mv-let
+     (channel state)
+     (open-input-channel filename :object state)
+     (mv-let (result state)
+             (process-file1 nil channel state) ;see below
+             (let ((state (close-input-channel channel state)))
+               (mv result state)))))<p>
+
+</pre>
+
+The function <code>process-file1</code> referred to above takes the currently
+constructed list (initially, <code>nil</code>), together with a channel to the
+file being read and the <a href="STATE.html">state</a>, and returns the final updated
+list.  Notice that this function is tail recursive.  This is
+important because many Lisp compilers will remove tail recursion,
+thus avoiding the potential for stack overflows when the file
+contains a large number of forms.
+
+<pre><p>
+
+  (defun process-file1 (current-list channel state)
+    (mv-let (eofp obj state)
+            (read-object channel state)
+            (cond
+             (eofp (mv current-list state))
+             (t (process-file1 (update-list obj current-list)
+                               channel state)))))<p>
+
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

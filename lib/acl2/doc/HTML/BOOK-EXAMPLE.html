@@ -1,0 +1,181 @@
+<html>
+<head><title>BOOK-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>BOOK-EXAMPLE</h2>how to create, certify, and use a simple book
+<pre>Major Section:  <a href="BOOKS.html">BOOKS</a>
+</pre><p>
+
+Suppose you have developed a sequence of admissible <a href="EVENTS.html">events</a> which you
+want to turn into a book.  We call this ``publishing'' the book.
+This note explains how to do that.
+<p>
+A key idea of <a href="BOOKS.html">books</a> is that they are ``incremental'' in the
+sense that when you include a book in a host logical <a href="WORLD.html">world</a>, the
+<a href="WORLD.html">world</a> is incrementally extended by the results established in that
+book.  This is allowed only if every name defined by the incoming
+book is either new or is already identically defined.
+See <a href="REDUNDANT-EVENTS.html">redundant-events</a>.  This is exactly the same problem faced
+by a programmer who wishes to provide a utility to other people: how
+can he make sure he doesn't create name conflicts?  The solution, in
+Common Lisp, is also the same: use packages.  While <a href="BOOKS.html">books</a> and
+packages have a very tenuous formal connection (every book must
+start with an <code><a href="IN-PACKAGE.html">in-package</a></code>), the creation of a book is intimately
+concerned with the package issue.  Having motivated what would
+otherwise appear as an unnecessary fascination with packages below,
+we now proceed with a description of how to publish a book.<p>
+
+Just to be concrete, let's suppose you have already gotten ACL2 to
+accept the following sequence of <a href="COMMAND.html">command</a>s, starting in the ACL2
+initial <a href="STATE.html">state</a>.
+
+<pre>
+   (defpkg "ACL2-MY-BOOK"
+           (union-eq *common-lisp-symbols-from-main-lisp-package*
+                     *acl2-exports*))
+   (in-package "ACL2-MY-BOOK")
+   (defun app (x y)
+     (if (consp x) (cons (car x) (app (cdr x) y)) y))
+   (defun rev (x)
+     (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
+   (defthm rev-app-hack
+     (equal (rev (app a (list x))) (cons x (rev a))))
+   (defthm rev-rev 
+     (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
+</pre>
+
+Observe that the first form above defines a package (which imports
+the symbols defined in CLTL such as <code><a href="IF.html">if</a></code> and <code><a href="CONS.html">cons</a></code> and the
+symbols used to <a href="COMMAND.html">command</a> ACL2 such as <code><a href="DEFUN.html">defun</a></code> and <code><a href="DEFTHM.html">defthm</a></code>).  The
+second form selects that package as the current one.  All subsequent
+forms are read into that package.  The remaining forms are just
+event forms: <code><a href="DEFUN.html">defun</a></code>s and <code><a href="DEFTHM.html">defthm</a></code>s in this case.<p>
+
+Typically you would have created a file with Emacs containing these
+forms and you will have submitted each of them interactively to ACL2
+to confirm that they are all admissible.  That interactive
+verification should start in ACL2's initial <a href="WORLD.html">world</a> -- although
+you might, of course, start your sequence of <a href="EVENTS.html">events</a> with some
+<code><a href="INCLUDE-BOOK.html">include-book</a></code>s to build a more elaborate <a href="WORLD.html">world</a>.<p>
+
+The first step towards publishing a book containing the results
+above is to create a file that starts with the <code><a href="IN-PACKAGE.html">in-package</a></code> and
+then contains the rest of the forms.  Let's call that file
+<code>"my-book.lisp"</code>.  The name is unimportant, except it must end
+with <code>".lisp"</code>.  If there are <a href="EVENTS.html">events</a> that you do not wish to be
+available to the user of the book -- e.g., lemmas you proved on your
+way toward proving the main ones -- you may so mark them by
+enclosing them in <code><a href="LOCAL.html">local</a></code> forms.  See <a href="LOCAL.html">local</a>.  Let us suppose
+you wish to hide <code>rev-app-hack</code> above.  You may also add standard Lisp
+comments to the file.  The final content of <code>"my-book.lisp"</code>
+might be:
+
+<pre>
+ ; This book contains my app and rev functions and the theorem
+ ; that rev is its own inverse.<p>
+
+   (in-package "ACL2-MY-BOOK")
+   (defun app (x y)
+     (if (consp x) (cons (car x) (app (cdr x) y)) y))
+   (defun rev (x)
+     (if (consp x) (app (rev (cdr x)) (list (car x))) nil))<p>
+
+ ; The following hack is not exported.
+   (local (defthm rev-app-hack
+     (equal (rev (app a (list x))) (cons x (rev a)))))<p>
+
+   (defthm rev-rev 
+     (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
+</pre>
+
+The file shown above <strong>is</strong> the book.  By the time this note is
+done you will have seen how to certify that the book is correct, how
+to compile it, and how to use it in other host <a href="WORLD.html">world</a>s.  Observe that
+the <code><a href="DEFPKG.html">defpkg</a></code> is not in the book.  It cannot be: Common Lisp
+compilers disagree on how to treat new package definitions appearing
+in files to be compiled.<p>
+
+Since a book is just a source file typed by the user, ACL2 provides
+a mechanism for checking that the <a href="EVENTS.html">events</a> are all admissible and then
+marking the file as checked.  This is called certification.  To
+certify <code>"my-book.lisp"</code> you should first get into ACL2 with an
+initial <a href="WORLD.html">world</a>.  Then, define the package needed by the book, by
+typing the following <code><a href="DEFPKG.html">defpkg</a></code> to the ACL2 <a href="PROMPT.html">prompt</a>:
+
+<pre>
+ACL2 !&gt;(defpkg "ACL2-MY-BOOK"
+               (union-eq *common-lisp-symbols-from-main-lisp-package*
+                         *acl2-exports*))
+</pre>
+
+Then execute the <a href="COMMAND.html">command</a>:
+
+<pre>
+ACL2 !&gt;(certify-book "my-book" 1 t) ; the `t' is in fact the default
+</pre>
+
+Observe that you do not type the <code>".lisp"</code> part of the file
+name.  For purposes of <a href="BOOKS.html">books</a>, the book's name is <code>"my-book"</code> and
+by the time all is said and done, there will be several extensions
+in addition to the <code>".lisp"</code> extension associated with it.<p>
+
+The <code>1</code> tells <code><a href="CERTIFY-BOOK.html">certify-book</a></code> that you acknowledge that there is
+one command in this ``certification <a href="WORLD.html">world</a>'' (namely the <code><a href="DEFPKG.html">defpkg</a></code>).
+To use the book, any prospective host <a href="WORLD.html">world</a> must be extended by
+the addition of whatever <a href="COMMAND.html">command</a>s occurred before certification.  It
+would be a pity to certify a book in a <a href="WORLD.html">world</a> containing junk because
+that junk will become the ``<a href="PORTCULLIS.html">portcullis</a>'' guarding entrance to
+the book.  The <code>t</code> above tells <code><a href="CERTIFY-BOOK.html">certify-book</a></code> that you wish to
+compile <code>"my-book.lisp"</code> also.  <code><a href="CERTIFY-BOOK.html">Certify-book</a></code> makes many checks
+but by far the most important and time-consuming one is that it
+``proves'' every event in the file.<p>
+
+When <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is done it will have created two new files.
+The first will be called <code>"my-book.cert"</code> and contains the
+``<a href="CERTIFICATE.html">certificate</a>'' attesting to the admissibility of the <a href="EVENTS.html">events</a> in
+<code>"my-book.lisp"</code>.  The <a href="CERTIFICATE.html">certificate</a> contains the <code><a href="DEFPKG.html">defpkg</a></code> and any
+other forms necessary to construct the certification <a href="WORLD.html">world</a>.  It also
+contains various check sums used to help you keep track of which
+version of <code>"my-book.lisp"</code> was certified.<p>
+
+The second file created by <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is the compiled version
+of <code>"my-book.lisp"</code> and will have a name that is assigned by the
+host compiler (e.g., <code>"my-book.o"</code> in AKCL, <code>"my-book.lbin"</code>
+or <code>"my-book.sbin"</code> in Lucid).  <code><a href="CERTIFY-BOOK.html">Certify-book</a></code> will also load
+this object file.  When <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is done, you may throw away
+the logical <a href="WORLD.html">world</a> it created, for example by executing the
+<a href="COMMAND.html">command</a> <code>:u</code>.<p>
+
+To use the book later in any ACL2 session, just execute the event
+<code>(include-book "my-book")</code>.  This will do the necessary
+<code><a href="DEFPKG.html">defpkg</a></code>, load the non-<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> in <code>"my-book.lisp"</code> and
+then load the compiled code for the non-local functions defined in
+that file.  Checks are made to ensure that the <a href="CERTIFICATE.html">certificate</a> file
+exists and describes the version of <code>"my-book.lisp"</code> that is
+read.  The compiled code is loaded if and only if it exists and has
+a later write date than the source file.<p>
+
+Since <code><a href="INCLUDE-BOOK.html">include-book</a></code> is itself an event, you may put such forms
+into other <a href="BOOKS.html">books</a>.  Thus it is possible for the inclusion of a single
+book to lead to the inclusion of many others.  The check sum
+information maintained in <a href="CERTIFICATE.html">certificate</a>s helps deal with the
+version control problem of the referenced <a href="BOOKS.html">books</a>.  I.e., if this
+version of <code>"my-book"</code> is used during the certification of
+<code>"your-book"</code>, then the <a href="CERTIFICATE.html">certificate</a> for <code>"your-book"</code> includes
+the check sum of this version of <code>"my-book"</code>.  If a later
+<code>(include-book "your-book")</code> finds a version of <code>"my-book"</code>
+with a different check sum, an error is signalled.  But check sums
+are not perfect and the insecurity of the host file system prevents
+ACL2 from guaranteeing the logical soundness of an <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+event, even for a book that appears to have a valid <a href="CERTIFICATE.html">certificate</a>
+(they can be forged, after all).  (See <a href="CERTIFICATE.html">certificate</a> for further
+discussion.)<p>
+
+This concludes the example of how to create, certify and use a book.
+If you wish, you could now review the <a href="DOCUMENTATION.html">documentation</a> for book-related
+topics (see <a href="BOOKS.html">books</a>) and browse through them.  They'll probably
+make sense in this context.  Alternatively, you could continue the
+``guided tour'' through the rest of the <a href="DOCUMENTATION.html">documentation</a> of <a href="BOOKS.html">books</a>.
+See <a href="BOOK-NAME.html">book-name</a>, following the pointer given at the conclusion.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

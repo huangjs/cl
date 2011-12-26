@@ -1,0 +1,70 @@
+<html>
+<head><title>ACL2-CUSTOMIZATION.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ACL2-CUSTOMIZATION</h2>file of initial commands for ACL2 to run at <a href="STARTUP.html">startup</a>
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+The file <code>"acl2-customization.lisp"</code> is automatically loaded, via
+<code><a href="LD.html">ld</a></code>, the first time <code><a href="LP.html">lp</a></code> is called in an ACL2 session, provided
+such a file exists on the current directory.  Except for the fact
+that this <code><a href="LD.html">ld</a></code> command is not typed explicitly by you, it is a
+standard <code><a href="LD.html">ld</a></code> command, with one exception:  any settings of <code><a href="LD.html">ld</a></code>
+specials are remembered once this call of <code><a href="LD.html">ld</a></code> has completed.  For
+example, suppose that you start your customization file with
+<code>(set-ld-skip-proofsp t state)</code>, so that proofs are skipped as it is
+loaded with <code><a href="LD.html">ld</a></code>.  Then the <code><a href="LD.html">ld</a></code> special <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> will remain <code>t</code>
+after the <code><a href="LD.html">ld</a></code> has completed, causing proofs to be skipped in your
+ACL2 session, unless your customization file sets this variable back
+to <code>nil</code>, say with <code>(set-ld-skip-proofsp nil state)</code>.
+<p>
+The customization file <code>"acl2-customization.lisp"</code> actually
+resides on the connected book directory; see <a href="CBD.html">cbd</a>.  Except, if
+that file does not exist, then ACL2 looks for
+<code>"acl2-customization.lisp"</code> on your home directory.  If ACL2 does
+not find that file either, then no customization occurs and <code><a href="LP.html">lp</a></code>
+enters the standard ACL2 read-eval-print loop.<p>
+
+If the customization file exists, it is loaded with <code><a href="LD.html">ld</a></code> using the
+usual default values for the <code><a href="LD.html">ld</a></code> specials (see <a href="LD.html">ld</a>).  Thus, if an
+error is encountered, no subsequent forms in the file will be
+evaluated.<p>
+
+To create a customization file it is recommended that you first give
+it a name other than <code>"acl2-customization.lisp"</code> so that ACL2 does
+not try to include it prematurely when you next enter <code><a href="LP.html">lp</a></code>.  Then,
+while in the uncustomized <code><a href="LP.html">lp</a></code>, explicitly invoke <code><a href="LD.html">ld</a></code> on your evolving
+(but renamed) customization file until all forms are successfully
+evaluated.  The same procedure is recommended if for some reason
+ACL2 cannot successfully evaluate all forms in your customization
+file:  rename your customization file so that ACL2 does not try to
+<code><a href="LD.html">ld</a></code> it automatically and then debug the new file by explicit calls to
+<code><a href="LD.html">ld</a></code>.<p>
+
+When you have created a file that can be loaded with <code><a href="LD.html">ld</a></code> without
+error and that you wish to be your customization file, name it
+<code>"acl2-customization.lisp"</code> and put it on the current directory or
+in your home directory.  The first time after starting up ACL2 that
+you invoke <code>(lp)</code>, ACL2 will automatically load the
+<code>"acl2-customization.lisp"</code> file from the cbd (see <a href="CBD.html">cbd</a>) if
+there is one, and otherwise will load it from your home directory.<p>
+
+Note that if you certify a book after the (automatic) loading of an
+<code>acl2-customization</code> file, the forms in that file <strong>will be part of the</strong>
+<strong>portcullis</strong> of the <a href="BOOKS.html">books</a> you certify!  That is, the forms in your
+customization file at certification time will be loaded whenever
+anybody uses the <a href="BOOKS.html">books</a> you are certifying.  Since customization
+files generally contain idiosyncratic <a href="COMMAND.html">command</a>s, you may not want
+yours to be part of the <a href="BOOKS.html">books</a> you create for others.  Thus, if you
+have a customization file then you may want to invoke <code>:ubt 1</code> before
+certifying any <a href="BOOKS.html">books</a>.<p>
+
+The conventions concerning ACL2 customization are liable to change
+as we get more experience with the interaction between
+customization, certification of <a href="BOOKS.html">books</a> for others, and routine
+undoing.  For example, at the moment it is regarded as a <strong>feature</strong> of
+customization that it can be undone but it might be regarded as a
+bug if you accidentally undo your customization.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<html>
+<head><title>COMPOUND-RECOGNIZER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>COMPOUND-RECOGNIZER</h2>make a rule used by the typing mechanism
+<pre>Major Section:  <a href="RULE-CLASSES.html">RULE-CLASSES</a>
+</pre><p>
+
+See <a href="RULE-CLASSES.html">rule-classes</a> for a general discussion of rule classes and
+how they are used to build rules from formulas.  An example
+<code>:</code><code><a href="COROLLARY.html">corollary</a></code> formula from which a <code>:compound-recognizer</code> rule might be
+built is:
+
+<pre>
+Example: 
+(implies (alistp x)         When (alistp x) is assumed true,
+         (true-listp x))    add the additional hypothesis that x
+                            is of primitive type true-listp.
+<p>
+General Forms:
+(implies (fn x) concl)               ; (1)
+(implies (not (fn x)) concl)         ; (2)
+(and (implies (fn x) concl1)         ; (3)
+     (implies (not (fn x)) concl2))
+(if (fn x) concl1 concl2)            ; (4)
+(iff (fn x) concl)                   ; (5)
+(equal (fn x) concl)                 ; (6)
+</pre>
+
+where <code>fn</code> is a Boolean valued function of one argument, <code>x</code> is a
+variable symbol, and the system can deduce some restriction on the
+primitive type of <code>x</code> from the assumption that <code>concl</code> holds.  The third
+restriction is vague but one way to understand it is to weaken it a
+little to ``and <code>concl</code> is a non-tautological conjunction or
+disjunction of the primitive type recognizers listed below.''<p>
+
+The primitive ACL2 types and a suitable primitive recognizing
+expression for each are listed below.
+
+<pre>
+  type                suitable primitive recognizer<p>
+
+  zero                (equal x 0)
+  negative integers   (and (integerp x) (&lt; x 0))
+  positive integers   (and (integerp x) (&gt; x 0))
+  negative ratio      (and (rationalp x)
+                           (not (integerp x))
+                           (&lt; x 0))
+  positive ratio      (and (rationalp x)
+                           (not (integerp x))
+                           (&gt; x 0))
+  complex rational    (complex-rationalp x)
+  nil                 (equal x nil)
+  t                   (equal x t)
+  other symbols       (and (symbolp x)
+                           (not (equal x nil))
+                           (not (equal x t)))
+  proper conses       (and (consp x)
+                           (true-listp x))
+  improper conses     (and (consp x)
+                           (not (true-listp x)))
+  strings             (stringp x)
+  characters          (characterp x)
+</pre>
+
+Thus, a suitable <code>concl</code> to recognize the naturals would be
+<code>(or (equal x 0) (and (integerp x) (&gt; x 0)))</code> but it turns out that we
+also permit <code>(and (integerp x) (&gt;= x 0))</code>.  Similarly, the true-lists
+could be specified by
+
+<pre>
+(or (equal x nil) (and (consp x) (true-listp x)))
+</pre>
+
+but we in fact allow <code>(true-listp x)</code>.  When time permits we will
+document more fully what is allowed or implement a macro that
+permits direct specification of the desired type in terms of the
+primitives.<p>
+
+There are essentially four forms of <code>:compound-recognizer</code> rules, as the
+third and fourth forms are equivalent, as are the fifth and sixth.  We
+explain how such rules are used by considering the individual forms.<p>
+
+Consider a rule of the first form, <code>(implies (fn x) concl)</code>.  The
+effect of such a rule is that when the rewriter assumes <code>(fn x)</code> true,
+as it would while diving through <code>(if (fn x) xxx ...)</code> to rewrite <code>xxx</code>,
+it restricts the type of <code>x</code> as specified by <code>concl</code>.  However, when
+assuming <code>(fn x)</code> false, as necessary in <code>(if (fn x) ... xxx)</code>, the rule
+permits no additional assumptions about the type of <code>x</code>.  For example,
+if <code>fn</code> is <code>primep</code>, i.e., the predicate that recognizes prime numbers,
+then <code>(implies (primep x) (and (integerp x) (&gt;= x 0)))</code> is a compound
+recognizer rule of the first form.  When <code>(primep x)</code> is assumed true,
+the rewriter gains the additional information that <code>x</code> is a natural
+number.  When <code>(primep x)</code> is assumed false, no additional information
+is gained -- since <code>x</code> may be a non-prime natural or may not even be a
+natural.<p>
+
+The second general form addresses itself to the symmetric case, when
+assuming <code>(fn x)</code> false permits type restrictions on <code>x</code> but assuming
+<code>(fn x)</code> true permits no such restrictions.  For example, if we
+defined <code>exprp</code> to be the recognizer for well-formed expressions for
+some language in which all symbols, numbers, character objects and
+strings were well-formed -- e.g., the well-formedness rules only put
+restrictions on expressions represented by <code><a href="CONSP.html">consp</a></code>s -- then the
+theorem <code>(implies (not (exprp x)) (consp x))</code> is a rule of the second
+form.  Assuming <code>(exprp x)</code> true tells us nothing about the type of <code>x</code>;
+assuming it false tells us <code>x</code> is a <code><a href="CONSP.html">consp</a></code>.<p>
+
+The third and fourth general forms, which are really equivalent, address
+themselves to the case where one type may be deduced from <code>(fn x)</code> and a
+generally unrelated type may be deduced from its negation.  If we modified
+the expression recognizer above so that character objects are illegal, then
+rules of the third and fourth forms are
+
+<pre>
+(and (implies (exprp x) (not (characterp x)))
+     (implies (not (exprp x)) (or (consp x) (characterp x)))).
+(if (exprp x) 
+    (not (characterp x))
+  (or (consp x) (characterp x)))
+</pre>
+
+Finally, rules of the fifth and sixth classes address the case where <code>fn</code>
+recognizes all and only the objects whose type is described.  In
+these cases, <code>fn</code> is really just a new name for some ``compound
+recognizers.''  The classic example is <code>(booleanp x)</code>, which is just a
+handy combination of two primitive types:
+
+<pre>
+(iff (booleanp x) (or (equal x t) (equal x nil))).
+</pre>
+<p>
+
+Often it is best to disable <code>fn</code> after proving that it is a compound
+recognizer, since <code>(fn x)</code> will not be recognized as a compound
+recognizer once it has been expanded.<p>
+
+Every time you prove a new compound recognizer rule about <code>fn</code> it overrides
+all previously proved compound recognizer rules about <code>fn</code>.  Thus, if you
+want to establish the type implied by <code>(fn x)</code> and you want to establish
+the type implied by <code>(not (fn x))</code>, you must prove a compound recognizer
+rule of the third, fourth, fifth, or sixth forms.  Proving a rule of the
+first form followed by one of the second only leaves the second fact in the
+data base.<p>
+
+Compound recognizer rules can be disabled with the effect that older
+rules about <code>fn</code>, if any, are exposed.<p>
+
+If you prove more than one compound recognizer rule for a function, you
+may see a <strong>warning</strong> message to the effect that the new rule is not as
+``restrictive'' as the old.  That is, the new rules do not give the
+rewriter strictly more type information than it already had.  The
+new rule is stored anyway, overriding the old, if enabled.  You may
+be playing subtle games with enabling or rewriting.  But two other
+interpretions are more likely, we think.  One is that you have
+forgotten about an earlier rule and should merely print it out to
+make sure it says what you know and then forget your new rule.  The
+other is that you meant to give the system more information and the
+system has simply been unable to extract the intended type
+information from the term you placed in the conclusion of the new
+rule.  Given our lack of specificity in saying how type information
+is extracted from rules, you can hardly blame yourself for this
+problem.  Sorry.  If you suspect you've been burned this way, you
+should rephrase the new rule in terms of the primitive recognizing
+expressions above and see if the warning is still given.  It would
+also be helpful to let us see your example so we can consider it as
+we redesign this stuff.<p>
+
+Compound recognizer rules are similar to <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules in
+that the system deduces new information from the act of assuming
+something true or false.  If a compound recognizer rule were stored
+as a forward chaining rule it would have essentially the same effect
+as described, when it has any effect at all.  The important point is
+that <code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules, because of their more general and
+expensive form, are used ``at the top level'' of the simplification
+process: we forward chain from assumptions in the goal being proved.
+But compound recognizer rules are built in at the bottom-most level
+of the simplifier, where type reasoning is done.<p>
+
+All that said, compound recognizer rules are a rather fancy,
+specialized mechanism.  It may be more appropriate to create
+<code>:</code><code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules instead of <code>:compound-recognizer</code>
+rules.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

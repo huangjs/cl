@@ -1,0 +1,1260 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: EQ,  Next: EQL,  Prev: ENDP,  Up: PROGRAMMING
+
+EQ    equality of symbols
+
+Eq is the function for determining whether two objects are identical
+(i.e., have the exact same store address in the current von Neumann
+implementation of Common Lisp).  It is the same as equal in the ACL2
+logic.
+
+Eq is a Common Lisp function.  In order to ensure conformance with
+Common Lisp, the ACL2 guard on eq requires at least one of the
+arguments to eq to be a symbol.  Common Lisp guarantees that if x is a
+symbol, then x is eq to y if and only if x is equal to y.  Thus, the
+ACL2 user should think of eq as nothing besides a fast means for
+checking equal when one argument is known to be a symbol.  In
+particular, it is possible that an eq test will not even require the
+cost of a function call but will be as fast as a single machine
+instruction.
+
+
+File: acl2-doc-emacs.info,  Node: EQL,  Next: EQLABLE-ALISTP,  Prev: EQ,  Up: PROGRAMMING
+
+EQL    test equality (of two numbers, symbols, or characters)
+
+(eql x y) is logically equivalent to (equal x y).
+
+Unlike equal, eql has a guard requiring at least one of its arguments
+to be a number, a symbol, or a character.  Generally, eql is executed
+more efficiently than equal.
+
+For a discussion of the various ways to test against 0, See *Note
+ZERO-TEST-IDIOMS::.
+
+Eql is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: EQLABLE-ALISTP,  Next: EQLABLE-LISTP,  Prev: EQL,  Up: PROGRAMMING
+
+EQLABLE-ALISTP    recognizer for a true list of pairs whose cars are suitable for eql
+
+The predicate eqlable-alistp tests whether its argument is a true-listp
+of consp objects whose cars all satisfy eqlablep.
+
+
+File: acl2-doc-emacs.info,  Node: EQLABLE-LISTP,  Next: EQLABLEP,  Prev: EQLABLE-ALISTP,  Up: PROGRAMMING
+
+EQLABLE-LISTP    recognizer for a true list of objects each suitable for eql
+
+The predicate eqlable-listp tests whether its argument is a true-listp
+of objects satisfying eqlablep.
+
+
+File: acl2-doc-emacs.info,  Node: EQLABLEP,  Next: EQUAL,  Prev: EQLABLE-LISTP,  Up: PROGRAMMING
+
+EQLABLEP    the guard for the function eql
+
+The predicate eqlablep tests whether its argument is suitable for eql,
+at least one of whose arguments must satisfy this predicate in Common
+Lisp.  (Eqlablep x) is true if and only if its argument is a number, a
+symbol, or a character.
+
+
+File: acl2-doc-emacs.info,  Node: EQUAL,  Next: ER,  Prev: EQLABLEP,  Up: PROGRAMMING
+
+EQUAL    true equality
+
+(equal x y) is equal to t or nil, according to whether or not x and y
+are the same value.
+
+For a discussion of the various idioms for testing against 0, See *Note
+ZERO-TEST-IDIOMS::.
+
+
+File: acl2-doc-emacs.info,  Node: ER,  Next: ER-PROGN,  Prev: EQUAL,  Up: PROGRAMMING
+
+ER    print an error message and ``cause an error''
+
+     Example Forms:
+     (er hard  'top-level "Illegal inputs, ~x0 and ~x1." a b)
+     (er hard? 'top-level "Illegal inputs, ~x0 and ~x1." a b)
+     (er soft  'top-level "Illegal inputs, ~x0 and ~x1." a b)
+
+The examples above all print an error message to standard output saying
+that a and b are illegal inputs.  However, the first two abort
+evaluation after printing an error message, while the third returns (mv
+t nil state) after printing an error message.  The result in the third
+case can be interpreted as an "error" when programming with the ACL2
+state, something most ACL2 users will probably not want to do; see
+*note LD-ERROR-TRIPLES:: and see *note ER-PROGN::.
+
+Er is a macro, and the above three examples expand to calls of ACL2
+functions, as shown below.  See *Note ILLEGAL::, see *note
+HARD-ERROR::, and see *note ERROR1::, respectively.
+
+     General forms:
+     (er hard  ctx fmt-string arg1 arg2 ... argk)
+       ==> {macroexpands, in essence, to:}
+     (ILLEGAL    CTX FMT-STRING
+                 (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))
+     
+     (er hard? ctx fmt-string arg1 arg2 ... argk)
+       ==> {macroexpands, in essence, to:}
+     (HARD-ERROR CTX FMT-STRING
+                 (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))
+     
+     (er soft  ctx fmt-string arg1 arg2 ... argk)
+       ==> {macroexpands, in essence, to:}
+     (ERROR1     CTX FMT-STRING
+                 (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))
+
+
+File: acl2-doc-emacs.info,  Node: ER-PROGN,  Next: ERROR1,  Prev: ER,  Up: PROGRAMMING
+
+ER-PROGN    perform a sequence of state-changing ``error triples''
+
+     Example:
+     (er-progn (check-good-foo-p (f-get-global 'my-foo state) state)
+               (value (* (f-get-global 'my-foo state)
+                         (f-get-global 'bar state))))
+
+This sequencing primitive is only useful when programming with state,
+something that very few users will probably want to do.  See *Note
+STATE::.
+
+Er-progn is used much the way that progn is used in Common Lisp, except
+that it expects each form within it to evaluate to an "error triple" of
+the form (mv erp val state).  The first such form, if any, that
+evaluates to such a triple where erp is not nil yields the error triple
+returned by the er-progn.  If there is no such form, then the last form
+returns the value of the er-progn form.
+
+We intend to write more about this topic, especially if there are
+requests to do so.
+
+
+File: acl2-doc-emacs.info,  Node: ERROR1,  Next: EVENP,  Prev: ER-PROGN,  Up: PROGRAMMING
+
+ERROR1    print an error message and cause a ``soft error''
+
+(Error1 ctx str alist) returns (mv t nil state).  An error message is
+first printed using the the "context" ctx, as well as the string str
+and alist alist that are of the same kind as expected by fmt.  See
+*Note FMT::.
+
+Error1 can be interpreted as causing an "error" when programming with
+the ACL2 state, something most ACL2 users will probably not want to do;
+see *note LD-ERROR-TRIPLES:: and see *note ER-PROGN::.  In order to
+cause errors with :logic mode functions, see *note HARD-ERROR:: and see
+*note ILLEGAL::.  Better yet, see *note ER:: for a macro that provides
+a unified way of signaling errors.
+
+As mentioned above, error1 always returns (mv t nil state).  But if a
+call (error1 ctx str alist) is encountered during evaluation, then the
+string str is first printed using the association list alist (as in
+fmt).  Here is a trivial, contrived example.
+
+     ACL2 !>(error1 'my-context
+                    "Printing 4: ~n0"
+                    (list (cons #\0 4))
+                    state)
+     
+     
+     ACL2 Error in MY-CONTEXT:  Printing 4: four
+     
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: EVENP,  Next: EXPLODE-NONNEGATIVE-INTEGER,  Prev: ERROR1,  Up: PROGRAMMING
+
+EVENP    test whether an integer is even
+
+(evenp x) is true if and only if the integer x is even.  Actually, in
+the ACL2 logic (evenp x) is defined to be true when x/2 is an integer.
+
+The guard for evenp requires its argument to be an integer.
+
+Evenp is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: EXPLODE-NONNEGATIVE-INTEGER,  Next: EXPT,  Prev: EVENP,  Up: PROGRAMMING
+
+EXPLODE-NONNEGATIVE-INTEGER    the list of characters in the radix-r form of a number
+
+     Examples:
+     ACL2 !>(explode-nonnegative-integer 925 10 nil)
+     (#9 #2 #5)
+     ACL2 !>(explode-nonnegative-integer 325 16 nil)
+     (#3 #9 #D)
+
+For a non-negative integer n, (explode-nonnegative-integer n r nil) is
+the list of characters in the radix-r (base-r) representation of n.
+
+The guard for explode-nonnegative-integer requires the first argument
+to be a nonnegative integer and second argument to be a valid radix for
+ACL2 (2, 8, 10, or 16).
+
+
+File: acl2-doc-emacs.info,  Node: EXPT,  Next: FIFTH,  Prev: EXPLODE-NONNEGATIVE-INTEGER,  Up: PROGRAMMING
+
+EXPT    exponential function
+
+(Expt r i) is the result of raising the number r to the integer power i.
+
+The guard for (expt r i) is that r is a number and i is an integer, and
+furthermore, if r is 0 then i is nonnegative.  When the type
+requirements of the guard aren't met, (expt r i) first coerces r to a
+number and i to an integer.
+
+Expt is a Common Lisp function.  See any Common Lisp documentation for
+more information.  Note that r can be a complex number; this is
+consistent with Common lisp.
+
+
+File: acl2-doc-emacs.info,  Node: FIFTH,  Next: FIRST,  Prev: EXPT,  Up: PROGRAMMING
+
+FIFTH    fifth member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: FIRST,  Next: FIX,  Prev: FIFTH,  Up: PROGRAMMING
+
+FIRST    first member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: FIX,  Next: FIX-TRUE-LIST,  Prev: FIRST,  Up: PROGRAMMING
+
+FIX    coerce to a number
+
+Fix simply returns any numeric argument unchanged, returning 0 on a
+non-numeric argument.  Also see *note NFIX::, see *note IFIX::, and see
+*note RFIX:: for analogous functions that coerce to a natural number,
+an integer, and a rational number, respectively.
+
+Fix has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: FIX-TRUE-LIST,  Next: FLOOR,  Prev: FIX,  Up: PROGRAMMING
+
+FIX-TRUE-LIST    coerce to a true list
+
+Fix-true-list is the identity function on true-listp objects.  It
+converts every list to a true list by dropping the final cdr, and it
+converts every atom to nil.
+
+
+File: acl2-doc-emacs.info,  Node: FLOOR,  Next: FMS,  Prev: FIX-TRUE-LIST,  Up: PROGRAMMING
+
+FLOOR    division returning an integer by truncating toward negative infinity
+
+     Example Forms:
+     ACL2 !>(floor 14 3)
+     4
+     ACL2 !>(floor -14 3)
+     -5
+     ACL2 !>(floor 14 -3)
+     -5
+     ACL2 !>(floor -14 -3)
+     4
+     ACL2 !>(floor -15 -3)
+     5
+
+(Floor i j) returns the result of taking the quotient of i and j and
+returning the greatest integer not exceeding that quotient.  For
+example, the quotient of -14 by 3 is -4 2/3, and the largest integer
+not exceeding that rational number is -5.
+
+The guard for (floor i j) requires that i and j are rational (real, in
+ACL2(r)) numbers and j is non-zero.
+
+Floor is a Common Lisp function.  See any Common Lisp documentation for
+more information.  However, note that unlike Common Lisp, the ACL2
+floor function returns only a single value,
+
+
+File: acl2-doc-emacs.info,  Node: FMS,  Next: FMS!,  Prev: FLOOR,  Up: PROGRAMMING
+
+FMS    :(str alist co-channel state evisc) => state
+
+See *Note FMT:: for further explanation, including documentation of the
+tilde-directives.
+
+
+File: acl2-doc-emacs.info,  Node: FMS!,  Next: FMT,  Prev: FMS,  Up: PROGRAMMING
+
+FMS!    :(str alist co-channel state evisc) => state
+
+This function is nearly identical to fms; see *note FMS::.  The only
+difference is that fms may insert backslash (\) characters when forced
+to print past the right margin in order to make the output a bit
+clearer in that case.  Use fms! instead if you want to be able to read
+the forms back in.
+
+
+File: acl2-doc-emacs.info,  Node: FMT,  Next: FMT!,  Prev: FMS!,  Up: PROGRAMMING
+
+FMT    formatted printing
+
+ACL2 provides the functions fmt, fmt1, and fms as substitutes for Common
+Lisp's format function.  Also see *note FMT!::, see *note FMT1!::, and
+see *note FMS!:: for versions of these functions that write forms to
+files in a manner that allows them to be read, by avoiding using
+backslash (\) to break long lines.
+
+All three print a given string under an alist pairing character objects
+with values, interpreting certain "tilde-directives" in the string.
+Channel must be a character output channel (e.g., *standard-co*).
+
+     General Forms:                                            result
+     (fms string alist channel state evisc-tuple)         ; state
+     (fmt string alist channel state evisc-tuple)         ; (mv col state)
+     (fmt1 string alist column channel state evisc-tuple) ; (mv col state)
+
+Fms and fmt print an initial newline to put channel in column 0; Fmt1
+requires the current column as input.  Columns are numbered from 0.
+The current column is the column into which the next character will be
+printed.  (Thus, the current column number is also the number of
+characters printed since the last newline.)  The col returned by fmt
+and fmt1 is the current column at the conclusion of the formatting.
+Evisc-tuple must be either nil (meaning no abbreviations are used when
+objects are printed) or an "evisceration tuple" such as that returned by
+(default-evisc-tuple state).
+
+We list the tilde-directives below.  The notation is explained after
+the chart.
+
+     ~xx  pretty print vx (maybe after printing a newline)
+     ~yx  pretty print vx starting in current column; end with newline
+     ~Xxy like ~xx but use vy as the evisceration tuple
+     ~Yxy like ~yx but use vy as the evisceration tuple
+     ~px  pretty print term (maybe with infix) vx
+          (maybe after printing a newline)
+     ~qx  pretty print term (maybe with infix) vx
+          starting in current column; end with newline
+     ~Pxy like ~px but use vy as the evisceration tuple
+     ~Qxy like ~qx but use vy as the evisceration tuple
+     ~@x  if vx is a string, "str",  recursively format "str"
+          if vx is ("str" . a), recursively format "str" under a+
+     ~#x~[...~/...~/ ... ~/...~] cases on vx
+          ^    ^     ...   ^  if 0<=vx<=k, choose vxth alternative
+          0    1     ...   k  if vx is a list of length 1, case 0; else 1
+     ~*x  iterator: vx must be of the form
+          ("str0" "str1" "str2" "str3" lst . a);
+          if lst is initially empty, format "str0" under a+; otherwise,
+          bind #\* successively to the elements of lst and then
+          recursively format "stri" under a+, where i=1 if there is one
+          element left to process, i=2 if there are two left, and i=3
+          otherwise.
+     ~&x  print elements of vx with ~x, separated by commas and a
+          final ``and''
+     ~vx  print elements of vx with ~x, separated by commas and a
+          final ``or''
+     ~nx  if vx is a small positive integer, print it as a word, e.g.,
+          seven;
+          if vx is a singleton containing a small positive integer, print
+            the corresponding ordinal as a word, e.g., seventh
+     ~Nx  like ~nx but the word is capitalized, e.g., Seven or Seventh
+     ~tx  tab out to column vx; newline first if at or past column vx
+     ~cx  vx is (n . w), print integer n right justified in field of
+          width w
+     ~fx  print object vx flat over as many lines as necessary
+     ~Fx  same as ~f, except that subsequent lines are indented to
+          start one character to the right of the first character printed
+     ~sx  if vx is a symbol, print vx, breaking on hyphens; if vx is a
+          string, print the characters in it, breaking on hyphens
+     ~    tilde space: print a space
+     ~_x  print vx spaces
+     ~
+          tilde newline: skip following whitespace
+     ~%   output a newline
+     ~|   output a newline unless already on left margin
+     ~~   print a tilde
+     ~-   if close to rightmargin, output a hyphen and newline; else
+          skip this char
+
+If x is a character, then vx is the value of #\x under the current
+alist.  When we say "format str under a+" we mean recursively process
+the given string under an alist obtained by appending a to the current
+alist.
+
+ACL2's formatting functions print to the indicated channel, keeping
+track of which column they are in.  Fmt1 can be used if the caller
+knows which column the channel is in (i.e., how many characters have
+been printed since the last newline).  Otherwise, fmt or fms must be
+used, both of which output a newline so as to establish the column
+position at 0.  Unlike Common Lisp's format routine, fmt and its
+relatives break the output into lines so as to try to avoid printing
+past column 77.  That number is built-into the definitions of ACL2's
+formatting functions.  Line breaks are automatically inserted as
+necessary in place of spaces and after hyphens in the text being
+printed.
+
+The formatting functions scan the string from left to right, printing
+each successive character unless it is a tilde (~).  Upon encountering
+tildes the formatters take action determined by the character or
+characters immediately following the tilde.  The typical
+tilde-directive is a group of three successive characters from the
+string being printed.  For example, ~x0 is a 3 character
+tilde-directive.  The first character in a tilde-directive is always
+the tilde character itself.  The next character is called the "command"
+character.  The character after that is usually taken as the name of a
+"format variable" that is bound in the alist under which the string is
+being printed.  Format variables are, by necessity, characters.  The
+objects actually printed by a tilde-directive are the objects obtained
+by looking up the command's format variables in the alist.  Typical
+format variable names are 0, 1, 2, ..., 9, a, b, c, etc., and if a
+tilde-directive uses the format variable 0, as in ~x0, then the
+character #\0 must be bound in the alist.  Some tilde commands take no
+arguments and others take more than one, so some directives are of
+length two and others are longer.
+
+It should be noted that this use of characters in the string to denote
+arguments is another break from Common Lisp's format routine.  In
+Common Lisp, the directives refer implicitly to the "next item to be
+printed."  But in ACL2 the directives name each item explicitly with
+our format variables.
+
+The following text contains examples that can be evaluated.  To make
+this process easier, we use a macro which is defined as part of ACL2
+just for this documentation.  The macro is named fmx and it takes up to
+eleven arguments, the first of which is a format string, str, and the
+others of which are taken as the values of format variables.  The
+variables used are #\0 through #\9.  The macro constructs an
+appropriate alist, a, and then evaluates (fmt str a *standard-co* state
+nil).
+
+Thus,
+
+     (fmx "Here is v0, ~x0, and here is v1, ~x1."
+          (cons 'value 0)
+          (cons 'value 1))
+
+is just an abbreviation for
+
+     (fmt "Here is v0, ~x0, and here is v1, ~x1."
+          (list (cons #\0 (cons 'value 0))
+                (cons #\1 (cons 'value 1)))
+          *standard-co*
+          state
+          nil)
+
+which returns (mv 53 state) after printing the line
+
+        Here is v0, (VALUE . 0), and here is v1, (VALUE . 1).
+
+We now devote special attention to three of the tilde-directives whose
+use is non-obvious.
+
+_The Case Statement_
+
+~#x is essentially a "case statement" in the language of fmt.  The
+proper form of the statement is
+
+     ~#x~[case-0~/case-1~/ ... ~/case-k~],
+
+where each of the case-i is a format string.  In the most common use,
+the variable x has an integer value, vx, between 0 and k, inclusive.
+The effect of formatting the directive is to format case-vx.
+
+For example
+
+     (fmx "Go ~#0~[North~/East~/South~/West~].~%" 1)
+
+will print "Go East." followed by a newline and will return
+
+(mv 0 state), while if you change the 1 above to 3 (the maximum legal
+value), it will print "Go West."
+
+In order to make it easier to print such phrases as "there are seven
+cases" requiring agreement between subject and verb based on the number
+of elements of a list, the case statement allows its variable to take a
+list as its value and selects case-0 if the list has length 1 and
+case-1 otherwise.
+
+     (let ((cases '(a b c)))
+       (fmx "There ~#0~[is ~n1 case~/are ~n1 cases~]."
+            cases
+            (length cases)))
+
+will print "There are three cases." but if you change the
+
+'(a b c) above simply to '(a) it will print "There is one case." and if
+you change it to nil it will print "There are zero cases."
+
+_Indirection_
+
+Roughly speaking, ~@ will act as though the value of its argument is a
+format string and splice it into the current string at the current
+position.  It is often used when the phrase to be printed must be
+computed.  For example,
+
+     (let ((ev 'DEFUN))
+      (fmx "~x0 is an event~@1."
+           'foo
+           (if (member-eq ev '(defun defstub encapsulate))
+               " that may introduce a function symbol"
+               "")))
+
+will print "foo is an event that may introduce a function symbol," but
+if the value of ev is changed from 'defun to 'defthm, it prints "foo is
+an event."  The ~@ directive "splices" in the computed phrase (which
+might be empty).  Of course, this particular example could be done with
+the case statement
+
+     ~#1~[~/ that may introduce a function symbol~]
+
+where the value of #\1 is appropriately computed to be 0 or 1.
+
+If the argument to ~@ is a pair, it is taken to be a format string
+consed onto an alist, i.e., ("str" . a), and the alist, a, is used to
+extend the current one before "str" is recursively processed.  This
+feature of fmt can be used to pass around "phrases" that contain
+computed contextual information in a.  The most typical use is as
+"error messages."  For example, suppose you are writing a function
+which does not have access to state and so cannot print an error
+message.  It may nevertheless be necessary for it to signal an error to
+its caller, say by returning two results, the first of which is
+interpreted as an error message if non-nil.  Our convention is to use a
+~@ pair to represent such messages.  For example, the error value might
+be produced by the code:
+
+     (cons
+       "Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+       (list (cons #\0 (current-instruction st))
+             (cons #\1 (i-stack st))))
+
+If the current-instruction and i-stack (whatever they are) are '(popi
+3) and '(a b) when the cons above is evaluated, then it produces
+
+     '("Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+       (#\0 POPI 3)
+       (#\1 A B))
+
+and if this pair is made the value of the fmt variable 0, then ~@0 will
+print
+
+        Error:  The instruction (POPI 3) is illegal when the stack is (A B).
+
+For example, evaluate
+
+     (let
+      ((pair
+       '("Error:  The instruction ~x0 is illegal when the stack is ~x1.~%"
+         (#\0 POPI 3)
+         (#\1 A B))))
+      (fmx "~@0" pair)).
+
+Thus, even though the function that produced the "error" could not
+print it, it could specify exactly what error message and data are to
+be printed.
+
+This example raises another issue.  Sometimes it is desirable to break
+lines in your format strings so as to make your source code more
+attractive.  That is the purpose of the tilde-newline directive.  The
+following code produces exactly the same output as described above.
+
+     (let ((pair '("Error:  The instruction ~x0 ~
+                   is illegal when the stack is ~
+                   ~x1.~%"
+                   (#\0 POPI 3)
+                   (#\1 A B))))
+      (fmx "~@0" pair)).
+
+Finally, observe that when ~@0 extends the current alist, alist, with
+the one, a, in its argument, the bindings from a are added to the front
+of alist, overriding the current values of any shared variables.  This
+ensures that the variable values seen by the recursively processed
+string, "str", are those from a, but if "str" uses variables not bound
+in a, their values are as specified in the original alist.
+Intuitively, variables bound in a are local to the processing of ("str"
+. a) but "str" may use "global variables."  The example above
+illustrates this because when the ~@0 is processed, #\0 is bound to the
+error message pair.  But when the ~x0 in the error string is processed,
+#\0 is bound to the illegal instruction.
+
+_Iteration_
+
+The ~* directive is used to process each element of a list.  For
+example,
+
+     (let ((lst '(a b c d e f g h))) ; a true-list whose elements we exhibit
+      (fmx "~*0"
+           `("Whoa!"          ; what to print if there's nothing to print
+             "~x*!"           ; how to print the last element
+             "~x* and "       ; how to print the 2nd to last element
+             "~x*, "          ; how to print all other elements
+             ,lst)))          ; the list of elements to print
+
+will print "A, B, C, D, E, F, G and H!".  Try this example with other
+true list values of lst, such as '(a b), '(a), and nil.  The
+tilde-directives ~&0 and ~v0, which take a true list argument and
+display its elements separated by commas and a final "and" or "or," are
+implemented in terms of the more general ~*.
+
+The ~* directive allows the 5-tuple to specify in its final cdr an
+alist with which to extend the current one before processing the
+individual elements.
+
+We often use ~* to print a series of phrases, separated by suitable
+punctuation, whitespace and noise words.  In such use, the ~* handles
+the separation of the phrases and each phrase is generally printed by
+~@.
+
+Here is a complex example.  In the let*, below, we bind phrases to a
+list of ~@ pairs and then we create a ~* 5-tuple to print out the
+conjunction of the phrases with a parenthetical "finally!" if the
+series is longer than 3.
+
+     (let* ((phrases
+             (list (list "simplifying with the replacement rules ~&0"
+                         (cons #\0 '(rewrite-rule1
+                                     rewrite-rule2
+                                     rewrite-rule3)))
+                   (list "destructor elimination using ~x0"
+                         (cons #\0 'elim-rule))
+                   (list "generalizing the terms ~&0"
+                         (cons #\0 '((rev x) (app u v))))
+                   (list "inducting on ~x0"
+                         (cons #\0 'I))))
+            (5-tuple
+             (list
+              "magic"                            ; no phrases
+              "~@*"                              ; last phrase
+              "~@*, and~#f~[~/ (finally!)~] "    ; second to last phrase
+              "~@*, "                            ; other phrases
+              phrases                            ; the phrases themselves
+              (cons #\f
+                    (if (>(length phrases) 3) 1 0))))) ;print ``finally''?
+       (fmx "We did it by ~*0." 5-tuple))
+
+This let* prints
+
+        We did it by simplifying with the replacement rules REWRITE-RULE1,
+        REWRITE-RULE2 and REWRITE-RULE3, destructor elimination using ELIM-
+        RULE, generalizing the terms (REV X) and (APP U V), and (finally!)
+        inducting on I.
+
+You might wish to try evaluating the let* after removing elements of
+phrases.
+
+Most of the output produced by ACL2 is produced via fmt statements.
+Thus, inspection of the source code will yield many examples.  A
+complicated example is the code that explains the simplifier's work.
+See :pc simplify-clause-msg1.  An ad hoc example is provided by the
+function fmt-doc-example, which takes two arguments: an arbitrary true
+list and state.  To see how fmt-doc-example works, :pe fmt-doc-example.
+
+     (fmt-doc-example '(a b c d e f g h i j k l m n o p) state)
+
+will produce the output
+
+        Here is a true list:  (A B C D E F G H I J K L M N O P).  It has 16
+        elements, the third of which is C.
+     
+        We could print each element in square brackets:
+        ([A], [B], [C], [D], [E], [F], [G], [H], [I], [J], [K], [L], [M], [N],
+        [almost there: O], [the end: P]).  And if we wished to itemize them
+        into column 15 we could do it like this
+        0123456789012345
+            0 (zeroth) A
+            1 (first)  B
+            2 (second) C
+            3 (third)  D
+            4 (fourth) E
+            5 (fifth)  F
+            6 (sixth)  G
+            7 (seventh)
+                       H
+            8 (eighth) I
+            9 (ninth)  J
+           10 (tenth)  K
+           11 (eleventh)
+                       L
+           12 (twelfth)
+                       M
+           13 (thirteenth)
+                       N
+           14 (14th)   O
+           15 (15th)   P
+        End of example.
+
+and return (mv 15 state).
+
+Finally, we should remind the reader that fmt and its subfunctions,
+most importantly fmt0, are written entirely in ACL2.  We make this
+comment for two reasons.  First, it illustrates the fact that quite low
+level code can be efficiently written in the language.  Second, it
+means that as a last resort for documentation purposes you can read the
+source code without changing languages.
+
+
+File: acl2-doc-emacs.info,  Node: FMT!,  Next: FMT-TO-COMMENT-WINDOW,  Prev: FMT,  Up: PROGRAMMING
+
+FMT!    :(str alist co-channel state evisc) => state
+
+This function is nearly identical to fmt; see *note FMT::.  The only
+difference is that fmt may insert backslash (\) characters when forced
+to print past the right margin in order to make the output a bit
+clearer in that case.  Use fmt! instead if you want to be able to read
+the forms back in.
+
+
+File: acl2-doc-emacs.info,  Node: FMT-TO-COMMENT-WINDOW,  Next: FMT1,  Prev: FMT!,  Up: PROGRAMMING
+
+FMT-TO-COMMENT-WINDOW    print to the comment window
+
+See *Note CW:: for an introduction to the comment window and the usual
+way to print it.
+
+Function fmt-to-comment-window is identical to fmt1 (see *note FMT::),
+except that the channel is in essence *standard-co* and the ACL2 state
+is neither an input nor an output.
+
+     General Form:
+     (fmt-to-comment-window fmt-string alist col evisc-tuple
+
+where these arguments are as desribed for fmt1; see *note FMT::.
+
+
+File: acl2-doc-emacs.info,  Node: FMT1,  Next: FMT1!,  Prev: FMT-TO-COMMENT-WINDOW,  Up: PROGRAMMING
+
+FMT1    :(str alist col co-channel state evisc) => (mv col state)
+
+See *Note FMT:: for further explanation, including documentation of the
+tilde-directives.
+
+
+File: acl2-doc-emacs.info,  Node: FMT1!,  Next: FOURTH,  Prev: FMT1,  Up: PROGRAMMING
+
+FMT1!    :(str alist col channel state evisc) => (mv col state)
+
+This function is nearly identical to fmt1; see *note FMT1::.  The only
+difference is that fmt1 may insert backslash (\) characters when forced
+to print past the right margin in order to make the output a bit
+clearer in that case.  Use fmt1! instead if you want to be able to read
+the forms back in.
+
+
+File: acl2-doc-emacs.info,  Node: FOURTH,  Next: GETENV$,  Prev: FMT1!,  Up: PROGRAMMING
+
+FOURTH    fourth member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: GETENV$,  Next: HARD-ERROR,  Prev: FOURTH,  Up: PROGRAMMING
+
+GETENV$    read an environment variable
+
+(Getenv$ str), where str is a string, reads the value of environment
+variable str, returning nil if none is found or if the read fails.  The
+formal story is that getenv$ reads its value from the oracle field of
+the ACL2 state.  The return value is thus a triple of the form (mv erp
+val state), where erp will always be nil in practice, val is the value
+that has been read, and state is the new state, which is obtained by
+popping val from the top of the state's oracle.
+
+     Example:
+     (getenv$ "PWD") ==> (mv nil "/u/joe/work" state)
+
+Also see *note SETENV$::.
+
+
+File: acl2-doc-emacs.info,  Node: HARD-ERROR,  Next: IDENTITY,  Prev: GETENV$,  Up: PROGRAMMING
+
+HARD-ERROR    print an error message and stop execution
+
+(Hard-error ctx str alist) causes evaluation to halt with a short
+message using the "context" ctx.  An error message is first printed
+using the string str and alist alist that are of the same kind as
+expected by fmt.  See *Note FMT::.  Also see *note ER:: for a macro
+that provides a unified way of signaling errors.
+
+Hard-error has a guard of t.  Also see *note ILLEGAL:: for a similar
+capability which however has a guard of nil that supports static
+checking using guard verification, rather than using dynamic (run-time)
+checking.   This distinction is illustrated elsewhere: see *note
+PROG2$:: for examples.
+
+Semantically, hard-error ignores its arguments and always returns nil.
+But if a call (hard-error ctx str alist) is encountered during
+evaluation, then the string str is printed using the association list
+alist (as in fmt), after which evaluation halts immediately.  Here is a
+trivial, contrived example.
+
+     ACL2 !>(cons 3 (hard-error 'my-context
+                                 "Printing 4: ~n0"
+                                 (list (cons #\0 4))))
+     
+     
+     HARD ACL2 ERROR in MY-CONTEXT:  Printing 4: four
+     
+     
+     
+     ACL2 Error in TOP-LEVEL:  Evaluation aborted.
+     
+     ACL2 !>
+
+
+File: acl2-doc-emacs.info,  Node: IDENTITY,  Next: IF,  Prev: HARD-ERROR,  Up: PROGRAMMING
+
+IDENTITY    the identity function
+
+(Identity x) equals x; what else can we say?
+
+Identity is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: IF,  Next: IFF,  Prev: IDENTITY,  Up: PROGRAMMING
+
+IF    if-then-else function
+
+(if x y z) is equal to y if x is any value other than nil, and is equal
+to z if x is nil.
+
+Only one of y, z is evaluated when (if x y z) is evaluated.
+
+If has a guard of t.
+
+If is part of Common Lisp.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: IFF,  Next: IFIX,  Prev: IF,  Up: PROGRAMMING
+
+IFF    logical ``if and only if''
+
+Iff is the ACL2 biconditional, "if and only if".  (iff P Q) means that
+either P and Q are both false (i.e., nil) or both true (i.e., not nil).
+
+
+File: acl2-doc-emacs.info,  Node: IFIX,  Next: ILLEGAL,  Prev: IFF,  Up: PROGRAMMING
+
+IFIX    coerce to an integer
+
+Ifix simply returns any integer argument unchanged, returning 0 on a
+non-integer argument.  Also see *note NFIX::, see *note RFIX::, see
+*note REALFIX:: and see *note FIX:: for analogous functions that coerce
+to a natural number, a rational number, a real, and a number,
+respectively.
+
+Ifix has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: ILLEGAL,  Next: IMAGPART,  Prev: IFIX,  Up: PROGRAMMING
+
+ILLEGAL    print an error message and stop execution
+
+(Illegal ctx str alist) causes evaluation to halt with a short message
+using the "context" ctx.  An error message is first printed using the
+string str and alist alist that are of the same kind as expected by
+fmt.  See *Note FMT::, and see *note PROG2$:: for an example of how to
+use a related function, hard-error (see *note HARD-ERROR::).  Also see
+*note ER:: for a macro that provides a unified way of signaling errors.
+
+The difference between illegal and hard-error is that the former has a
+guard of nil while the latter has a guard of t.  Thus, you may want to
+use illegal rather than hard-error when you intend to do guard
+verification at some point, and you expect the guard to guarantee that
+the illegal call is never executed.  See *Note PROG2$:: for an example.
+
+
+File: acl2-doc-emacs.info,  Node: IMAGPART,  Next: IMPLIES,  Prev: ILLEGAL,  Up: PROGRAMMING
+
+IMAGPART    imaginary part of a complex number
+
+Completion Axiom:
+
+     (equal (imagpart x)
+            (if (acl2-numberp x)
+                (imagpart x)
+              0))
+
+Guard for (imagpart x):
+
+     (acl2-numberp x)
+
+
+File: acl2-doc-emacs.info,  Node: IMPLIES,  Next: IMPROPER-CONSP,  Prev: IMAGPART,  Up: PROGRAMMING
+
+IMPLIES    logical implication
+
+Implies is the ACL2 implication function.  (implies P Q) means that
+either P is false (i.e., nil) or Q is true (i.e., not nil).
+
+
+File: acl2-doc-emacs.info,  Node: IMPROPER-CONSP,  Next: INT=,  Prev: IMPLIES,  Up: PROGRAMMING
+
+IMPROPER-CONSP    recognizer for improper (non-null-terminated) non-empty lists
+
+Improper-consp is the function that checks whether its argument is a
+non-empty list that ends in other than nil.  See *Note PROPER-CONSP::
+and also see *note TRUE-LISTP::.
+
+
+File: acl2-doc-emacs.info,  Node: INT=,  Next: INTEGER-LENGTH,  Prev: IMPROPER-CONSP,  Up: PROGRAMMING
+
+INT=    test equality of two integers
+
+(int= x y) is logically equivalent to (equal x y).
+
+Unlike equal, int= requires its arguments to be numbers (or else causes
+a guard violation; see *note GUARD::).  Generally, int= is executed
+more efficiently than equal or = on integers.
+
+
+File: acl2-doc-emacs.info,  Node: INTEGER-LENGTH,  Next: INTEGER-LISTP,  Prev: INT=,  Up: PROGRAMMING
+
+INTEGER-LENGTH    number of bits in two's complement integer representation
+
+For non-negative integers, (integer-length i) is the minimum number of
+bits needed to represent the integer.  Any integer can be represented
+as a signed two's complement field with a minimum of (+ (integer-length
+i) 1) bits.
+
+The guard for integer-length requires its argument to be an integer.
+Integer-length is defined in Common Lisp.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: INTEGER-LISTP,  Next: INTEGERP,  Prev: INTEGER-LENGTH,  Up: PROGRAMMING
+
+INTEGER-LISTP    recognizer for a true list of integers
+
+The predicate integer-listp tests whether its argument is a true list
+of integers.
+
+
+File: acl2-doc-emacs.info,  Node: INTEGERP,  Next: INTERN,  Prev: INTEGER-LISTP,  Up: PROGRAMMING
+
+INTEGERP    recognizer for whole numbers
+
+(integerp x) is true if and only if x is an integer.
+
+
+File: acl2-doc-emacs.info,  Node: INTERN,  Next: INTERN$,  Prev: INTEGERP,  Up: PROGRAMMING
+
+INTERN    create a new symbol in a given package
+
+(intern symbol-name symbol-package-name) returns a symbol with the
+given symbol-name and the given symbol-package-name.  We restrict
+Common Lisp's intern so that the second argument is either the symbol
+*main-lisp-package-name*, the value of that constant, or is one of
+"ACL2", "ACL2-INPUT-CHANNEL", "ACL2-OUTPUT-CHANNEL", or "KEYWORD".  To
+avoid that restriction, see *note INTERN$::.
+
+In ACL2 intern is actually implemented as a macro that expands to a
+call of a similar function whose second argument is a symbol.  Invoke
+:pe intern to see the definition, or see *note
+INTERN-IN-PACKAGE-OF-SYMBOL::.
+
+To see why is intern so restricted consider (intern "X" "P").  In
+particular, is it a symbol and if so, what is its symbol-package-name?
+One is tempted to say "yes, it is a symbol in the package "P"."  But if
+package "P" has not yet been defined, that would be premature because
+the imports to the package are unknown.  For example, if "P" were
+introduced with
+
+     (defpkg "P" '(LISP::X))
+
+then in Common Lisp (symbol-package-name (intern "X" "P")) returns
+"LISP".
+
+The obvious restriction on intern is that its second argument be the
+name of a package known to ACL2.  We cannot express such a restriction
+(except, for example, by limiting it to those packages known at some
+fixed time, as we do).  Instead, we provide intern-in-package-of-symbol
+which requires a "witness symbol" for the package instead of the
+package.  The witness symbol is any symbol (expressible in ACL2) and
+uniquely specifies a package necessarily known to ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: INTERN$,  Next: INTERN-IN-PACKAGE-OF-SYMBOL,  Prev: INTERN,  Up: PROGRAMMING
+
+INTERN$    create a new symbol in a given package
+
+Intern$ is a macro that behaves the same as the macro intern, except
+for weakening the restriction to a fixed set of package names so that
+any package name other than "" is legal.  See *Note INTERN::.  Note
+that if you evaluate a call (intern$ x y) for which there is no package
+with name y that is known to ACL2, you will get an error.
+
+(Intern$ x y) expands to:
+
+     (intern-in-package-of-symbol x (pkg-witness y))
+
+See *Note INTERN-IN-PACKAGE-OF-SYMBOL:: and see *note PKG-WITNESS::.
+
+
+File: acl2-doc-emacs.info,  Node: INTERN-IN-PACKAGE-OF-SYMBOL,  Next: INTERSECTP-EQ,  Prev: INTERN$,  Up: PROGRAMMING
+
+INTERN-IN-PACKAGE-OF-SYMBOL    create a symbol with a given name
+
+Completion Axiom:
+
+     (equal (intern-in-package-of-symbol x y)
+            (if (and (stringp x)
+                     (symbolp y))
+                (intern-in-package-of-symbol x y)
+              nil))
+
+Guard for (intern-in-package-of-symbol x y):
+
+     (and (stringp x) (symbolp y))
+
+Intuitively, (intern-in-package-of-symbol x y) creates a symbol with
+symbol-name x interned in the package containing y.  More precisely,
+suppose x is a string, y is a symbol with symbol-package-name pkg and
+that the defpkg event creating pkg had the list of symbols imports as
+the value of its second argument.  Then (intern-in-package-of-symbol x
+y) returns a symbol, ans, the symbol-name of ans is x, and the
+symbol-package-name of ans is pkg, unless x is the symbol-name of some
+member of imports with symbol-package-name ipkg, in which case the
+symbol-package-name of ans is ipkg.  Because defpkg requires that there
+be no duplications among the symbol-names of the imports,
+intern-in-package-of-symbol is uniquely defined.
+
+For example, suppose "MY-PKG" was created by
+
+     (defpkg "MY-PKG" '(ACL2::ABC LISP::CAR)).
+
+Let w be 'my-pkg::witness.  Observe that
+
+     (symbolp w) is t                     ; w is a symbol
+     (symbol-name w) is "WITNESS"         ; w's name is "WITNESS"
+     (symbol-package-name w) is "MY-PKG"  ; w is in the package "MY-PKG"
+
+The construction of w illustrates one way to obtain a symbol in a given
+package:  write it down as a constant using the double-colon notation.
+
+But another way to obtain a symbol in a given package is to create it
+with intern-in-package-of-symbol.
+
+     (intern-in-package-of-symbol "XYZ" w) is MY-PKG::XYZ
+     
+     (intern-in-package-of-symbol "ABC" w) is ACL2::ABC
+     
+     (intern-in-package-of-symbol "CAR" w) is LISP::CAR
+     
+     (intern-in-package-of-symbol "car" w) is MY-PKG::|car|
+
+
+File: acl2-doc-emacs.info,  Node: INTERSECTP-EQ,  Next: INTERSECTP-EQUAL,  Prev: INTERN-IN-PACKAGE-OF-SYMBOL,  Up: PROGRAMMING
+
+INTERSECTP-EQ    test whether two lists of symbols intersect
+
+See *Note INTERSECTP-EQUAL::, which is logically the same function.
+
+(Intersectp-eq x y) has a guard that x and y are lists of symbols.
+
+
+File: acl2-doc-emacs.info,  Node: INTERSECTP-EQUAL,  Next: IO,  Prev: INTERSECTP-EQ,  Up: PROGRAMMING
+
+INTERSECTP-EQUAL    test whether two lists intersect
+
+(Intersectp-equal x y) returns t if x and y have a member in common,
+else it returns nil.  Also see *note INTERSECTP-EQ::, which is
+logically the same but can be more efficient since it uses eq instead
+of equal to look for members common to the two given lists.
+
+(Intersectp-equal x y) has a guard that x and y are true lists.
+
+
+File: acl2-doc-emacs.info,  Node: IO,  Next: IRRELEVANT-FORMALS,  Prev: INTERSECTP-EQUAL,  Up: PROGRAMMING
+
+IO    input/output facilities in ACL2
+
+     Example:
+     (mv-let
+       (channel state)
+       (open-input-channel "foo.lisp" :object state)
+       (mv-let (eofp obj state)
+               (read-object channel state)
+               (.
+                 .
+                  (let ((state (close-input-channel channel state)))
+                        (mv final-ans state))..)))
+
+Also see *note FILE-READING-EXAMPLE::.
+
+* Menu:
+
+* PRINC$:: print a string
+
+* SET-ACL2-PRINT-BASE:: control radix in which number are printed
+
+* SET-ACL2-PRINT-CASE:: control whether symbols are printed in upper case or in lower case
+
+ACL2 supports input and output facilities equivalent to a subset of
+those found in Common Lisp.  ACL2 does not support random access files
+or bidirectional streams.  In Common Lisp, input and output are to or
+from objects of type stream.  In ACL2, input and output are to or from
+objects called "channels," which are actually symbols.  Although a
+channel is a symbol, one may think of it intuitively as corresponding
+to a Common Lisp stream.  Channels are in one of two ACL2 packages,
+"ACL2-INPUT-CHANNEL" and "ACL2-OUTPUT-CHANNEL".  When one "opens" a
+file one gets back a channel whose symbol-name is the file name passed
+to "open," postfixed with -n, where n is a counter that is incremented
+every time an open or close occurs.
+
+There are three channels which are open from the beginning and which
+cannot be closed:
+
+       acl2-input-channel::standard-character-input-0
+       acl2-input-channel::standard-object-input-0
+       acl2-input-channel::standard-character-output-0
+
+All three of these are really Common Lisp's *standard-input* or
+*standard-output*, appropriately.
+
+For convenience, three global variables are bound to these rather
+tedious channel names:
+
+       *standard-ci*
+       *standard-oi*
+       *standard-co*
+
+Common Lisp permits one to open a stream for several different kinds of
+io, e.g. character or byte.  ACL2 permits an additional type called
+"object".  In ACL2 an "io-type" is a keyword, either :character, :byte,
+or :object.  When one opens a file, one specifies a type, which
+determines the kind of io operations that can be done on the channel
+returned.  The types :character and :byte are familiar.  Type :object
+is an abstraction not found in Common Lisp.  An :object file is a file
+of Lisp objects.  One uses read-object to read from :object files and
+print-object$ to print to :object files.  (The reading and printing are
+really done with the Common Lisp read and print functions.)
+
+File-names are strings.  ACL2 does not support the Common Lisp type
+pathname.
+
+Here are the names, formals and output descriptions of the ACL2 io
+functions.
+
+     Input Functions:
+       (open-input-channel (file-name io-type state) (mv channel state))
+       (open-input-channel-p (channel io-type state) boolean)
+       (close-input-channel (channel state) state)
+       (read-char$ (channel state) (mv char/nil state)) ; nil for EOF
+       (peek-char$ (channel state) boolean)
+       (read-byte$ (channel state) (mv byte/nil state)) ; nil for EOF
+       (read-object (channel state) (mv eof-read-flg obj-read state))
+     
+     Output Functions:
+       (open-output-channel (file-name io-type state) (mv channel state))
+       (open-output-channel-p (channel io-type state) boolean)
+       (close-output-channel (channel state) state)
+       (princ$ (obj channel state) state)
+       (write-byte$ (byte channel state) state)
+       (print-object$ (obj channel state) state)
+       (fms  (string alist channel state evisc-tuple) state)
+       (fms! (string alist channel state evisc-tuple) state)
+       (fmt  (string alist channel state evisc-tuple) (mv col state))
+       (fmt! (string alist channel state evisc-tuple) (mv col state))
+       (fmt1 (string alist col channel state evisc-tuple) (mv col state))
+       (fmt1! (string alist col channel state evisc-tuple) (mv col state))
+       (cw (string arg0 arg1 ... argn) nil)
+
+The "formatting" functions are particularly useful; see *note FMT:: and
+see *note CW::.  In particular, cw prints to a "comment window" and
+does not involve the ACL2 state, so many may find it easier to use than
+fmt and its variants.  The functions fms!, fmt!, and fmt1! are the same
+as their respective functions without the "!," except that the "!"
+functions are guaranteed to print forms that can be read back in (at a
+slight readability cost).
+
+When one enters ACL2 with (lp), input and output are taken from
+*standard-oi* to *standard-co*.  Because these are synonyms for
+*standard-input* and *standard-output*, one can drive ACL2 io off of
+arbitrary Common Lisp streams, bound to *standard-input* and
+*standard-output* before entry to ACL2.
+
+By default, symbols are printed in upper case when vertical bars are
+not required, as specified by Common Lisp.  See *Note
+SET-ACL2-PRINT-CASE:: for how to get ACL2 to print symbols in lower
+case.
+
+By default, numbers are printed in radix 10 (base 10).See *Note
+SET-ACL2-PRINT-BASE:: for how to get ACL2 to print numbers in radix 2,
+8, or 16.
+
+Finally, we note that the distributed book books/misc/file-io.lisp
+contains useful file io functions whose definitions illustrate some of
+the features described above.
+
+
+File: acl2-doc-emacs.info,  Node: PRINC$,  Next: SET-ACL2-PRINT-BASE,  Prev: IO,  Up: IO
+
+PRINC$    print a string
+
+Use princ$ to print a string, without the surrounding double-quotes.
+Princ$ returns state.
+
+     Examples:
+     ACL2 !>(princ$ "Howdy ho" (standard-co state) state)
+     Howdy ho<state>
+     ACL2 !>(pprogn (princ$ "Howdy ho" (standard-co state) state)
+                    (newline (standard-co state) state))
+     Howdy ho
+     <state>
+     ACL2 !>
+
+See *Note FMT:: for more sophisticated printing routines, and see *note
+IO:: for general information about input and output.
+
+
+File: acl2-doc-emacs.info,  Node: SET-ACL2-PRINT-BASE,  Next: SET-ACL2-PRINT-CASE,  Prev: PRINC$,  Up: IO
+
+SET-ACL2-PRINT-BASE    control radix in which number are printed
+
+By default, integers and ratios are printed in base 10.  ACL2 also
+supports printing in radix 2, 8, or 16 by calling set-acl2-print-base
+with the desired radix (base).
+
+       :set-acl2-print-base 10   ; Default printing
+       (set-acl2-print-base 10)  ; Same as above
+       :set-acl2-print-base 16   ; Print integers and ratios in hex, e.g., #x3A
+       (set-acl2-print-base 16)  ; Same as above
+
+Note: ACL2 events and some other top-level commands (for example, thm,
+verify, and history commands such as :pe and :pbt) set the print base
+to 10 during their evaluation.  So set-acl2-print-base has no effect
+while these forms are being processed.
+

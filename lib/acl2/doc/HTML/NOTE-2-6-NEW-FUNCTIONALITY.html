@@ -1,0 +1,192 @@
+<html>
+<head><title>NOTE-2-6-NEW-FUNCTIONALITY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-6-NEW-FUNCTIONALITY</h3>ACL2 Version  2.6 Notes on New Functionality
+<pre>Major Section:  <a href="NOTE-2-6.html">NOTE-2-6</a>
+</pre><p>
+
+A fundamental change is the provision of the ``nu-rewriter'' for
+simplifying expressions composed of <code>NTH</code>, <code>UPDATE-NTH</code>, and
+<code>UPDATE-NTH-ARRAY</code> applications and <code>LET</code> expressions and other
+calls of non-recursive functions or <code>LAMBDA</code> expressions involving
+those symbols.  The nu-rewriter applies the obvious rewrite rule for
+<code>(NTH i (UPDATE-NTH j v s))</code> and the analogous rule for
+<code>UPDATE-NTH-ARRAY</code>.  See <a href="NU-REWRITER.html">nu-rewriter</a>  The nu-rewriter can be
+enabled with <code><a href="SET-NU-REWRITER-MODE.html">set-nu-rewriter-mode</a></code>.<p>
+
+A new flag has been added to the <code>xargs</code> of <code><a href="DEFUN.html">defun</a></code> permitting
+the declaration that the function is <code>non-executable</code>.  The
+usage is <code>(declare (xargs :non-executable t))</code> and the effect is that
+the function has no executable counterpart.  On the positive side:  the
+function is permitted to use single-threaded object names and functions
+arbitrarily, as in theorems rather than as in executable definitions.
+Such functions are not permitted to declare any names <code>:</code><code><a href="STOBJ.html">stobj</a></code><code>s</code> but
+accessors, etc., may be used, just as in theorems.<p>
+
+A new flag has been added to permit the system to abbreviate output
+by introducing <code>LET*</code> notation identifying common subterms.  The
+formula being proved is not affected; this flag changes its
+displayed form only.  See <a href="SET-LET_star_-ABSTRACTIONP.html">set-let*-abstractionp</a>.<p>
+
+A ``raw mode'' has been added, primarily for faster loading of
+applications.  see <a href="SET-RAW-MODE.html">set-raw-mode</a>.<p>
+
+Functions <code><a href="ALPHORDER.html">alphorder</a></code> and <code><a href="LEXORDER.html">lexorder</a></code> have been put in <code>:</code><code><a href="LOGIC.html">logic</a></code> mode.
+<code>Lexorder</code> is now a total order ordering of the ACL2 universe, and
+theorems are included to that effect.  Thanks to Pete Manolios for
+suggesting the idea and providing events to use, and to Rob Sumners
+for assistance with some modifications.  See also the new book
+<code>books/misc/total-order</code> for an irreflexive total order.<p>
+
+The ACL2 user can now make system calls to the host operating system.
+See <a href="SYS-CALL.html">sys-call</a> and see <a href="SYS-CALL-STATUS.html">sys-call-status</a>.  Thanks to Rob Sumners
+for working out this idea with Pete Manolios and Robert Krug, who we
+also thank, and for working out the implementation with us.<p>
+
+It is no longer required to use absolute <a href="PATHNAME.html">pathname</a>s in <code><a href="INCLUDE-BOOK.html">include-book</a></code>
+forms that have been executed before a <code><a href="CERTIFY-BOOK.html">certify-book</a></code>.  Any relative
+pathname strings in such contexts will be expanded into absolute
+pathnames before they are saved in the <code><a href="PORTCULLIS.html">portcullis</a></code> of the <code><a href="CERTIFICATE.html">certificate</a></code>
+of the book being certified.<p>
+
+ACL2 can now be built on top of Allegro Common Lisp 6.0, and also on
+Windows platforms on top of Allegro Common Lisp and GCL.  Thanks to Pete
+Manolios and Vinay K. Siddhavanahalli for their help with Windows.<p>
+
+Rob Sumners has designed and provided an initial implementation for two
+improvements to <code><a href="DEFSTOBJ.html">defstobj</a></code> (also see <a href="STOBJ.html">stobj</a>).  First, array fields can
+now be resized.  Resize and length functions are provided for array fields,
+which can be used to resize stobj array fields dynamically.  The recognizers
+for array fields have been simplified to accommodate this change, so that
+they only check that each element of the array field has the specified type.
+Second, performance has been improved for stobjs with a large number of
+fields, by changing their Common Lisp implementation to store the fields in a
+simple vector instead of a list.<p>
+
+Now <a href="STOBJ.html">stobj</a>s may be bound locally; see <a href="WITH-LOCAL-STOBJ.html">with-local-stobj</a>.
+Thanks to Rob Sumners, who encouraged us to implement this
+capability, was an early user of it, and participated usefully in
+discussions on its design.<p>
+
+New functions <code><a href="FMS_bang_.html">fms!</a></code>, <code><a href="FMT_bang_.html">fmt!</a></code>, and <code><a href="FMT1_bang_.html">fmt1!</a></code> are the same as their respective
+functions without the ``<code>!</code>,'' except that the ``<code>!</code>'' functions are
+guaranteed to print forms that can be read back in (at a slight
+readability cost).<p>
+
+We added <code><a href="EXTENDED-METAFUNCTIONS.html">extended-metafunctions</a></code>, metafunctions which
+allow <code><a href="STATE.html">state</a></code> and context sensitive rewriting to some
+extent.  We thank Robert Krug for pushing for and on this idea.<p>
+
+The documentation has been improved.  In particular, a new
+documentation topic provides a gentle introduction to ACL2
+<code><a href="ARRAYS.html">arrays</a></code> -- see <a href="ARRAYS-EXAMPLE.html">arrays-example</a> -- and additional
+documentation has been provided for getting started with proof trees
+in emacs -- see <a href="PROOF-TREE-EMACS.html">proof-tree-emacs</a>.<p>
+
+New Makefile targets <code>fasl</code> and <code>o</code> have been added to the <code>books/</code>
+directory of the distribution.  For example, you might first certify
+books using an ACL2 built on top of GCL (which creates compiled
+files with suffix <code>o</code>).  Then, when standing in the <code>books/</code>
+directory, you might execute the command
+<blockquote><p>
+
+make fasl ACL2=my-allegro-acl2<p>
+
+</blockquote>
+which will create compiled (<code>.fasl</code>) files for Allegro Common
+Lisp, assuming that <code>my-allegro-acl2</code> starts up an ACL2 built on
+that Common Lisp.<p>
+
+The macro <code><a href="LET_star_.html">let*</a></code> now allows variables to be declared ignored.
+See <a href="LET_star_.html">let*</a> and see <a href="LET.html">let</a>.<p>
+
+The user may now control backchaining.  This feature was designed and
+primarily implemented by Robert Krug (though the authors
+of ACL2 are resposible for any errors); thanks, Robert!
+See <a href="BACKCHAIN-LIMIT.html">backchain-limit</a>.<p>
+
+It is now possible to ``slow down'' the rate at which case splits are
+generated by the simplifier.  See <a href="SET-CASE-SPLIT-LIMITATIONS.html">set-case-split-limitations</a>.<p>
+
+Accesses to <a href="STOBJ.html">stobj</a>s using <code><a href="NTH.html">nth</a></code> or <code><a href="UPDATE-NTH.html">update-nth</a></code> are now
+displayed using symbolic constants instead of numeric indices.  For
+example, given the event
+
+<pre>
+(defstobj foo a b :renaming ((b c)))
+</pre>
+
+then the term <code>(nth 0 foo)</code> will be displayed (for example, during
+proofs) as <code>(nth *a* foo)</code> while <code>(nth 1 foo)</code> will be displayed
+as <code>(nth *c* foo)</code>.  The <code><a href="DEFSTOBJ.html">defstobj</a></code> event now correspondingly
+introduces a <code><a href="DEFCONST.html">defconst</a></code> event for each field accessor function,
+introducing a constant whose name is obtained from the accessor's
+name by prefixing and suffixin a ``<code>*</code>,'' as in the example above:
+accessor <code>a</code> generates <code>(defconst *a* 0)</code> and accessor <code>c</code>
+generates <code>(defconst *c* 1)</code>. See <a href="NTH-ALIASES-TABLE.html">nth-aliases-table</a> for how to
+extend this feature for alternate names of <a href="STOBJ.html">stobj</a>s.<p>
+
+Computed hints have been improved.  It is now possible to detect
+within a computed hint whether the goal clause is stable under
+simplification; it is also possible for a computed hint to change
+the list of available hints.  See <a href="COMPUTED-HINTS.html">computed-hints</a>.<p>
+
+It is now possible to provide ``default hints'' that are appended
+to the hints explicitly provided.  See <a href="SET-DEFAULT-HINTS.html">set-default-hints</a>.<p>
+
+Using computed hints (see <a href="COMPUTED-HINTS.html">computed-hints</a>) and default hints
+(see <a href="SET-DEFAULT-HINTS.html">set-default-hints</a>) it is possible to implement a book that
+supports ``priority phased simplification.''  Using this book
+you can assign priorities to your rules and cause the theorem
+prover to simplify each goal maximally under all the rules of
+one priority before enabling rules of the next priority.
+See <code>books/misc/priorities.lisp</code>.<p>
+
+The macro <code><a href="DEFABBREV.html">defabbrev</a></code> has been improved to allow <code><a href="DECLARE.html">declare</a></code> forms and
+documentation strings and to do more error-checking.  Thanks to Rob Sumners
+for designing this enhancement and providing the first implementation.
+See <a href="DEFABBREV.html">defabbrev</a>.<p>
+
+Further changes were made to support CMU Lisp.  Wolfhard Buss helped
+with these changes.<p>
+
+A new table was added that is used when printing proof output, so
+that nests of right-associated calls of a binary function are
+replaced by corresponding macro calls, as has been the case for
+<code><a href="BINARY-+.html">binary-+</a></code> and <code><a href="+.html">+</a></code>, <code><a href="BINARY-APPEND.html">binary-append</a></code> and <code><a href="APPEND.html">append</a></code>, and so on.
+See <a href="ADD-BINOP.html">add-binop</a>.<p>
+
+Operators <code><a href="LOGAND.html">logand</a></code>, <code><a href="LOGIOR.html">logior</a></code>, <code><a href="LOGXOR.html">logxor</a></code>, and <code><a href="LOGEQV.html">logeqv</a></code> are now
+macros (formerly, they were functions) that call corresponding
+binary functions (e.g., <code>binary-logand</code>) defined in source file
+<code>"axioms.lisp"</code>.  Thanks to Rob Sumners for this enhancement.  Proof
+output will however continue to show calls of <code><a href="LOGAND.html">logand</a></code>, <code><a href="LOGIOR.html">logior</a></code>,
+<code><a href="LOGXOR.html">logxor</a></code>, and <code><a href="LOGEQV.html">logeqv</a></code>.<p>
+
+Function <code>(</code><code><a href="ALLOCATE-FIXNUM-RANGE.html">allocate-fixnum-range</a></code><code> fixnum-lo fixnum-hi)</code> sets aside more
+"permanent" fixnums in GCL.<p>
+
+ACL2 now runs under <code>CLISP</code>.  Thanks to Wolfhard Buss and Sam
+Steingold for their assistance with the port.<p>
+
+Michael ``Bogo'' Bogomolny has created a search engine, accessible
+from the ACL2 home page.  For that purpose he modified the HTML
+translator to create one file per topic (a good idea in any case).
+Thanks, Bogo!<p>
+
+An emacs file of potential (but optional) use for ACL2 users may be
+found in <code>emacs/emacs-acl2.el</code>.  In particular, this file supports
+the use of proof trees (see <a href="PROOF-TREE.html">proof-tree</a>).<p>
+
+Some <a href="BOOKS.html">books</a> have been added or modified.  In particular, Robert Krug has
+contributed <code>books/arithmetic-2/</code>, which provides an alternative to the
+existing collection of books about arithmetic, <code>books/arithmetic/</code>.  For a
+discussion of the distributed books see the link to <code>README.html</code> in the
+installation instructions.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

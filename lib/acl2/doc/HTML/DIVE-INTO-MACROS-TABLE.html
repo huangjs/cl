@@ -1,0 +1,51 @@
+<html>
+<head><title>DIVE-INTO-MACROS-TABLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DIVE-INTO-MACROS-TABLE</h2>right-associated function information for the <a href="PROOF-CHECKER.html">proof-checker</a>
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+ACL2 !&gt;(dive-into-macros-table (w state))
+((CAT . EXPAND-ADDRESS-CAT)
+ (LXOR . EXPAND-ADDRESS-LXOR)
+</pre>
+
+This table associates macro names with functions used by the
+<a href="PROOF-CHECKER.html">proof-checker</a>'s <code>DV</code> and numeric diving commands (e.g., <code>3</code>) in
+order to dive properly into subterms.  See <a href="PROOF-CHECKER.html">proof-checker</a>, in particular the
+documentation for <code>DV</code>.<p>
+
+This table can be extended easily.  See <a href="ADD-DIVE-INTO-MACRO.html">add-dive-into-macro</a> and also
+see <a href="REMOVE-DIVE-INTO-MACRO.html">remove-dive-into-macro</a>.<p>
+
+The symbol associated with a macro should be a function symbol taking four
+arguments, in this order:
+
+<pre>
+<code>car-addr</code> ; the first number in the list given to the <a href="PROOF-CHECKER.html">proof-checker</a>'s
+           <code>DV</code> command
+<code>raw-term</code> ; the untranslated term into which we will dive
+<code>term</code>     ; the translated term into which we will dive
+<code>wrld</code>     ; the current ACL2 logical <a href="WORLD.html">world</a>
+</pre>
+
+The function will normally return a list of positive integers, representing
+the (one-based) address for diving into <code>term</code> that corresponds to the
+single-address dive into <code>raw-term</code> by <code>car-address</code>.  However, it can
+return <code>(cons str alist)</code>, where <code>str</code> is a string suitable for <code><a href="FMT.html">fmt</a></code>
+and <code>args</code> is the corresponding alist for <code><a href="FMT.html">fmt</a></code>.<p>
+
+Referring to the example above, <code>expand-address-cat</code> would be such a
+function, which will be called on <code>raw-term</code> values that are calls of
+<code>cat</code>.  See the distributed book <code>books/misc/rtl-untranslate.lisp</code> for
+the definition of such a function.<p>
+
+See <a href="TABLE.html">table</a> for a general discussion of tables.
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

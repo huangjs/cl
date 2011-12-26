@@ -1,0 +1,2460 @@
+<html>
+<head>
+<title>Snd Customization and Extension</title>
+<style type="text/css">
+<!-- 
+	EM.red {color:red; font-style:normal}
+        EM.typing {color:maroon; font-style: normal}
+        EM.listener {color:darkblue; font-style: normal}
+        EM.tab {font-style: normal; font-size: small; font-family: fixed}
+	EM.emdef {font-weight: bold; font-style: normal}
+	H1 {text-align: center}
+	UL {list-style-type: none}
+
+	A {text-decoration:none}
+	A:hover {text-decoration:underline}
+	A.quiet {color:black; text-decoration:none}
+	A.quiet:hover {text-decoration:underline}
+	A.def {font-weight: bold; font-style: normal; text-decoration:none; text-color:black}
+-->
+</style>
+</head>
+<body bgcolor=white>
+
+<!-- I'm using A NAME (i.e caps) where the entity should be ignored by the indexer (index.cl) -->
+
+<A NAME="grfsndcontents"></a>
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h1>Snd Customization and Extension Part 2</h1></td></tr></table>
+<br>
+
+<center>
+<table bgcolor="aliceblue" border=0 cellspacing=8><tr>
+<td><small>related documentation:</small></td>
+<td><small><a href="snd.html" onmouseover="return escape('basic Snd user-interface documentation')">snd.html</a></small></td>
+<td><small><a href="extsnd.html" onmouseover="return escape('Snd extension and customization')">extsnd.html</a></small></td>
+<td><small><a href="sndscm.html" onmouseover="return escape('Scheme, Ruby, and Forth files included with Snd')">sndscm.html</a></small></td>
+<td><small><a href="clm.html" onmouseover="return escape('sound synthesis generators, with-sound, instruments')">clm.html</a></small></td>
+<td><small><a href="sndlib.html" onmouseover="return escape('library that handles sound files')">sndlib.html</a></small></td>
+<td><small><a href="libxm.html" onmouseover="return escape('library that ties Motif and Gtk into Snd')">libxm.html</a></small></td>
+<td><small><a href="index.html" onmouseover="return escape('an actual index, not some introductory file')">index.html</a></small></td>
+</tr></table>
+</center>
+
+
+<table border=0 cellpadding=5 vspace=10 hspace=20>
+<tr><th>this file:</th><th>extsnd.html:</th></tr>
+<tr><td width="40%">
+<ul>
+<li><a href="#startup">Snd Startup</a>
+  <ul>
+  <li><a href="#sndswitches" onmouseover="return escape('startup switches such as -l and -p')">Snd invocation flags</a>
+  <li><a href="#sndinitfile" onmouseover="return escape('~/.snd, ~/.snd_guile, ~/.snd_prefs_guile, etc')">The initialization file</a>
+  <li><a href="#sndresources" onmouseover="return escape('X resources: Xdefaults, gtkrc')">Snd resources</a>
+  <li><a href="grfsnd.html#sndconfigurationswitches" onmouseover="return escape('this refers to the configure script that prepares a makefile to build Snd from its sources')">Configuration choices</a>
+  <li><a href="grfsnd.html#sndenvvars" onmouseover="return escape('mostly related to audio hardware choices')">Environment variables</a>
+  </ul>
+<li><a href="#snddynamic">Runtime modules and external programs</a>
+  <ul>
+  <li><a href="#emacssnd" onmouseover="return escape('Use Emacs as the listener')">Snd as an Emacs subjob</a>
+  <li><a href="#dynamic" onmouseover="return escape('Load your own C code into Snd')">Dynamically loaded modules</a>
+  <li><a href="#programs" onmouseover="return escape('Use other programs for editing operations')">External Programs</a>
+  <li><a href="#sndaswidget" onmouseover="return escape('Embed Snd in some other program')">Snd as a Widget</a>
+  <li><a href="#sndwithclm" onmouseover="return escape('CLM is built into Snd')">Snd and CLM</a>
+  <li><a href="#sndwithcm" onmouseover="return escape('CM is Rick Taube\'s composition environment')">Snd and Common Music</a>
+  <li><a href="#sndwithpd" onmouseover="return escape('PD is Miller Puckette\'s synthesis and composition program')">Snd and Pd</a>
+  <li><a href="#sndwithmotif" onmouseover="return escape('Motif extensions from xm.c')">Snd and Motif</a>
+  <li><a href="#sndwithgtk" onmouseover="return escape('Gtk extensions from xg.c')">Snd and Gtk</a>
+  <li><a href="#sndwithnogui">Snd with no GUI and as scripting engine</a>
+  <li><a href="grfsnd.html#sndandruby" onmouseover="return escape('Ruby is a scripting/extension language somewhat like Python')">Snd with Ruby</a>
+  <li><a href="grfsnd.html#sndandforth" onmouseover="return escape('Forth is a postfix extension language')">Snd with Forth</a>
+  <li><a href="#sndandladspa" onmouseover="return escape('This is a Linux-based sound-effects plugin system')">Snd and LADSPA plugins</a>
+  <li><a href="#sndandalsa" onmouseover="return escape('This is the new Linux audio library')">Snd and ALSA</a>
+  <li><a href="grfsnd.html#sndandx" onmouseover="return escape('other programs can control Snd through window properties')">Driving Snd remotely</a>
+  <li><a href="#sndandgl" onmouseover="return escape('OpenGL (Mesa) extensions via gl.c')">Snd and OpenGL</a>
+  </ul>
+</ul>
+</td><td width="40%">
+  <ul>
+  <li><a href="extsnd.html#behavior">Customizing Snd's behavior</a>
+    <ul>
+    <li><a href="extsnd.html#sndglobalvars">Global variables</a>
+    <li><a href="extsnd.html#sndhooks" onmouseover="return escape('callbacks')">Hooks</a>
+    </ul>
+  <li><a href="extsnd.html#sndobjects">Snd's objects</a>
+    <ul>
+    <li><a href="extsnd.html#samplereaders" onmouseover="this.T_WIDTH=200; return escape('sound data iterators')">Sample-readers</a>
+    <li><a href="extsnd.html#Vcts" onmouseover="this.T_WIDTH=100; return escape('real arrays')">Vcts</a>
+    <li><a href="extsnd.html#sndsounddata" onmouseover="return escape('arrays of vcts for multichannel data')">Sound-data</a>
+    <li><a href="extsnd.html#extsndlib" onmouseover="return escape('the underlying library that handles sound data and files')">Sndlib</a>
+    <li><a href="extsnd.html#sndmarks" onmouseover="return escape('location markers in sound data')">Marks</a>
+    <li><a href="extsnd.html#sndmixes" onmouseover="return escape('mixed sounds and groups of mixed sounds')">Mixes and Tracks</a>
+    <li><a href="extsnd.html#sndregions" onmouseover="return escape('selected or saved portions of sound data')">Regions and Selections</a>
+    <li><a href="extsnd.html#sndsounds" onmouseover="return escape('editing functions, per-channel display decisions, etc')">Sounds and channels</a>
+      <ul>
+        <li><a href="extsnd.html#customcontrols" onmouseover="return escape('a set of common sound effects below the main graph')">the control panel</a>
+        <li><a href="extsnd.html#editlists" onmouseover="this.T_WIDTH=200; return escape('current edit sequence')">edit lists</a>
+      </ul>
+    <li><a href="extsnd.html#sndtransforms" onmouseover="return escape('Fourier transform, wavelets, autocorelation, etc')">Transforms</a>
+    <li><a href="extsnd.html#snddialogs" onmouseover="return escape('customizing the built-in dialogs, etc')">Dialogs and Other Widgets</a>
+    <li><a href="extsnd.html#sndmisc" onmouseover="return escape('bind-key, exit, etc')">Miscellaneous functions</a>
+    <li><a href="extsnd.html#sndconstants">Constants</a>
+    <li><a href="extsnd.html#snderrors">Errors and Debugging</a>
+    </ul>
+  <li><a href="extsnd.html#appearance">Customizing Snd's appearance</a>
+    <ul>
+    <li><a href="extsnd.html#colors">Colors</a>
+    <li><a href="extsnd.html#fonts">Fonts</a>
+    <li><a href="extsnd.html#graphics" onmouseover="return escape('write your own sound display functions or customize Snd\'s')">Graphics</a>
+    </ul>
+  </ul>
+
+</td></tr></table>
+<br>
+
+<!-- INDEX sndandruby:Ruby -->
+<!-- INDEX sndandforth:Forth -->
+<!-- INDEX sndwithcm:Common Music -->
+
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2><A NAME="startup">Snd Startup</a></h2></td></tr></table>
+<br>
+<!-- INDEX sndswitches:Invocation flags -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndswitches">Snd invocation flags</a></h3></td></tr></table>
+
+<p>Snd recognizes the following switches in its command line (leaving aside all
+the usual Xt/X-related flags like -xrm).</p>
+
+<table cellspacing=0 cellpadding=0 hspace=20>
+<tr><td width=200 bgcolor="#f6f8ff"><code>-h -horizontal</code></td><td bgcolor="#f6f8ff">layout sounds as horizontal panes</td></tr>
+<tr><td><code>-v -vertical</code></td>            <td>layout sounds vertically (the default)</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-notebook</code></td>               <td bgcolor="#f6f8ff">layout sounds in a notebook widget (Motif 2.0 or later)</td></tr>
+<tr><td><code>-separate</code></td>               <td>layout sounds each in a separate window (listener is in main window)</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>--help</code></td>                  <td bgcolor="#f6f8ff">print some help, version info, and exit</td></tr>
+<tr><td><code>--version</code></td>               <td>print version info</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-noglob</code></td>                 <td bgcolor="#f6f8ff">don't read /etc/snd.conf</td></tr>
+<tr><td><code>-noinit</code></td>                 <td>don't read ~/.snd</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-nostdin</code></td>                <td bgcolor="#f6f8ff">don't watch for possible input from stdin</td></tr>
+<tr><td><code>-p -preload &lt;dir&gt;</code></td> <td>add sound files in directory &lt;dir&gt; to the View:Files list (snd -p .)</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-l -load &lt;file&gt;</code></td>   <td bgcolor="#f6f8ff">load Scheme, Ruby, or Forth code in &lt;file&gt; (snd -l test.scm)</td></tr>
+<tr><td><code>-e -eval expr</code></td>           <td>evaluate expr</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-b -batch &lt;file&gt;</code></td>  <td bgcolor="#f6f8ff">load Scheme, Ruby, or Forth code in &lt;file&gt; as a batch (no GUI) job</td></tr>
+<tr><td><code>-I &lt;dir&gt;</code></td>          <td>add &lt;dir&gt; to the load search list</td></tr>
+<tr><td bgcolor="#f6f8ff"><code>-nogtkrc</code></td>                 <td bgcolor="#f6f8ff">don't read ~/Snd.gtkrc or any of its friends (Gtk only)</td></tr>
+</table>
+
+<img src="note.png" alt="notebook" hspace=20 vspace=10>
+
+<p>
+The -e switch evaluates its argument as though it had been passed to M-X.  The
+initialization file, if any, is loaded first, then the arguments are processed
+in order:</p>
+<pre>
+    snd -e "(set! (<a class=quiet href="extsnd.html#datacolor">data-color</a>) (<a class=quiet href="extsnd.html#makecolor">make-color</a> 1 0 0))" oboe.snd
+</pre>
+<p>reads ~/.snd, if any, then sets the (unselected) data color to red, then opens oboe.snd.</p>
+<pre>
+    ./snd -eval '(begin (display (+ 1 2)) (<a class=quiet href="extsnd.html#exit">exit</a>))'
+</pre>
+<p>prints "3" and exits.  The "-title" argument works in both versions of Snd.
+The following adds "WAV" to the sound file extension table before adding all the sound files in the directory to the
+View:Files dialog's list:
+</p>
+<pre>
+    snd -e '(<a class=quiet href="extsnd.html#addsoundfileextension">add-sound-file-extension</a> "WAV")' -p /home/bil/sounds
+</pre>
+
+<img src="bgd.png" alt="black background" hspace=20>
+<br>
+<br>
+
+<!-- INDEX sndinitfile:Initialization file -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndinitfile">The initialization file</a></h3></td></tr></table>
+<p>
+When Snd starts, it looks for an initialization file, normally named "~/.snd".
+This optional file is
+supposed to be similar to Emacs' .emacs file, containing any customizations or
+extensions that you want loaded whenever Snd starts.  Say we
+want the Snd window to start out 800x500, want to predefine an envelope named
+"env1", and want the file selection box to
+show just sound files.  We make ~/.snd and put in it:</p>
+<pre>
+Scheme:
+    (set! (<a class=quiet href="extsnd.html#windowwidth">window-width</a>) 800)
+    (set! (<a class=quiet href="extsnd.html#windowheight">window-height</a>) 500)
+    (set! (<a class=quiet href="extsnd.html#justsounds">just-sounds</a>) #t)
+    (<a class=quiet href="extsnd.html#defineenvelope">define-envelope</a> env1 '(0 0 1 1 2 0))
+
+Ruby:
+    set_window_width(800)
+    set_window_height(500)
+    set_just_sounds(true)
+    define_envelope("env1", [0, 0, 1, 1, 2, 0])
+
+Forth:
+    800 set-window-width drop
+    500 set-window-height drop
+    #t set-just-sounds drop
+    $" env1" '( 0.0 0.0 1.0 1.0 2.0 0.0 ) 1.0 define-envelope drop
+</pre>
+
+<p>
+In more
+complex situations, you may want an initialization file particular to a given extension language, machine, or
+global across users;  the 
+name of this optional global initialization file is "/etc/snd.conf". It
+is read before your local file; both can, of course, be
+absent.  To override reading the global init file when Snd is invoked, include the switch -noglob.
+To override the local init file, use -noinit. 
+</p>
+<p>
+The initialization files particular to a given extension language have names such as ~/.snd_guile
+and ~/.snd_prefs_ruby.  Currently the possibilities are:
+~/.snd_prefs_guile|ruby|forth|gauche, /etc/snd_guile|ruby|forth|gauche.conf,
+~/.snd_guile|ruby|forth|gauche (the notation "guile|ruby|forth" means either "guile" or "ruby" or "forth", so the file names
+spelled out completely are "/etc/snd_guile.conf", "/etc/snd_ruby.conf", etc; which one is loaded
+obviously depends on which language you chose during configuration).  
+The save-options (preferences dialog) process writes to
+.snd_prefs_* which is loaded first, if it exists; then Snd looks for .snd_* (guile, ruby, forth, or gauche);
+then .snd.  If you're always using just one version of Snd, it's simplest to stick with
+.snd.  The actual load sequence is:
+</p>
+<pre>
+    /etc/snd_guile|ruby|forth|gauche.conf    (these two canceled by -noglob)
+    /etc/snd.conf               
+    ~/.snd_prefs_guile|ruby|forth|gauche     (the rest canceled by -noinit)
+    ~/.snd_guile|ruby|forth|gauche
+    ~/.snd                                   (also SND_INIT_FILE_ENVRIONMENT_NAME)
+</pre>
+
+<p> 
+Here's a more elaborate initialization file (~/.snd_guile):
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(use-modules (ice-9 debug) (ice-9 format) (ice-9 optargs))
+(debug-set! stack 0)                ;turn off Guile's stack-size check
+
+(set! (<a class=quiet href="extsnd.html#windowwidth">window-width</a>) 800)           ;these set the initial window size
+(set! (<a class=quiet href="extsnd.html#windowheight">window-height</a>) 500)
+
+(if (provided? '<a class=quiet href="#sndmotiffeature">snd-motif</a>)          ;Motif and Gtk use different font naming conventions
+    (begin
+      (set! (<a class=quiet href="extsnd.html#listenerfont">listener-font</a>) "9x15")
+      (set! (<a class=quiet href="extsnd.html#axislabelfont">axis-label-font</a>) "-*-times-medium-r-normal-*-18-*-*-*-*-*-*-*")
+      (set! (<a class=quiet href="extsnd.html#axisnumbersfont">axis-numbers-font</a>) "9x15"))
+    (begin
+      (set! (<a class=quiet href="extsnd.html#listenerfont">listener-font</a>) "Monospace 10")
+      (set! (<a class=quiet href="extsnd.html#axislabelfont">axis-label-font</a>) "Serif 14")
+      (set! (<a class=quiet href="extsnd.html#axisnumbersfont">axis-numbers-font</a>) "Monospace 10")))
+
+(set! (<a class=quiet href="extsnd.html#listenerprompt">listener-prompt</a>) ":")        ;change listener prompt from the default "&gt;" to ":"
+(set! (<a class=quiet href="extsnd.html#showlistener">show-listener</a>) #t)           ;include the listener window initially
+(set! (<a class=quiet href="extsnd.html#showindices">show-indices</a>) #t)            ;include sound index values with the sound name
+
+(define beige (<a class=quiet href="extsnd.html#makecolor">make-color</a> 0.96 0.96 0.86))
+(define blue (<a class=quiet href="extsnd.html#makecolor">make-color</a> 0 0 1))
+(set! (<a class=quiet href="extsnd.html#selectedgraphcolor">selected-graph-color</a>) beige) ;selected graph background is beige
+(set! (<a class=quiet href="extsnd.html#selecteddatacolor">selected-data-color</a>) blue)   ;selected graph data is blue
+
+(set! (<a class=quiet href="extsnd.html#savedir">save-dir</a>) "/zap/snd")        ;save-state files are placed in /zap/snd
+(set! (<a class=quiet href="extsnd.html#tempdir">temp-dir</a>) "/zap/tmp")        ;temp files are placed in /zap/tmp
+(load "peak-env.scm")               ;large file peak env data is saved for faster 
+				    ;  subsequent reads -- this makes the first
+				    ;  view of a large file much snappier --
+				    ;  its default directory for the data is ~/peaks.
+
+(load "draw.scm")                   ;load some useful extensions
+(load "hooks.scm")
+(load "extensions.scm")
+
+(make-current-window-display)       ;display an overview of the current window in the upper right
+(focus-follows-mouse)               ;automatically focus on (activate) the widget under the mouse
+
+(if (provided? '<a class=quiet href="#sndmotiffeature">snd-motif</a>)          
+    (load "popup.scm")              ;context-sensitive popup menus
+    (if (provided? '<a class=quiet href="#sndgtkfeature">snd-gtk</a>)
+        (load "/home/bil/cl/gtk-popup.scm")))
+
+(add-hook! <a class=quiet href="extsnd.html#afteropenhook">after-open-hook</a>          ;if sound has many chans, use just one pane for all
+  (lambda (snd)
+    (if (&gt; (<a class=quiet href="extsnd.html#chans">chans</a> snd) 4)
+        (set! (<a class=quiet href="extsnd.html#channelstyle">channel-style</a> snd) <a class=quiet href="extsnd.html#channelstyle">channels-combined</a>))))
+
+(set! (<a class=quiet href="extsnd.html#optimization">optimization</a>) 6)              ;turn on full optimization (live dangerously...)
+(set! (<a class=quiet href="extsnd.html#selectioncreatesregion">selection-creates-region</a>) #f) ;turn off automatic region creation
+</pre></td></tr></table>
+
+<p>A similar Ruby initialization file (~/.snd_ruby):
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+require "draw"
+require "popup"
+
+set_window_width 800
+set_window_height 500
+
+set_listener_font "9x15"
+set_axis_numbers_font "9x15"
+
+set_show_mix_waveforms true
+set_trap_segfault false
+set_listener_prompt ":"
+show_listener
+
+beige = make_color 0.96, 0.96, 0.86
+blue = make_color 0, 0, 1
+set_selected_graph_color beige
+set_selected_data_color blue
+make_current_window_display
+
+$mouse_enter_graph_hook.add_hook!("focus") do |snd, chn|
+  focus_widget(channel_widgets(snd, chn)[0])
+end
+$mouse_enter_listener_hook.add_hook!("focus") do |widget| focus_widget(widget) end
+$mouse_enter_text_hook.add_hook!("focus") do |widget| focus_widget(widget) end
+</pre></td></tr></table>
+
+<p>And Forth:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+\ .snd_forth -- start up file for Snd/Forth -*- snd-forth -*-
+
+\ You can easily install the *.fs scripts with:
+\ 
+\   cd fth-0.8.x/examples/site-lib
+\   ./install.fth
+\
+\ If you have installed the *.fs files with install.fth, you don't
+\ need to add a path to *load-path*.  ${prefix}/share/fth/site-fth is
+\ already included.  Otherwise you can add a path with e.g.
+\
+\   "/home/mike/snd-8" add-load-path
+
+#t to *fth-verbose*
+
+: verbose-loading ( fname -- f )
+  $" \\ loading \"%s\"\n" swap 1 &gt;list fth-print
+  #t
+;
+
+'snd-nogui provided? [unless] before-load-hook ' verbose-loading 1 make-proc add-hook! [then]
+
+require clm
+require clm-ins
+require env
+
+[undefined] clm-print [if] ' fth-print alias clm-print [then]
+
+#t to *clm-verbose*
+lambda: ( str -- ) ." \ &lt;" .string ." &gt;" cr ; to *clm-notehook*
+
+'snd-motif provided? 'xm provided? not && [if] dl-load libxm Init_libxm [then]
+'snd-gtk   provided? 'xg provided? not && [if] dl-load libxg Init_libxg [then]
+require peak-env
+require examp
+require extensions
+require mix
+require marks
+require draw
+'snd-motif provided? [if]
+  require effects
+  require popup
+  edhist-save-hook lambda: ( prc -- )
+    $" #&lt;proc: %s&gt;\n" swap 1 &gt;list string-format .stdout
+  ; 1 make-proc add-hook!
+[then]
+
+exit-hook lambda: ( -- f )
+  save-state-file save-state drop
+  #t
+; 0 make-proc add-hook! 
+
+after-open-hook lambda: ( snd -- val )
+  { snd }
+  snd channels 0 ?do snd short-file-name snd i time-graph set-x-axis-label drop loop
+  #t snd set-cursor-follows-play drop
+  channels-combined snd set-channel-style
+; 1 make-proc add-hook!
+
+after-save-as-hook lambda: ( snd fname from-dialog -- f )
+  { snd fname from-dialog }
+  snd revert-sound drop
+  snd close-sound drop
+  fname open-sound drop
+  #f
+; 3 make-proc add-hook!
+
+start-playing-hook lambda: ( snd -- f )
+  { snd }
+  #f
+  snd sound? if snd cursor-follows-play if drop cursor-line snd #t set-cursor-style then then
+; 1 make-proc add-hook!
+
+stop-playing-hook lambda: ( snd -- f )
+  { snd }
+  #f
+  snd sound? if drop cursor-cross snd #t set-cursor-style then
+; 1 make-proc add-hook!
+
+window-property-changed-hook lambda: ( cmd -- )
+  ." \ remote command received: " ( cmd ) .string cr
+; 1 make-proc add-hook!
+
+before-save-state-hook lambda: ( fname -- f )
+  ( fname ) io-open-write dup $" \\ -*- snd-forth -*-\n" io-write io-close
+  #t
+; 1 make-proc add-hook!
+
+enved-hook lambda: ( en pt x y reason -- en'|#f )
+  { en pt x y reason }
+  reason enved-move-point = if
+    x en car f&gt; x en -2 list-ref f&lt; and if
+      en en pt 2* list-ref x #f #f stretch-envelope { new-en }
+      new-en pt 2* 1+ y list-set!
+      new-en
+    else
+      #f
+    then
+  else
+    #f
+  then
+; 5 make-proc add-hook!
+
+\ from ~/.snd_prefs_forth
+with-buffers-menu
+with-reopen-menu
+0.00 0.10 #t prefs-activate-initial-bounds
+focus-follows-mouse
+2 set-global-sync
+#f check-for-unsaved-edits
+3 remember-sound-state
+'xm provided? [if]
+  add-mark-pane
+  make-current-window-display
+  #t show-smpte-label
+[then]
+save-mark-properties
+defined? use-combo-box-for-fft-size [if]
+  #f to use-combo-box-for-fft-size
+[then]
+
+22050      	       set-default-output-srate drop
+2          	       set-default-output-chans drop
+mus-next   	       set-default-output-header-type drop
+mus-lfloat 	       set-default-output-data-format drop
+mus-interp-linear      set-locsig-type drop
+512                    set-dac-size drop
+mus-audio-default      set-audio-output-device drop
+22050                  set-recorder-srate drop
+2                      set-recorder-out-chans drop
+mus-next               set-recorder-out-header-type drop
+mus-lfloat             set-recorder-out-data-format drop
+mus-audio-dac-out      set-recorder-in-device drop
+2                      set-recorder-in-chans drop
+#t                     set-recorder-autoload drop
+#t                     set-show-indices drop
+0.0                    set-auto-update-interval drop
+#f                     set-trap-segfault drop
+$" rev"                add-sound-file-extension drop
+$" reverb"             add-sound-file-extension drop
+$" wave"               add-sound-file-extension drop
+$" snd&gt; "              set-listener-prompt drop
+speed-control-as-ratio set-speed-control-style drop
+
+'snd-nogui provided? [unless]
+  13  			    	      set-colormap drop
+  #f  			    	      set-show-listener drop
+  #f  			    	      set-show-controls drop
+  #f  			    	      set-just-sounds drop
+  1.0 			    	      set-enved-base drop
+  #t  			    	      set-enved-wave? drop
+  #t  			    	      set-show-y-zero drop
+  #t  			    	      set-verbose-cursor drop
+  0.96 0.96 0.86 make-color ( beige ) set-selected-graph-color drop
+  0.00 0.00 1.00 make-color ( blue )  set-selected-data-color drop
+  #f                                  set-with-gl drop
+  graph-once                          set-transform-graph-type drop
+  #t                                  set-show-transform-peaks drop
+  dolph-chebyshev-window              set-fft-window drop
+  fourier-transform                   set-transform-type drop
+  \ lisp-graph-hook ' display-db      2 make-proc add-hook!
+  \ lisp-graph-hook ' display-energy  2 make-proc add-hook!
+  mix-click-hook  ' mix-click-info  1 make-proc add-hook!
+  mark-click-hook ' mark-click-info 1 make-proc add-hook!
+  defined? show-disk-space [if]
+    after-open-hook ' show-disk-space 1 make-proc add-hook!
+  [then]
+  #t  			   	      set-show-listener drop
+  #f  			   	      set-show-controls drop
+  160 			   	      set-window-x drop
+  000 			   	      set-window-y drop
+  800 			   	      set-window-width drop
+  600 			   	      set-window-height drop
+[then]
+
+[ifundef] enved
+  $" enved"    '( 0.0 0.0 25.0 1.0 75.0 1.0 100.0 0.0 )           1.0  define-envelope drop
+  $" brass"    '( 0.0 0.0 20.0 1.0 40.0 0.6 90.0 0.5 100.0 0.0 )  1.0  define-envelope drop
+  $" bassoon"  '( 0.0 0.0 10.0 1.0 90.0 1.0 100.0 0.0 )           1.0  define-envelope drop
+  $" clarinet" '( 0.0 0.0 25.0 1.0 75.0 1.0 100.0 0.0 )          32.0  define-envelope drop
+  $" woodwind" '( 0.0 0.0 10.0 1.0 90.0 1.0 100.0 0.0 )           0.32 define-envelope drop
+[then]
+
+$" fth" textdomain drop
+
+\ .snd_forth ends here
+</pre></td></tr></table>
+
+<p>
+If you loaded Snd with GSL, and have set the GSL_IEEE_MODE environment variable,
+it will override Snd's default arithmetic mode settings.  GSL recommends the setting:
+</p>
+<pre>
+    GSL_IEEE_MODE=double-precision,mask-underflow,mask-denormalized
+</pre>
+<p>For more complex initialization files, see snd_conffile.scm, snd_frg.scm, and edit123.scm.
+</p>
+
+<p>
+Normally, the initialization file also adds the Snd sources directory to the load path (see README.Snd or
+the introduction to Snd.html).  For more temporary situations, you can use the environment variable SND_PATH.
+It is a colon-separated list of directories that will be added to the load path when Snd starts.
+</p>
+
+<p>In Gauche, before loading any of the Snd *.scm files, you need to load gauche-optargs.scm and
+gauche-format.scm:
+</p>
+<pre>
+    (if (not (provided? 'gauche-optargs.scm)) (load "gauche-optargs.scm"))
+    (if (not (provided? 'gauche-format.scm)) (load "gauche-format.scm"))
+</pre>
+
+
+<br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndresources">Snd resources</a></h3></td></tr></table>
+
+<table width="50%" border=0 vspace=10><tr><td bgcolor="lightgreen" valign="middle"><h4>Motif</h4></td></tr></table>
+
+<p>In the Motif version, there are a few X-style resources (for use in your ~/.Xdefaults file) that Snd looks for (see Snd.ad); each has
+a built-in default value, so you can ignore this entirely, and use the extension language initialization file to choose new values.
+I may remove all this stuff eventually (it was always a bad idea).
+</p>
+<br>
+
+<table cellspacing=0 cellpadding=1 hspace=20>
+<tr><th align=left bgcolor="beige">Resource Name</th><th align=left bgcolor="beige">Default Value</th><th align=left bgcolor="beige">Purpose</th><th align=left bgcolor="beige">Scheme Name</th></tr>
+
+<tr><td><br></td><td><br></td><td></td><td></td></tr>
+
+<tr><td>autoResize</td><td>1</td><td>should Snd window resize automatically</td><td><code><a href="extsnd.html#autoresize">auto-resize</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">horizontalPanes</td><td bgcolor="#f6f8ff">0</td><td bgcolor="#f6f8ff">basic paned window layout</td><td bgcolor="#f6f8ff"></td></tr>
+
+<tr><td><br></td><td><br></td><td></td><td></td></tr>
+
+
+
+<tr><td bgcolor="#f6f8ff">peaksFont</td><td bgcolor="#f6f8ff">times 14</td><td bgcolor="#f6f8ff">fft peaks font</td><td bgcolor="#f6f8ff"><code><a href="extsnd.html#peaksfont">peaks-font</a></code></td></tr>
+
+<tr><td>boldpeaksFont</td><td>times bold 14</td><td>main fft peaks font</td><td><code><a href="extsnd.html#boldpeaksfont">bold-peaks-font</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">axisLabelFont</td><td bgcolor="#f6f8ff">times 20</td><td bgcolor="#f6f8ff">axis label ("Time")</td><td bgcolor="#f6f8ff"><code><a href="extsnd.html#axislabelfont">axis-label-font</a></code></td></tr>
+
+<tr><td>axisNumbersFont</td><td>courier 14</td><td>axis tick numbers</td><td><code><a href="extsnd.html#axisnumbersfont">axis-numbers-font</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">listenerFont</td><td bgcolor="#f6f8ff">fixed 7x13</td><td bgcolor="#f6f8ff">listener text</td><td bgcolor="#f6f8ff"><code><a href="extsnd.html#listenerfont">listener-font</a></code></td></tr>
+
+<tr><td><br></td><td><br></td><td></td><td></td></tr>
+
+
+
+<tr><td bgcolor="#f6f8ff">basiccolor</td><td bgcolor="#f6f8ff">ivory2</td><td bgcolor="#f6f8ff">default background color everywhere</td><td bgcolor="#f6f8ff"><code><a href="extsnd.html#basiccolor">basic-color</a></code></td></tr>
+
+<tr><td>cursorcolor</td><td>red</td>         <td>color of the cursor</td>                   <td><code><a href="extsnd.html#cursorcolor">cursor-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">datacolor</td><td bgcolor="#f6f8ff">black</td><td bgcolor="#f6f8ff">unselected data color</td>                 <td bgcolor="#f6f8ff"><code><a href="extsnd.html#datacolor">data-color</a></code></td></tr>
+
+<tr><td>graphcolor</td><td>white</td>          <td>unselected channels' graph background</td> <td><code><a href="extsnd.html#graphcolor">graph-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">highlightcolor</td><td bgcolor="#f6f8ff">ivory1</td>      <td bgcolor="#f6f8ff">highlighting here and there</td>           <td bgcolor="#f6f8ff"><code><a href="extsnd.html#highlightcolor">highlight-color</a></code></td></tr>
+
+<tr><td>listenercolor</td><td>aliceblue</td>       <td>background color of the listener</td>      <td><code><a href="extsnd.html#listenercolor">listener-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">listenertextcolor</td><td bgcolor="#f6f8ff">black</td>   <td bgcolor="#f6f8ff">text color in the listener</td>            <td bgcolor="#f6f8ff"><code><a href="extsnd.html#listenertextcolor">listener-text-color</a></code></td></tr>
+
+<tr><td>markcolor</td><td>red</td>           <td>color of the mark indicator</td>           <td><code><a href="extsnd.html#markcolor">mark-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">mixcolor</td><td bgcolor="#f6f8ff">darkgray</td>            <td bgcolor="#f6f8ff">used for mix waveforms</td>                <td bgcolor="#f6f8ff"><code><a href="extsnd.html#mixcolor">mix-color</a></code></td></tr>
+
+<tr><td>positioncolor</td><td>ivory3</td>       <td>color of position sliders</td>             <td><code><a href="extsnd.html#positioncolor">position-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">pushedbuttoncolor</td><td bgcolor="#f6f8ff">ivory1</td>   <td bgcolor="#f6f8ff">color of pushed button</td>                <td bgcolor="#f6f8ff"><code><a href="extsnd.html#pushedbuttoncolor">pushed-button-color</a></code></td></tr>
+
+<tr><td>sashcolor</td><td>lightgreen</td>           <td>color of paned window sash handles</td>    <td><code><a href="extsnd.html#sashcolor">sash-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">selecteddatacolor</td><td bgcolor="#f6f8ff">black</td>   <td bgcolor="#f6f8ff">color of the data in selected channel</td> <td bgcolor="#f6f8ff"><code><a href="extsnd.html#selecteddatacolor">selected-data-color</a></code></td></tr>
+
+<tr><td>selectedgraphcolor</td><td>white</td>  <td>background of selected channel's graph</td><td><code><a href="extsnd.html#selectedgraphcolor">selected-graph-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">selectioncolor</td><td bgcolor="#f6f8ff">lightsteelblue1</td>      <td bgcolor="#f6f8ff">color of an active selection</td>          <td bgcolor="#f6f8ff"><code><a href="extsnd.html#selectioncolor">selection-color</a></code></td></tr>
+
+<tr><td>textfocuscolor</td><td>white</td>      <td>color of text field with focus</td>        <td><code><a href="extsnd.html#textfocuscolor">text-focus-color</a></code></td></tr>
+
+<tr><td bgcolor="#f6f8ff">zoomcolor</td><td bgcolor="#f6f8ff">ivory4</td>           <td bgcolor="#f6f8ff">color of zoom sliders</td>                 <td bgcolor="#f6f8ff"><code><a href="extsnd.html#zoomcolor">zoom-color</a></code></td></tr>
+
+</table>
+<br>
+
+<p><A NAME="aboutcolors"></a>
+In the extension language,
+colors are defined by <a href="extsnd.html#makecolor">make-color</a> with the three red/green/blue values,
+each a float between 0.0 and 1.0.
+</p>
+<pre>
+    (set! (<a class=quiet href="extsnd.html#basiccolor">basic-color</a>) (<a class=quiet href="extsnd.html#makecolor">make-color</a> 1.0 0.0 0.0))
+</pre>
+<p>sets
+the overall background color of Snd to red.  <a href="sndscm.html#rgbdoc">rgb.scm</a> defines all the standard X11 color names.
+</p>
+
+<p>help-button-color and friends only work in a few cases (Motif, 2.n where n &lt; 3), so I may
+deprecate them someday.
+</p>
+
+<p>There are several other resources that set widget sizes: zoomSliderWidth,
+positionSliderWidth, toggleSize, sashSize, sashIndent, channelSashSize, and channelSashIndent.
+And several more color resources: whitecolor (list background),
+blackcolor (recorder VU meter text), redcolor (buttons, VU clipping, etc), 
+greencolor (a few buttons),
+yellowcolor (a few envelope editor buttons), lightbluecolor (the recorder), and lighterbluecolor (the fft option panel).
+</p>
+
+<p>You can experiment with other choices by
+using the -xrm switch:</p>
+
+<pre>
+    snd -xrm '*Highlightcolor: Red' oboe.snd
+    snd -xrm '*AxisNumbersFont: 6x10' oboe.snd
+    snd -xrm '*fontList: 9x15' oboe.snd
+    snd -xrm '*listenerFont: 6x10' oboe.snd
+    snd -xrm '*mixwaveformcolor: red' oboe.snd -notebook
+    snd oboe.snd pistol.snd -xrm '*selectedgraphcolor: black' -xrm '*selecteddatacolor: white'
+    snd -xrm '*fontList: -*-times-medium-r-*-*-14-*-*-*-*-*-*-*'
+    snd -xrm '*fontList: -*-symbol-*-*-*-*-18-*-*-*-*-*-*-*'
+    snd oboe.snd -title hiho -display fatty.hiho:0.0 -xrm '*chn-graph*backgroundPixmap: text.xpm'
+</pre>
+<p>Perhaps this is most useful when your window manager assumes white text for labels (menus);
+since Snd defaults to an off-white background, this makes everything unreadable. You can get
+the black text back with:
+</p>
+<pre>
+    ./snd -xrm '*foreground: Black'
+</pre>
+<p>or put the equivalent line in your .Xdefaults file.  The listener text color can be set
+via <code>(set! (<a class=quiet href="extsnd.html#listenertextcolor">listener-text-color</a>) (<a class=quiet href="extsnd.html#makecolor">make-color</a> 0 0 0))</code> in ~/.snd.
+</p>
+
+<p>
+The last example above sets the window title to "hiho", rather than
+"snd", displays the window on the machine fatty.hiho (presumably accessible over the net),
+and tiles the graph backgrounds with the contents of text.xpm.  To get the -geometry argument
+to work, set the autoResize resource to 0:</p>
+<pre>
+    snd oboe.snd -geometry 800x200 -xrm '*autoResize: 0'
+</pre>
+
+<p>These resources can be set in Snd.ad or in your ~/.Xdefaults file:</p>
+<pre>
+    snd*axisLabelFont:      -*-times-medium-r-normal-*-18-*-*-*-*-*-*-*
+    snd*axisNumbersFont:    9x15
+    snd*fontList:           -*-times-bold-r-*-*-14-*-*-*-*-*-*-*
+</pre>
+
+<p>To find what fonts are available, and what they look like, I use xfontsel.
+I think other toolkits use helvetica where Motif defaults to a small fixed font --
+it looks like 7x13 on my machine.
+</p>
+
+<p>If you have the xg module loaded into the Gtk+ version of Snd, you can load
+snd-gtk.scm, and call <a href="sndscm.html#makefontselectordialog">make-font-selector-dialog</a>
+or <a href="sndscm.html#makecolorselectordialog">make-color-selector-dialog</a> to
+goof around
+with the fonts and colors.
+</p>
+
+<p>
+The <A class=def NAME="xautoresize">autoResize</a> resource determines how Snd acts when files
+are added to or removed from its overall display.  The default (1)
+causes Snd to expand or contract the main window's size to accommodate
+the sounds; many people find this distracting.  If 'autoResize' is 0, the outer window size remains the
+same, and the sounds try to fit as best they can (to some extent the window manager controls this stuff).  See also
+the variable <a href="extsnd.html#autoresize">auto-resize</a>.
+The <A class=def NAME="horizontalpanes">horizontalPanes</a> resource
+is equivalent to the -h flag; if 1, sounds are layed out
+horizontally rather than vertically;  if 2, you get a notebook
+widget holding the sounds.
+</p>
+
+<table width="50%" border=0 vspace=20><tr><td bgcolor="lightgreen" valign="middle"><h4>Gtk</h4></td></tr></table>
+
+<p>In Gtk, the various default colors and fonts are set via the "gtkrc"
+file(s).  If you are using some global "theme", you probably have ~/.gtkrc-2.0.
+Snd looks for this file first.  If it isn't found, Snd looks on the
+current directory for Snd.gtkrc.  If that isn't found, it looks for
+~/Snd.gtkrc. If that isn't found, it uses a built-in default equivalent
+to the Snd.gtkrc file in the Snd tarball.
+If you want to change the overall appearance of Snd, you can edit any of these rc files.
+Currently, the simplest way to change the menu label fonts
+is to change the "default" or "default_menu" styles in Snd.gtkrc:
+</p>
+<pre>
+    style "default"
+    {
+      font_name = "Sans Serif 11"
+      ....
+    }
+</pre>
+<p>To get the "brushed metal" look, for example, put the line:
+</p>
+<pre>
+pixmap_path "/usr/share/themes/BrushedMetalClean/gtk"
+</pre>
+<p>at the start of Snd.gtkrc, then add these lines:
+</p>
+<pre>
+  bg_pixmap[NORMAL]      = "bc.xpm"
+  bg_pixmap[PRELIGHT]    = "bc-light.xpm"
+  bg_pixmap[ACTIVE]      = "bc-dark.xpm"
+  bg_pixmap[INSENSITIVE] = "bc.xpm"
+</pre>
+<p>to the "default" section (the first style).
+Frank Barknecht made a more elaborate example using the Xfce-b5 theme:</p>
+<img src="snd-gtkrc.png" alt="Snd with Xfce-b5 theme">
+
+<br>
+<p>And Kjetil Matheussen has put together the "snd-ls" package with many improvements:
+</p>
+<br>
+<img src="snd-ls.png" alt="snd-ls">
+
+<p>To get the default theme (set by Gnome or whatever), use the -nogtkrc startup switch.
+This is especially useful if you're using an inverse video theme.
+</p>
+<br>
+<br><br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndconfigurationswitches">Configuration choices</a></h3></td></tr></table>
+
+<p>The configuration process is controlled by a set of switches, some specific to Snd.  The
+latter are (configure --help):
+</p>
+
+<table>
+<tr><td colspan=2></td><td></td></tr>
+<tr><td colspan=2 bgcolor="#EEFDEE">Audio choices</td><td>(normally this is decided automatically)</td></tr>
+<tr><td width=50></td><td>--with-esd</td><td>use ESD (enlightened sound daemon)</td></tr>
+<tr><td></td><td>--with-alsa</td><td>use ALSA (Linux OSS replacement)</td></tr>
+<tr><td></td><td>--with-oss</td><td>use OSS (the default)</td></tr>
+<tr><td></td><td>--with-static-alsa</td><td>use ALSA statically loaded</td></tr>
+<tr><td></td><td>--with-jack</td><td>use JACK (Linux audio stream sharing support, can be used with ALSA)</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Graphics choices</td><td></td></tr>
+<tr><td></td><td>--with-gtk</td><td>use Gtk+ to build Snd (Gtk+ version 2.0 or later)</td></tr>
+<tr><td></td><td>--with-motif</td><td>use Motif (version 2.0 or later) to build Snd (the default), Lesstif is not supported</td></tr>
+<tr><td></td><td>--with-static-motif</td><td>use libXm.a to build Snd</td></tr>
+<tr><td></td><td>--with-motif-prefix=PFX</td><td>where Motif is installed</td></tr>
+<tr><td></td><td>--with-no-gui</td><td>make Snd without any graphics support</td></tr>
+<tr><td></td><td>--with-static-xm</td><td>include the xm module at build time; this is easier than trying to dynamically load xm.so</td></tr>
+<tr><td></td><td>--with-static-xg</td><td>include the xg module at build time; this is easier than trying to dynamically load xg.so</td></tr>
+<tr><td></td><td>--with-gl</td><td>include OpenGL support (spectrogram, etc)</td></tr>
+<tr><td></td><td>--with-just-gl</td><td>include OpenGL support, but omit the GL/Guile/Gauche/Ruby/Forth bindings</td></tr>
+<tr><td></td><td>--with-gl2ps</td><td>include gl2ps (GL to Postscript code)</td></tr>
+<tr><td></td><td>--with-editres</td><td>include editres in xm (default: no)</td></tr>
+<tr><td></td><td>--with-xpm</td><td>use xpm, default: yes</td></tr>
+<tr><td></td><td>--with-xp</td><td>use xp, default: no; this is the Xprint library which is not tied into Snd at all</td></tr>
+<tr><td></td><td>--with-builtin-gtkrc</td><td>include built-in gtkrc fallbacks (default: yes) (some grouches don't like my happy pastel color scheme)</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Language choices</td><td></td></tr>
+<tr><td></td><td>--with-guile</td><td>use Guile (default: yes), GUILE_CONFIG_path sets Guile location; version 1.3.4 or later</td></tr>
+<tr><td></td><td>--with-forth</td><td>try to use Forth as the extension language</td></tr>
+<tr><td></td><td>--with-ruby</td><td>try to use Ruby as the extension language; version 1.6.4 or later</td></tr>
+<tr><td></td><td>--with-gauche</td><td>try to use Gauche as the extension language; version 0.8.7 or later</td></tr>
+<tr><td></td><td>--with-ruby-prefix=PFX</td><td>where Ruby is installed</td></tr>
+<tr><td></td><td>--with-hobbit</td><td>include hobbit-style function arity checking (hobbit is a Scheme compiler), default: no</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Numerical choices</td><td></td></tr>
+<tr><td></td><td>--with-doubles</td><td>use doubles throughout (default: no)</td></tr>
+<tr><td></td><td>--with-float-samples</td><td>use floats or doubles as the internal sample representation (default: yes)</td></tr>
+<tr><td></td><td>--with-sample-width=N</td><td>if not float samples, use N bits for ints (default: 24, must be between 16 and 31)</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Library choices</td><td></td></tr>
+<tr><td></td><td>--with-gsl</td><td>use GSL (for Chebyshev window), default: yes if local C does not support complex trig</td></tr>
+<tr><td></td><td>--with-static-gsl</td><td>use libgsl.a (only for obsolete RPM stuff)</td></tr>
+<tr><td></td><td>--with-fftw</td><td>use fftw, default: yes; fallback fft is built-in</td></tr>
+<tr><td></td><td>--with-fam</td><td>use libfam (Gamin), default: yes; fallback is polling via <a href="extsnd.html#autoupdateinterval">auto-update-interval</a></td></tr>
+<tr><td></td><td>--with-ladspa</td><td>include support for LADSPA plugins (in Linux default: yes)</td></tr>
+<tr><td></td><td>--with-midi</td><td>include sndlib midi module (default: no)</td></tr>
+<tr><td></td><td>--with-shared-sndlib</td><td>try to load libsndlib.so, rather than building it into Snd (default: no)</td></tr>
+<tr><td></td><td>--with-modules</td><td>use this switch with --with-shared-sndlib if sndlib.so uses modules</td></tr>
+<tr><td></td><td>--disable-deprecated</td><td>do not include any deprecated stuff from gtk, guile, sndlib, xen, clm, etc</td></tr>
+<tr><td></td><td>--enable-threads</td><td>include pthreads to take advantage of multiprocessor machines</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Directory choices</td><td></td></tr>
+<tr><td></td><td>--with-temp-dir</td><td>directory to use for temp files (default: ".")</td></tr>
+<tr><td></td><td>--with-save-dir</td><td>directory to use for saved-state files (default: ".")</td></tr>
+<tr><td></td><td>--with-doc-dir</td><td>directory to search for documentation (html-dir, elaborate set of defaults)</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+
+<tr><td colspan=2 bgcolor="#EEFDEE">Debugging etc</td><td></td></tr>
+<tr><td></td><td>--with-snd-as-widget</td><td>make Snd a loadable widget, not a standalone program</td></tr>
+<tr><td></td><td>--with-snd-as-pd-external</td><td>make Snd a loadable pd external, not a standalone program</td></tr>
+<tr><td></td><td>--with-profiling</td><td>include profiling (branch counting) machinery, default: no (only for debugging)</td></tr>
+<tr><td></td><td>--enable-snd-debug</td><td>include internal Snd debugging functions, default: no (not useful if not actually debugging!) </td></tr>
+<tr><td></td><td>--disable-largefile</td><td>omit support for large (64-bit byte address) files</td></tr>
+<tr><td></td><td>--disable-nls</td><td>do not use Native Language Support</td></tr>
+<tr><td colspan=2></td><td></td></tr>
+</table>
+
+<p>Other configuration variables are GUILE_CONFIG_name and SNDLIB_CONFIG_path. The default configuration/build sequence:
+</p>
+<pre>
+  ./configure
+  make
+  make install
+</pre>
+<p>tries to use Guile, Motif, OSS (if Linux), and 32-bit float sample representation, then
+installs the snd executable in /usr/local/bin, a brief blurb
+in /usr/local/man/man1, and the German translations in whatever directory the translation files are sent to (this is part of
+the NLS business in Gnu). 
+Here at CCRMA, we normally use:
+</p>
+<pre>
+  ./configure --with-alsa --with-temp-dir=/zap --with-static-xm --with-gl
+</pre>
+<p>and, since I'm usually running the CVS Guile, I use:
+</p>
+<pre>
+  ./configure CFLAGS="-Wall" GUILE_CONFIG_path=/home/bil/test/bin --with-gl --with-static-xm
+</pre>
+<p>
+There are many more examples in tools/compsnd.
+Don't use the --enable-snd-debug switch unless you know what you are asking for!
+Depending on how Snd is configured, any of the following symbols may be "provided"
+(on the *features* list in Guile/Gauche):
+</p>
+<table hspace=20 border=1>
+<tr><td>
+<table>
+<tr><td width=100>clm</td><td>clm module (always included -- once upon a time it was optional)</td></tr>
+<tr><td bgcolor="#f6f8ff">gl</td><td bgcolor="#f6f8ff">OpenGL callable from Scheme/Ruby/Forth (--with-gl switch)</td></tr>
+<tr><td>snd-ladspa</td><td>LADSPA loaded (--with-ladspa, but also the default in Linux if ladspa.h can be found)</td></tr>
+<tr><td bgcolor="#f6f8ff">sndlib</td><td bgcolor="#f6f8ff">sndlib module (always included)</td></tr>
+<tr><td><A NAME="sndmotiffeature">snd-motif</a></td><td>Motif used as GUI toolkit (--with-motif, usually the default if Motif can be found)</td></tr>
+<tr><td bgcolor="#f6f8ff"><A NAME="sndgtkfeature">snd-gtk</a></td><td bgcolor="#f6f8ff">Gtk+ used as GUI toolkit (--with-gtk)</td></tr>
+<tr><td>snd-nogui</td><td>No GUI built-in (--with-no-gui, or neither Motif nor Gtk+ found)</td></tr>
+<tr><td bgcolor="#f6f8ff">snd-guile</td><td bgcolor="#f6f8ff">Guile as extension language (--with-guile, usually the default if guile can be found)</td></tr>
+<tr><td>snd-ruby</td><td>Ruby as extension language (--with-ruby)</td></tr>
+<tr><td bgcolor="#f6f8ff">snd-forth</td><td bgcolor="#f6f8ff">Forth as extension language (--with-forth)</td></tr>
+<tr><td>snd-gauche</td><td>Gauche as extension language (--with-gauche)</td></tr>
+<tr><td bgcolor="#f6f8ff">snd-debug</td><td bgcolor="#f6f8ff">internal debugging hooks included (--enable-snd-debug)</td></tr>
+<tr><td>snd</td><td>It's Snd, ferchrissake... (always included)</td></tr>
+<tr><td bgcolor="#f6f8ff">xg</td><td bgcolor="#f6f8ff">Gtk module (xg.c) included (--with-static-xg, or loaded dynamically)</td></tr>
+<tr><td>Xp</td><td>Xprint library included and available from Scheme/Ruby/Forth (--with-xp, the default if it exists)</td></tr>
+<tr><td bgcolor="#f6f8ff">xm</td><td bgcolor="#f6f8ff">Motif module (xm.c) included (--with-static-xm, or loaded dynamically)</td></tr>
+<tr><td>alsa</td><td>ALSA is in use, rather than OSS (--with-alsa)</td></tr>
+<tr><td bgcolor="#f6f8ff">gsl</td><td bgcolor="#f6f8ff">GSL is loaded (--with-gsl)</td></tr>
+<tr><td>gl2ps</td><td>gl2ps is included (--with-gl2ps)</td></tr>
+</table>
+</td></tr>
+</table>
+
+<p>To check whether something is available in the current Snd, use:
+</p>
+<pre>
+    Scheme:  (provided? 'snd-gtk)
+    Ruby:    provided? :snd-gtk
+    Forth:   "snd-gtk" defined?
+</pre>
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndenvvars">Environment variables</a></h3></td></tr></table>
+
+<p>There are several environment variables specific to Snd:
+</p>
+<table hspace=20>
+<tr><td width=300>SND_PATH</td><td>Snd source load path list (a colon separated directory list)</td></tr>
+<tr><td bgcolor="#f6f8ff">SND_INIT_FILE_ENVIRONMENT_NAME</td><td bgcolor="#f6f8ff">init file name</td></tr>
+<tr><td>LADSPA_PATH</td><td>Ladspa modules directory</td></tr>
+<tr><td bgcolor="#f6f8ff">MUS_ALSA_PLAYBACK_DEVICE</td><td bgcolor="#f6f8ff">name of playback device (Alsa only)</td></tr>
+<tr><td>MUS_ALSA_CAPTURE_DEVICE</td><td>name of capture device (Alsa only)</td></tr>
+<tr><td bgcolor="#f6f8ff">MUS_ALSA_DEVICE</td><td bgcolor="#f6f8ff">name of the playback and capture device (Alsa only)</td></tr>
+<tr><td>MUS_ALSA_BUFFERS</td><td>number of "periods" used (Alsa only)</td></tr>
+<tr><td bgcolor="#f6f8ff">MUS_ALSA_BUFFER_SIZE</td><td bgcolor="#f6f8ff">number of samples per channel per buffer (Alsa only)</td></tr>
+<tr><td>AUDIODEV</td><td>audio device name (Sun and related drivers)</td></tr>
+</table>
+
+<br>
+<table width="100%" border=0><tr><td bgcolor="beige" align="center" valign="middle"><h2><A NAME="snddynamic">Runtime modules and external programs</a></h2></td></tr></table>
+<br>
+<!-- INDEX emacssnd:Emacs and Snd -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="emacssnd">Snd as an Emacs subjob</a></h3></td></tr></table>
+
+<p>Snd watches stdin; any input received
+is evaluated as if typed in Snd's listener; any subsequent output
+is sent to stdout.  Presumably any process could communicate with
+Snd in this manner,  but the real reason for this is to make it possible to run Snd as a subjob of Emacs.
+The simplest way to enable that is to use <a href="sndscm.html#dotemacs">inf-snd.el</a> by Michael
+Scholz.  It starts with a long and detailed commentary.
+</p>
+<br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="dynamic">Dynamically loaded modules</a></h3></td></tr></table>
+
+<p>You can import shared object files into Snd at any time.
+If you have a Guile-aware module with a known initialization function:
+</p>
+<pre>
+  (define lib (<em class=red>dynamic-link</em> "/home/bil/cl/cscm.so"))
+  (<em class=red>dynamic-call</em> "init_hiho" lib)
+</pre>
+<p>I used to have an explicit example here, but the Guile API changes
+so often, and so radically, that it was never up-to-date.  Good luck!
+</p>
+
+
+<br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="programs">External Programs</a></h3></td></tr></table>
+
+<p>Any external program that knows about sound files can be used to perform editing operations
+in Snd.  You get Snd's display, analysis, header and format conversion, and edit-tree support,
+and can concentrate on the actual sound effect you're developing.
+The original impetus for Snd came from CLM, a large lisp-listener based program
+which normally runs without a graphical
+user interface, and without any simple way to move around
+in what Snd calls the edit history.  Since interprocess
+communication proved problematic in this case,
+the communication path was simplified to
+consist of little more than shared files, with CLM treated
+as a batch program.
+</p>
+
+<p>
+Say we have a sound processing CLM instrument we like; it takes
+two sound file names as its arguments, reading the first and writing the second.
+In Snd we write the current edited state to a temporary file (<a href="extsnd.html#savesoundas">save-sound-as</a>),
+start CLM, call the instrument 
+passing it the input filename (just written by Snd), then pass CLM's output back
+to Snd.  Snd replaces (via set-samples) the current data with the data our instrument wrote, as if it had incorporated that
+instrument as an editing operation from the beginning.
+We then delete the Snd output (the input to CLM).
+</p>
+
+<br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndaswidget">Snd as a Widget</a></h3></td></tr></table>
+
+<p>To include the entire Snd editor as a widget in some other program,
+first compile it with -DSND_AS_WIDGET. Then load it into your program,
+using the procedure <b>snd_as_widget</b> to fire it up.  See
+saw.c included with Snd.
+</p>
+
+<pre>
+  void snd_as_widget(int argc, char **argv, XtAppContext app, Widget parent, Arg *caller_args, int caller_argn)
+</pre>
+
+<p>starts up the Snd editor in the widget 'parent', passing the outer Snd
+form widget the arguments 'caller_args' and 'caller_argn'.  The
+enclosing application context is 'app'.  'parent' needs to
+be realized at the time of the call, since Snd uses it to set up graphics
+contexts and so on.  'argc' and 'argv' can be passed to
+simulate a shell invocation of Snd.  Remember that in this case, the
+first string argument is expected to be the application name, and is
+ignored by Snd.
+In Gtk, the arguments are different, but the basic idea is the same:
+</p>
+<pre>
+  GtkWidget *snd_as_widget(int argc, char **argv, GtkWidget *parent, void (*error_func)(const char *msg))
+</pre>
+
+
+<br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithclm">Snd and CLM</a></h3></td></tr></table>
+
+<p>The files clm.c, clm.h, and clm2xen.c implement <a href="clm.html#clmtop">CLM</a> (a Music V implementation),
+included in Snd when it is built.
+You can see what a generator does, or a group of generators, by running them in the
+listener, and using the graph and spectrum functions.  Say we have
+these declarations in ~/.snd:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define data-size 1024)
+(define data (<a class=quiet href="extsnd.html#makevct">make-vct</a> data-size))
+
+(define (run-gen func)        ; func is a function of no arguments (a "thunk")
+  (do ((i 0 (1+ i))) 
+      ((= i data-size))
+    (<a class=quiet href="extsnd.html#vctset">vct-set!</a> data i (func))) ; fill data vct with output of 'func'
+  (<a class=quiet href="extsnd.html#graph">graph</a> data))               ; display data as a graph
+
+(define (run-fft func)
+  (do ((i 0 (1+ i))) 
+      ((= i data-size))
+    (<a class=quiet href="extsnd.html#vctset">vct-set!</a> data i (func)))
+  (<a class=quiet href="extsnd.html#graph">graph</a> (<a class=quiet href="extsnd.html#sndspectrum">snd-spectrum</a> data blackman2-window data-size #t)))
+</pre></td></tr></table>
+
+<p>Now we can open the listener, and type:</p>
+<pre>
+    (define hi (<a class=quiet href="clm.html#make-oscil">make-oscil</a>))
+    (run-gen (lambda () (<a class=quiet href="clm.html#oscil">oscil</a> hi)))
+    (define ho (<a class=quiet href="clm.html#make-oscil">make-oscil</a>))
+    (run-fft (lambda () (<a class=quiet href="clm.html#oscil">oscil</a> hi (* .5 (<a class=quiet href="clm.html#oscil">oscil</a> ho)))))
+</pre>
+<p>Any CLM instrument or function can be used in this way 
+to edit sounds.  Say we want an echo effect:</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define echo 
+  (lambda (scaler secs)
+    (let ((del (<a class=quiet href="clm.html#make-delay">make-delay</a> (round (* secs (<a class=quiet href="extsnd.html#srate">srate</a>))))))
+      (lambda (inval)
+        (+ inval (<a class=quiet href="clm.html#delay">delay</a> del (* scaler (+ (<a class=quiet href="clm.html#tap">tap</a> del) inval))))))))
+</pre></td></tr></table>
+
+<p>
+Here 'scaler' sets
+how loud subsequent echos are, and 'secs' sets how far apart they
+are in seconds.  'echo' uses the 'secs' argument to create
+a delay line (<a href="clm.html#make-delay">make-delay</a>) using the current sound's
+sampling rate to turn the 'secs' parameter into samples.
+echo then returns a closure, that is, a function with
+associated variables (in this case 'del' and 'scaler');
+the returned function (the second lambda) takes
+one argument ('inval') and returns the result of passing
+that value to the delay with scaling.  The upshot of all this is that
+we can use:</p>
+<pre>
+    (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (echo .5 .75) 0 44100)
+</pre>
+<p>to take the current active channel and 
+return 44100 samples of echos, each echo half the amplitude
+of the previous, and spaced by .75 seconds.  map-channel's
+first argument is a function of one argument, the current sample;
+when we pass it <code>(echo ...)</code>, it evaluates the echo call,
+which returns the function that actually runs the delay line,
+producing the echo. 
+</p> 
+<p>If we want "pre-echoes" instead (echoes of the future):
+</p>
+<pre>
+    (<a class=quiet href="extsnd.html#reversesound">reverse-sound</a>)
+    (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (echo .5 .75) 0 44100)
+    (<a class=quiet href="extsnd.html#reversesound">reverse-sound</a>)
+</pre>
+<p>The Common Lisp version is:</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(<a class=quiet href="clm.html#definstrument">definstrument</a> echo (beg dur scaler secs file)
+  (let ((del (<a class=quiet href="clm.html#make-delay">make-delay</a> (round (* secs *srate*))))
+	(inf (<a class=quiet href="clm.html#open-input">open-input</a> file))
+	(j 0))
+    (run
+     (loop for i from beg below (+ beg dur) do
+       (let ((inval (<a class=quiet href="clm.html#ina">ina</a> j inf)))
+	 (<a class=quiet href="clm.html#outa">outa</a> i (+ inval (<a class=quiet href="clm.html#delay">delay</a> del (* scaler (+ (<a class=quiet href="clm.html#tap">tap</a> del) inval)))))
+	 (incf j))))
+    (<a class=quiet href="clm.html#close-input">close-input</a> inf)))
+
+;;; (<a class=quiet href="clm.html#with-sound">with-sound</a> () (echo 0 60000 .5 1.0 "pistol.snd"))
+</pre></td></tr></table>
+
+<p>Generators are "applicable" in most versions of Snd: the generator knows its type, so the
+explicit "oscil" function (for example) isn't needed.
+</p>
+<pre>
+    &gt;<em class=typing>(define hi (make-oscil 440.0))</em>
+    <em class=listener>#&lt;unspecified&gt;</em>
+    &gt;<em class=typing>(hi)</em>
+    <em class=listener>0.0</em>
+    &gt;<em class=typing>(oscil hi)</em>
+    <em class=listener>0.125050634145737</em>
+</pre>
+<p>
+We can make a generator that is either
+an oscil or a sawtooth-wave:
+</p>
+<pre>
+    &gt;<em class=typing>(define sine-or-sawtooth
+       (lambda (sine)
+         (let ((gen ((if sine make-oscil make-sawtooth-wave) 440.0)))
+           (lambda (fm)
+             (gen fm)))))</em>
+    <em class=listener>#&lt;unspecified&gt;</em>
+    &gt;<em class=typing>(define osc (sine-or-sawtooth #t))</em>
+    <em class=listener>#&lt;unspecified&gt;</em>
+    &gt;<em class=typing>(osc 0.0)</em>
+    <em class=listener>0.0</em>
+    &gt;<em class=typing>(osc 0.0)</em>
+    <em class=listener>0.125050634145737</em>
+</pre>
+
+<p>clm.html has lots of information about CLM.  For historical reasons, it is oriented toward
+Common Lisp, rather than Scheme, but it should not be hard to move back and forth.
+There are a few minor differences, mostly involving global variable names.
+For example,
+in Snd, the default locsig interpolation type is handled via locsig-type, rather than CLM's global
+variable *clm-locsig-type*.
+</p>
+
+<p>Here are a few more examples, taken from <a href="sndscm.html#exampdoc">examp.scm</a>.
+</p>
+<pre>
+(define comb-filter 
+  (lambda (scaler size)
+    (let ((cmb (<a class=quiet href="clm.html#make-comb">make-comb</a> scaler size)))
+      (lambda (x) (<a class=quiet href="clm.html#comb">comb</a> cmb x)))))
+
+; (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (comb-filter .8 32))
+
+;;; by using filters at harmonically related sizes, we can get chords:
+
+(define comb-chord
+  (lambda (scaler size amp)
+    (let ((c1 (<a class=quiet href="clm.html#make-comb">make-comb</a> scaler size))
+	  (c2 (<a class=quiet href="clm.html#make-comb">make-comb</a> scaler (* size .75)))
+	  (c3 (<a class=quiet href="clm.html#make-comb">make-comb</a> scaler (* size 1.2))))
+      (lambda (x)
+        (* amp (+ (<a class=quiet href="clm.html#comb">comb</a> c1 x) (<a class=quiet href="clm.html#comb">comb</a> c2 x) (<a class=quiet href="clm.html#comb">comb</a> c3 x)))))))
+
+; (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (comb-chord .95 60 .3))
+
+;;; or change the comb length via an envelope:
+
+(define max-envelope
+  (lambda (e mx)
+    (if (null? e)
+	mx
+      (<a class=quiet href="sndscm.html#maxenvelope">max-envelope</a> (cddr e) (max mx (abs (cadr e)))))))
+
+(define zcomb
+  (lambda (scaler size pm)
+    (let ((cmb (<a class=quiet href="clm.html#make-comb">make-comb</a> scaler size :max-size (+ size 1 (<a class=quiet href="sndscm.html#maxenvelope">max-envelope</a> pm 0))))
+	  (penv (<a class=quiet href="clm.html#make-env">make-env</a> :envelope pm :end (<a class=quiet href="extsnd.html#frames">frames</a>))))
+      (lambda (x) (<a class=quiet href="clm.html#comb">comb</a> cmb x (env penv))))))
+
+; (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (zcomb .8 32 '(0 0 1 10)))
+
+;;; to impose several formants, just add them in parallel:
+
+(define formants
+  (lambda (r1 f1 r2 f2 r3 f3)
+    (let ((fr1 (<a class=quiet href="clm.html#make-formant">make-formant</a> r1 f1))
+	  (fr2 (<a class=quiet href="clm.html#make-formant">make-formant</a> r2 f2))
+	  (fr3 (<a class=quiet href="clm.html#make-formant">make-formant</a> r3 f3)))
+      (lambda (x)
+	(+ (<a class=quiet href="clm.html#formant">formant</a> fr1 x)
+	   (<a class=quiet href="clm.html#formant">formant</a> fr2 x)
+	   (<a class=quiet href="clm.html#formant">formant</a> fr3 x))))))
+
+; (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (formants .01 900 .02 1800 .01 2700))
+
+;;; to get a moving formant:
+
+(define moving-formant
+  (lambda (radius move)
+    (let ((frm (<a class=quiet href="clm.html#make-formant">make-formant</a> radius (cadr move)))
+	  (menv (<a class=quiet href="clm.html#make-env">make-env</a> :envelope move :end (<a class=quiet href="extsnd.html#frames">frames</a>))))
+      (lambda (x)
+        (let ((val (<a class=quiet href="clm.html#formant">formant</a> frm x)))
+	  (set! (<a class=quiet href="clm.html#mus-frequency">mus-frequency</a> frm) (env menv))
+	  val)))))
+
+; (<a class=quiet href="extsnd.html#mapchannel">map-channel</a> (moving-formant .01 '(0 1200 1 2400)))
+
+;;; various "Forbidden Planet" sound effects:
+
+(define fp
+  (lambda (sr osamp osfrq)
+    (let* ((os (<a class=quiet href="clm.html#make-oscil">make-oscil</a> osfrq))
+	   (sr (<a class=quiet href="clm.html#make-src">make-src</a> :srate sr))
+	   (len (<a class=quiet href="extsnd.html#frames">frames</a>))
+	   (sf (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a>))
+	   (out-data (<a class=quiet href="extsnd.html#makevct">make-vct</a> len)))
+      (<a class=quiet href="extsnd.html#vctmap">vct-map!</a> out-data
+		  (lambda () 
+		    (<a class=quiet href="clm.html#src">src</a> sr (* osamp (<a class=quiet href="clm.html#oscil">oscil</a> os))
+			 (lambda (dir)
+			   (if (&gt; dir 0)
+			       (<a class=quiet href="extsnd.html#nextsample">next-sample</a> sf)
+			       (<a class=quiet href="extsnd.html#previoussample">previous-sample</a> sf))))))
+      (<a class=quiet href="extsnd.html#freesamplereader">free-sample-reader</a> sf)
+      (<a class=quiet href="extsnd.html#vcttochannel">vct-&gt;channel</a> out-data 0 len))))
+
+; (fp 1.0 .3 20)
+
+
+;;; -------- shift pitch keeping duration constant
+;;;
+;;; both src and granulate take a function argument to get input whenever it is needed.
+;;; in this case, src calls granulate which reads the currently selected file.
+
+(define <A class=def NAME="expsrc">expsrc</a>
+  (lambda (rate)
+    (let* ((gr (<a class=quiet href="clm.html#make-granulate">make-granulate</a> :expansion rate))
+	   (sr (<a class=quiet href="clm.html#make-src">make-src</a> :srate rate))
+	   (vsize 1024)
+	   (vbeg 0)
+	   (v (<a class=quiet href="extsnd.html#channeltovct">channel-&gt;vct</a> 0 vsize))
+	   (inctr 0))
+      (lambda (inval)
+        (<a class=quiet href="clm.html#src">src</a> sr 0.0
+	  (lambda (dir)
+	    (<a class=quiet href="clm.html#granulate">granulate</a> gr
+	      (lambda (dir)
+		(let ((val (<a class=quiet href="extsnd.html#vctref">vct-ref</a> v inctr)))
+		  (set! inctr (+ inctr dir))
+		  (if (&gt;= inctr vsize)
+		      (begin
+			(set! vbeg (+ vbeg inctr))
+			(set! inctr 0)
+			(<a class=quiet href="extsnd.html#channeltovct">channel-&gt;vct</a> vbeg vsize 0 0 v)))
+		  val)))))))))
+
+</pre>
+<p>Geez, I haven't had this much fun in a long time!  Check out <a href="sndscm.html#exampdoc">examp.scm</a> and <a href="sndscm.html#sndtestdoc">snd-test.scm</a> for more.  
+CLM-in-CL users will be disappointed with the CLM-in-Scheme performance; my tests indicate that
+interpreted Scheme (as in Snd currently) is about 30 to 100 times slower than CLM instruments using
+the run macro.  That macro now exists in Snd; see the <a href="extsnd.html#optimization">optimization</a>
+variable for a brief discussion.  Currently, I can speed up most CLM-related Scheme code
+by factors between 8 and 20.  This is still slightly slower than CLM, but it's certainly
+an improvement!
+</p>
+<p>
+You can load Rick Taube's CM into Snd as Scheme code:
+</p>
+<pre>
+    snd -l /home/bil/test/cm-2.8.0/src/cm.scm
+</pre>
+<p>and all of CM is at your disposal! See also <a href="#sndwithcm">Snd and Common Music</a>.
+</p>
+<p>In most CLM instruments, including all those in clm-ins.scm, the assumption is that 
+you're reading and writing a temp file, calling the instruments within with-sound.
+The special generator snd-&gt;sample provides a way to redirect
+the CLM input handlers (<a class=quiet href="clm.html#in-any">in-any</a> in particular) to a Snd sound (via its index).
+</p>
+<br>
+
+<!-- INDEX sndinstruments:Instruments -->
+<table width="50%" border=0><tr><td bgcolor="lightgreen" valign="middle"><h4><A NAME="sndinstruments">Instruments</a></h4></td></tr></table>
+
+<p>It's hard to decide what's an "instrument" in this context, but I think I'll treat
+it as something that can be called as a note in a notelist (say in with-sound) and
+generate its own sound.
+Test 23 in snd-test.scm has a with-sound that includes most of these instruments.
+</p>
+<TABLE border=0 cellpadding=6 hspace=20><tr><td>
+<table border=0 cellpadding=0 cellspacing=4>
+<tr><th bgcolor="beige">Instrument</th><th bgcolor="beige">Sources</th><th bgcolor="beige">Description</th></tr>
+<tr><td>anoi</td><td>clm-ins.scm, clm-ins.rb</td><td>noise reduction based on P Cook's Scrubber.m</td></tr>
+<tr><td bgcolor="#f6f8ff">attract</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">James McCarthy's chaotic brass</td></tr>
+<tr><td>bes-fm</td><td>clm-ins.scm</td><td>FM analog using Bessel j1 rather than sin</td></tr>
+<tr><td bgcolor="#f6f8ff">bigbird</td><td bgcolor="#f6f8ff">bird.scm, bird.rb</td><td bgcolor="#f6f8ff">more bird songs</td></tr>
+<tr><td>bird</td><td>bird.scm, bird.rb</td><td>bird songs</td></tr>
+<tr><td bgcolor="#f6f8ff">bow</td><td bgcolor="#f6f8ff">strad.scm, strad.rb</td><td bgcolor="#f6f8ff">bowed string physical model (Juan Reyes, Michael Scholz)</td></tr>
+<tr><td>bowstr</td><td>prc95.scm, prc95.rb</td><td>bowed string physical model</td></tr>
+<tr><td bgcolor="#f6f8ff">brass</td><td bgcolor="#f6f8ff">prc95.scm</td><td bgcolor="#f6f8ff">brass physical model</td></tr>
+<tr><td>cellon</td><td>clm-ins.scm, clm-ins.rb</td><td>S Krupowicz's feedback FM</td></tr>
+<tr><td bgcolor="#f6f8ff">chain-dsps</td><td bgcolor="#f6f8ff">examp.scm</td><td bgcolor="#f6f8ff">instrument gets gen patch from its args</td></tr>
+<tr><td>clarinet</td><td>prc95.scm</td><td>clarinet physical model</td></tr>
+<tr><td bgcolor="#f6f8ff">drone, canter</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">Peter Common's bagpipe</td></tr>
+<tr><td>exp-snd</td><td>clm-ins.scm, clm-ins.rb</td><td>granulate to the max</td></tr>
+<tr><td bgcolor="#f6f8ff">expfil</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">granular synthesis interleaving two files</td></tr>
+<tr><td>flute</td><td>prc95.scm, clm-ins.rb</td><td>flute physical model</td></tr>
+<tr><td bgcolor="#f6f8ff">fm-bell</td><td bgcolor="#f6f8ff">clm-ins.scm, examp.rb</td><td bgcolor="#f6f8ff">Mike McNabb's FM bell</td></tr>
+<tr><td>fm-drum</td><td>clm-ins.scm, clm-ins.rb</td><td>Jan Mattox's FM dum</td></tr>
+<tr><td bgcolor="#f6f8ff">fm-insect</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">FM insect (katydid)</td></tr>
+<tr><td>fm-noise</td><td>noise.scm, noise.rb</td><td>noise maker</td></tr>
+<tr><td bgcolor="#f6f8ff">fm-trumpet</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">Dexter Morrill's FM trumpet</td></tr>
+<tr><td>fm-violin</td><td>v.scm, v.rb, fmv.scm, sndscm.html</td><td>violin-like sounds via FM</td></tr>
+<tr><td bgcolor="#f6f8ff">fofins</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">FOF synthesis</td></tr>
+<tr><td>fullmix</td><td>clm-ins.scm</td><td>complicated mixer</td></tr>
+<tr><td bgcolor="#f6f8ff">freeverb</td><td bgcolor="#f6f8ff">freeverb.scm, freeverb.rb</td><td bgcolor="#f6f8ff">a reverberator</td></tr>
+<tr><td>gong</td><td>clm-ins.scm, clm-ins.rb</td><td>Paul Weineke's FM gong</td></tr>
+<tr><td bgcolor="#f6f8ff">gran-synth</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">simple granular synthesis</td></tr>
+<tr><td>graphEq</td><td>clm-ins.scm, clm-ins.rb</td><td>Marco Trevisani's semi-graphical equalizer</td></tr>
+<tr><td bgcolor="#f6f8ff">jc-reverb</td><td bgcolor="#f6f8ff">jcrev.scm, examp.rb</td><td bgcolor="#f6f8ff">Chowning's old reverb</td></tr>
+<tr><td>jl-reverb</td><td>clm-ins.scm, clm-ins.rb</td><td>cavernous version of jc-reverb</td></tr>
+<tr><td bgcolor="#f6f8ff">lbj-piano</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">additive synthesis piano (Doug Fulton)</td></tr>
+<tr><td>maraca, big-maraca</td><td>maraca.scm, maraca.rb</td><td>Perry Cook's maraca physical model</td></tr>
+<tr><td bgcolor="#f6f8ff">metal</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">more FM by Perry</td></tr>
+<tr><td>nrev</td><td>clm-ins.scm, clm-ins.rb</td><td>Mike McNabb's reverb</td></tr>
+<tr><td bgcolor="#f6f8ff">p</td><td bgcolor="#f6f8ff">piano.scm, piano.rb</td><td bgcolor="#f6f8ff">Scott van Duyne's piano physical model</td></tr>
+<tr><td>pins</td><td>clm-ins.scm, clm-ins.rb</td><td>Xavier Serra SMS-style spectral modeling</td></tr>
+<tr><td bgcolor="#f6f8ff">pluck</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">David Jaffe's Karplus-Strong (physical model) plucked string</td></tr>
+<tr><td>plucky</td><td>prc95.scm</td><td>plucked string physical model</td></tr>
+<tr><td bgcolor="#f6f8ff">pqw-vox</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">vocal sounds from phase-quadrature waveshaping</td></tr>
+<tr><td>pqw</td><td>clm-ins.scm, clm-ins.rb</td><td>phase-quadrature waveshaping</td></tr>
+<tr><td bgcolor="#f6f8ff">resflt</td><td bgcolor="#f6f8ff">clm-ins.scm</td><td bgcolor="#f6f8ff">two-poles for resonances (Xavier Serra)</td></tr>
+<tr><td>reson</td><td>clm-ins.scm, clm-ins.rb</td><td>parallel FM creating resonances</td></tr>
+<tr><td bgcolor="#f6f8ff">rhodey, wurley, hammondoid</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">FM stuff from Perry Cook</td></tr>
+<tr><td>scratch</td><td>clm-ins.scm, clm-ins.rb</td><td>move around in sound via list of turn points and src</td></tr>
+<tr><td bgcolor="#f6f8ff">singer</td><td bgcolor="#f6f8ff">singer.scm, singer.rb</td><td bgcolor="#f6f8ff">Perry Cook's vocal tract physical model</td></tr>
+<tr><td>spectra</td><td>clm-ins.scm, clm-ins.rb</td><td>simple additive synthesis</td></tr>
+<tr><td bgcolor="#f6f8ff">stereo-flute</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">Nicky Hind's flute physical model</td></tr>
+<tr><td>touch-tone</td><td>clm-ins.scm, clm-ins.rb</td><td>touch-tone telephone</td></tr>
+<tr><td bgcolor="#f6f8ff">tubebell</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">Perry Cook's FM tubular bell</td></tr>
+<tr><td>two-tab</td><td>clm-ins.scm, clm-ins.rb</td><td>interpolate between two spectra</td></tr>
+<tr><td bgcolor="#f6f8ff">vox</td><td bgcolor="#f6f8ff">clm-ins.scm, clm-ins.rb</td><td bgcolor="#f6f8ff">voice using "leapfrog" FM-generated formants</td></tr>
+<tr><td>zc, zn, za</td><td>clm-ins.scm, clm-ins.rb</td><td>interpolating delay effects</td></tr>
+</TABLE>
+</td></tr></table>
+<br><br>
+
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithcm">Snd and Common Music</a></h3></td></tr></table>
+
+<p>You can load Common Music into Snd.  The only real "gotcha" is that Snd's
+ws.scm has to be loaded before cm's clm2.scm.  I load ws.scm in my init file,
+but in the following example, I'll start -noinit, and load it explicitly.
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td><pre>
+&gt; <em class=typing>(load "ws.scm")</em>
+<em class=listener>#&lt;unspecified&gt;</em>
+&gt; <em class=typing>(load "/home/bil/test/cm/src/cm.scm")</em>
+<em class=listener>#&lt;unspecified&gt;</em>
+&gt; <em class=typing>(definstrument (simp beg dur freq amp)
+   (let* ((o (make-oscil freq))
+          (st (inexact-&gt;exact (* beg (mus-srate))))
+          (nd (+ st (inexact-&gt;exact (* dur (mus-srate))))))
+     (run
+       (lambda ()
+         (do ((i st (1+ i)))
+             ((= i nd))
+           (outa i (* amp (oscil o)) *output*))))))</em>
+<em class=listener>#&lt;values ()&gt;</em>
+</pre></td></tr></table>
+
+<p>
+If the result of the definstrument call is <code>#&lt;unspecified&gt;</code> then cm's definstrument-hook isn't loaded into Snd's definstrument;
+if you go on anyway, you'll get some complaint that there is no class named "simp".
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td><pre>
+&gt; <em class=typing>(define (random-fn n) (process repeat n output (new simp :beg (now) :dur .1 :freq (between 220 880) :amp .1) wait .25))</em>
+<em class=listener>#&lt;unspecified&gt;</em>
+&gt; <em class=typing>(events (random-fn 10) "test.clm" 0 :output "test.snd")</em>
+<em class=listener>"test.clm"</em>
+</pre></td></tr></table>
+
+<p>and the result ("test.snd") is opened in Snd.
+</p>
+
+
+<br><br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithpd">Snd and Pd</a></h3></td></tr></table>
+
+<p>Snd can be built to be used as a Pd "external".  Use the --with-snd-as-pd-external switch, and make sure
+the configure script can find Guile 1.7.n.  If you have several versions of Guile, use the
+GUILE_CONFIG_path variable to select the latest:
+</p>
+<pre>
+./configure --with-snd-as-pd-external GUILE_CONFIG_path=/home/bil/test/bin
+</pre>
+<p>
+help-snd.pd and snd-help-fm.pd have example patches.
+Here are brief descriptions of the functions:
+</p>
+<pre>
+(<b>pd-inlet</b> inlet-num type func)
+    'func' is a function that is called when the object receives a message to the inlet 'inlet-num' of type 
+      'type'. Normal values for 'type' are 'float, 'list, 'bang, etc. 
+    add.scm, inout.scm 
+    Local function. 
+
+(<b>pd-outlet</b> outlet-num arg0 arg1 ...) 
+    Sends one or more values to outlet 'outlet-num'. The arguments can be of any kind. 
+    add.scm, inout.scm 
+    Local function. 
+
+(<b>pd-bind</b> symbol func) 
+    Pd messages sent to 'symbol' arrive at the 'func' function. 
+    send_receive.scm 
+    Both local and global 
+
+(<b>pd-unbind</b> symbol) 
+    Stop receiving messages sent to 'symbol'. 
+    Both local and global. For the local version, all bindings are automatically unbound when the object is destroyed or reloaded. 
+
+(<b>pd-send</b> symbol arg0 arg1 ...) 
+    Sends one or more values to receivers for 'symbol'. 'symbol' can either be a scheme or a pd symbol. 
+    send_receive.scm 
+    Global function. 
+
+(<b>pd-get-symbol</b> symbol) 
+    Returns the pd symbol for the scheme symbol 'symbol'. pd-send works faster when a pd symbol is used instead of a scheme symbol. 
+    send_receive.scm 
+    Global function. 
+
+(<b>pd-set-destroy-func</b> thunk) 
+    'thunk' is called before the object is destroyed or reloaded. 
+    Local function.
+</pre>
+<br>
+<img src="stochastic.png" alt="snd with pd">
+
+
+<br><br><br>
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithmotif">Snd and Motif</a></h3></td></tr></table>
+
+<p>It is possible to add your own user-interface elements using the xm module
+included with Snd.  'make xm' should create
+a shared library named xm.so; you can load this at any time into Snd:
+</p>
+<pre>
+    &gt; <em class=typing>(define hxm (dlopen "/home/bil/snd-8/xm.so"))</em>
+    <em class=listener>#&lt;unspecified&gt;</em>
+    &gt; <em class=typing>(dlinit hxm "Init_libxm")</em>
+    <em class=listener>#t</em>
+</pre>
+<p>and now we have access to all of X and Motif.  Alternatively, use the
+configure switch --with-static-xm, and the xm module will be included
+in the base Snd image.
+Here's a dialog window with a slider:</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define scale-dialog #f)
+(define current-scaler 1.0)
+
+(define (create-scale-dialog parent)
+  (if (not (Widget? scale-dialog))
+      (let ((xdismiss (XmStringCreate "Dismiss" XmFONTLIST_DEFAULT_TAG))
+	    (xhelp (XmStringCreate "Help" XmFONTLIST_DEFAULT_TAG))
+	    (titlestr (XmStringCreate "Scaling" XmFONTLIST_DEFAULT_TAG)))
+	(set! scale-dialog 
+	      (XmCreateTemplateDialog parent "Scaling"
+                (list XmNcancelLabelString   xdismiss
+		      XmNhelpLabelString     xhelp
+		      XmNautoUnmanage        #f
+		      XmNdialogTitle         titlestr
+		      XmNresizePolicy        XmRESIZE_GROW
+	              XmNnoResize            #f
+		      XmNtransient           #f)))
+	(XtAddCallback scale-dialog 
+		       XmNcancelCallback (lambda (w context info)
+					   (XtUnmanageChild scale-dialog)))
+	(XtAddCallback scale-dialog 
+		       XmNhelpCallback (lambda (w context info)
+					 (<a class=quiet href="extsnd.html#sndprint">snd-print</a> "move the slider to affect the volume")))
+	(XmStringFree xhelp)
+	(XmStringFree xdismiss)
+	(XmStringFree titlestr)
+
+	(let* ((mainform 
+		(XtCreateManagedWidget "formd" xmFormWidgetClass scale-dialog
+                  (list XmNleftAttachment    XmATTACH_FORM
+		        XmNrightAttachment   XmATTACH_FORM
+		        XmNtopAttachment     XmATTACH_FORM
+		        XmNbottomAttachment  XmATTACH_WIDGET
+		        XmNbottomWidget      (XmMessageBoxGetChild scale-dialog XmDIALOG_SEPARATOR))))
+	       (scale
+		(XtCreateManagedWidget "" xmScaleWidgetClass mainform
+		  (list XmNorientation XmHORIZONTAL
+			XmNshowValue   #t
+			XmNvalue       100
+			XmNmaximum     500
+			XmNdecimalPoints 2))))
+
+      (XtAddCallback scale XmNvalueChangedCallback (lambda (w context info)
+					     (set! current-scaler (/ (.value info) 100.0))))
+      (XtAddCallback scale XmNdragCallback (lambda (w context info)
+					     (set! current-scaler (/ (.value info) 100.0)))))))
+  (XtManageChild scale-dialog))
+
+(create-scale-dialog (cadr (<a class=quiet href="extsnd.html#mainwidgets">main-widgets</a>)))
+</pre></td></tr></table>
+
+<p>which creates a little dialog:
+</p>
+
+<img src="scldlog.png" alt="scale dialog" hspace=20 vspace=20>
+<p>
+In Ruby, this is:</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+$scale_dialog = false
+$current_scaler = 1.0
+
+def create_scale_dialog(parent)
+  if !RWidget?($scale_dialog) 
+    then
+      xdismiss = RXmStringCreate("Dismiss", RXmFONTLIST_DEFAULT_TAG)
+      xhelp = RXmStringCreate("Help", RXmFONTLIST_DEFAULT_TAG)
+      titlestr = RXmStringCreate("Scaling", RXmFONTLIST_DEFAULT_TAG)
+      $scale_dialog = RXmCreateTemplateDialog(parent, "Scaling",
+                   	[RXmNcancelLabelString,  xdismiss,
+                      	 RXmNhelpLabelString,    xhelp,
+                      	 RXmNautoUnmanage,       false,
+                      	 RXmNdialogTitle,        titlestr,
+                      	 RXmNresizePolicy,       RXmRESIZE_GROW,
+                      	 RXmNnoResize,           false,
+                       	 RXmNtransient,          false])
+      RXtAddCallback($scale_dialog, RXmNcancelCallback, 
+                     Proc.new { |w, context, info| RXtUnmanageChild($scale_dialog)})
+      RXtAddCallback($scale_dialog, RXmNhelpCallback, 
+                     Proc.new { |w, context, info| snd_print "move the slider to affect the volume"})
+      RXmStringFree xhelp
+      RXmStringFree xdismiss
+      RXmStringFree titlestr
+      mainform = RXtCreateManagedWidget("formd", RxmFormWidgetClass, $scale_dialog,
+                  	[RXmNleftAttachment,      RXmATTACH_FORM,
+                         RXmNrightAttachment,     RXmATTACH_FORM,
+                         RXmNtopAttachment,       RXmATTACH_FORM,
+                         RXmNbottomAttachment,    RXmATTACH_WIDGET,
+                         RXmNbottomWidget,        RXmMessageBoxGetChild($scale_dialog, RXmDIALOG_SEPARATOR)])
+      scale = RXtCreateManagedWidget("", RxmScaleWidgetClass, mainform,
+                  	[RXmNorientation, RXmHORIZONTAL,
+                         RXmNshowValue,   true,
+                         RXmNvalue,       100,
+                         RXmNmaximum,     500,
+                         RXmNdecimalPoints, 2])
+      RXtAddCallback(scale, RXmNvalueChangedCallback, 
+                     Proc.new { |w, context, info| $current_scaler = Rvalue(info) / 100.0})
+      RXtAddCallback(scale, RXmNdragCallback, 
+                     Proc.new { |w, context, info| $current_scaler = Rvalue(info) / 100.0})
+      RXtManageChild $scale_dialog
+    end
+end
+
+$Snd_widgets = main_widgets()
+create_scale_dialog $Snd_widgets[1]
+</pre></td></tr></table>
+
+<p>All of Snd is at your disposal once this module is loaded.
+The next function installs our own file filtering procedure into the File:Open dialog (it uses
+match-sound-files from extensions.scm):
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define (install-searcher proc)
+  (define (XmString-&gt;string str)
+    (cadr (XmStringGetLtoR str XmFONTLIST_DEFAULT_TAG)))
+  (define (XmStringTable-&gt;list st len)
+    (XmStringTableUnparse st len #f XmCHARSET_TEXT XmCHARSET_TEXT #f 0 XmOUTPUT_ALL))
+  (define (list-&gt;XmStringTable strs)
+    (XmStringTableParseStringArray strs (length strs) #f XmCHARSET_TEXT #f 0 #f))
+  (XtSetValues (let ((m (<a class=quiet href="extsnd.html#openfiledialog">open-file-dialog</a> #f)))
+                         ; make sure the dialog exists
+		  (list-ref (<a class=quiet href="extsnd.html#dialogwidgets">dialog-widgets</a>) 6))
+		(list XmNfileSearchProc                             ; set dialog file search procedure
+		       (lambda (widget info)
+			 (let* ((dir (XmString-&gt;string (dir info))) ; directory string
+				(files (<a class=quiet href="sndscm.html#matchsoundfiles">match-sound-files</a> proc dir)) ; list of matching files
+				(fileTable (list-&gt;XmStringTable      ; XmStringTable for XmNfileListItems
+                                             (map (lambda (n)        ; every file needs prepended dir
+                                                    (string-append dir n)) 
+                                                  files))))
+			   (XtSetValues widget                      ; change the list of files
+					 (list XmNfileListItems fileTable
+					       XmNfileListItemCount (length files)
+					       XmNlistUpdated #t)))))))
+
+;(install-searcher (lambda (file) (= (<a class=quiet href="extsnd.html#mussoundsrate">mus-sound-srate</a> file) 44100)))
+;(install-searcher (lambda (file) (= (<a class=quiet href="extsnd.html#mussoundchans">mus-sound-chans</a> file) 4)))
+</pre></td></tr></table>
+
+<p>Now click the 'Filter' button to see only those files that fit the procedure in
+the dialog's files list.  See snd-motif.scm and popup.scm.
+</p>
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithgtk">Snd and Gtk+</a></h3></td></tr></table>
+
+<p>There are tons of examples of using the gtk module.  snd-gtk.scm and gtk-popup.scm might be
+places to start.  All of gtk and gdk, and much of pango and glib are accessible from the
+extension language if you loaded the xg module or built Snd with the configuration switch
+--with-static-xg.
+Here's the scale-dialog in xg/gtk:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define scale-dialog #f)
+(define current-scaler 1.0)
+
+(define (create-scale-dialog parent)
+  (if (not scale-dialog)
+      (begin
+	(set! scale-dialog (gtk_dialog_new))
+	(g_signal_connect scale-dialog "delete-event"
+			     (lambda (w ev info)
+			       (gtk_widget_hide w)))
+	(gtk_window_set_title (GTK_WINDOW scale-dialog) "Scale")
+	(gtk_widget_realize scale-dialog)
+	(let ((dismiss (gtk_button_new_with_label "Dismiss"))
+	      (help (gtk_button_new_with_label "Help")))
+	  (gtk_box_pack_start (GTK_BOX (.action_area (GTK_DIALOG scale-dialog))) dismiss #t #t 4)
+	  (gtk_box_pack_end (GTK_BOX (.action_area (GTK_DIALOG scale-dialog))) help #t #t 4)	
+	  (g_signal_connect dismiss "clicked"
+			       (lambda (w info)
+				 (gtk_widget_hide scale-dialog)))
+	  (g_signal_connect help "clicked"
+			       (lambda (w info)
+				 (<a class=quiet href="extsnd.html#helpdialog">help-dialog</a> "Scaler Dialog" "move the slider to affect the volume")))
+	  (gtk_widget_show dismiss)
+	  (gtk_widget_show help)
+	  (let* ((adj (gtk_adjustment_new 0.0 0.0 1.01 0.01 0.01 .01))
+		 (scale (gtk_hscale_new (GTK_ADJUSTMENT adj))))
+	    (gtk_range_set_update_policy (GTK_RANGE (GTK_SCALE scale)) GTK_UPDATE_CONTINUOUS)
+	    (gtk_scale_set_draw_value (GTK_SCALE scale) #t)
+	    (gtk_scale_set_digits (GTK_SCALE scale) 2)
+	    (g_signal_connect adj "value_changed"
+				 (lambda (wadj info)
+				   (set! current-scaler (.value (GTK_ADJUSTMENT wadj)))))
+	    (gtk_box_pack_start (GTK_BOX (.vbox (GTK_DIALOG scale-dialog))) scale #f #f 6)
+	    (gtk_widget_show scale)))))
+  (gtk_widget_show scale-dialog))
+
+(create-scale-dialog (cadr (<a class=quiet href="extsnd.html#mainwidgets">main-widgets</a>)))
+</pre></td></tr></table>
+
+<p>The only change from the C code is the addition of GTK_ADJUSTMENT in the scale value_changed
+callback -- currently the xg module assumes the first argument to the two-argument callback is
+a GtkWidget, so we have to cast a GtkAdjustment back to its original type.
+</p>
+
+<p>Here are a couple other examples of things that aren't covered by the gtk code in snd-gtk.scm and
+friends:
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+;; report on mouse scroll wheel changes when in the channel graph
+(g_signal_connect 
+ (car (<a class=quiet href="extsnd.html#channelwidgets">channel-widgets</a>)) "scroll_event" 
+ (lambda (w e i)
+   (<a class=quiet href="extsnd.html#sndprint">snd-print</a> (format #f "~%state: ~A, x: ~A, y: ~A, direction: ~A" 
+		      (.state (GDK_EVENT_SCROLL e))
+		      (.x (GDK_EVENT_SCROLL e))
+		      (.y (GDK_EVENT_SCROLL e))
+		      (.direction (GDK_EVENT_SCROLL e))))
+   #f))
+
+;; report which kind of click was received in the channel graph
+(g_signal_connect 
+ (car (<a class=quiet href="extsnd.html#channelwidgets">channel-widgets</a>)) "button_press_event"
+ (lambda (w e i)
+   (<a class=quiet href="extsnd.html#sndprint">snd-print</a> (format #f "~%button: ~A, ~A click" 
+		      (.type (GDK_EVENT_BUTTON e))
+		      (if (= (.type (GDK_EVENT_BUTTON e)) GDK_BUTTON_PRESS)
+			  "single"
+			  (if (= (.type (GDK_EVENT_BUTTON e)) GDK_2BUTTON_PRESS)
+			      "double"
+			      (if (= (.type (GDK_EVENT_BUTTON e)) GDK_3BUTTON_PRESS)
+				  "triple"
+				  "unknown")))))
+   #f))
+
+;; a double click is reported as single/single/double
+
+;; double-click time in milliseconds(?)
+(define (double-click-time)
+  (g_object_get (GPOINTER 
+                  (gtk_settings_get_for_screen 
+                    (gdk_display_get_default_screen 
+                      (gdk_display_get_default)))) 
+                "gtk-double-click-time" #f))
+</pre></td></tr></table>
+
+<br>
+
+<!-- INDEX sndwithnogui:Scripting -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndwithnogui">Snd with no GUI and as scripting engine</a></h3></td></tr></table>
+
+<p>If Snd is built without a graphical user interface (by specifying
+--with-no-gui to configure),
+it runs the extension language's read-eval-print loop, with input from stdin.  All
+the non-interface related functions are available, so you can do things
+like:
+</p>
+
+<table border=0 cellspacing=10>
+<tr><th bgcolor="#f6f8ff" align=left>Scheme</th><th></th><th bgcolor="beige" align=left>Ruby</th><th></th><th bgcolor="lightgreen" align=left>Forth</th></tr>
+
+<tr>
+<td bgcolor="#fbfbff"><pre>
+snd
+:<em class=typing>(new-sound "test.snd")</em>
+<em class=listener>0</em>
+:<em class=typing>(mix "oboe.snd")</em>
+<em class=listener>0</em>
+:<em class=typing>(frames)</em>
+<em class=listener>50828</em>
+:<em class=typing>(play)</em>
+<em class=listener>#f</em>
+:<em class=typing>(exit)</em>
+</pre></td><td width=60></td>
+
+<td bgcolor="#FdFdf2"><pre>
+snd
+&gt; <em class=typing>new_sound("test.snd")</em>
+<em class=listener>0</em>
+&gt; <em class=typing>mix("oboe.snd")</em>
+<em class=listener>-1</em>
+&gt; <em class=typing>frames</em>
+<em class=listener>50828</em>
+&gt; <em class=typing>play</em>
+<em class=listener>false</em>
+&gt; <em class=typing>exit</em>
+</pre></td><td width=60></td>
+
+<td bgcolor="#EefdEe"><pre>
+snd
+<em class=typing>"test.snd" new-sound</em>
+<em class=listener>0 ok</em>
+<em class=typing>"oboe.snd" mix</em>
+<em class=listener>-1 ok</em>
+<em class=typing>frames</em>
+<em class=listener>50828 ok</em>
+<em class=typing>play</em>
+<em class=listener>#f ok</em>
+<em class=typing>snd-exit</em>
+</pre></td>
+</tr>
+</table>
+
+
+<p>
+Since there's no graphics toolkit event loop to get in your way, you 
+can treat this version of Snd as a scripting engine.  For example,
+if you have an executable file with:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa">
+<pre>
+#!/home/bil/test/snd-8/snd -l
+!#
+(define a-test 32)
+(display "hiho")
+(newline)
+</pre></td></tr></table>
+
+<p>it can be executed just like any such script.
+</p>
+<pre>
+    /home/bil/test/snd-8/ script
+    hiho
+    :a-test
+    32
+    :(<a class=quiet href="extsnd.html#exit">exit</a>)
+    /home/bil/test/snd-8/ 
+</pre>
+<p>The difference between this use of Snd, and using guile itself
+for scripts is that Snd uses the -l switch where guile would use -s.
+As noted above, you can use the -e switch to use Snd as a pure
+command-line program, and, of course, (<a class=quiet href="extsnd.html#exit">exit</a>) to drop back to the shell.
+Here's a script that doubles every sample in "oboe.snd" and
+writes the result as "test.snd":
+</p>
+
+
+<table border=0 cellspacing=10>
+<tr><th bgcolor="#f6f8ff" align=left>Scheme</th><th></th><th bgcolor="beige" align=left>Ruby</th><th></th><th bgcolor="lightgreen" align=left>Forth</th></tr>
+
+<tr>
+<td bgcolor="#fbfbff"><pre>
+#!/home/bil/snd-8/snd -l
+!#
+(open-sound "oboe.snd")
+(scale-by 2.0)
+(save-sound-as "test.snd")
+(exit)
+</pre></td><td width=60></td>
+
+<td bgcolor="#FdFdf2"><pre>
+#!/home/bil/snd-8/snd -batch
+open_sound "oboe.snd"
+scale_by 2.0
+save_sound_as "test.snd"
+exit
+</pre></td><td width=60></td>
+
+<td bgcolor="#EefdEe"><pre>
+#! /usr/bin/env /home/bil/forth-snd/snd
+"oboe.snd" open-sound drop
+2.0 #f #f scale-by drop
+"test.snd" save-sound-as
+snd-exit
+</pre></td>
+</tr>
+</table>
+
+
+<p>The functions <b>script-args</b> and <b>script-arg</b> can be used
+to access the script's arguments, and if necessary (if not exiting)
+tell Snd to ignore arguments.  script-args returns a list of strings
+giving the arguments.  The first two are always "-l" and the script
+file name. The current argument is (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>).  If you set this to
+a higher value, Snd will subsequently ignore the intervening arguments
+as it scans the startup arguments (see snd-test.scm).
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+#!/home/bil/test/snd-8/snd -l
+!#
+(if (= (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>)) 2) ;i.e. ("-l" "script")
+  (display "usage: script file-name...")
+  (begin
+    (<a class=quiet href="extsnd.html#opensound">open-sound</a> (list-ref (<a class=quiet href="extsnd.html#scriptargs">script-args</a>) (+ (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>) 1)))
+    (<a class=quiet href="extsnd.html#scaleby">scale-by</a> 2.0)
+    (<a class=quiet href="extsnd.html#savesoundas">save-sound-as</a> "test.snd")))
+(<a class=quiet href="extsnd.html#exit">exit</a>)
+</pre></td></tr></table>
+
+<p>This either grumbles if no argument is given,
+or scales its argument sound by 2.0:
+</p>
+<pre>
+    script pistol.snd
+</pre>
+<p>And we can run through the entire argument list,
+doubling all the sounds or whatever by using a do loop --
+the following displays all the comments it finds:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+#!/home/bil/cl/snd -l
+!#
+(use-modules (ice-9 format))
+(if (= (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>)) 2) ;i.e. ("-l" "script")
+  (display "usage: script file-name...")
+  (do ((arg (+ (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>) 1) (1+ arg)))
+      ((= arg (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>))))
+    (let ((name (list-ref (<a class=quiet href="extsnd.html#scriptargs">script-args</a>) arg)))
+      (display (format #f "~A: ~A~%" name (<a class=quiet href="extsnd.html#mussoundcomment">mus-sound-comment</a> name))))))
+(<a class=quiet href="extsnd.html#exit">exit</a>)
+</pre></td></tr></table>
+
+<p>
+Say we save this as the file "comments".</p>
+<pre>
+    /home/bil/cl/comments *.snd
+</pre>
+<p>If you like, you can use env:</p>
+<pre>
+    #!/usr/bin/env snd
+    !#
+</pre>
+<p>But if that works, so will:</p>
+<pre>
+    #!snd -l
+    !#
+</pre>
+<p>
+This scripting mechanism actually will work in any version of Snd;
+to keep the Snd window from popping up, use the -b (-batch) switch in
+place of -l.
+Here's another script; it looks for any sounds that are longer
+than 40 seconds in duration, and truncates them to 40 seconds:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+#!/usr/local/bin/snd -l
+!#
+(if (= (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>)) 2)
+  (display "usage: trunc.scm file-name...")
+  (do ((arg (+ (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>) 1) (1+ arg)))
+      ((= arg (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>))))
+    (let* ((name (list-ref (<a class=quiet href="extsnd.html#scriptargs">script-args</a>) arg)))
+      (if (&gt; (<a class=quiet href="extsnd.html#mussoundduration">mus-sound-duration</a> name) 40.0)
+	  (let* ((ind (<a class=quiet href="extsnd.html#opensound">open-sound</a> name)))
+	    (set! (<a class=quiet href="extsnd.html#frames">frames</a> ind) (* 40 (<a class=quiet href="extsnd.html#srate">srate</a> ind)))
+	    (<a class=quiet href="extsnd.html#savesound">save-sound</a> ind)
+	    (<a class=quiet href="extsnd.html#closesound">close-sound</a> ind))))))
+(<a class=quiet href="extsnd.html#exit">exit</a>)
+</pre></td></tr></table>
+
+<p>Here's a sndplay replacement script:</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+#!snd -b
+!#
+(<a class=quiet href="extsnd.html#playandwait">play-and-wait</a> (list-ref (<a class=quiet href="extsnd.html#scriptargs">script-args</a>) (+ (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>) 1)))
+(<a class=quiet href="extsnd.html#exit">exit</a>)
+</pre></td></tr></table>
+
+<p>And here's a script that splits a multichannel file
+into a bunch of mono files:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+#!snd -b
+!#
+(if (= (length (<a class=quiet href="extsnd.html#scriptargs">script-args</a>)) 2)
+  (display "usage: split.scm filename")
+  (let* ((name (list-ref (<a class=quiet href="extsnd.html#scriptargs">script-args</a>) (1+ (<a class=quiet href="extsnd.html#scriptarg">script-arg</a>))))
+	 (chns (<a class=quiet href="extsnd.html#mussoundchans">mus-sound-chans</a> name)))
+    (if (&gt; chns 1)
+	(let ((ind (<a class=quiet href="extsnd.html#opensound">open-sound</a> name)))
+	  (do ((i 0 (1+ i)))
+	      ((= i chns))
+	    (display (format #f "~A.~D " name i))
+	    (<a class=quiet href="extsnd.html#savesoundas">save-sound-as</a> (format #f "~A.~D" name i)
+			   ind
+			   (<a class=quiet href="extsnd.html#headertype">header-type</a> ind)
+			   (<a class=quiet href="extsnd.html#dataformat">data-format</a> ind)
+			   (<a class=quiet href="extsnd.html#srate">srate</a> ind)
+			   i))
+	  (<a class=quiet href="extsnd.html#closesound">close-sound</a> ind)))))
+(<a class=quiet href="extsnd.html#exit">exit</a>)
+</pre></td></tr></table>
+
+<br>
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandruby">Snd with Ruby</a></h3></td></tr></table>
+
+<p>Ruby is an extension language described as an "object-oriented Perl".
+It provides a different syntax from that of Scheme; all the *.scm
+files have corresponding *.rb files (written by Mike Scholz), so there's
+no penalty for using Ruby rather than Scheme.  The only drawback is that
+all the documentation assumes Scheme.  The differences however, are not
+too severe.
+In Ruby, all
+the "-" are "_", "-&gt;" is "2", hooks and current_sound have "$" prepended
+(since they are global variables from Ruby's point of view), and all the constants are capitalized
+(e.g. Autocorrelation).  The generalized set! functions are replaced
+by "set_" plus the base name (e.g. set_window_width), with arguments
+reordered in some cases to place the optional values after the new value.  That is,
+<code>(set! (<a class=quiet href="extsnd.html#sync">sync</a> snd) 1)</code> becomes <code>set_sync(1, snd)</code>.
+Hooks in Ruby (which have little or nothing to do with Ruby's "hookable variables")
+are just procedures or nil, not lists of procedures as in Scheme.
+Here's a Ruby version of the init file given
+above:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+set_window_width 800
+set_window_height 500
+
+set_listener_font "9x15"
+set_axis_numbers_font "9x15"
+
+set_show_mix_waveforms true
+set_trap_segfault false
+set_show_backtrace true
+set_show_indices true
+
+set_listener_prompt ":"
+show_listener
+
+beige = make_color 0.96, 0.96, 0.86
+blue = make_color 0, 0, 1
+set_selected_graph_color beige
+set_selected_data_color blue
+</pre></td></tr></table>
+
+<p>Procedures are created via Proc.new, so to set the open-hook to print the
+file name,
+</p>
+<pre>
+    &gt;<em class=typing>$open_hook = Proc.new { |name| snd_print name }</em>
+    <em class=listener>#&lt;Proc:0x40221b84&gt;</em>
+    &gt;<em class=typing>open_sound "oboe.snd"</em>
+    <em class=listener>/home/bil/cl/oboe.snd
+    0</em>
+</pre>
+<p>(The trailing "0" is the result of open_sound).
+The Scheme hook list support procedures aren't included in Ruby --
+simply set the variable to the procedure you want, or false to clear it.
+</p>
+<p>Vcts and sound-data objects mixin "Comparable" and "Enumerable", and respond to various array-like methods:
+</p>
+<pre>
+    &gt;<em class=typing>v1 = make_vct 4</em>
+    <em class=listener>#&lt;vct[len=4]: 0.000 0.000 0.000 0.000&gt;</em>
+    &gt;<em class=typing>v1[3] = 1.0</em>
+    <em class=listener>1.0</em>
+    &gt;<em class=typing>v1.sort</em>
+    <em class=listener>0.00.00.01.0</em> # I don't know why it prints this way but ...
+    &gt;<em class=typing>v1</em>
+    <em class=listener>#&lt;vct[len=4]: 0.000 0.000 0.000 1.000&gt;</em>
+    &gt;<em class=typing>v1.max</em>
+    <em class=listener>1.0</em>
+</pre>
+<p>
+Keywords, CLM generic functions, and optional arguments work as in Scheme:
+</p>
+<pre>
+    &gt;<em class=typing>osc = make_oscil(:frequency, 440)</em>
+    <em class=listener>oscil freq: 440.000Hz, phase: 0.000</em>
+    &gt;<em class=typing>oscil osc</em>
+    <em class=listener>0.0</em>
+    &gt;<em class=typing>oscil osc</em>
+    <em class=listener>0.1250506192</em>
+    &gt;<em class=typing>osc.frequency</em>
+    <em class=listener>440.0</em>
+</pre>
+<p>Lists (from the Scheme point of view) are arrays (vectors) in Ruby.
+Here's one more example, a translation of display-energy in draw.scm:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+def display_energy(snd, chn)
+  ls = left_sample
+  rs = right_sample
+  data1 = make_graph_data(snd, chn)
+  data = data1
+  if not vct? data
+    data = data1[1]
+  end
+  len = vct_length data
+  sr = srate snd
+  y_max = y_zoom_slider(snd, chn)
+  vct_multiply!(data, data)
+  graph(data, "energy", ls / sr, rs / sr, 0.0, y_max * y_max, snd, chn, false)
+  end
+
+# $lisp_graph_hook = Proc.new {|snd, chn| display_energy(snd, chn)}
+</pre></td></tr></table>
+
+<p>
+In Ruby you make a symbol by prepending ":", so Scheme's
+</p>
+<pre>
+    (list 'KeySym (char-&gt;integer #\F))
+</pre> 
+<p>becomes</p>
+<pre>
+    [:KeySym, ?F]
+</pre>
+
+<p>In the listener, everything is line-oriented (that is, I'm not trying to
+catch incomplete expressions).  And it appears that in Ruby, variables defined
+within a file are considered local to that file(?).
+My very informal timing tests indicate that
+Guile and Ruby run at the same speed.
+For Ruby as an Emacs subjob, see inf-snd.el.
+</p>
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandforth">Snd with Forth</a></h3></td></tr></table>
+
+<p>Snd can be built to use Forth as its extension language.  Forth is available at:
+</p>
+<pre>
+    http://sourceforge.net/projects/fth
+</pre>
+<p>An example initialization file (~/.snd_forth) is given in the <a href="#sndinitfile">initialization</a> section.
+Mike Scholz (creator of the Forth library we use) has provided a bunch of Forth files along the lines of the
+Scheme and Ruby files described above -- see *.fs.  See also Mike's very fine documentation in the fth package.
+Here's an example from his fth.texi file showing how to define an instrument and use it in with-sound:
+</p>
+
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+instrument: src-simp { start dur amp sr sr-env fname -- }
+    :file fname make-readin { f }
+    :input f input-fn :srate sr make-src { sr }
+    :envelope sr-env :duration dur make-env { en }
+    start dur run
+        i                 \ sample position for outa
+        sr en env #f src
+        amp f*
+        *output* outa drop
+    loop
+    f mus-close drop
+;instrument
+"/usr/gnu/sound/SFiles/fyow.snd" value fyow-snd
+#( 0.0 0.0 50.0 1.0 100.0 0.0 ) value sr-env
+0.0 1.5 0.5 0.2 sr-env array-&gt;list fyow-snd ' src-simp with-sound
+</pre></td></tr></table>
+
+<br><br>
+
+<!-- INDEX sndandladspa:Plugins -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandladspa">Snd and LADSPA Plugins</a></h3></td></tr></table>
+
+<pre>
+  <a class=def name="initladspa">init-ladspa</a>
+  <a class=def name="listladspa">list-ladspa</a>
+  <a class=def name="analyseladspa">analyse-ladspa</a> library plugin [also <b>analyze-ladspa</b>]
+  <a class=def name="ladspadescriptor">ladspa-descriptor</a> library plugin
+  <a class=def name="applyladspa">apply-ladspa</a> reader data duration origin
+
+  <em class=emdef>ladspa-instantiate</em> descriptor srate
+  <em class=emdef>ladspa-activate</em> descriptor handle
+  <em class=emdef>ladspa-deactivate</em> descriptor handle
+  <em class=emdef>ladspa-cleanup</em> descriptor handle
+  <em class=emdef>ladspa-connect-port</em> descriptor handle port vct
+  <em class=emdef>ladspa-run</em> descriptor handle count
+  <em class=emdef>ladspa-run-adding</em> descriptor handle count
+  <em class=emdef>ladspa-set-run-adding-gain</em> descriptor handle gain
+</pre>
+
+<p>Richard Furse has provided a module to support LADSPA plugins in Snd.
+Here is his documentation:</p>
+<pre>
+Supporting functions are:
+
+	(init-ladspa)
+
+	Performs a search of LADSPA_PATH for plugins, doesn't need to be called 
+as LADSPA automatically initialises on first use however can be used to 
+reinitialise if new plugins have arrived.
+
+	(list-ladspa)
+
+	Returns a list of lists where each inner list contains a string to 
+identify the plugin library and a string to identify the plugin type within 
+the library.
+
+	(analyse-ladspa plugin-library plugin-type)
+
+	Returns a list of assorted data about a particular plugin including a 
+list of port descriptions. plugin-library and plugin-type are as provided 
+by list-ladspa.
+
+The main function is:
+
+	(apply-ladspa reader (plugin-library plugin-type [param1 [param2 ...]]) samples origin)
+
+	Applies a LADSPA plugin to a block of samples. 
+An example call to apply the low-pass-filter in the CMT plugin library is 
+(apply-ladspa (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a> 0) (list "cmt" "lpf" 1000) 10000 "origin").
+</pre>
+<p>Dave Phillips in <a href="http://www.oreillynet.com/pub/a/linux/2001/02/02/ladspa.html">Linux Audio Plug-Ins: A Look Into LADSPA</a> adds this:
+</p>
+<pre>
+  (apply-ladspa (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a> 57264) (list "cmt" "delay_5s" .3 .5) 32556 "ibm.wav")
+</pre>
+<p>
+"This sequence tells Snd to read a block of 32556 samples from the ibm.wav file, starting at sample number 57264,
+ and apply the delay_5s LADSPA plug-in (Richard Furse's delay plug-in, also found in cmt.so) with a delay time of
+.3 seconds and a 50/50 dry/wet balance."
+</p>
+<p>To help Snd find the plugin library, set either the Snd variable <a href="extsnd.html#ladspadir">ladspa-dir</a> or the environment variable LADSPA_PATH
+to the directory.
+If, for example,
+cmt.so is in /usr/local/lib/ladspa, (and you're using tcsh), then
+</p>
+<pre>
+  setenv LADSPA_PATH /usr/local/lib/ladspa
+</pre>
+<p>or</p>
+<pre>
+  (set! (ladspa-dir) "/usr/local/lib/ladspa")
+</pre>
+<p>Snd plugins may have any number of inputs and outputs; if more
+than one input is required, the first argument to apply-ladspa should be a list of readers:
+</p>
+<pre>
+  (apply-ladspa (list (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a> 0 0 0)  ;chan 0
+                      (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a> 0 0 1)) ;chan 1
+                (list "cmt" "freeverb3" 0 .5 .5 .5 .5 .5) 
+                100000 "freeverb")
+</pre>
+<p><a name="ladspachannel"></a>The "regularized" version of apply-ladspa could be defined:
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define* (ladspa-channel ladspa-data #:optional nbeg ndur nsnd nchn nedpos)
+  (let* ((beg (or nbeg 0)) 
+	 (snd (or nsnd (<a class=quiet href="extsnd.html#selectedsound">selected-sound</a>) (car (<a class=quiet href="extsnd.html#sounds">sounds</a>))))
+	 (chn (or nchn (<a class=quiet href="extsnd.html#selectedchannel">selected-channel</a>)))
+	 (dur (or ndur (- (<a class=quiet href="extsnd.html#frames">frames</a> snd chn) beg)))
+	 (edpos (or nedpos current-edit-position))
+	 (reader (<a class=quiet href="extsnd.html#makesamplereader">make-sample-reader</a> beg snd chn 1 edpos)))
+    (<em class=red>apply-ladspa</em> reader ladspa-data dur "apply-ladspa")
+    (<a class=quiet href="extsnd.html#freesamplereader">free-sample-reader</a> reader)))
+</pre></td></tr></table>
+<p>There are also functions to access the LADSPA descriptor directly:
+</p>
+<pre>
+    (define ptr (ladspa-descriptor "amp" "amp_mono"))
+    (.Label ptr)
+        "amp_mono"
+    (.Name ptr)
+        "Mono Amplifier"
+    (.Copyright ptr)
+        "None"
+    (.Maker ptr)
+        "Richard Furse (LADSPA example plugins)"
+    (.Properties ptr)
+        4
+    (.UniqueID ptr)
+        1048
+    (.PortNames ptr)
+        ("Gain" "Input" "Output")
+    (.PortRangeHints ptr)
+        ((593 0.0 0.0) (0 0.0 0.0) (0 0.0 0.0))
+    (.PortCount ptr)
+        3
+    (.PortDescriptors ptr)
+        (5 9 10)
+    (logand (cadr (.PortDescriptors ptr)) LADSPA_PORT_INPUT)
+        1
+</pre>
+<p>See ladspa.h for full details. We could replace analyse-ladspa using these functions:
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define (analyze-ladspa library label)
+  (let* ((descriptor (<em class=red>ladspa-descriptor</em> library label))
+	 (data '())
+	 (names (.PortNames descriptor))
+	 (hints (.PortRangeHints descriptor))
+	 (descriptors (.PortDescriptors descriptor))
+	 (name (.Name descriptor))
+	 (maker (.Maker descriptor))
+	 (copy (.Copyright descriptor)))
+    (for-each
+     (lambda (port ranges port-name)
+       (if (and (not (= (logand port LADSPA_PORT_CONTROL) 0))
+		(not (= (logand port LADSPA_PORT_INPUT) 0)))
+	   (let ((ldata '())
+		 (hint (car ranges))
+		 (lo (cadr ranges))
+		 (hi (caddr ranges)))
+	     (if (not (= (logand hint LADSPA_HINT_TOGGLED) 0)) (set! ldata (cons "toggle" ldata)))
+	     (if (not (= (logand hint LADSPA_HINT_LOGARITHMIC) 0)) (set! ldata (cons "logarithmic" ldata)))
+	     (if (not (= (logand hint LADSPA_HINT_INTEGER) 0)) (set! ldata (cons "integer" ldata)))
+	     (if (not (= (logand hint LADSPA_HINT_SAMPLE_RATE) 0)) (set! ldata (cons "sample_rate" ldata)))
+	     (if (not (= (logand hint LADSPA_HINT_BOUNDED_ABOVE) 0)) 
+		 (begin
+		   (set! ldata (cons hi ldata))
+		   (set! ldata (cons "maximum" ldata))))
+	     (if (not (= (logand hint LADSPA_HINT_BOUNDED_BELOW) 0) )
+		 (begin
+		   (set! ldata (cons lo ldata))
+		   (set! ldata (cons "minimum" ldata))))
+	     (set! ldata (cons port-name ldata))
+	     (set! data (cons ldata data)))))
+     descriptors hints names)
+    (append (list name maker copy) data)))
+</pre></td></tr></table>
+<p>Here's a function that processes a channel of data through a plugin, sending the 
+data directly to the DAC:
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define* (ladspa-it library label #:rest plugin-parameters)
+  ;; (ladspa-it "cmt" "delay_5s" .3 .5)
+  (init-ladspa)
+  (let* ((descriptor (ladspa-descriptor library label))
+	 (handle (ladspa-instantiate descriptor (<a class=quiet href="extsnd.html#srate">srate</a>)))
+	 (block-size 256)
+	 (in-block (<a class=quiet href="extsnd.html#makevct">make-vct</a> block-size))
+	 (out-block (<a class=quiet href="extsnd.html#makevct">make-vct</a> block-size))
+	 (len (<a class=quiet href="extsnd.html#frames">frames</a>))
+	 (data (<a class=quiet href="extsnd.html#makesounddata">make-sound-data</a> 1 block-size))
+	 (audio-port (<a class=quiet href="extsnd.html#musaudioopenoutput">mus-audio-open-output</a> mus-audio-default (<a class=quiet href="extsnd.html#srate">srate</a>) 1 mus-lshort (* block-size 2))))
+  (dynamic-wind
+   (lambda ()
+     (let ((count 0))
+       (for-each 
+	(lambda (port)
+	  (if (not (= (logand port LADSPA_PORT_CONTROL) 0))
+	      (let ((parameter (<a class=quiet href="extsnd.html#makevct">make-vct</a> 1 (car plugin-parameters))))
+		(set! plugin-parameters (cdr plugin-parameters))
+		(ladspa-connect-port descriptor handle count parameter))
+	      (if (not (= (logand port LADSPA_PORT_INPUT) 0))
+		  (ladspa-connect-port descriptor handle count in-block)
+		  (ladspa-connect-port descriptor handle count out-block)))
+	  (set! count (1+ count)))
+	(.PortDescriptors descriptor))))
+   (lambda ()
+     (ladspa-activate descriptor handle)
+     (do ((i 0 (+ i block-size)))
+	 ((&gt;= i len))
+       (<a class=quiet href="extsnd.html#vctsubseq">vct-subseq</a> (<a class=quiet href="extsnd.html#channeltovct">channel-&gt;vct</a> i block-size) 0 block-size in-block)
+       (ladspa-run descriptor handle block-size)
+       (<a class=quiet href="extsnd.html#vcttosounddata">vct-&gt;sound-data</a> out-block data 0)
+       (<a class=quiet href="extsnd.html#musaudiowrite">mus-audio-write</a> audio-port data block-size)))
+   (lambda ()
+     (ladspa-deactivate descriptor handle)
+     (<a class=quiet href="extsnd.html#musaudioclose">mus-audio-close</a> audio-port)
+     (ladspa-cleanup descriptor handle)))))
+</pre></td></tr></table>
+<p>For a Ladspa GUI builder, see <a href="sndscm.html#ladspadoc">ladspa.scm</a>.
+One slight "gotcha"
+in this area: the Snd configuration switch --with-doubles causes "vcts" to
+be arrays of doubles, but Ladspa plugins expect to see arrays of floats.
+This is a problem only if you're calling ladpsa-connect-port yourself.
+</p>
+<br>
+
+<!-- INDEX sndandalsa:Alsa -->
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandalsa">Snd and ALSA</a></h3></td></tr></table>
+
+<p>
+(This section is a lightly edited copy of some notes Fernando sent me).
+The default ALSA device in Snd is "default".  This virtual device tries to play sounds at any sampling rate,
+provide any number of input channels, handle data format conversions, and so on.  Experts will probably
+want to use the "hw:0" device instead (this is the first hardware device; "hw:1" is the second, and so on),
+but in that case, ALSA provides only whatever sampling rates the hardware provides. 
+To change the device, or the internal buffering amounts, you can either set up environment
+variables, or use the parallel Scheme/Ruby/Forth variables mus-alsa-*. The environment
+variables are:
+</p>
+<table hspace=20>
+<tr><td width=250>MUS_ALSA_PLAYBACK_DEVICE</td><td>name of playback device ("default")</td></tr>
+<tr><td>MUS_ALSA_CAPTURE_DEVICE</td><td>name of capture (recording) device ("default")</td></tr>
+<tr><td>MUS_ALSA_DEVICE</td><td>name of the playback and capture device ("sndlib")</td></tr>
+<tr><td>MUS_ALSA_BUFFERS</td><td>number of "periods" (buffers) used</td></tr>
+<tr><td>MUS_ALSA_BUFFER_SIZE</td><td>number of samples per channel per buffer</td></tr>
+</table>
+<p>
+These can be set either in your shell initialization file (~/.cshrc for tcsh), or in the
+shell:
+</p>
+<pre>
+    setenv MUS_ALSA_DEVICE "hw:0"   ; tcsh
+    MUS_ALSA_DEVICE="hw:0"          ; bash
+</pre>
+<p>
+or run Snd with a temporary setting:
+</p>
+<pre>
+    MUS_ALSA_DEVICE="plughw:0" snd somefile.wav
+</pre>
+<p>
+The parallel variables (for ~/.snd and friends, or at any time in the listener), are:
+</p>
+<table hspace=20>
+<tr><td width=250>mus-alsa-playback-device</td><td>name of playback device ("default")</td></tr>
+<tr><td>mus-alsa-capture-device</td><td>name of capture (recording) device ("default")</td></tr>
+<tr><td>mus-alsa-device</td><td>name of the playback and capture device ("sndlib")</td></tr>
+<tr><td>mus-alsa-buffers</td><td>number of "periods" (buffers) used</td></tr>
+<tr><td>mus-alsa-buffer-size</td><td>number of samples per channel per buffer</td></tr>
+</table>
+<p>
+So, to use the "plughw" device, we could:
+</p>
+<pre>
+    (set! (mus-alsa-device) "plughw:0")
+</pre>
+<p>
+Similarly, if you know which device you want to record from (say your arecord command is
+"arecord -D hw:0.2"), you can tell Snd's recorder to use that device via:
+</p>
+<pre>
+    setenv MUS_ALSA_CAPTURE_DEVICE "hw:0.2"
+</pre>
+<p>
+or
+</p>
+<pre>
+    (set! (mus-alsa-capture-device) "hw:0.2")
+</pre>
+<p>It's also possible to define your own device, apparently, but that part
+of ALSA is beyond my ken.
+</p>
+
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandx">Driving Snd remotely</a></h3></td></tr></table>
+
+<p>It is possible to send Snd arbitrary Scheme, Ruby, or Forth code from any other program;
+see the program sndctrl.c.  Snd has two X window properties:
+"SND_VERSION" and "SND_COMMAND"; the former is the Snd version (a date),
+and the latter is the communication path for other programs.  Any time
+such a program changes the SND_COMMAND property, Snd notices and evaluates
+the new value (as a string, as if typed in the Snd listener).  To get
+a response from Snd, use <code>(set! (window-property consat name) command)</code> where
+'consat' is the property name Snd should search for (to find the sending window), 
+'name' is the property to change (the X window property that Snd will change), and 
+'command' is the string
+that replaces the current property value (which Snd will evaluate).
+CLM's communication
+with Snd function sends Snd this string:</p>
+<pre>
+    "(set! (<a class=quiet href="extsnd.html#windowproperty">window-property</a> \"CLM_VERSION\" \"CLM_COMMAND\") " str ")"
+</pre>
+<p>where 'str' is the form to be evaluated within Snd.  It then waits
+for a change to the CLM_COMMAND property, returning its value to the
+user. The send-snd function itself, similarly, looks for SND_VERSION and
+sets SND_COMMAND to 'str', which Snd subsequently notices.
+</p>
+<br>
+
+<table width="80%" border=0><tr><td bgcolor="lightsteelblue" valign="middle"><h3><A NAME="sndandgl">Snd and OpenGL</a></h3></td></tr></table>
+
+<p>Snd can be used in conjunction with OpenGL.  If it is configured
+with the switch --with-gl or --with-just-gl, the top level Snd shell
+is setup to handle OpenGL graphics.  These are used automatically by
+the spectrogram display; the colormap is set by either the View:Colors
+dialog or <a href="extsnd.html#colormap">colormap</a>, and the orientation
+is set by either the View:Orientation dialog or the various spectro-*
+variables.
+</p>
+<img src="nowgl.png" alt="gl">
+<p>
+The GL-to-Scheme bindings are in gl.c, and follow the same name and type
+conventions of the Motif bindings in xm.c.
+Any of the Snd drawing area widgets (or your own) can receive GL graphics
+commands.  Here is a translation of the SGI/xjournal glxmotif
+program:
+</p>
+<table border=0 cellpadding=5 hspace=20><tr><td bgcolor="#fafafa"><pre>
+(define (draw-it)
+  (glXMakeCurrent (XtDisplay (cadr (<a class=quiet href="extsnd.html#mainwidgets">main-widgets</a>))) 
+		  (XtWindow (car (<a class=quiet href="extsnd.html#channelwidgets">channel-widgets</a>)))
+		  (snd-glx-context)) ; the GL context
+  (glEnable GL_DEPTH_TEST)
+  (glDepthFunc GL_LEQUAL)
+  (glClearDepth 1.0)
+  (glClearColor 0.0 0.0 0.0 0.0)
+  (glLoadIdentity)
+  (gluPerspective 40.0 1.0 10.0 200.0)
+  (glTranslatef 0.0 0.0 -50.0)
+  (glRotatef -58.0 0.0 1.0 0.0)
+  (let ((vals (XtVaGetValues (car (<a class=quiet href="extsnd.html#channelwidgets">channel-widgets</a>)) (list XmNwidth 0 XmNheight 0))))
+    (glViewport 0 0 (list-ref vals 1) (list-ref vals 3)))
+  (glClear (logior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+  (glBegin GL_POLYGON)
+  (glColor3f 0.0 0.0 0.0)   (glVertex3f -10.0 -10.0 0.0)
+  (glColor3f 0.7 0.7 0.7)   (glVertex3f 10.0 -10.0 0.0)
+  (glColor3f 1.0 1.0 1.0)   (glVertex3f -10.0 10.0 0.0)
+  (glEnd)
+  (glBegin GL_POLYGON)
+  (glColor3f 1.0 1.0 0.0)   (glVertex3f 0.0 -10.0 -10.0)
+  (glColor3f 0.0 1.0 0.7)   (glVertex3f 0.0 -10.0 10.0)
+  (glColor3f 0.0 0.0 1.0)   (glVertex3f 0.0 5.0 -10.0)
+  (glEnd)
+  (glBegin GL_POLYGON)
+  (glColor3f 1.0 1.0 0.0)   (glVertex3f -10.0 6.0 4.0)
+  (glColor3f 1.0 0.0 1.0)   (glVertex3f -10.0 3.0 4.0)
+  (glColor3f 0.0 0.0 1.0)   (glVertex3f 4.0 -9.0 -10.0)
+  (glColor3f 1.0 0.0 1.0)   (glVertex3f 4.0 -6.0 -10.0)
+  (glEnd)
+  (glXSwapBuffers (XtDisplay (cadr (<a class=quiet href="extsnd.html#mainwidgets">main-widgets</a>))) 
+		  (XtWindow (car (<a class=quiet href="extsnd.html#channelwidgets">channel-widgets</a>))))
+  (glFlush))
+</pre></td></tr></table>
+<br>
+<p>See snd-gl.scm.  To turn these graphs into Postscript files, include the --with-gl2ps switch
+at configuration time, and use the <a href="extsnd.html#glgraphtops">gl-graph-&gt;ps</a> function.
+</p>
+<br>
+<table border hspace=20>
+<tr><td colspan=2><center>GL spectrogram</center></td></tr>
+<tr><td colspan=2>
+<img src="gl1.png" alt="now.snd GL spectrogram">
+</td></tr></table>
+<br><br>
+
+
+<center>
+<table bgcolor="aliceblue" border=0 cellspacing=8><tr>
+<td><small>related documentation:</small></td>
+<td><small><a href="snd.html" onmouseover="return escape('basic Snd user-interface documentation')">snd.html</a></small></td>
+<td><small><a href="extsnd.html" onmouseover="return escape('Snd extension and customization')">extsnd.html</a></small></td>
+<td><small><a href="sndscm.html" onmouseover="return escape('Scheme, Ruby, and Forth files included with Snd')">sndscm.html</a></small></td>
+<td><small><a href="clm.html" onmouseover="return escape('sound synthesis generators, with-sound, instruments')">clm.html</a></small></td>
+<td><small><a href="sndlib.html" onmouseover="return escape('library that handles sound files')">sndlib.html</a></small></td>
+<td><small><a href="libxm.html" onmouseover="return escape('library that ties Motif and Gtk into Snd')">libxm.html</a></small></td>
+<td><small><a href="index.html" onmouseover="return escape('an actual index, not some introductory file')">index.html</a></small></td>
+</tr></table>
+</center>
+
+<script language=JavaScript type="text/javascript" src="wz_tooltip.js"></script>
+</body></html>

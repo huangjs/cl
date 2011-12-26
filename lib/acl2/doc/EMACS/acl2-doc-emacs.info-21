@@ -1,0 +1,990 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-EVALUATION-EXAMPLES-SCRIPT,  Next: GUARD-EVALUATION-TABLE,  Prev: GUARD-EVALUATION-EXAMPLES-LOG,  Up: GUARD
+
+GUARD-EVALUATION-EXAMPLES-SCRIPT    a script to show combinations of defun-modes and guard-checking
+
+Below is a script that illustrates the combination of defun-modes --
+:program mode, :logic mode without guards verified, and :logic mode
+with guards verified -- with values from set-guard-checking -- t (the
+default), :all, :none, and nil.  (It does not illustrate the value
+:nowarn, which is the same as t except for inhibiting a warning.)  The
+script also illustrates cases where the guard is not, or is, t.
+
+See *Note GUARD-EVALUATION-EXAMPLES-LOG:: for result of running this
+script.  Before presenting the script below, we give some instructions
+in case you want to run it yourself.
+
+See *Note SET-GUARD-CHECKING:: for discussion of the interaction between
+defun-modes and guard-checking that is illustrated by this script.
+Also see *note GUARD-EVALUATION-TABLE:: for a succinct table, with
+associated discussion, that covers in detail the interactions
+illustrated here.
+
+The script mentions the running of "Tracing Code".  The code is the
+following sequence of commands.
+
+     (trace$ fact)
+     :set-guard-checking t
+     (fact 2)
+     (fact t)
+     :set-guard-checking :all
+     (fact 2)
+     (fact t)
+     :set-guard-checking :none
+     (fact 2)
+     (fact t)
+     :set-guard-checking nil
+     (fact 2)
+     (fact t)
+
+If you want to run the script yourself, you may find it handy to use the
+following Emacs keyboard macro for running the tracing code in 2-window
+mode, with the cursor in the window with the script and ACL2 running in
+the other window.
+
+     (fset 'step-guard-script
+        [?C-a ?C-  ?C-e ?M-w ?C-a ?C-n
+         ?C-x ?o ?M-> ?C-y return ?C-x ?o])
+     
+     ; Put it on a key (if you have defined the indicated keymap by using
+     ; emacs/emacs-acl2.el):
+     (define-key ctl-t-keymap "r" 'step-guard-script)
+
+The script follows.
+
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;; Program mode
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     (defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :mode :program))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     ; Run the Tracing Code here.  It shows execution in raw Lisp in the t and nil
+     ; cases of :set-guard-checking, but not in the :all or :none cases.  We get a
+     ; guard violation for argument t in the case :set-guard-checking t.
+     
+     :u
+     
+     (defun fact (x)
+              (declare (xargs :guard t
+                              :mode :program))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     ; Run the Tracing Code here.  It should give the same results as above,
+     ; except that we no longer get a guard violation in the case
+     ; :set-guard-checking t.
+     
+     :u
+     
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;; Logic mode, guard other than t
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     (defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :verify-guards nil
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     ; Run the Tracing Code here.  It should give guard violations for (fact t)
+     ; with guard-checking set to t or :all.  It should never run in raw Lisp,
+     ; because we have not verified guards.  In the t case, we should get a
+     ; warning about avoiding the guard check on recursive calls.
+     
+     (verify-guards fact)
+     
+     ; Run the Tracing Code here.  The results should be as described just above,
+     ; except that now we go into raw Lisp for (fact 2) with guard-checking other
+     ; than :none.
+     
+     :u
+     :u
+     
+     ; The following definition is the same as above, except that guards are
+     ; verified.
+     
+     (defun fact (x)
+              (declare (xargs :guard (integerp x)
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     ; Run the Tracing Code here.  We should get the same traces as in the
+     ; immediately preceding case, since guards had been verified in both cases.
+     
+     :u
+     
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;; Logic mode, guard t
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     (defun fact (x)
+              (declare (xargs :guard t
+                              :verify-guards nil
+                              :mode :logic))
+              (if (posp x)
+                  (* x (fact (1- x)))
+                1))
+     
+     ; Run the Tracing Code here.  We should never go in to raw Lisp, because
+     ; guards have not been verified.  We will see the same traces for (fact 2) as
+     ; with the (integerp x) guard above with :verify-guards nil specified, except
+     ; that there is no warning for :set-guard-checking t about recursive calls.
+     ; And, there are no guard violations for (fact t), of course, since posp
+     ; (necessarily, if we are to verify guards) has a guard of t.
+     
+     (verify-guards fact)
+     
+     ; Run the Tracing Code here.  Now that guards have been verified, the :none
+     ; trace for (fact 2) differs from the corresponding (guard-verified) trace
+     ; for guard (integerp x) because now the guard is t, so we can (and do) go
+     ; directly into raw Lisp without the need to check the guard.  The (fact 2)
+     ; traces other than for :none are the same as in the corresponding trace for
+     ; guard (integerp x).  And of course (fact t) now computes without guard
+     ; violations, and using raw Lisp even in the :none case,
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-EVALUATION-TABLE,  Next: GUARD-INTRODUCTION,  Prev: GUARD-EVALUATION-EXAMPLES-SCRIPT,  Up: GUARD
+
+GUARD-EVALUATION-TABLE    a table that shows combinations of defun-modes and guard-checking
+
+See *Note SET-GUARD-CHECKING:: for an introduction to the topic
+discussed here.  Also see *note GUARD:: for a general discussion of
+guards, and see *note GUARD-EVALUATION-EXAMPLES-SCRIPT:: for a script
+that illustrates combinations presented below.
+
+The table below illustrates the interaction of the defun-mode with the
+value supplied to set-guard-checking.  The first row considers
+functions defined in :program mode; the other two consider functions
+defined in :logic mode.  The columns correspond to four values of state
+global 'guard-checking-on, as supplied to set-guard-checking.  (A fifth
+value, :nowarn, is similar to t but suppresses warnings encountered
+with t (as explained in those warning messages), and is not considered
+here.)  During proofs, 'guard-checking-on is set to nil regardless of
+how this variable has been set in the top-level loop.
+
+Below this table, we make some comments about its entries, ordered by
+row and then by column.  For example, when we refer to "b2" we are
+discussing the execution of a :logic mode function whose guards have
+not been verified, after having executed :set-guard-checking :all.
+
+        guard-checking-on:  (1)t      (2):all   (3):none   (4)nil
+     
+      (a) :program             a1        a2        a3        a4
+      (b) guards not verified  b1        b2        b3        b4
+      (c) guards verified      c1        c2        c3        c4
+
+a1. Check the guard upon entry, then use the raw Lisp code if the guard
+checks (else cause an error).  This is a common setting when one wants a
+little guard checking but also wants the efficiency of raw Lisp.  But
+note that you can get raw Lisp errors.  For example, if you make the
+definition (defun foo (x) (car x)) in :program mode and execute
+:set-guard-checking t, and then execute (foo 3), you will likely get an
+error from the call (car 3) made in raw Lisp.
+
+a2. For built-in (predefined) functions, see a1 instead.  Otherwise:
+Check the guard, without exception.  Thus, we never run the raw Lisp
+code in this case.  This can be useful when testing :program mode
+functions, but you may want to run :comp t or at least :comp :exec in
+this case, so that the execution is done using compiled code.
+
+a3. For built-in (predefined) functions, see a4 instead.  Otherwise:
+Do not check the guard.  For :program mode functions, we never run the
+raw Lisp code in this case; so if you care about efficiency, see the
+comment in a2 above about :comp.  This combination is useful if you are
+using ACL2 as a programming language and do not want to prove theorems
+about your functions or suffer guard violations.  In this case, you can
+forget about any connection between ACL2 and Common Lisp.
+
+a4. Run the raw Lisp code without checking guards at all.  Thus, for
+:program mode functions, the nil setting is often preferable to the
+:none setting because you get the efficiency of raw Lisp execution.
+However, with nil you can therefore get hard Lisp errors as in a1 above.
+
+b1. Guards are checked at the top-level, though not at self-recursive
+calls.  We never run the raw Lisp code in this case; guards would need
+to be verified first.
+
+b2. Unlike the t setting, guards are checked even on self-recursive
+calls.  But like the t setting, we do not run the raw Lisp code.  Use
+this setting if you want guards checked on each recursive call in spite
+of the cost of doing so.
+
+b3, b4. Execution avoids the raw Lisp code and never checks guards.  The
+nil and :none settings behave the same in this case (i.e., for :logic
+mode functions whose guards have not been verified).
+
+c1, c2. Guards are checked.  If the checks pass, evaluation takes place
+using the raw Lisp code.  If the checks fail, we get a guard violation.
+Either way, we do not execute "in the logic"; we only execute using
+the raw Lisp code.  Note that t and :all behave the same in this case,
+(i.e. for :logic mode functions whose guards have been verified).
+
+c3, c4. For the :none and nil settings, :logic mode functions whose
+guards have been verified will never cause guard violations.  However,
+with nil, guards are still checked: if the check succeeds, then
+evaluation is done using the raw Lisp code, and if not, it is done by
+the "logic" code, including self-recursive calls (though unlike the t
+case, we will not see a warning about this).  But with :none, no guard
+checking is done, so the only time the raw Lisp code will be executed
+is when the guard is t (so that no evaluation is necessary).  Thus, if
+you use :none and you want a function (foo x) with guard (g x) to
+execute using raw Lisp code, you can write a "wrapper" function with a
+guard of t:
+
+     (defun foo-wrap (x)
+       (if (g x)
+           (foo x)
+         'do-not-case))
+
+If you want the speed of executing raw Lisp code and you have
+non-trivial guards on functions that you want to call at the top-level,
+use nil rather than :none.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-INTRODUCTION,  Next: GUARD-MISCELLANY,  Prev: GUARD-EVALUATION-TABLE,  Up: GUARD
+
+GUARD-INTRODUCTION    introduction to guards in ACL2
+
+Most users can probably profit by avoiding dealing with guards most of
+the time.  If they seem to get in the way, they can be "turned off"
+using the command :set-guard-checking nil; for more about this, see
+*note SET-GUARD-CHECKING::.  For more about guards in general, see
+*note GUARD::.
+
+The guard on a function symbol is a formula about the formals of the
+function.  To see the guard on a function, use the keyword command
+:args.  See *Note ARGS::.  To specify the guard on a function at
+defun-time, use the :guard xarg.  See *Note XARGS::.
+
+Guards can be seen as having either of two roles: (a) they are a
+specification device allowing you to characterize the kinds of inputs a
+function "should" have, or (b) they are an efficiency device allowing
+logically defined functions to be executed directly in Common Lisp.
+Briefly:  If the guards of a function definition are "verified" (see
+*note VERIFY-GUARDS::), then the evaluation of a call of that function
+on arguments satisfying its guard will have the following property:
+
+     All subsequent function calls during that evaluation will be on
+     arguments satisfying the guard of the called function.
+
+
+The consequence of this fact for (a) is that your specification
+function is well-formed, in the sense that the values returned by this
+function on appropriate arguments only depend on the restrictions of
+the called functions to their intended domains.  The consequence of
+this fact for (b) is that in the ACL2 system, when a function whose
+guards have been verified is called on arguments that satisfy its
+guard, then the raw lisp function defined by this function's defun
+event is used to evaluate the call.  Note however that even when the
+user-supplied defun is not used, ACL2 uses a corresponding "executable
+counterpart" that generally performs, we expect, nearly as well as the
+raw lisp function.  See *Note COMP:: to see how compilation can speed
+up both kinds of execution.
+
+Let us turn next to the issue of the relationship between guards and
+evaluation.  See *Note GUARDS-AND-EVALUATION::.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-MISCELLANY,  Next: GUARD-QUICK-REFERENCE,  Prev: GUARD-INTRODUCTION,  Up: GUARD
+
+GUARD-MISCELLANY    miscellaneous remarks about guards
+
+The discussion of guards concludes here with a few miscellaneous
+remarks.  (Presumably you found this documentation by following a link;
+see *note GUARDS-FOR-SPECIFICATION::.)  For further information related
+to guards other than what you find under "guard," see any of the
+following documentation topics:  guard-example,
+set-verify-guards-eagerness, set-guard-checking, and verify-guards.
+
+Defun can be made to try to verify the guards on a function.  This is
+controlled by the "defun-mode" of the defun; see *note DEFUN-MODE::.
+The defun-mode is either as specified with the :mode xarg of the defun
+or else defaults to the default defun-mode.  See *Note
+DEFAULT-DEFUN-MODE::.  If the defun-mode of the defun is :logic and
+either a :guard is specified or :verify-guards t is specified in the
+xargs, then we attempt to verify the guards of the function.  Otherwise
+we do not.
+
+It is sometimes impossible for the system to verify the guards of a
+recursive function at definition time.  For example, the guard
+conjectures might require the invention and proof of some inductively
+derived property of the function (as often happens when the value of a
+recursive call is fed to a guarded subroutine).  So sometimes it is
+necessary to define the function using :verify-guards nil then to state
+and prove key theorems about the function, and only then have the
+system attempt guard verification.  Post-defun guard verification is
+achieved via the event verify-guards.  See *Note VERIFY-GUARDS::.
+
+It should be emphasized that guard verification affects only two
+things: how fast ACL2 can evaluate the function and whether the
+function is executed correctly by raw Common Lisp, without guard
+violations.  Since ACL2 does not use the raw Common Lisp definition of
+a function to evaluate its calls unless that function's guards have
+been verified, the latter effect is felt only if you run functions in
+raw Common Lisp rather than via ACL2's command loop.
+
+Guard verification does not otherwise affect the theorem prover or the
+semantics of a definition.  If you are not planning on running your
+function on "big" inputs and you don't care if your function runs
+correctly in raw Common Lisp (e.g., you have formalized some abstract
+mathematical property and just happened to use ACL2 as your language),
+there is no need to suffer through guard verification.  Often users
+start by not doing guard verification and address that problem later.
+Sometimes you are driven to it, even in mathematical projects, because
+you find that you want to run your functions particularly fast or in
+raw Common Lisp.
+
+If certify-book is used to compile a file, and the file contains
+functions with unverified guard conjectures, then you will be warned
+that the compiled file cannot be loaded into raw Common Lisp with the
+expectation that the functions will run correctly.  This is just the
+same point we have been making:  ACL2 and Common Lisp agree only on the
+restricted domains specified by our guards.  When guards are violated,
+Common Lisp can do anything.  When you call a compiled function on
+arguments violating its guards, the chances are only increased that
+Common Lisp will go berserk, because compiled functions generally check
+fewer things at runtime and tend to be more fragile than interpreted
+ones.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-QUICK-REFERENCE,  Next: GUARDS-AND-EVALUATION,  Prev: GUARD-MISCELLANY,  Up: GUARD
+
+GUARD-QUICK-REFERENCE    brief summary of guard checking and guard verification
+
+For a careful introduction to guards, see *note GUARD::.
+
+I. GUARD CHECKING DURING EXECUTION
+
+_Effect_
+
+Guards on definitions are checked at execution time (except for guards
+on subsidiary calls of recursive or mutually recursive functions).
+
+_When does it happen_
+
+By default, guards are checked for all forms submitted at the top level.
+
+_To disable_
+:set-guard-checking nil   ; skip raw Lisp if there is a guard violation
+:set-guard-checking :none ; skip guard checking entirely
+
+_To (re-)enable_
+:set-guard-checking t
+
+See *Note SET-GUARD-CHECKING:: for more options.
+
+II. GUARD VERIFICATION
+
+_Effect_
+
+A proof is attempted of the obligations arising from the guards of
+subsidiary functions in a defun, defthm, or defaxiom event.  In the
+case of a defun, the guard itself is also verified (under an implicit
+guard of t).
+
+_When does it happen_
+
+Only names of defined functions, defthms, and defaxioms are subject to
+guard verification.  Guard verification may occur when functions are
+defined (using defun), but it requires an explicit call of
+verify-guards in order to verify guards for defthms and defaxioms.
+Constrained functions (see *note ENCAPSULATE::) may not have their
+guards verified.
+
+(verify-guards foo ...)
+causes guard verification for the defun, defthm, or defaxiom named by
+foo, if it has not already been successfully done.  The default
+defun-mode (see *note DEFAULT-DEFUN-MODE::) must be :logic, or else
+this event is ignored.
+
+(defun foo ...)
+causes guard verification of foo if and only if the following
+conditions are both met.  (However, see *note
+SET-VERIFY-GUARDS-EAGERNESS:: for how to change this behavior.)
+
+     1. Foo is processed in :logic mode (either by setting mode :logic
+     globally, or by including :mode :logic in the xargs declaration).
+
+     2. The xargs declaration (see *note XARGS::) either specifies
+     :guard or specifies :verify-guards t (or both).
+
+
+(verify-termination foo ...)
+causes guard verification of foo if foo is a function currently defined
+in :program mode and the appropriate xargs are supplied, as discussed
+for the case of defun above.  The default defun-mode (see *note
+DEFAULT-DEFUN-MODE::) must be :logic, or else this event is ignored.
+
+
+File: acl2-doc-emacs.info,  Node: GUARDS-AND-EVALUATION,  Next: GUARDS-FOR-SPECIFICATION,  Prev: GUARD-QUICK-REFERENCE,  Up: GUARD
+
+GUARDS-AND-EVALUATION    the relationship between guards and evaluation
+
+The guard has no effect on the logical axiom added by the definition of
+a function.  It does, however, have consequences for how calls of that
+function are evaluated in ACL2.  We begin by explaining those
+consequences, when ACL2 is in its default "mode," i.e., as originally
+brought up.  In subsequent discussion we'll consider other ways that
+guards can interact with evaluation.
+
+For more about guards in general, see *note GUARD::.  For in-depth
+discussion of the interaction between the defun-mode and guard checking,
+see *note SET-GUARD-CHECKING::, see *note GUARD-EVALUATION-TABLE::, see
+*note GUARD-EVALUATION-EXAMPLES-SCRIPT::, and see *note
+GUARD-EVALUATION-EXAMPLES-LOG::.  Also see *note GENERALIZED-BOOLEANS::
+for discussion about a subtle issue in the evaluation of certain Common
+Lisp functions.
+
+_Guards and evaluation I:  the default_
+
+Consider the following very simple definition.
+
+     (defun foo (x) (cons 1 (cdr x)))
+
+First consider how raw Common Lisp behaves when evaluating calls of
+this function.  To evaluate (foo x) for some expression x, first x is
+evaluated to some value v, and then (cons 1 (cdr x)) is evaluated with
+x bound to v.  For example, if v is (cons 'a 3), then Common Lisp
+computes (cons 1 3).  But if (for example) v is a number, e.g., 7, then
+there is no way to predict what Common Lisp might do.  Some
+implementations would cause "sensible" errors, others might return
+nonsense, still others might crash the host machine.  The results tend
+toward the catastrophic if the call of foo in question is in compiled
+code.
+
+Now by default, ACL2 evaluates calls of foo exactly as Common Lisp
+does, except that it uses guards to check the "legality" of each
+function call.  So for example, since (cdr x) has a guard of (or (consp
+x) (equal x nil)), the call (foo 7) would cause a "guard violation," as
+illustrated below.
+
+     ACL2 !>(foo 7)
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol CDR, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (CDR 7).
+     
+     ACL2 !>
+
+Thus, the relation between evaluation in ACL2 and evaluation in Common
+Lisp is that the two produce the very same results, provided there is
+no guard violation.
+
+_Guards and evaluation II:_  :set-guard-checking.
+
+The ACL2 logic is a logic of total functions.  That is, every
+application of a function defined has a completely specified result.
+See the documentation for each individual primitive for the
+specification of what it returns when its guard is violated; for
+example, see *note CDR::.
+
+The presence of guards thus introduces a choice in the sense of
+evaluation.  When you type a form for evaluation do you mean for guards
+to be checked or not?  Put another way, do you mean for the form to be
+evaluated in Common Lisp (if possible) or in the ACL2 logic?  Note:  If
+Common Lisp delivers an answer, it will be the same as in the logic,
+but it might be erroneous to execute the form in Common Lisp.  For
+example, the ACL2 logic definition of cdr implies that the cdr of an
+atom is nil; see *note CDR::.  So: should (cdr 7) cause a guard
+violation error or return nil?
+
+The top-level ACL2 loop has a variable which controls which sense of
+execution is provided.  By default, "guard checking" is on, by which we
+mean that guards are checked at runtime, in the sense already
+described.  To allow execution to proceed in the logic when there is a
+guard violation, do :set-guard-checking nil; or evaluate
+:set-guard-checking :none to skip guard checking entirely.  To turn
+"guard checking" back on, execute the top-level form
+:set-guard-checking t.  The status of guard checking reflected in the
+prompt; guard-checking is "on" when the prompt contains an exclamation
+mark (also see *note DEFAULT-PRINT-PROMPT::).  For example,
+
+     ACL2 !>
+
+means guard checking is on and
+
+     ACL2 >
+
+means guard checking is off.  The exclamation mark can be thought of as
+"barring" certain computations.  The absence of the mark suggests the
+absence of error messages or unbarred access to the logical axioms.
+Thus, for example
+
+     ACL2 !>(car 'abc)
+
+will signal an error, while
+
+     ACL2 >(car 'abc)
+
+will return nil.  To return to our previous example:  with guard
+checking off, (foo 7) evaluates to (cons 1 nil).  Also see *note
+SET-GUARD-CHECKING::.
+
+_Guards and evaluation III:  guard verification_
+
+Consider the defininition of foo given above, but modified so that a
+reasonable guard of (consp x) is specified, as shown below.
+
+     (defun foo (x)
+       (declare (xargs :guard (consp x)))
+       (cons 1 (cdr x)))
+
+We say "reasonable guard" above because if x is such that (consp x)
+holds, then the call of cdr in the evaluation of (foo x) will not cause
+a guard violation.  Thus, it "should" be legal to evaluate (foo x), for
+any such x, simply by evaluating this form in raw Common Lisp.
+
+The verify-guards event has been provided for this purpose.  Details
+may be found elsewhere; see *note VERIFY-GUARDS::.  Briefly, for any
+defined function fn, the event (verify-guards fn) attempts to check the
+condition discussed above, that whenever fn is called on arguments that
+satisfy its guard, the evaluation of this call will proceed without any
+guard violation.  (Moreover, the guard itself should be evaluable
+without any guard violation.)  If this check is successful, then future
+calls of this sort will be evaluated in raw Common Lisp.
+
+Returning to our example above, the (verify-guards foo) will succeed
+because the guard (consp x) of foo implies the guard generated from the
+call (cdr x) in the body of the definition, namely, (or (consp x)
+(equal x nil)) (see *note CDR::).  Then the evaluation of (foo (cons 'a
+3)) will take place in raw Common Lisp, because (cons 'a 3) satisfies
+the guard of foo.
+
+This ability to dive into raw Common Lisp hinges on the proof that the
+guards you attach to your own functions are sufficient to ensure that
+the guards encountered in the body are satisfied.  This is called
+"guard verification." Once a function has had its guards verified, then
+ACL2 can evaluate the function somewhat faster (but see "Guards and
+evaluation V:  efficiency issues" below).  Perhaps more importantly,
+ACL2 can also guarantee that the function will be evaluated correctly
+by any implementation of Common Lisp (provided the guard of the
+function is satisfied on the input).  That is, if you have verified the
+guards of a system of functions and you have determined that they work
+as you wish in your host ACL2 (perhaps by proving it, perhaps by
+testing), then they will work identically in any Common Lisp.
+
+There is a subtlety to our treatment of evaluation of calls of
+functions whose guards have been verified.  If the function's guard is
+not satisfied by such a call, then no further attempt is made to
+evaluate any call of that function in raw lisp during the course of
+evaluation of that call.  This is obvious if guard checking is on,
+because an error is signalled the first time its guard is violated; but
+in fact it is also true when guard checking is off.  See *Note
+GUARD-EXAMPLE:: for an example.
+
+_Guards and evaluation IV:  functions having :program mode_
+
+Strictly speaking, functions in :program mode (see *note DEFUN-MODE::)
+do not have definitions in the ACL2 logic.  So what does it mean to
+evaluate calls of such functions in ACL2?  In general we treat :program
+functions much as we treat :logic functions whose guards have been
+verified, except that when no error occurs then the corresponding raw
+Lisp function is always called.  (We say "in general" because there are
+exceptions, discussed in the "Aside" just below.)  Note that when the
+guard of a function in :logic mode is violated, there is still a value
+that the ACL2 logic proves is equal to the given call.  But the same
+cannot be said for a function in :program mode.  Nevertheless, for the
+sake of convenience we go ahead and evaluate the corresponding raw Lisp
+function except in the situation where the guard is violated and
+guard-checking is on, aside from the following:
+
+*Aside*.  There are exceptions to the use of raw Lisp, discussed just
+above, to evaluate calls of :program mode functions.  The primary one
+is that after :set-guard-checking :none, evaluation of user-defined
+:program mode function calls is done in the ACL2 logic, not in raw
+Lisp.  The more obscure exception is that during expansion of macros
+and make-event forms, and during evaluation of defconst forms, ACL2
+enters a "safe mode" in which this escape to raw Lisp is prevented.
+The following example illustrates how the user can experiment directly
+with safe mode, though it is preferred to use :set-guard-checking :none
+if you are happy to skip all guard checking and evaluate forms in the
+logic.
+
+     ACL2 !>(defun foo (x)
+              (declare (xargs :mode :program :guard t))
+              (car x))
+     
+     Summary
+     Form:  ( DEFUN FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FOO
+     ACL2 !>(foo 3)
+     Error: Attempt to take the car of 3 which is not listp.
+       [condition type: SIMPLE-ERROR]
+     
+     Restart actions (select using :continue):
+      0: Return to Top Level (an "abort" restart).
+      1: Abort entirely from this process.
+     [1] ACL2(2): :pop
+     ACL2 !>(assign safe-mode t)
+      T
+     ACL2 !>(foo 3)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol CAR, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (CAR 3).  See :DOC wet for how you might be able to get an error
+     backtrace.
+     
+     ACL2 !>(assign safe-mode nil)
+      NIL
+     ACL2 !>(foo 3)
+     Error: Attempt to take the car of 3 which is not listp.
+       [condition type: SIMPLE-ERROR]
+     
+     Restart actions (select using :continue):
+      0: Return to Top Level (an "abort" restart).
+      1: Abort entirely from this process.
+     [1] ACL2(2):
+
+The other exception occurs after set-guard-checking can be called with
+a value of :all; see *note SET-GUARD-CHECKING::.  *End of aside.*
+
+Thus, as with :logic functions:  when a guard has been satisfied on a
+call of a function with :program mode, no subsidiary guard checking
+will be done.
+
+Notice that by treating functions in :program mode like functions whose
+guards have been verified, we are using raw lisp to compute their
+values when their guards are met.  We do not check guards any further
+once raw lisp is invoked.  This can lead to hard lisp errors if the
+guards are not appropriate, as illustrated below.
+
+     ACL2 >:program
+     ACL2 p>(defun foo (x)
+             (declare (xargs :guard t))
+             (cons 1 (cdr x)))
+     
+     Summary
+     Form:  ( DEFUN FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.02 seconds (prove: 0.00, print: 0.00, proof tree: 0.00, other: 0.02)
+      FOO
+     ACL2 p>(foo 3)
+     
+     Error: 3 is not of type LIST.
+     Fast links are on: do (use-fast-links nil) for debugging
+     Error signalled by CDR.
+     Broken at COND.  Type :H for Help.
+     ACL2>>
+
+See *Note DEFUN-MODE-CAVEAT::.
+
+However, here is a way to get ACL2 to do run-time guard checking for
+user-defined :program mode functions.  With this method, ACL2 will
+evaluate calls of user-defined :program mode functions in a manner that
+follows their ACL2 definitions.  Simply execute the following in the
+ACL2 loop to put ACL2 into a "safe mode."
+
+     (f-put-global 'safe-mode t state)
+
+Let us revisit the example above, using safe mode.  Notice that the
+guard of cdr is now being checked, because the executable counterpart
+of foo is being called even though the guard is t.
+
+     ACL2 !>(f-put-global 'safe-mode t state)
+     <state>
+     ACL2 !>:program
+     ACL2 p!>(defun foo (x)
+               (declare (xargs :guard t))
+               (cons 1 (cdr x)))
+     
+     Summary
+     Form:  ( DEFUN FOO ...)
+     Rules: NIL
+     Warnings:  None
+     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+      FOO
+     ACL2 p!>(foo 3)
+     
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol CDR, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (CDR 3).  You may be able to see a trace of calls leading up to
+     this violation by executing (wet <form>), where <form> is the form
+     you submitted to the ACL2 loop.  See :DOC wet for how to get an error
+     backtrace.
+     
+     ACL2 p!>(wet (foo 3))
+     
+     
+     
+     ACL2 Error in WITH-ERROR-TRACE:  The guard for the function symbol
+     CDR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+     in the call (CDR 3).  (Backtrace is below.)
+     
+     1> (ACL2_*1*_ACL2::FOO 3)
+     
+     ACL2 p!>
+
+If we go back into "unsafe" mode, then we once again see a raw Lisp
+error, as we now illustrate.
+
+     ACL2 p!>(f-put-global 'safe-mode nil state)
+     <state>
+     ACL2 p!>(foo 3)
+     
+     Error: 3 is not of type LIST.
+     Fast links are on: do (si::use-fast-links nil) for debugging
+     Error signalled by CDR.
+     Broken at COND.  Type :H for Help.
+     ACL2>>
+
+_Guards and evaluation V:  efficiency issues_
+
+We have seen that by verifying the guards for a :logic function, we
+arrange that raw lisp is used for evaluation of calls of such functions
+when the arguments satisfy its guard.
+
+This has several apparent advantages over the checking of guards as we
+go.  First, the savings is magnified as your system of functions gets
+deeper: the guard is checked upon the top-level entry to your system
+and then raw Common Lisp does all the computing.  Second, if the raw
+Common Lisp is compiled, enormous speed-ups are possible.  Third, if
+your Common Lisp or its compiler does such optimizations as
+tail-recursion removal, raw Common Lisp may be able to compute your
+functions on input much "bigger" than ACL2 can.
+
+The first of these advantages is quite important if you have
+complicated guards.  However, the other two advantages are probably not
+very important, as we now explain.
+
+When a function is defined in :logic mode, its defun is executed in raw
+Common Lisp.  (We might call this the "primary" raw lisp definition of
+the function.)  However, a corresponding "logic definition" is also
+executed.  The "logic definition" is a defun in raw lisp that checks
+guards at runtime and escapes to the primary raw lisp definition if the
+guard holds of the arguments and the function has already had its
+guards verified.  Otherwise the logic definition executes the body of
+the function by calling the logic definitions of each subroutine.  Now
+it is true that compilation generally speeds up execution enormously.
+However, the :comp command (see *note COMP::) compiles both of the raw
+lisp definitions associated with a :logic function.  Also, we have
+attempted to arrange that for every tail recursion removal done on the
+actual defun, a corresponding tail recursion removal is done on the
+"logic definition."
+
+We believe that in most cases, the logic definition executes almost as
+fast as the primary raw lisp definition, at least if the evaluation of
+the guards is fast.  So, the main advantage of guard verification is
+probably that it lets you know that the function may be executed safely
+in raw lisp, returning the value predicted by the ACL2 logic, whenever
+its arguments satisfy its guard.  We envision the development of
+systems of applicative lisp functions that have been developed and
+reasoned about using ACL2 but which are intended for evaluation in raw
+Common Lisp (perhaps with only a small "core" of ACL2 loaded), so this
+advantage of guard verification is important.
+
+Nevertheless, guard verification might be important for optimal
+efficiency when the functions make use of type declarations.  For
+example, at this writing, the GCL implementation of Common Lisp can
+often take great advantage of declare forms that assign small integer
+types to formal parameters.
+
+To continue the discussion of guards, see *note
+GUARDS-FOR-SPECIFICATION:: to read about the use of guards as a
+specification device.
+
+
+File: acl2-doc-emacs.info,  Node: GUARDS-FOR-SPECIFICATION,  Prev: GUARDS-AND-EVALUATION,  Up: GUARD
+
+GUARDS-FOR-SPECIFICATION    guards as a specification device
+
+A use of guard verification that has nothing to do with efficiency is
+as a way to gain confidence in specifications.  This use has the feel
+of "types" in many traditional programming languages, though guards
+allow much greater expressiveness than most systems of types (and
+unfortunately, as a result they are not syntactically checkable).
+
+For more discussion of guards in general, see *note GUARD::.
+
+Suppose you have written a collection of function definitions that are
+intended to specify the behavior of some system.  Perhaps certain
+functions are only intended to be called on certain sorts of inputs, so
+you attach guards to those functions in order to "enforce" that
+requirement.  And then, you verify the guards for all those functions.
+
+Then what have you gained, other than somewhat increased efficiency of
+execution (as explained above), which quite possibly isn't your main
+concern?  You have gained the confidence that when evaluating any call
+of a (specification) function whose arguments satisfy that function's
+guard, all subsequent function calls during the course of evaluation
+will have this same property, that the arguments satisfy the guard of
+the calling function.  In logical terms, we can say that the equality
+of the original call with the returned value is provable from weakened
+versions of the definitions, where each definitional axiom is replaced
+by an implication whose antecedent is the requirement that the
+arguments satisfy the guard and whose consequent is the original axiom.
+For example,
+
+     (defun foo (x)
+       (declare (xargs :guard (consp x)))
+       (cons 1 (cdr x)))
+
+originally generates the axiom
+
+     (equal (foo x)
+            (cons 1 (cdr x)))
+
+but in fact, when evaluation involves no guard violation then the
+following weaker axiom suffices in the justification of the evaluation.
+
+     (implies (consp x)
+              (equal (foo x)
+                     (cons 1 (cdr x))))
+
+If you are following links to read this documentation as a hypertext
+style document, then please see *note GUARD-MISCELLANY::.  This
+concludes our discussion of guards with miscellaneous remarks, and also
+contains pointers to related topics.
+
+
+File: acl2-doc-emacs.info,  Node: GUARD-HINTS,  Next: HANDS-OFF,  Prev: GUARD,  Up: MISCELLANEOUS
+
+GUARD-HINTS    xargs keyword :GUARD-HINTS
+
+See *Note XARGS::.
+
+
+File: acl2-doc-emacs.info,  Node: HANDS-OFF,  Next: HIDE,  Prev: GUARD-HINTS,  Up: MISCELLANEOUS
+
+HANDS-OFF    hints keyword :HANDS-OFF
+
+See *Note HINTS::.
+
+
+File: acl2-doc-emacs.info,  Node: HIDE,  Next: HINTS,  Prev: HANDS-OFF,  Up: MISCELLANEOUS
+
+HIDE    hide a term from the rewriter
+
+Hide is actually the identity function:  (hide x) = x for all x.
+However, terms of the form (hide x) are ignored by the ACL2 rewriter,
+except when explicit :expand hints are given for such terms (see *note
+HINTS::) or when rewrite rules explicitly about hide are available.  An
+:expand hint that removes all calls of hide is:
+
+     :expand ((:free (x) (hide x)))
+
+The above hint can be particularly useful when ACL2's equality
+heuristics apply hide to an equality after substituting it into the
+rest of the goal, if that goal (or a subgoal of it) fails to be proved.
+
+Hide terms are also ignored by the induction heuristics.
+
+Sometimes the ACL2 simplifier inserts hide terms into a proof attempt
+out of the blue, as it were.  Why and what can you do about it?
+Suppose you have a constrained function, say constrained-fn, and you
+define another function, say another-fn, in terms of it, as in:
+
+     (defun another-fn (x y z)
+       (if (big-hairy-test x y z)
+           (constrained-fn x y z)
+           t))
+
+Suppose the term (another-fn 'a 'b 'c) arises in a proof.  Since the
+arguments are all constants, ACL2 will try to reduce such a term to a
+constant by executing the definition of another-fn.  However, after a
+possibly extensive computation (because of big-hairy-test) the
+execution fails because of the unevaluable call of constrained-fn.  To
+avoid subsequent attempts to evaluate the term, ACL2 embeds it in a
+hide expression, i.e., rewrites it to (hide (another-fn 'a 'b 'c)).
+
+You might think this rarely occurs since all the arguments of
+another-fn must be constants.  You would be right except for one
+special case:  if another-fn takes no arguments, i.e., is a constant
+function, then every call of it fits this case.  Thus, if you define a
+function of no arguments in terms of a constrained function, you will
+often see (another-fn) rewrite to (hide (another-fn)).
+
+We do not hide the term if the executable counterpart of the function
+is disabled - because we do not try to evaluate it in the first place.
+Thus, to prevent the insertion of a hide term into the proof attempt,
+you can globally disable the executable counterpart of the offending
+defined function, e.g.,
+
+     (in-theory (disable (:executable-counterpart another-fn))).
+
+It is conceivable that you cannot afford to do this:  perhaps some
+calls of the offending function must be computed while others cannot
+be.  One way to handle this situation is to leave the executable
+counterpart enabled, so that hide terms are introduced on the calls
+that cannot be computed, but prove explicit :rewrite rules for each of
+those hide terms.  For example, suppose that in the proof of some
+theorem, thm, it is necessary to leave the executable counterpart of
+another-fn enabled but that the call (another-fn 1 2 3) arises in the
+proof and cannot be computed.  Thus the proof attempt will introduce
+the term (hide (another-fn 1 2 3)).  Suppose that you can show that
+(another-fn 1 2 3) is (contrained-fn 1 2 3) and that such a step is
+necessary to the proof.  Unfortunately, proving the rewrite rule
+
+     (defthm thm-helper
+       (equal (another-fn 1 2 3) (constrained-fn 1 2 3)))
+
+would not help the proof of thm because the target term is hidden
+inside the hide.  However,
+
+     (defthm thm-helper
+       (equal (hide (another-fn 1 2 3)) (constrained-fn 1 2 3)))
+
+would be applied in the proof of thm and is the rule you should prove.
+
+Now to prove thm-helper you need to use the two "tricks" which have
+already been discussed.  First, to eliminate the hide term in the proof
+of thm-helper you should include the hint :expand (hide (another-fn 1 2
+3)).  Second, to prevent the hide term from being reintroduced when the
+system tries and fails to evaluate (another-fn 1 2 3) you should
+include the hint :in-theory (disable (:executable-counterpart
+another-fn)).  Thus, thm-helper will actually be:
+
+     (defthm thm-helper
+       (equal (hide (another-fn 1 2 3)) (constrained-fn 1 2 3))
+       :hints
+       (("Goal" :expand (hide (another-fn 1 2 3))
+                :in-theory (disable (:executable-counterpart another-fn)))))
+
+See *Note EVISCERATE-HIDE-TERMS:: for how to affect the printing of hide
+terms.
+

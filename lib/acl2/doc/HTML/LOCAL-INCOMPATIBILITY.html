@@ -1,0 +1,107 @@
+<html>
+<head><title>LOCAL-INCOMPATIBILITY.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LOCAL-INCOMPATIBILITY</h2>when non-local <a href="EVENTS.html">events</a> won't replay in isolation
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+Sometimes a ``<code><a href="LOCAL.html">local</a></code> incompatibility'' is reported while attempting
+to embed some <a href="EVENTS.html">events</a>, as in an <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  This is
+generally due to the use of a locally defined name in a non-local
+event or the failure to make a witnessing definition <code><a href="LOCAL.html">local</a></code>.
+<p>
+<code><a href="LOCAL.html">local</a></code> incompatibilities may be detected while trying to execute the
+strictly non-local <a href="EVENTS.html">events</a> of an embedding.  For example, <code><a href="ENCAPSULATE.html">encapsulate</a></code>
+operates by first executing all the <a href="EVENTS.html">events</a> (<code><a href="LOCAL.html">local</a></code> and non-local)
+with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> <code>nil</code>, to confirm that they are all admissible.
+Then it attempts merely to assume the non-local ones to create the
+desired theory, by executing the <a href="EVENTS.html">events</a> with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> set to
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.  Similarly, <code><a href="INCLUDE-BOOK.html">include-book</a></code> assumes the non-local ones,
+with the understanding that a previously successful <code><a href="CERTIFY-BOOK.html">certify-book</a></code> has
+performed the admissiblity check.<p>
+
+How can a sequence of <a href="EVENTS.html">events</a> admitted with <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> <code>nil</code> fail
+when <code><a href="LD-SKIP-PROOFSP.html">ld-skip-proofsp</a></code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>?  The key observation is that
+in the latter case only the non-local <a href="EVENTS.html">events</a> are processed.  The
+<code><a href="LOCAL.html">local</a></code> ones are skipped and so the non-local ones must not depend
+upon them.<p>
+
+Two typical mistakes are suggested by the detection of a <code><a href="LOCAL.html">local</a></code>
+incompatibility: (1) a locally defined function or macro was used in
+a non-<code><a href="LOCAL.html">local</a></code> event (and, in the case of <code><a href="ENCAPSULATE.html">encapsulate</a></code>, was not included
+among the <a href="SIGNATURE.html">signature</a>s) and (2) the witnessing definition of a
+function that was included among the <a href="SIGNATURE.html">signature</a>s of an <code><a href="ENCAPSULATE.html">encapsulate</a></code>
+was not made <code><a href="LOCAL.html">local</a></code>.<p>
+
+An example of mistake (1) would be to include among your
+<a href="ENCAPSULATE.html">encapsulate</a>d <a href="EVENTS.html">events</a> both <code>(local (defun fn ...))</code> and
+<code>(defthm lemma (implies (fn ...) ...))</code>.  Observe that <code>fn</code> is
+defined locally but a formula involving <code>fn</code> is defined
+non-locally.  In this case, either the <code><a href="DEFTHM.html">defthm</a></code> should be made
+<code><a href="LOCAL.html">local</a></code> or the <code><a href="DEFUN.html">defun</a></code> should be made non-local.<p>
+
+An example of mistake (2) would be to include <code>(fn (x) t)</code> among your
+<a href="SIGNATURE.html">signature</a>s and then to write <code>(defun fn (x) ...)</code> in your <a href="EVENTS.html">events</a>,
+instead of <code>(local (defun fn ...))</code>.<p>
+
+One subtle aspect of <code><a href="ENCAPSULATE.html">encapsulate</a></code> is that if you constrain any member
+of a mutually recursive clique you must define the entire clique
+locally and then you must constrain those members of it you want
+axiomatized non-locally.<p>
+
+Errors due to <code><a href="LOCAL.html">local</a></code> incompatibility should never occur in the
+assumption of a fully certified book.  Certification ensures against
+it.  Therefore, if <code><a href="INCLUDE-BOOK.html">include-book</a></code> reports an incompatibility, we
+assert that earlier in the processing of the <code><a href="INCLUDE-BOOK.html">include-book</a></code> a warning
+was printed advising you that some book was uncertified.  If this is
+not the case -- if <code><a href="INCLUDE-BOOK.html">include-book</a></code> reports an incompatibility and there
+has been no prior warning about lack of certification -- please
+report it to us.<p>
+
+When a <code><a href="LOCAL.html">local</a></code> incompatibility is detected, we roll-back to the <a href="WORLD.html">world</a>
+in which we started the <code><a href="ENCAPSULATE.html">encapsulate</a></code> or <code><a href="INCLUDE-BOOK.html">include-book</a></code>.  That is, we
+discard the intermediate <a href="WORLD.html">world</a> created by trying to process the
+<a href="EVENTS.html">events</a> skipping proofs.  This is clean, but we realize it is very
+frustrating because the entire sequence of <a href="EVENTS.html">events</a> must be processed
+from scratch.  Assuming that the embedded <a href="EVENTS.html">events</a> were, once upon a
+time, processed as top-level <a href="COMMAND.html">command</a>s (after all, at some point you
+managed to create this sequence of <a href="COMMAND.html">command</a>s so that the <code><a href="LOCAL.html">local</a></code> and
+non-local ones together could survive a pass in which proofs were
+done), it stands to reason that we could define a predicate that
+would determine then, before you attempted to embed them, if <code><a href="LOCAL.html">local</a></code>
+incompatibilities exist.  We hope to do that, eventually.<p>
+
+We conclude with a subtle example of <code><a href="LOCAL.html">local</a></code> incompatibility.  The problem
+is that in order for <code>foo-type-prescription</code> to be admitted using the
+specified <code>:typed-term</code> <code>(foo x)</code>, the conclusion <code>(my-natp (foo x))</code>
+depends on <code>my-natp</code> being a <a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a>.  This is fine on the
+first pass of the <code><a href="ENCAPSULATE.html">encapsulate</a></code>, during which lemma <code>my-natp-cr</code> is
+admitted.  But <code>my-natp-cr</code> is skipped on the second pass because it is
+marked <code><a href="LOCAL.html">local</a></code>, and this causes <code>foo-type-prescription</code> to fail on the
+second pass.
+
+<pre>
+(defun my-natp (x)
+  (declare (xargs :guard t))
+  (and (integerp x)
+       (&lt;= 0 x)))<p>
+
+(defun foo (x)
+  (nfix x))<p>
+
+(encapsulate
+ ()
+ (local (defthm my-natp-cr
+          (equal (my-natp x)
+                 (and (integerp x)
+                      (&lt;= 0 x)))
+          :rule-classes :compound-recognizer))
+ (defthm foo-type-prescription
+   (my-natp (foo x))
+   :hints (("Goal" :in-theory (enable foo)))
+   :rule-classes ((:type-prescription :typed-term (foo x)))))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

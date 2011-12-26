@@ -1,0 +1,80 @@
+<html>
+<head><title>ACL2-PC_colon__colon_S.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>ACL2-PC::S</h3>(primitive)
+<code>   </code>simplify the current subterm
+<pre>Major Section:  <a href="PROOF-CHECKER-COMMANDS.html">PROOF-CHECKER-COMMANDS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+S  -- simplify the current subterm
+(S :backchain-limit 2 :normalize t :expand (append x z))
+   -- simplify the current subterm, but during the rewriting
+      process first ``normalize'' it by pushing IFs to the
+      top-level, and also force the term (append x z) to be
+      expanded during the rewriting process
+<p>
+General Form:
+(s &amp;key rewrite normalize backchain-limit repeat in-theory hands-off
+        expand)
+</pre>
+
+Simplify the current subterm according to the keyword parameters
+supplied.  First if-normalization is applied (unless the <code>normalize</code>
+argument is <code>nil</code>), i.e., each subterm of the form
+<code>(f ... (if test x y) ...)</code>  is replaced by the term
+<code>(if test (f ... x ...) (f ... y ...))</code>  except, of course, when
+<code>f</code> is <code>if</code> and the indicated <code>if</code> subterm is in the second or
+third argument position.  Then rewriting is applied (unless the
+rewrite argument is <code>nil</code>).  Finally this pair of actions is
+repeated -- until the rewriting step causes no change in the term.
+A description of each parameter follows.
+
+<pre>
+:rewrite -- default t
+</pre>
+
+When non-<code>nil</code>, instructs the system to use ACL2's rewriter (or,
+something close to it) during simplification.
+
+<pre>
+:normalize -- default t
+</pre>
+
+When non-<code>nil</code>, instructs the system to use if-normalization (as
+described above) during simplification.
+
+<pre>
+:backchain-limit -- default 0
+</pre>
+
+Sets the number of recursive calls to the rewriter that are
+allowed for backchaining.  Even with the default of 0, some
+reasoning is allowed (technically speaking, type-set reasoning is
+allowed) in the relieving of hypotheses.
+
+<pre>
+:repeat -- default 0
+</pre>
+
+Sets the number of times the current term is to be rewritten.  If
+this value is <code>t</code>, then the default is used (as specified by the
+constant <code>*default-s-repeat-limit*</code>).
+
+<pre>
+:in-theory, :hands-off, :expand
+</pre>
+
+These have their usual meaning; see <a href="HINTS.html">hints</a>.<p>
+
+<strong>Note:</strong>  if conditional rewrite rules are used that cause case splits
+because of the use of <code>force</code>, then appropriate new subgoals will be
+created, i.e., with the same current subterm (and address) but with
+each new (forced) hypothesis being negated and then used to create a
+corresponding new subgoal.  In that case, the current goal will have
+all such new hypotheses added to the list of top-level hypotheses.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

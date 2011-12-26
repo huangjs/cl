@@ -1,0 +1,119 @@
+<html>
+<head><title>FUNCTIONAL-INSTANTIATION-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h4>FUNCTIONAL-INSTANTIATION-EXAMPLE</h4>a small proof demonstrating functional instantiation
+<pre>Major Section:  <a href="TUTORIAL5-MISCELLANEOUS-EXAMPLES.html">TUTORIAL5-MISCELLANEOUS-EXAMPLES</a>
+</pre><p>
+
+The example below demonstrates the use of functional instantiation,
+that is, the use of a generic result in proving a result about
+specific functions.  In this example we constrain a function to be
+associative and commutative, with an identity or ``root,'' on a
+given domain.  Next, we define a corresponding function that applies
+the constrained associative-commutative function to successive
+elements of a list.  We then prove that the latter function gives
+the same value when we first reverse the elements of the list.
+Finally, we use functional instantiation to derive the corresponding
+result for the function that multiplies successive elements of a
+list.<p>
+
+Also see <a href="CONSTRAINT.html">constraint</a> for more about <code>:functional-instance</code> and
+see <a href="LEMMA-INSTANCE.html">lemma-instance</a> for general information about the use of
+previously-proved lemmas.
+<p>
+
+<pre>
+(in-package "ACL2")<p>
+
+(encapsulate
+ (((ac-fn * *) =&gt; *)
+  ((ac-fn-domain *) =&gt; *)
+  ((ac-fn-root) =&gt; *))
+ (local (defun ac-fn (x y) (+ x y)))
+ (local (defun ac-fn-root () 0))
+ (local (defun ac-fn-domain (x) (acl2-numberp x)))
+ (defthm ac-fn-comm
+   (equal (ac-fn x y)
+          (ac-fn y x)))
+ (defthm ac-fn-assoc
+   (equal (ac-fn (ac-fn x y) z)
+          (ac-fn x (ac-fn y z))))
+ (defthm ac-fn-id
+   (implies (ac-fn-domain x)
+            (equal (ac-fn (ac-fn-root) x)
+                   x)))
+ (defthm ac-fn-closed
+   (and (ac-fn-domain (ac-fn x y))
+        (ac-fn-domain (ac-fn-root)))))<p>
+
+(defun ac-fn-list (x)
+  (if (atom x)
+      (ac-fn-root)
+    (ac-fn (car x)
+           (ac-fn-list (cdr x)))))<p>
+
+(in-theory (disable (ac-fn-list)))<p>
+
+(defun ac-fn-domain-list (x)
+  (if (atom x)
+      t
+    (and (ac-fn-domain (car x))
+         (ac-fn-domain-list (cdr x)))))<p>
+
+(defun rev (x)
+  (if (atom x)
+      nil
+    (append (rev (cdr x))
+            (list (car x)))))<p>
+
+(defthm ac-fn-list-closed
+   (ac-fn-domain (ac-fn-list x)))<p>
+
+(defthm ac-fn-list-append
+  (implies (and (ac-fn-domain-list x)
+                (ac-fn-domain-list y))
+           (equal (ac-fn-list (append x y))
+                  (ac-fn (ac-fn-list x)
+                         (ac-fn-list y)))))<p>
+
+(defthm ac-fn-domain-list-rev
+  (equal (ac-fn-domain-list (rev x))
+         (ac-fn-domain-list x)))<p>
+
+(defthm ac-fn-list-rev
+  (implies (ac-fn-domain-list x)
+           (equal (ac-fn-list (rev x))
+                  (ac-fn-list x))))<p>
+
+(defun times-list (x)
+  (if (atom x)
+      1
+    (* (car x)
+       (times-list (cdr x)))))<p>
+
+(defun acl2-number-listp (x)
+  (if (atom x)
+      t
+    (and (acl2-numberp (car x))
+         (acl2-number-listp (cdr x)))))<p>
+
+(defthm times-list-rev
+  (implies (acl2-number-listp x)
+           (equal (times-list (rev x))
+                  (times-list x)))
+  :hints (("Goal"
+           :use
+           ((:functional-instance
+             ac-fn-list-rev
+             ;; Instantiate the generic functions:
+             (ac-fn (lambda (x y) (* x y)))
+             (ac-fn-root (lambda () 1))
+             (ac-fn-domain acl2-numberp)
+             ;; Instantiate the other relevant functions:
+             (ac-fn-list times-list)
+             (ac-fn-domain-list acl2-number-listp))))))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

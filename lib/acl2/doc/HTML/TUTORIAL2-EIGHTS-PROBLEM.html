@@ -1,0 +1,146 @@
+<html>
+<head><title>TUTORIAL2-EIGHTS-PROBLEM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>TUTORIAL2-EIGHTS-PROBLEM</h3>The Eights Problem Example
+<pre>Major Section:  <a href="TUTORIAL-EXAMPLES.html">TUTORIAL-EXAMPLES</a>
+</pre><p>
+
+This example was written almost entirely by Bill Young of
+Computational Logic, Inc.
+<p>
+This simple example was brought to our attention as one that Paul
+Jackson has solved using the NuPrl system.  The challenge is to
+prove the theorem:
+
+<pre><p>
+
+  for all n &gt; 7, there exist naturals i and j such that: n = 3i + 5j.<p>
+
+</pre>
+
+In ACL2, we could phrase this theorem using quantification.  However
+we will start with a constructive approach, i.e., we will show that
+values of <code>i</code> and <code>j</code> exist by writing a function that will
+construct such values for given <code>n</code>.  Suppose we had a function
+<code>(split n)</code> that returns an appropriate pair <code>(i . j)</code>.  Our
+theorem would be as follows:
+
+<pre><p>
+
+  (defthm split-splits
+    (let ((i (car (split n)))
+          (j (cdr (split n))))
+      (implies (and (integerp n)
+                    (&lt; 7 n))
+               (and (integerp i)
+                    (&lt;= 0 i)
+                    (integerp j)
+                    (&lt;= 0 j)
+                    (equal (+ (* 3 i) (* 5 j)) 
+                           n)))))<p>
+
+</pre>
+
+That is, assuming that <code>n</code> is a natural number greater than 7,
+<code>(split n)</code> returns values <code>i</code> and <code>j</code> that are in the
+appropriate relation to <code>n</code>.<p>
+
+Let's look at a few cases:
+
+<pre><p>
+
+  8 = 3x1 + 5x1;    11 = 3x2 + 5x1;     14 = 3x3 + 5x1;   ...
+  9 = 3x3 + 5x0;    12 = 3x4 + 5x0;     15 = 3x5 + 5x0;   ...
+ 10 = 3x0 + 5x2;    13 = 3x1 + 5x2;     16 = 3x2 + 5x2;   ...<p>
+
+</pre>
+
+Maybe you will have observed a pattern here; any natural number larger
+than 10 can be obtained by adding some multiple of 3 to 8, 9, or 10.
+This gives us the clue to constructing a proof.   It is clear that we
+can write split as follows:
+
+<pre><p>
+
+  (defun bump-i (x)
+    ;; Bump the i component of the pair
+    ;; (i . j) by 1.
+    (cons (1+ (car x)) (cdr x)))<p>
+
+  (defun split (n)
+    ;; Find a pair (i . j) such that 
+    ;; n = 3i + 5j.
+    (if (or (zp n) (&lt; n 8))
+        nil ;; any value is really reasonable here
+      (if (equal n 8)
+          (cons 1 1)
+        (if (equal n 9)
+            (cons 3 0)
+          (if (equal n 10)
+              (cons 0 2)
+            (bump-i (split (- n 3))))))))<p>
+
+</pre>
+
+Notice that we explicitly compute the values of <code>i</code> and <code>j</code> for
+the cases of 8, 9, and 10, and for the degenerate case when <code>n</code> is
+not a natural or is less than 8.  For all naturals greater than
+<code>n</code>, we decrement <code>n</code> by 3 and bump the number of 3's (the value
+of i) by 1.  We know that the recursion must terminate because any
+integer value greater than 10 can eventually be reduced to 8, 9, or
+10 by successively subtracting 3.<p>
+
+Let's try it on some examples:
+
+<pre><p>
+
+  ACL2 !&gt;(split 28)
+  (6 . 2)<p>
+
+  ACL2 !&gt;(split 45)
+  (15 . 0)<p>
+
+  ACL2 !&gt;(split 335)
+  (110 . 1)<p>
+
+</pre>
+
+Finally, we submit our theorem <code>split-splits</code>, and the proof
+succeeds.  In this case, the prover is ``smart'' enough to induct
+according to the pattern indicated by the function split.<p>
+
+For completeness, we'll note that we can state and prove a quantified
+version of this theorem.  We introduce the notion <code>split-able</code> to mean
+that appropriate <code>i</code> and <code>j</code> exist for <code>n</code>.
+
+<pre><p>
+
+  (defun-sk split-able (n)
+    (exists (i j)
+            (equal n (+ (* 3 i) (* 5 j)))))<p>
+
+</pre>
+
+Then our theorem is given below.  Notice that we prove it by
+observing that our previous function <code>split</code> delivers just such an
+<code>i</code> and <code>j</code> (as we proved above).
+
+<pre><p>
+
+  (defthm split-splits2 
+    (implies (and (integerp n)
+                  (&lt; 7 n))
+             (split-able n))
+    :hints (("Goal" :use (:instance split-able-suff 
+                                    (i (car (split n)))
+                                    (j (cdr (split n)))))))<p>
+
+</pre>
+
+Unfortunately, understanding the mechanics of the proof requires
+knowing something about the way <code><a href="DEFUN-SK.html">defun-sk</a></code> works.
+See <a href="DEFUN-SK.html">defun-sk</a> or see <a href="TUTORIAL4-DEFUN-SK-EXAMPLE.html">Tutorial4-Defun-Sk-Example</a> for more on
+that subject.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

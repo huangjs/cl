@@ -1,0 +1,554 @@
+;;; -*- Mode: Lisp -*-  ;;;; SBCL startup file 
+
+(in-package :cl-user)
+
+(sb-int:set-floating-point-modes :traps '(:invalid :divide-by-zero :overflow))
+
+(eval-when (:load-toplevel :execute)
+  (load (merge-pathnames "cl/startup-common.lisp" (user-homedir-pathname))))
+
+;;; start swank
+;;(setf swank:*use-dedicated-output-stream* t)
+;;(setf swank:*dedicated-output-stream-port* 4006)
+;;(setq swank:*communication-style* :fd-handler)
+;; (setf swank:*globally-redirect-io* t)
+;; (if (member "--no-swank" sb-ext:*posix-argv* :test 'equal)
+;;     (setf sb-ext:*posix-argv* 
+;; 	  (remove "--no-swank" sb-ext:*posix-argv* :test 'equal))
+;;     (when (interactive-stream-p *terminal-io*)
+;;       (swank:create-server :dont-close t :coding-system "utf-8-unix" :port 4008)))
+
+;;; acl-like REPL
+;; (defvar *last-package* nil)
+;; (defvar *cached-prompt* nil)
+;; (defun package-prompt (stream)
+;;   (unless (eq *last-package* *package*)
+;;     (setf *cached-prompt*
+;; 	  (concatenate 'string (or (first (package-nicknames *package*))
+;; 				   (package-name *package*))
+;; 		       "> "))
+;;     (setf *last-package* *package*))
+;;   (terpri)
+;;   (princ *cached-prompt* stream))
+;; (setf sb-int:*repl-prompt-fun* #'package-prompt) 
+
+;;; linedit
+;;; (asdf :linedit)
+;; (if (member "--no-linedit" sb-ext:*posix-argv* :test 'equal)
+;;     (setf sb-ext:*posix-argv* 
+;; 	  (remove "--no-linedit" sb-ext:*posix-argv* :test 'equal))
+;;     (when (interactive-stream-p *terminal-io*)
+;;       (require :sb-aclrepl)
+;;       (require :linedit)
+;;       (funcall (intern "INSTALL-REPL" :linedit) :wrap-current t)))
+
+;; clg
+;; (setf (logical-pathname-translations "clg")
+;;       '(("**;*.*.*" "/home/hjs/cl/site/clg/**/")))
+
+
+;;; old defsystem
+;; (defvar *library-default-root-path* (merge-pathnames "cl/lib/" (user-homedir-pathname)))
+;; (load (merge-pathnames "clocc-init" *library-default-root-path*)) ; all the initial vars, fns are in clocc-init.lisp
+;; (defun load-system (system-name)
+;;   (mk:oos (unless (simple-string-p system-name)
+;; 	    (string-downcase (symbol-name system-name)))
+;; 	  :load))
+;; (defun compile-system (system-name)
+;;   (mk:oos (unless (simple-string-p system-name)
+;; 	    (string-downcase (symbol-name system-name)))
+;; 	  :compile))
+
+
+;;; my libs
+;; (asdf :iterate)
+;; (setf iterate::*always-declare-variables* t)
+;; (asdf :infix)
+;; (asdf :hjs-lib)
+;; (load-system :screamer)
+;; (asdf :hjs-utils)
+;; (asdf :lazy-list)
+
+;; (use-package :iterate)
+;; (use-package :hjs.meta.essential)
+;; (use-package :hjs.meta.functional)
+;; (use-package :hjs.meta.macro)
+;; (use-package :hjs.meta.lisp)
+;; (use-package :hjs.meta.type)
+;; (use-package :hjs.meta.clos)
+;; (use-package :hjs.data.sequence)
+;; (use-package :hjs.data.tree)
+;; (use-package :hjs.data.array)
+;; (use-package :hjs.util.database)
+;; (use-package :hjs.util.string)
+;; (use-package :hjs.util.os)
+;; (progn
+;;   (unintern 'year :cl-user)
+;;   (unintern 'month :cl-user)
+;;   (unintern 'date :cl-user)
+;;   (unintern 'day :cl-user)
+;;   (unintern 'hour :cl-user)
+;;   (unintern 'minute :cl-user)
+;;   (unintern 'second :cl-user)
+;;   (use-package :hjs.util.time))
+;; (use-package :hjs.util.sysadmin)
+;; (use-package :hjs.util.file)
+;; (use-package :hjs.util.math)
+;; (use-package :hjs.util.read-delimited)
+
+
+
+;; ;;; clocc
+;; ;;; TODO: a lot of systems cannot be compiled
+;; (load-system :port) ;seems a lot of package depends on it and since it's not big I decide to load it on start up.
+;; ;;(load-system :cllib)					; a big collection of tools
+;; ;;(load-system :ytools)					; enhanced loop and format (the author has a nice code style,btw)
+;; ;;(load-system :f2cl)						; fortran to common lisp
+
+;; ;;; I made this toplevel to make sure libraries are always loaded from right places
+;; (asdf :cffi)				; popular ffi
+
+;; ;; not needed under linux
+;; ;;(pushnew #P"/usr/lib/" cffi:*foreign-library-directories* :test #'equal)
+;; ;;(pushnew #P"/usr/local/lib/" cffi:*foreign-library-directories* :test #'equal)  
+;; ;;;(pushnew #P"/opt/local/lib" cffi:*foreign-library-directories* :test #'equal)
+
+
+#|
+;;; recommended by cliki
+(defun start-recommended-packages ()
+  (asdf :cl-ppcre)			; regex matcher
+  (asdf :acl-compat)			; allegro layer
+  (asdf :uffi)				; another ffi
+  (asdf :ltk)	     ; easy to use TK interface (via process pipeline)
+  (asdf :cl-store)			; lisp object serialization
+  (asdf :parse-number)			; parse all kinds of numbers
+  (asdf :iterate)	     ; nice iterating routines to replace loop
+  (asdf :Bordeaux-Threads)   ; portable thread lib with nice interface
+  (asdf :split-sequence)	     ; simple and clear as the name is
+  (asdf :cl-fad)			; pathname lib from PCL
+  (asdf :infix)				; infix reader macro
+  (asdf :series) ; turn functional style loops routine into iteration loops
+  (asdf :flexi-streams)	       ; flexible layer on bin/bivalent stream
+  (asdf :cldoc)				; CL documentation tool
+  (asdf :mw-equiv)			; Object Equivalent
+  (asdf :lift)				; testing framework
+  (require :sb-md5)			; message digest algorithm
+  (require :sb-rotate-byte)		; efficient bitwise rotation
+  (require :sb-cover)			; code coverage test
+  )
+
+
+;;; extra
+(defun start-extra-packages ()
+  (asdf :fare-matcher)			; pattern matching
+  (asdf :arnesi) ; high quality cl utilities from bese.it, there's a nice code-walker for building continuations in common lisp!
+  (asdf :common-idioms)		 ; Brian Mastenbrook's macro utilities
+  (asdf :cl-cairo)			; vector graphical lib 
+  (asdf :cl-dot)			; graphviz dot
+  (asdf :cl-gsl)		       ; testing, install CLUNIT first
+  (asdf :cl-mime)			; mime lib
+  (asdf :kmrcl)				; toolkit like cl-utilities
+  (asdf :blowfish)		  ; blowfish encryption implementation
+  (asdf :mel-base)			; mail server/client
+  (asdf :mt19937)			; random number generator
+  (asdf :cl-ppcre)			; regex
+  (asdf :cl-prevalence)			; persistent layer
+  (asdf :rucksack)			; another persistent layer
+  (asdf :cl-rdbms)		      ; compile sql string to CLOS AST
+  ;;(asdf :cl-perec)	   ; another persistent layber with RDMS interface
+  (asdf :osicat)			  ; OS layer
+  (asdf :Portable-Threads)	  ; an alternative to Bordeaux-Threads
+  (load-system :screamer)		; constraint programming
+  (load (merge-pathnames "utils/screamer+" *library-default-root-path*)) ; makes screamer more expressive
+  (asdf :cells)			   ; dataflow clos lib by Kenny Tilton
+  (asdf :spatial-trees)			; several tree classes
+  (asdf :trees)			    ; binary, AVL, Red-black, AA trees
+  (asdf :cxml)				; XML parser
+  (asdf :colorize)			; colorize source code
+  (asdf :net-telent-date)	    ; time parsing routines from CMUCL
+  (asdf :s-xml)				; another xml parsing lib
+  (asdf :s-xml-rpc)			; xml-rpc lib
+  (asdf :zip)			   ; compress and uncompress zip files
+  (asdf :zlib)							; zlib
+  (asdf :clsql)				; database interface
+  (asdf :elephant)		     ; object database for Common Lisp
+  (asdf :gzip-stream)			; gzip stream
+  (asdf :cgn)				; another gnuplot interface
+  (asdf :usocket)			; portable socket library
+  (asdf :cl-who)			; html generator
+  (asdf :eel) ; formal language theory pattern language, pattern matching on any sequence, support backtracking.
+  (asdf :genhash)			; generic hash table
+  (asdf :scribble)			; scribe like syntax reader
+  (asdf :local-time)			; manipulating local time
+  (require :sb-grovel)			; help generating FFI from C code
+  )
+
+
+;;; goodies
+(defun start-goodie-packages ()
+  (asdf :unification)			; pattern matching
+  (asdf :exscribe)     ; scrible like publishing programmable language
+  (asdf :cl-pdf)					; cl-pdf
+  (asdf :cl-typesetting)		; can generate pdf
+  (asdf :cl-typegraph)			; can generate pdf
+  (asdf :cl-sasl)			; imap sasl client
+  (asdf :mcpat)			; meta-circular data directed prog lib
+  (asdf :org-davep-dict)		; dictionary client
+  (asdf :org-davep-cldict)	; a command line based RFC 2229 client
+  (asdf :cl-html-parse)			; Franz' HTML parser
+  (asdf :pxmlutils)			; Franz' XML and HTML parser
+  (progn
+    (asdf :xmls)			; need by xml-psychiatrist
+    (asdf :xml-psychiatrist))		; XML error checking
+  (asdf :cl-magick)			; image manuplation 
+  (asdf :skippy)			; (animated) gif lib from xach
+  (asdf :lisp-critic)	     ; comments on your code style! from CS325
+  (asdf :zpb-ttf)		       ; truetype font file access lib
+  (asdf :zpb-exif)		     ; image file exif data access lib
+  (asdf :cl-irc)					; irc lib
+  (asdf :cl-xmpp)		    ; google talk, jabber protocol lib
+  (asdf :hyperspec-lookup) ; look CL and CLOS hyperspec. (Mop_Sym.txt is in the source folder)
+  (asdf :dyslexia)			; grammer checker
+  )
+
+;;; connecting to the world
+(defun start-world-connection ()
+  (asdf :s-xml-rpc)			; xml-rpc library
+  (asdf :cl-soap)			; soap libaray
+  (asdf :cl-yahoo)			; yahoo webservice interface
+  (asdf :cl-ajax)			; XMLHttpRequest/Ajax queries
+  (asdf :clorb)				; the orb protocol
+  (asdf :cl-s3)				; amazon s3
+  (asdf :cl-irc)			; irc lib
+  (asdf :cl-xmpp)		    ; google talk, jabber protocol lib
+  (asdf :lisa)				; talking bot
+  )
+
+;;; ai
+(defun start-ai-packages ()
+  (asdf :geco)				; GA lib
+  (asdf :gecol)				; a C-based constraint lib
+  (asdf :lisa)				; chatting bot
+  (asdf :gbbopen)			; a blackboard system
+  )
+
+
+;;; compiler
+(defun start-compiler-packages ()
+  (asdf :yacc)				; cl-yacc
+  (asdf :zebu)		  ; another lalr parse (like yacc), but faster
+  (asdf :zebu-compiler)		 ; TODO: to check if this is necessary
+  (asdf :zebu-rr)			; TODO: the same as above
+  (asdf :meta) ; Henry Baker's meta parser, Henry is my hero. I love his articles.
+  (asdf :c2ffi)			   ; generate uffi files from c header
+  (asdf :cinline) ; TODO: need test, there's an assertion failed after compilation
+  (asdf :verrazano)			; fetter project!
+  (asdf :lexer)				; michael's lexer tools
+  (asdf :clawk)				; michael's common lisp awk
+  (asdf :regex)				; michael's regex scanner
+  )
+
+;;; graphics
+(defun start-graphics ()
+  (asdf :celtk)
+  (asdf :ltk)
+  (asdf :sdl)	    ; SDL bindings including opengl, glut, glu and SDL
+  )
+
+
+;;; bese.it 
+(defun start-bese-it ()
+  (asdf :arnesi)			; introduced above
+  (asdf :yaclml)      ; generating XML/HTML like markup from lisp code
+  (asdf :fiveam)			; regression testing framework
+  (asdf :pxmlutils)		; Portable version of Franz's xmlutils
+  (asdf :ucw)		     ; continuous-based uncommon-web frameword
+  )
+
+
+;;; Gary King's Packages 
+(defun start-gary-king ()
+  (start-mcclim) ; I don't know why, but his libs has huge dependencies.
+  (asdf :metabang-bind)			; pattern matching bind
+  (asdf :Metatilities)
+  (asdf :Moptilities)
+  (asdf :lift)				; Gary's test framework
+  (asdf :metacopy)			; lisp object copy routine
+  (asdf :cl-containers)			; his best !
+  (asdf :cl-graph)		       ; his graph (datastructure) lib
+  (asdf :cl-markdown)			   ; markdown in lisp
+  (asdf :cl-mathstats)		   ; statistical package written in CL
+  (asdf :cl-variates)		       ; random number generator in CL
+  ;;(asdf :clnuplot)						; TODO: not working
+  (asdf :log5)				; logging framework
+  )
+
+
+;;; Edi Weitz
+(defun start-edi-weitz ()
+  (asdf :cl-ppcre)			; the legendary regex matcher
+  (asdf :hunchentoot) ; edi's web app framework, actually, this also includes a lot of his other libs
+  (asdf :drakma)			; http client
+  (asdf :cl-gd)				; gd lib wrapper
+  (asdf :cl-interpol)		   ; string interpolation like in ruby
+  (asdf :cl-wbxml)			; wbxml parser
+  (asdf :cl-who)			; html generator
+  )
+
+;;; Kevin Rosenberg -- kevin's libraries works best in Allegro
+(defun start-kevin-rosenberg ()
+  (asdf :lml)			 ; generating HTML and XHTML documents
+  (asdf :lml2) ; generating HTML and XHTML documents, similar to Franz's html generator
+  (asdf :hyperobject) ; Hyperobject prints objects in ASCII text, HTML, and XML formats with optional printing of field labels and hyperlinks to related objects.
+  (asdf :umlisp) ; flexible, high-performance Common Lisp interface Unified Medical Language System (UMLS)
+  (asdf :pubmed)   ; accessing the PubMed® medical literature database
+  (asdf :reversi)			; the classic game of reversi
+  )
+
+;;;  Pascal Costanza's closer project
+(defun start-closer-project ()
+  (asdf :mop-feature-tests)
+  (asdf :closer-mop)
+  (asdf :contextL)
+  (asdf :aspectL) 
+  )
+
+
+;;; extra extra extra ... goodies
+(defun start-minor-packages ()
+  (asdf :anaphora)			; anaphora macro collection
+  (asdf :cl-component)			; a direct acyclic graph lib
+  (asdf :cl-ipc)			; ipc listener
+  (asdf :cl-l10n)			; l10n interface
+  (asdf :cl-menusystem)			; text based menusystem
+  (asdf :cl-migrations)			; like migration in RoR
+  (asdf :mpeg)				; mp3 parser
+  (asdf :cl-muproc)			; erlang in lisp
+  (asdf :cl-objc)		      ; common-lisp/objective-c bridge
+  (asdf :cl-stm)		       ; Software Transactional Memory
+  (asdf :cl-smtp)				   ; smtp client
+  (asdf :cl-syslog)		   ; accessing to the syslog utilities
+  (asdf :cl-taint) ; A library for controlling how outside data is used.
+  (asdf :computed-class) ; constraint based change propagation in Common Lisp
+  )
+
+
+;;;; scientific computing packages
+;;;; every package is loaded with convention 'start-xxxx'
+
+;;; common music -- the ultimate toolset of computer music research
+(defvar *common-music-directory*
+  (merge-pathnames "cl/lib/common-music/" (user-homedir-pathname)))
+(defun start-common-music ()
+  (load (merge-pathnames "cm/src/cm" *common-music-directory*))
+  (cm)
+  (format t "~%~%******************************~%")
+  (format t "~&use: (use-system xxx)  to load sub systems like cmn, clm, etc~%"))
+
+
+;;; cl-statistics -- basic statistical functions from biolisp.org
+(defun start-cl-statistics ()
+  (load (merge-pathnames "cl-statistics"  *library-default-root-path*))
+  (format t "~%~%******************************~%")
+  (format t "~&cl-statistics -- basic statistical functions from biolisp.org~%"))
+
+
+;;; nlisp -- gsl + gnuplot
+(defun start-nlisp ()
+  (asdf :cffi)
+  (asdf :nlisp)
+  (format t "~%~%******************************~%")
+  (format t "~& You may want to do (use-package :nlisp) before using it."))
+
+
+;;; mcclim + cl-listener
+;;; the work is still progressing 
+(defun start-mcclim ()
+  (asdf :mcclim)
+  (asdf :clim-listener)
+  (asdf :beirc)
+  ;;(asdf :closure)
+  (format t "~%~%******************************~%")
+  (format t "You can now invoke (clim-listener:run-listener :new-process t) to start clim-listener."))
+
+
+;;; maxima!!
+(defun start-maxima ()
+  (let ((*default-pathname-defaults* (merge-pathnames "cl/lib/maxima/src/" (user-homedir-pathname))))
+    (load (merge-pathnames "maxima-build" *default-pathname-defaults*))
+    (maxima-load)
+    (format t "~%~%******************************~%")
+    (format t "use: (run) to start maxima.~%use: to_lisp(); to escape to lisp")))
+
+
+;;; octave
+(defun start-octave ()
+  (asdf :cl-octave)
+  (format t "~%~%******************************~%")
+  (format t "use: (cl-octave:start-octave) to start"))
+
+;;; R
+(defun start-R ()
+  (asdf :rcl)
+  (defpackage :rcl-user
+    (:nicknames :r-user)
+    (:use :cl :cl-user :rcl))
+  (format t "~%~%******************************~%")
+  (format t "~&You need to run (r-init) first.~%")
+  (format t "use: (r command args) or (r% command args) to evaluate"))
+
+;;; acl2
+(defun lazy-funcall (name &optional (package *package*))
+  (let* ((package (find-package package))
+	 (name (etypecase name
+		 (string (string-upcase name))
+		 (symbol (symbol-name name))))
+	 (fn (symbol-function (find-symbol name package))))
+    (funcall fn)))
+
+(defun find-binding (name &optional (package *package*))
+  (let* ((package (find-package package))
+	 (name (etypecase name
+		 (string (string-upcase name))
+		 (symbol (symbol-name name))))
+	 (binding (find-symbol name package)))
+    binding))
+
+(defun (setf find-binding) (value name &optional (package *package*))
+  (let* ((package (find-package package))
+	 (name (etypecase name
+		 (string (string-upcase name))
+		 (symbol (symbol-name name))))
+	 (binding (find-symbol name package)))
+    (setf binding value)))
+
+(defun start-acl2 ()
+  (let ((*default-pathname-defaults* (merge-pathnames "cl/lib/acl2/" (user-homedir-pathname))))
+    (load (merge-pathnames "acl2-init" *default-pathname-defaults*))
+    (lazy-funcall 'load-acl2 :acl2)
+    (setf (find-binding '*saved-build-date* :acl2) "February 4, 2007  20:06:36")
+    (setf (find-binding '*saved-mode* :acl2) '(initialize-acl2))
+    (lazy-funcall 'initialize-acl2 :acl2)
+    (format t "~%~%******************************~%")
+    (format t "use: (acl2::sbcl-restart) to start acl2.~%use: :Q to escape to lisp")))
+
+
+;;; femlisp
+(defun start-femlisp ()
+  (let ((directory (pathname-directory
+		    (merge-pathnames "cl/site/femlisp/src/"
+				     (user-homedir-pathname)))))
+    (setf (logical-pathname-translations "femlisp")
+	  `((#-gcl "**;*.*.*" #+gcl "**;*.*" 
+		   ,(make-pathname :directory `(,@directory :wild-inferiors)
+				   :name :wild :type :wild :version :wild))))
+    (asdf :femlisp)))
+
+
+;;; plisp
+(defun start-plisp ()
+  (let ((*default-pathname-defaults*
+	 (merge-pathnames "plisp/compiler/" *library-default-root-path*)))
+    (load "build")
+    (format t "~%~%******************************~%")
+    (format t "Now you can use Plisp")))
+
+;;; Foil
+(defun start-foil ()
+  (let ((*default-pathname-defaults*
+	 (merge-pathnames "Foil/" *library-default-root-path*)))
+    (load "foil")
+    (use-package :foil)
+    ;;TODO: create foreign vm and communication port
+    ))
+
+;;; tada-list
+;;; TODO: CELTK!!!
+;;; TODO: cl-graphviz -- missing library
+;;; TODO: matlisp -- not installed, probably cannot be installed on Mac
+;;; langutils -- not working (missing asdf-config?)
+;;; cl-perec -- doesn't compile
+;;; eclipse -- 'another WM is running'
+;;; glouton -- library missing (another opengl library)
+;;; TODO: iolib -- install iolib on linux machine
+;;; TODO: cover.lisp: sb-c::*code-coverage-info* is unbound
+;;; TODO: ytools cannot load
+;;; TODO: SDL_ttf SDL_image SDL_mix missing
+;;; TODO: cl-plplot missing library
+;;; TODO: cl-sbml not installed
+;;; TODO: lifp(iflib) doesn't compile
+
+;;; finally
+
+#+ignore
+(progn
+  (require :sb-md5)
+  (require :sb-rotate-byte)
+  (require :sb-cover)
+  (asdf :cl-syntax-sugar)
+  ;; (asdf :computed-class)
+  (asdf :cl-ppcre)
+  (asdf :cl-interpol)
+  (asdf :cl-fad)
+  (asdf :flexi-streams)
+  (asdf :parse-number)
+  (asdf :split-sequence)
+  (asdf :mw-equiv)
+  (asdf :osicat)
+  (asdf :mt19937)
+  (asdf :net-telent-date)
+  ;; (asdf :s-xml-rpc)
+  (asdf :metabang-bind)
+  (asdf :lift)
+  (asdf :closer-mop)
+  ;; (asdf :contextL)
+  ;; (asdf :aspectL)
+  (asdf :anaphora)
+  (asdf :meta)
+  (asdf :meta-sexp)
+  (asdf :metacopy)
+  ;; (asdf :metatilities)
+  ;; (asdf :moptilities)
+  ;; (asdf :zebu-compiler)
+  ;; (asdf :ironclad)
+  (asdf :alexandria)
+  (asdf :stefil)
+  
+  (swank:swank-require :swank-arglists)
+
+  ;; (asdf :ltk)
+  ;; (asdf :gtk)
+  ;; (asdf :gtka)
+  ;; (asdf :cl-cairo2)
+  
+  (asdf :cxml)
+  (asdf :cl-unification)
+  ;; (asdf :cldoc)
+  
+  ;;   (asdf :series)
+  ;;   (asdf :lambda-gtk)
+  ;;   (asdf :cl-serializer)
+  ;;   (asdf :gbbopen)
+  (asdf :portable-threads)
+  ;;   (asdf :geco)
+  ;;   (asdf :cl-containers)
+  ;;   (asdf :cl-graph)
+  ;;   (asdf :elephant)
+  ;;   (asdf :fare-matcher)
+  ;;   (asdf :lisa)
+  ;;   (asdf :org-davep-dict)
+  ;;   (asdf :parse-html)
+  (asdf :cl-opengl)
+  ;;   (asdf :cgn)
+  ;;   (asdf :fset)
+  ;;   (asdf :patty)
+  ;;   (asdf :patg)
+  ;;   (asdf :salza)
+  (asdf :lispbuilder-sdl)
+  )
+
+|#
+
+
+

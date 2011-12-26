@@ -1,0 +1,1539 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: <,  Next: <=,  Prev: 1-,  Up: PROGRAMMING
+
+<    less-than
+
+Completion Axiom:
+
+     (equal (< x y)
+            (if (and (rationalp x)
+                     (rationalp y))
+                (< x y)
+              (let ((x1 (if (acl2-numberp x) x 0))
+                    (y1 (if (acl2-numberp y) y 0)))
+                (or (< (realpart x1) (realpart y1))
+                    (and (equal (realpart x1) (realpart y1))
+                         (< (imagpart x1) (imagpart y1)))))))
+
+Guard for (< x y):
+
+     (and (rationalp x) (rationalp y))
+
+Notice that like all arithmetic functions, < treats non-numeric inputs
+as 0.
+
+This function has the usual meaning on the rational numbers, but is
+extended to the complex rational numbers using the lexicographic order:
+first the real parts are compared, and if they are equal, then the
+imaginary parts are compared.
+
+
+File: acl2-doc-emacs.info,  Node: <=,  Next: =,  Prev: <,  Up: PROGRAMMING
+
+<=    less-than-or-equal test
+
+<= is a macro, and (<= x y) expands to the same thing as (not (< y x)).
+See *Note <::.
+
+<= is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: =,  Next: >,  Prev: <=,  Up: PROGRAMMING
+
+=    test equality of two numbers
+
+(= x y) is logically equivalent to (equal x y).
+
+Unlike equal, = has a guard requiring both of its arguments to be
+numbers.  Generally, = is executed more efficiently than equal.
+
+For a discussion of the various ways to test against 0, See *Note
+ZERO-TEST-IDIOMS::.
+
+= is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: >,  Next: >=,  Prev: =,  Up: PROGRAMMING
+
+>    greater-than test
+
+> is a macro, and (> x y) expands to the same thing as (< y x).  See
+*Note <::.
+
+> is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: >=,  Next: ABS,  Prev: >,  Up: PROGRAMMING
+
+>=    greater-than-or-equal test
+
+>= is a macro, and (>= x y) expands to the same thing as (not (< x y)).
+See *Note <::.
+
+>= is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: ABS,  Next: ACL2-NUMBERP,  Prev: >=,  Up: PROGRAMMING
+
+ABS    the absolute value of a real number
+
+(Abs x) is -x if x is negative and is x otherwise.
+
+The guard for abs requires its argument to be a rational (real, in
+ACL2(r)) number.
+
+Abs is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+From "Common Lisp the Language" page 205, we must not allow complex x
+as an argument to abs in ACL2, because if we did we would have to
+return a number that might be a floating point number and hence not an
+ACL2 object.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-NUMBERP,  Next: ACL2-USER,  Prev: ABS,  Up: PROGRAMMING
+
+ACL2-NUMBERP    recognizer for numbers
+
+(acl2-numberp x) is true if and only if x is a number, i.e., a rational
+or complex rational number.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2-USER,  Next: ACONS,  Prev: ACL2-NUMBERP,  Up: PROGRAMMING
+
+ACL2-USER    a package the ACL2 user may prefer
+
+This package imports the standard Common Lisp symbols that ACL2
+supports and also a few symbols from package "ACL2" that are commonly
+used when interacting with ACL2.  You may prefer to select this as your
+current package so as to avoid colliding with ACL2 system names.
+
+This package imports the symbols listed in
+*common-lisp-symbols-from-main-lisp-package*, which contains hundreds
+of CLTL function and macro names including those supported by ACL2 such
+as cons, car, and cdr.  It also imports the symbols in *acl2-exports*,
+which contains a few symbols that are frequently used while interacting
+with the ACL2 system, such as implies, defthm, and rewrite.  It imports
+nothing else.
+
+Thus, names such as alistp, member-equal, and type-set, which are
+defined in the "ACL2" package are not present here.  If you find
+yourself frequently colliding with names that are defined in "ACL2" you
+might consider selecting "ACL2-USER" as your current package (see *note
+IN-PACKAGE::).  If you select "ACL2-USER" as the current package, you
+may then simply type member-equal to refer to acl2-user::member-equal,
+which you may define as you see fit.  Of course, should you desire to
+refer to the "ACL2" version of member-equal, you will have to use the
+"ACL2::" prefix, e.g., acl2::member-equal.
+
+If, while using "ACL2-USER" as the current package, you find that there
+are symbols from "ACL2" that you wish we had imported into it (because
+they are frequently used in interaction), please bring those symbols to
+our attention.  For example, should union-theories and universal-theory
+be imported?  Except for stabilizing on the "frequently used" names
+from "ACL2", we intend never to define a symbol whose
+symbol-package-name is "ACL2-USER".
+
+
+File: acl2-doc-emacs.info,  Node: ACONS,  Next: ADD-TO-SET-EQ,  Prev: ACL2-USER,  Up: PROGRAMMING
+
+ACONS    constructor for association lists
+
+(Acons key datum alist) equals the result of consing the pair (cons key
+datum) to the front of the association list alist.
+
+(Acons key datum alist) has a guard of (alistp alist).  Acons is a
+Common Lisp function.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: ADD-TO-SET-EQ,  Next: ADD-TO-SET-EQL,  Prev: ACONS,  Up: PROGRAMMING
+
+ADD-TO-SET-EQ    add a symbol to a list
+
+For a symbol x and a true list lst, (add-to-set-eq x lst) is the result
+of consing x on to the front of lst, unless x is already a member of
+lst, in which case it equals lst.
+
+(add-to-set-eq x lst) has a guard that lst is a true list and moreover,
+either x is a symbol or lst is a list of symbols.
+
+
+File: acl2-doc-emacs.info,  Node: ADD-TO-SET-EQL,  Next: ADD-TO-SET-EQUAL,  Prev: ADD-TO-SET-EQ,  Up: PROGRAMMING
+
+ADD-TO-SET-EQL    add an object to a list
+
+For an object x and a true list lst, (add-to-set-eql x lst) is the
+result of consing x on to the front of lst, unless x is already a
+member of lst, in which case it equals lst.
+
+(add-to-set-eql x lst) has a guard that lst is a true list and
+moreover, either x is eqlablep or lst is an eqlable-listp.
+
+
+File: acl2-doc-emacs.info,  Node: ADD-TO-SET-EQUAL,  Next: ALISTP,  Prev: ADD-TO-SET-EQL,  Up: PROGRAMMING
+
+ADD-TO-SET-EQUAL    add an object to a list
+
+For an object x and a true list lst, (add-to-set-equal x lst) is the
+result of consing x on to the front of lst, unless x is already a
+member of lst, in which case it equals lst.
+
+(add-to-set-equal x lst) has a guard that lst is a true list.
+
+
+File: acl2-doc-emacs.info,  Node: ALISTP,  Next: ALLOCATE-FIXNUM-RANGE,  Prev: ADD-TO-SET-EQUAL,  Up: PROGRAMMING
+
+ALISTP    recognizer for association lists
+
+(alistp x) is true if and only if x is a list of cons pairs.
+
+(alistp x) has a guard of t.
+
+
+File: acl2-doc-emacs.info,  Node: ALLOCATE-FIXNUM-RANGE,  Next: ALPHA-CHAR-P,  Prev: ALISTP,  Up: PROGRAMMING
+
+ALLOCATE-FIXNUM-RANGE    set aside fixnums in GCL
+
+(Allocate-fixnum-range fixnum-lo fixnum-hi) causes Gnu Common Lisp
+(GCL) to create a persistent table for the integers between fixnum-lo
+and fixnum-hi (both bounds inclusive). This table is referenced first
+when any integer is boxed and the existing box in the table is used if
+the integer is in bounds.  This can speed up GCL considerably by
+avoiding wasteful fixnum boxing.  Here, fixnum-lo and fixnum-hi should
+be fixnums, more specifically of type (signed-byte 29), with fixnum-lo
+<= fixnum-hi.
+
+When this function is executed in a Lisp implementation other than GCL,
+it has no side effect.  This function always returns nil.
+
+
+File: acl2-doc-emacs.info,  Node: ALPHA-CHAR-P,  Next: ALPHORDER,  Prev: ALLOCATE-FIXNUM-RANGE,  Up: PROGRAMMING
+
+ALPHA-CHAR-P    recognizer for alphabetic characters
+
+(Alpha-char-p x) is true if and only if x is a alphabetic character,
+i.e., one of the characters #a, #b, ..., #z, #A, #B, ..., #Z.
+
+The guard for alpha-char-p requires its argument to be a character.
+
+Alpha-char-p is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: ALPHORDER,  Next: AND,  Prev: ALPHA-CHAR-P,  Up: PROGRAMMING
+
+ALPHORDER    total order on atoms
+
+Alphorder is a non-strict total order, a "less than or equal," on
+atoms.  By "non-strict total order" we mean a function that always
+returns t or nil and satisfies the following properties.
+
+     o Antisymmetry:  XrY & YrX -> X=Y
+
+     o Transitivity:  XrY & YrZ -> XrZ
+
+     o Trichotomy:  XrY v YrX
+
+Also see *note LEXORDER::, which extends alphorder to all objects.
+
+(Alphorder x y) has a guard of (and (atom x) (atom y)).
+
+Within a single type: rationals are compared arithmetically, complex
+rationals are compared lexicographically, characters are compared via
+their char-codes, and strings and symbols are compared with alphabetic
+ordering.  Across types, rationals come before complexes, complexes
+come before characters, characters before strings, and strings before
+symbols.  We also allow for "bad atoms," i.e., atoms that are not legal
+Lisp objects but make sense in the ACL2 logic; these come at the end,
+after symbols.
+
+
+File: acl2-doc-emacs.info,  Node: AND,  Next: APPEND,  Prev: ALPHORDER,  Up: PROGRAMMING
+
+AND    conjunction
+
+And is the macro for conjunctions.  And takes any number of arguments.
+And returns nil if one of the arguments is nil, but otherwise returns
+the last argument.  If there are no arguments, and returns t.
+
+And is a Common Lisp macro.  See any Common Lisp documentation for more
+information.
+
+
+File: acl2-doc-emacs.info,  Node: APPEND,  Next: ASH,  Prev: AND,  Up: PROGRAMMING
+
+APPEND    concatenate two or more lists
+
+Append, which takes two or more arguments, expects all the arguments
+except perhaps the last to be true (null-terminated) lists.  It returns
+the result of concatenating all the elements of all the given lists
+into a single list.  Actually, in ACL2 append is a macro that expands
+into calls of the binary function binary-append.
+
+Append is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: ASH,  Next: ASSERT$,  Prev: APPEND,  Up: PROGRAMMING
+
+ASH    arithmetic shift operation
+
+(ash i c) is the result of taking the two's complement representation
+of the integer i and shifting it by c bits:  shifting left and padding
+with c 0 bits if c is positive, shifting right and dropping (abs c)
+bits if c is negative, and simply returning i if c is 0.
+
+The guard for ash requires that its arguments are integers.
+
+Ash is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: ASSERT$,  Next: ASSOC,  Prev: ASH,  Up: PROGRAMMING
+
+ASSERT$    cause a hard error if the given test is false
+
+     General Form:
+     (assert$ test form)
+
+where test returns a single value and form is arbitrary.  Semantically,
+this call of assert$ is equivalent to form.  However, it causes a hard
+error (using illegal) if the value of test is nil.
+
+
+File: acl2-doc-emacs.info,  Node: ASSOC,  Next: ASSOC-EQ,  Prev: ASSERT$,  Up: PROGRAMMING
+
+ASSOC    look up key in association list, using eql as test
+
+(Assoc x alist) is the first member of alist whose car is x, or nil if
+no such member exists.
+
+(Assoc x alist) is provably the same in the ACL2 logic as (assoc-equal
+x alist).  It has a stronger guard than assoc-equal because it uses eql
+to test whether x is equal to the car of a given member of alist.  Its
+guard requires that alist is an alistp, and moreover, either (eqlablep
+x) or all cars of members of alist are eqlablep.  See *Note
+ASSOC-EQUAL:: and see *note ASSOC-EQ::.
+
+Assoc is a Common Lisp function.  See any Common Lisp documentation for
+more information.  Since ACL2 functions cannot take keyword arguments
+(though macros can), the ACL2 functions assoc-equal and assoc-eq are
+defined to correspond to calls of the Common Lisp function assoc whose
+keyword argument :test is equal or eq, respectively.
+
+
+File: acl2-doc-emacs.info,  Node: ASSOC-EQ,  Next: ASSOC-EQUAL,  Prev: ASSOC,  Up: PROGRAMMING
+
+ASSOC-EQ    look up key in association list, using eq as test
+
+(Assoc-eq x alist) is the first member of alist whose car is x, or nil
+if no such member exists.
+
+(Assoc-eq x alist) is provably the same in the ACL2 logic as (assoc x
+alist) and (assoc-equal x alist), but it has a stronger guard because
+it uses eq for a more efficient test for whether x is equal to a given
+key of alist.  Its guard requires that alist is an association list
+(see *note ALISTP::), and moreover, either x is a symbol or all keys of
+alist are symbols, i.e., alist is a symbol-alistp.
+
+
+File: acl2-doc-emacs.info,  Node: ASSOC-EQUAL,  Next: ASSOC-KEYWORD,  Prev: ASSOC-EQ,  Up: PROGRAMMING
+
+ASSOC-EQUAL    look up key in association list
+
+(Assoc-equal x alist) is the first member of alist whose car is x, or
+nil if no such member exists.
+
+(Assoc-equal x alist) has a guard of (alistp alist), and returns the
+first member of alist whose car is x, or nil if no such member exists.
+Thus, assoc-equal has the same functionality as the Common Lisp
+function assoc, except that it uses the equal function to test whether
+x is the same as each successive `key' of alist.  See *Note ASSOC:: and
+see *note ASSOC-EQ::.
+
+
+File: acl2-doc-emacs.info,  Node: ASSOC-KEYWORD,  Next: ASSOC-STRING-EQUAL,  Prev: ASSOC-EQUAL,  Up: PROGRAMMING
+
+ASSOC-KEYWORD    look up key in a keyword-value-listp
+
+If l is a list of even length of the form (k1 a1 k2 a2 ... kn an),
+where each ki is a keyword, then (assoc-keyword key l) is the first
+tail of l starting with key if key is some ki, and is nil otherwise.
+
+The guard for (assoc-keyword key l) is (keyword-value-listp l).
+
+
+File: acl2-doc-emacs.info,  Node: ASSOC-STRING-EQUAL,  Next: ATOM,  Prev: ASSOC-KEYWORD,  Up: PROGRAMMING
+
+ASSOC-STRING-EQUAL    look up key, a string, in association list
+
+(Assoc-string-equal x alist) is similar to assoc-equal.  However, for
+string x and alist alist, the comparison of x with successive keys in
+alist is done using string-equal rather than equal.
+
+The guard for assoc-string-equal requires that x is a string and alist
+is an alist.
+
+
+File: acl2-doc-emacs.info,  Node: ATOM,  Next: ATOM-LISTP,  Prev: ASSOC-STRING-EQUAL,  Up: PROGRAMMING
+
+ATOM    recognizer for atoms
+
+(atom x) is true if and only if x is an atom, i.e., not a cons pair.
+
+Atom has a guard of t, and is a Common Lisp function.  See any Common
+Lisp documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: ATOM-LISTP,  Next: BINARY-*,  Prev: ATOM,  Up: PROGRAMMING
+
+ATOM-LISTP    recognizer for a true list of atoms
+
+The predicate atom-listp tests whether its argument is a true-listp of
+atoms, i.e., of non-conses.
+
+
+File: acl2-doc-emacs.info,  Node: BINARY-*,  Next: BINARY-+,  Prev: ATOM-LISTP,  Up: PROGRAMMING
+
+BINARY-*    multiplication function
+
+Completion Axiom:
+
+     (equal (binary-* x y)
+            (if (acl2-numberp x)
+                (if (acl2-numberp y)
+                    (binary-* x y)
+                  0)
+              0))
+
+Guard for (binary-* x y):
+
+     (and (acl2-numberp x) (acl2-numberp y))
+
+Notice that like all arithmetic functions, binary-* treats non-numeric
+inputs as 0.
+
+Calls of the macro * expand to calls of binary-*; see *note *::.
+
+
+File: acl2-doc-emacs.info,  Node: BINARY-+,  Next: BINARY-APPEND,  Prev: BINARY-*,  Up: PROGRAMMING
+
+BINARY-+    addition function
+
+Completion Axiom:
+
+     (equal (binary-+ x y)
+            (if (acl2-numberp x)
+                (if (acl2-numberp y)
+                    (binary-+ x y)
+                  x)
+              (if (acl2-numberp y)
+                  y
+                0)))
+
+Guard for (binary-+ x y):
+
+     (and (acl2-numberp x) (acl2-numberp y))
+
+Notice that like all arithmetic functions, binary-+ treats non-numeric
+inputs as 0.
+
+Calls of the macro + expand to calls of binary-+; see *note +::.
+
+
+File: acl2-doc-emacs.info,  Node: BINARY-APPEND,  Next: BOOLEANP,  Prev: BINARY-+,  Up: PROGRAMMING
+
+BINARY-APPEND    concatenate two lists
+
+This binary function implements append, which is a macro in ACL2.  See
+*Note APPEND::
+
+The guard for binary-append requires the first argument to be a
+true-listp.
+
+
+File: acl2-doc-emacs.info,  Node: BOOLEANP,  Next: BUTLAST,  Prev: BINARY-APPEND,  Up: PROGRAMMING
+
+BOOLEANP    recognizer for booleans
+
+(Booleanp x) is t if x is t or nil, and is nil otherwise.
+
+See *Note GENERALIZED-BOOLEANS:: for a discussion of a potential
+soundness problem for ACL2 related to the question:  Which Common Lisp
+functions are known to return Boolean values?
+
+
+File: acl2-doc-emacs.info,  Node: BUTLAST,  Next: CAAAAR,  Prev: BOOLEANP,  Up: PROGRAMMING
+
+BUTLAST    all but a final segment of a list
+
+(Butlast l n) is the list obtained by removing the last n elements from
+the true list l.  The following is a theorem (though it takes some
+effort, including lemmas, to get ACL2 to prove it).
+
+     (implies (and (integerp n)
+                   (<= 0 n)
+                   (true-listp l))
+              (equal (length (butlast l n))
+                     (if (< n (length l))
+                         (- (length l) n)
+                       0)))
+
+For related functions, see *note TAKE:: and see *note NTHCDR::.
+
+The guard for (butlast l n) requires that n is a nonnegative integer
+and lst is a true list.
+
+Butlast is a Common Lisp function.  See any Common Lisp documentation
+for more information.  Note:  In Common Lisp the second argument of
+butlast is optional, but in ACL2 it is required.
+
+
+File: acl2-doc-emacs.info,  Node: CAAAAR,  Next: CAAADR,  Prev: BUTLAST,  Up: PROGRAMMING
+
+CAAAAR    car of the caaar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAAADR,  Next: CAAAR,  Prev: CAAAAR,  Up: PROGRAMMING
+
+CAAADR    car of the caadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAAAR,  Next: CAADAR,  Prev: CAAADR,  Up: PROGRAMMING
+
+CAAAR    car of the caar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAADAR,  Next: CAADDR,  Prev: CAAAR,  Up: PROGRAMMING
+
+CAADAR    car of the cadar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAADDR,  Next: CAADR,  Prev: CAADAR,  Up: PROGRAMMING
+
+CAADDR    car of the caddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAADR,  Next: CAAR,  Prev: CAADDR,  Up: PROGRAMMING
+
+CAADR    car of the cadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAAR,  Next: CADAAR,  Prev: CAADR,  Up: PROGRAMMING
+
+CAAR    car of the car
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADAAR,  Next: CADADR,  Prev: CAAR,  Up: PROGRAMMING
+
+CADAAR    car of the cdaar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADADR,  Next: CADAR,  Prev: CADAAR,  Up: PROGRAMMING
+
+CADADR    car of the cdadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADAR,  Next: CADDAR,  Prev: CADADR,  Up: PROGRAMMING
+
+CADAR    car of the cdar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADDAR,  Next: CADDDR,  Prev: CADAR,  Up: PROGRAMMING
+
+CADDAR    car of the cddar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADDDR,  Next: CADDR,  Prev: CADDAR,  Up: PROGRAMMING
+
+CADDDR    car of the cdddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADDR,  Next: CADR,  Prev: CADDDR,  Up: PROGRAMMING
+
+CADDR    car of the cddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CADR,  Next: CAR,  Prev: CADDR,  Up: PROGRAMMING
+
+CADR    car of the cdr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CAR,  Next: CASE,  Prev: CADR,  Up: PROGRAMMING
+
+CAR    returns the first element of a non-empty list, else nil
+
+Completion Axiom:
+
+     (equal (car x)
+            (cond
+             ((consp x)
+              (car x))
+             (t nil)))
+
+Guard:
+
+     (or (consp x) (equal x nil))
+
+Notice that in the ACL2 logic, car returns nil for every atom.
+
+
+File: acl2-doc-emacs.info,  Node: CASE,  Next: CASE-MATCH,  Prev: CAR,  Up: PROGRAMMING
+
+CASE    conditional based on if-then-else using eql
+
+     Example Form:
+     (case typ
+       ((:character foo)
+        (open file-name :direction :output))
+       (bar (open-for-bar file-name))
+       (otherwise
+        (my-error "Illegal.")))
+
+is the same as
+
+     (cond ((member typ '(:character foo))
+            (open file-name :direction :output))
+           ((eql typ 'bar)
+            (open-for-bar file-name))
+           (t (my-error "Illegal.")))
+
+which in turn is the same as
+
+     (if (member typ '(:character foo))
+         (open file-name :direction :output)
+         (if (eql typ 'bar)
+             (open-for-bar file-name)
+             (my-error "Illegal.")))
+
+Notice the quotations that appear in the example above: '(:character
+foo) and 'bar.
+
+     General Forms:
+     (case expr
+       (x1 val-1)
+       ...
+       (xk val-k)
+       (otherwise val-k+1))
+     
+     (case expr
+       (x1 val-1)
+       ...
+       (xk val-k)
+       (t val-k+1))
+     
+     (case expr
+       (x1 val-1)
+       ...
+       (xk val-k))
+
+where each xi is either eqlablep or a true list of eqlablep objects.
+The final otherwise or t case is optional.
+
+Case is defined in Common Lisp.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: CASE-MATCH,  Next: CDAAAR,  Prev: CASE,  Up: PROGRAMMING
+
+CASE-MATCH    pattern matching or destructuring
+
+     General Form:
+     (case-match x
+       (pat1 dcl1 body1)
+       ...
+       (patk dclk bodyk))
+
+where x is a variable symbol, the pati are structural patterns as
+described below, the dcli are optional declare forms and the bodyi are
+terms.  Return the value(s) of the bodyi corresponding to the first
+pati matching x, or nil if none matches.
+
+Pattern Language:
+With the few special exceptions described below, matching requires that
+the cons structure of x be isomorphic to that of the pattern, down to
+the atoms in the pattern.  Non-symbol atoms in the pattern match only
+themselves.  Symbols in the pattern denote variables which match
+anything and which are bound by a successful match to the corresponding
+substructure of x.  Variables that occur more than once must match the
+same (EQUAL) structure in every occurrence.
+
+     Exceptions:
+     &               Matches anything and is not bound.  Repeated
+                       occurrences of & in a pattern may match different
+                       structures.
+     nil, t, *sym*   These symbols cannot be bound and match only their
+                       global values.
+     !sym            where sym is a symbol that is already bound in the
+                       context of the case-match, matches only the
+                       current binding of sym.
+     'obj            Matches only itself.
+
+Some examples are shown below.
+
+Below we show some sample patterns and examples of things they match
+and do not match.
+
+     pattern       matches         non-matches
+     (x y y)       (ABC 3 3)       (ABC 3 4)    ; 3 is not 4
+     (fn x . rst)  (P (A I) B C)   (ABC)        ; NIL is not (x . rst)
+                   (J (A I))                    ; rst matches nil
+     ('fn (g x) 3) (FN (H 4) 3)    (GN (G X) 3) ; 'fn matches only itself
+     (& t & !x)    ((A) T (B) (C))              ; provided x is '(C)
+
+Consider the two binary trees that contain three leaves.  They might be
+described as (x . (y . z)) and ((x . y) . z), where x, y, and z are
+atomic.  Suppose we wished to recognize those trees.  The following
+case-match would do:
+
+     (case-match tree
+       ((x . (y . z))
+        (and (atom x) (atom y) (atom z)))
+       (((x . y) . z)
+        (and (atom x) (atom y) (atom z))))
+
+Suppose we wished to recognize such trees where all three tips are
+identical.  Suppose further we wish to return the tip if the tree is
+one of those recognized ones and to return the number 7 otherwise.
+
+     (case-match tree
+       ((x . (x . x))
+        (if (atom x) x 7))
+       (((x . x) . x)
+        (if (atom x) x 7))
+       (& 7))
+
+Note that case-match returns nil if no pati matches.  Thus if we must
+return 7 in that case, we have to add as the final pattern the &, which
+always matches anything.
+
+
+File: acl2-doc-emacs.info,  Node: CDAAAR,  Next: CDAADR,  Prev: CASE-MATCH,  Up: PROGRAMMING
+
+CDAAAR    cdr of the caaar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDAADR,  Next: CDAAR,  Prev: CDAAAR,  Up: PROGRAMMING
+
+CDAADR    cdr of the caadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDAAR,  Next: CDADAR,  Prev: CDAADR,  Up: PROGRAMMING
+
+CDAAR    cdr of the caar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDADAR,  Next: CDADDR,  Prev: CDAAR,  Up: PROGRAMMING
+
+CDADAR    cdr of the cadar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDADDR,  Next: CDADR,  Prev: CDADAR,  Up: PROGRAMMING
+
+CDADDR    cdr of the caddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDADR,  Next: CDAR,  Prev: CDADDR,  Up: PROGRAMMING
+
+CDADR    cdr of the cadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDAR,  Next: CDDAAR,  Prev: CDADR,  Up: PROGRAMMING
+
+CDAR    cdr of the car
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDAAR,  Next: CDDADR,  Prev: CDAR,  Up: PROGRAMMING
+
+CDDAAR    cdr of the cdaar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDADR,  Next: CDDAR,  Prev: CDDAAR,  Up: PROGRAMMING
+
+CDDADR    cdr of the cdadr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDAR,  Next: CDDDAR,  Prev: CDDADR,  Up: PROGRAMMING
+
+CDDAR    cdr of the cdar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDDAR,  Next: CDDDDR,  Prev: CDDAR,  Up: PROGRAMMING
+
+CDDDAR    cdr of the cddar
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDDDR,  Next: CDDDR,  Prev: CDDDAR,  Up: PROGRAMMING
+
+CDDDDR    cdr of the cdddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDDR,  Next: CDDR,  Prev: CDDDDR,  Up: PROGRAMMING
+
+CDDDR    cdr of the cddr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDDR,  Next: CDR,  Prev: CDDDR,  Up: PROGRAMMING
+
+CDDR    cdr of the cdr
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: CDR,  Next: CEILING,  Prev: CDDR,  Up: PROGRAMMING
+
+CDR    returns the second element of a cons pair, else nil
+
+Completion Axiom:
+
+     (equal (cdr x)
+            (cond
+             ((consp x)
+              (cdr x))
+             (t nil)))
+
+Guard:
+
+     (or (consp x) (equal x nil))
+
+Notice that in the ACL2 logic, cdr returns nil for every atom.
+
+
+File: acl2-doc-emacs.info,  Node: CEILING,  Next: CHAR,  Prev: CDR,  Up: PROGRAMMING
+
+CEILING    division returning an integer by truncating toward positive infinity
+
+     Example Forms:
+     ACL2 !>(ceiling 14 3)
+     5
+     ACL2 !>(ceiling -14 3)
+     -4
+     ACL2 !>(ceiling 14 -3)
+     -4
+     ACL2 !>(ceiling -14 -3)
+     5
+     ACL2 !>(ceiling -15 -3)
+     5
+
+(Ceiling i j) is the result of taking the quotient of i and j and
+returning the smallest integer that is at least as great as that
+quotient.  For example, the quotient of -14 by 3 is -4 2/3, and the
+smallest integer at least that great is -4.
+
+The guard for (ceiling i j) requires that i and j are rational (real,
+in ACL2(r)) numbers and j is non-zero.
+
+Ceiling is a Common Lisp function.  See any Common Lisp documentation
+for more information.  However, note that unlike Common Lisp, the ACL2
+ceiling function returns only a single value,
+
+
+File: acl2-doc-emacs.info,  Node: CHAR,  Next: CHAR-CODE,  Prev: CEILING,  Up: PROGRAMMING
+
+CHAR    the nth element (zero-based) of a string
+
+(Char s n) is the nth element of s, zero-based.  If n is greater than
+or equal to the length of s, then char returns nil.
+
+(Char s n) has a guard that n is a non-negative integer and s is a
+stringp.
+
+Char is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR-CODE,  Next: CHAR-DOWNCASE,  Prev: CHAR,  Up: PROGRAMMING
+
+CHAR-CODE    the numeric code for a given character
+
+Completion Axiom:
+
+     (equal (char-code x)
+            (if (characterp x)
+                (char-code x)
+              0))
+
+Guard for (char-code x):
+
+     (characterp x)
+
+This function maps all non-characters to 0.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR-DOWNCASE,  Next: CHAR-EQUAL,  Prev: CHAR-CODE,  Up: PROGRAMMING
+
+CHAR-DOWNCASE    turn upper-case characters into lower-case characters
+
+(Char-downcase x) is equal to #a when x is #A, #b when x is #B, ...,
+and #z when x is #Z, and is x for any other character.
+
+The guard for char-downcase requires its argument to be a standard
+character (see *note STANDARD-CHAR-P::).
+
+Char-downcase is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR-EQUAL,  Next: CHAR-UPCASE,  Prev: CHAR-DOWNCASE,  Up: PROGRAMMING
+
+CHAR-EQUAL    character equality without regard to case
+
+For characters x and y, (char-equal x y) is true if and only if x and y
+are the same except perhaps for their case.
+
+The guard on char-equal requires that its arguments are both standard
+characters (see *note STANDARD-CHAR-P::).
+
+Char-equal is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR-UPCASE,  Next: CHAR<,  Prev: CHAR-EQUAL,  Up: PROGRAMMING
+
+CHAR-UPCASE    turn lower-case characters into upper-case characters
+
+(Char-upcase x) is equal to #A when x is #a, #B when x is #b, ..., and
+#Z when x is #z, and is x for any other character.
+
+The guard for char-upcase requires its argument to be a standard
+character (see *note STANDARD-CHAR-P::).
+
+Char-upcase is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR<,  Next: CHAR<=,  Prev: CHAR-UPCASE,  Up: PROGRAMMING
+
+CHAR<    less-than test for characters
+
+(char< x y) is true if and only if the character code of x is less than
+that of y.  See *Note CHAR-CODE::.
+
+The guard for char< specifies that its arguments are characters.
+
+Char< is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR<=,  Next: CHAR>,  Prev: CHAR<,  Up: PROGRAMMING
+
+CHAR<=    less-than-or-equal test for characters
+
+(char<= x y) is true if and only if the character code of x is less
+than or equal to that of y.  See *Note CHAR-CODE::.
+
+The guard for char<= specifies that its arguments are characters.
+
+Char<= is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR>,  Next: CHAR>=,  Prev: CHAR<=,  Up: PROGRAMMING
+
+CHAR>    greater-than test for characters
+
+(char> x y) is true if and only if the character code of x is greater
+than that of y.  See *Note CHAR-CODE::.
+
+The guard for char> specifies that its arguments are characters.
+
+Char> is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHAR>=,  Next: CHARACTER-LISTP,  Prev: CHAR>,  Up: PROGRAMMING
+
+CHAR>=    greater-than-or-equal test for characters
+
+(char>= x y) is true if and only if the character code of x is greater
+than or equal to that of y.  See *Note CHAR-CODE::.
+
+The guard for char>= specifies that its arguments are characters.
+
+Char>= is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CHARACTER-LISTP,  Next: CHARACTERP,  Prev: CHAR>=,  Up: PROGRAMMING
+
+CHARACTER-LISTP    recognizer for a true list of characters
+
+The predicate character-listp tests whether its argument is a true list
+of characters.
+
+
+File: acl2-doc-emacs.info,  Node: CHARACTERP,  Next: CHARACTERS,  Prev: CHARACTER-LISTP,  Up: PROGRAMMING
+
+CHARACTERP    recognizer for characters
+
+(characterp x) is true if and only if x is a character.
+
+
+File: acl2-doc-emacs.info,  Node: CHARACTERS,  Next: CLOSE-INPUT-CHANNEL,  Prev: CHARACTERP,  Up: PROGRAMMING
+
+CHARACTERS    characters in ACL2
+
+ACL2 accepts 256 distinct characters, which are the characters obtained
+by applying the function code-char to each integer from 0 to 255.
+Among these, Common Lisp designates certain ones as _standard
+characters_, namely those of the form (code-char n) where n is from 33
+to 126, together with #\Newline and #\Space.  The actual standard
+characters may be viewed by evaluating the defconst *standard-chars*.
+
+To be more precise, Common Lisp does not specify the precise
+relationship between code-char and the standard characters.  However,
+we check that the underlying Common Lisp implementation uses a
+particular relationship that extends the usual ASCII coding of
+characters.  We also check that Space, Tab, Newline, Page, and Rubout
+correspond to characters with respective char-codes 32, 9, 10, 12, and
+127.
+
+Code-char has an inverse, char-code.  Thus, when char-code is applied
+to an ACL2 character, c, it returns a number n between 0 and 255
+inclusive such that (code-char n) = c.
+
+The preceding paragraph implies that there is only one ACL2 character
+with a given character code.  CLTL allows for "attributes" for
+characters, which could allow distinct characters with the same code,
+but ACL2 does not allow this.
+
+_The Character Reader_
+
+ACL2 supports the `#\' notation for characters provided by Common Lisp,
+with some restrictions.  First of all, for every character c, the
+notation
+
+     #\c
+
+may be used to denote the character object c.  That is, the user may
+type in this notation and ACL2 will read it as denoting the character
+object c.  In this case, the character immediately following c must be
+one of the following "terminating characters": a Tab, a Newline, a Page
+character, a space, or one of the characters:
+
+     "  '  (  )  ;  `  ,
+
+Other than the notation above, ACL2 accepts alternate notation for five
+characters.
+
+     #\Space
+     #\Tab
+     #\Newline
+     #\Page
+     #\Rubout
+
+Again, in each of these cases the next character must be from among the
+set of "terminating characters" described in the single-character case.
+Our implementation is consistent with IS0-8859, even though we don't
+provide #\ syntax for entering characters other than that described
+above.
+
+Finally, we note that it is our intention that any object printed by
+ACL2's top-level-loop may be read back into ACL2.  Please notify the
+implementors if you find a counterexample to this claim.
+
+
+File: acl2-doc-emacs.info,  Node: CLOSE-INPUT-CHANNEL,  Next: CLOSE-OUTPUT-CHANNEL,  Prev: CHARACTERS,  Up: PROGRAMMING
+
+CLOSE-INPUT-CHANNEL    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: CLOSE-OUTPUT-CHANNEL,  Next: CODE-CHAR,  Prev: CLOSE-INPUT-CHANNEL,  Up: PROGRAMMING
+
+CLOSE-OUTPUT-CHANNEL    See *Note IO::.
+
+
+File: acl2-doc-emacs.info,  Node: CODE-CHAR,  Next: COERCE,  Prev: CLOSE-OUTPUT-CHANNEL,  Up: PROGRAMMING
+
+CODE-CHAR    the character corresponding to a given numeric code
+
+Completion Axiom:
+
+     (equal (code-char x)
+            (if (and (integerp x)
+                     (>= x 0)
+                     (< x 256))
+                (code-char x)
+              (code-char 0)))
+
+Guard for (code-char x):
+
+     (and (integerp x)
+          (>= x 0)
+          (< x 256))
+
+ACL2 supports 8-bit characters.  Inputs not between 0 and 255 are
+treated as 0.
+
+
+File: acl2-doc-emacs.info,  Node: COERCE,  Next: COMPILATION,  Prev: CODE-CHAR,  Up: PROGRAMMING
+
+COERCE    coerce a character list to a string and a string to a list
+
+Completion Axiom:
+
+     (equal (coerce x y)
+            (cond
+             ((equal y 'list)
+              (if (stringp x)
+                  (coerce x 'list)
+                nil))
+             (t
+              (coerce (make-character-list x) 'string))))
+
+Guard for (coerce x y):
+
+     (if (equal y 'list)
+         (stringp x)
+       (if (equal y 'string)
+           (character-listp x)
+         nil))
+
+
+File: acl2-doc-emacs.info,  Node: COMPILATION,  Next: COMPLEX,  Prev: COERCE,  Up: PROGRAMMING
+
+COMPILATION    compiling ACL2 functions
+
+     Example:
+     ACL2 !>:comp app
+     ACL2 !>:set-compile-fns t
+
+See *Note COMP:: and see *note SET-COMPILE-FNS::.
+
+
+File: acl2-doc-emacs.info,  Node: COMPLEX,  Next: COMPLEX-RATIONALP,  Prev: COMPILATION,  Up: PROGRAMMING
+
+COMPLEX    create an ACL2 number
+
+     Examples:
+     (complex x 3) ; x + 3i, where i is the principal square root of -1
+     (complex x y) ; x + yi
+     (complex x 0) ; same as x, for rational numbers x
+
+The function complex takes two rational number arguments and returns an
+ACL2 number.  This number will be of type (complex rational) [as
+defined in the Common Lisp language], except that if the second
+argument is zero, then complex returns its first argument.  The
+function complex-rationalp is a recognizer for complex rational
+numbers, i.e. for ACL2 numbers that are not rational numbers.
+
+The reader macro #C (which is the same as #c) provides a convenient way
+for typing in complex numbers.  For explicit rational numbers x and y,
+#C(x y) is read to the same value as (complex x y).
+
+The functions realpart and imagpart return the real and imaginary parts
+(respectively) of a complex (possibly rational) number.  So for
+example, (realpart #C(3 4)) = 3, (imagpart #C(3 4)) = 4, (realpart 3/4)
+= 3/4, and (imagpart 3/4) = 0.
+
+The following built-in axiom may be useful for reasoning about complex
+numbers.
+
+     (defaxiom complex-definition
+       (implies (and (real/rationalp x)
+                     (real/rationalp y))
+                (equal (complex x y)
+                       (+ x (* #c(0 1) y))))
+       :rule-classes nil)
+
+A completion axiom that shows what complex returns on arguments
+violating its guard (which says that both arguments are rational
+numbers) is the following.
+
+     (equal (complex x y)
+            (complex (if (rationalp x) x 0)
+                     (if (rationalp y) y 0)))
+
+
+File: acl2-doc-emacs.info,  Node: COMPLEX-RATIONALP,  Next: COMPLEX/COMPLEX-RATIONALP,  Prev: COMPLEX,  Up: PROGRAMMING
+
+COMPLEX-RATIONALP    recognizes complex rational numbers
+
+     Examples:
+     (complex-rationalp 3)       ; nil, as 3 is rational, not complex rational
+     (complex-rationalp #c(3 0)) ; nil, since #c(3 0) is the same as 3
+     (complex-rationalp t)       ; nil
+     (complex-rationalp #c(3 1)) ; t, as #c(3 1) is the complex number 3 + i
+
+See *Note COMPLEX:: for more about complex rationals in ACL2.
+
+
+File: acl2-doc-emacs.info,  Node: COMPLEX/COMPLEX-RATIONALP,  Next: CONCATENATE,  Prev: COMPLEX-RATIONALP,  Up: PROGRAMMING
+
+COMPLEX/COMPLEX-RATIONALP    recognizer for complex numbers
+
+For most ACL2 users, this is a macro abbreviating complex-rationalp;
+see *note COMPLEX-RATIONALP::.  In  ACL2(r) (see *note REAL::), a
+complex number x may have irrational real and imaginary parts.  This
+macro abbreviates the predicate complexp in ACL2(r), which holds for
+such x.  Most ACL2 users can ignore this macro and use complex-rationalp
+instead.  Some books in the ACL2 distribution use
+complex/complex-rationalp so that they are suitable for ACL2(r) as well.
+
+
+File: acl2-doc-emacs.info,  Node: CONCATENATE,  Next: COND,  Prev: COMPLEX/COMPLEX-RATIONALP,  Up: PROGRAMMING
+
+CONCATENATE    concatenate lists or strings together
+
+     Examples:
+     (concatenate 'string "ab" "cd" "ef")     ; equals "abcdef"
+     (concatenate 'string "ab")               ; equals "ab"
+     (concatenate 'list '(a b) '(c d) '(e f)) ; equals '(a b c d e f)
+     (concatenate 'list)                      ; equals nil
+     
+     General Form:
+     (concatenate result-type x1 x2 ... xn)
+
+where n >= 0 and either:  result-type is 'string and each xi is a
+string; or result-type is 'list and each xi is a true list.
+Concatenate simply concatenates its arguments to form the result string
+or list.  Also see *note APPEND:: and see *note STRING-APPEND::, though
+concatenate is probably preferable to string-append for efficiency.
+
+Note:  We do *not* try to comply with the Lisp language's insistence
+that concatenate copies its arguments.  Not only are we in an
+applicative setting, where this issue shouldn't matter for the logic,
+but also we do not actually modify the underlying lisp implementation
+of concatenate; we merely provide a definition for it.
+
+Concatenate is a Common Lisp function.  See any Common Lisp
+documentation for more information.
+
+
+File: acl2-doc-emacs.info,  Node: COND,  Next: CONJUGATE,  Prev: CONCATENATE,  Up: PROGRAMMING
+
+COND    conditional based on if-then-else
+
+Cond is the construct for IF, THEN, ELSE IF, ...  The test is against
+nil.  The argument list for cond is a list of "clauses", each of which
+is a list.  In ACL2, clauses must have length 1 or 2.
+
+Cond is a Common Lisp macro.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: CONJUGATE,  Next: CONS,  Prev: COND,  Up: PROGRAMMING
+
+CONJUGATE    complex number conjugate
+
+Conjugate takes an ACL2 number as an argument, and returns its complex
+conjugate (i.e., the result of negating its imaginary part.).
+
+Conjugate is a Common Lisp function.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: CONS,  Next: CONSP,  Prev: CONJUGATE,  Up: PROGRAMMING
+
+CONS    pair and list constructor
+
+(cons x y) is a pair whose first component is x and second component is
+y.  If y is a list, then (cons x y) is a list that has an addtional
+element x on the front.
+
+
+File: acl2-doc-emacs.info,  Node: CONSP,  Next: CW,  Prev: CONS,  Up: PROGRAMMING
+
+CONSP    recognizer for cons pairs
+
+(consp x) is true if and only if x is a cons pair.
+
+
+File: acl2-doc-emacs.info,  Node: CW,  Next: DECLARE,  Prev: CONSP,  Up: PROGRAMMING
+
+CW    print to the comment window
+
+Example:
+
+     (cw "The goal is ~p0 and the alist is ~x1.~%"
+         (untranslate term t nil)
+         unify-subst)
+
+Logically, this expression is equivalent to nil.  However, it has the
+effect of first printing to the so-called "comment window" the fmt
+string as indicated.  Thus, cw is like fmt (see *note FMT::) except in
+three important ways.  First, it is a :logic mode function.  Second, it
+neither takes nor returns the ACL2 state;  logically cw simply returns
+nil, although it prints to a _comment window_ that just happens to
+share the terminal screen with the standard character output
+*standard-co*.  Third, its fmt args are positional references, so that
+for example
+
+     (cw "Answers: ~p0 and ~p1" ans1 ans2)
+
+prints in the same manner as:
+
+     (fmt "Answers: ~p0 and ~p1"
+          (list (cons #\0 ans1) (cons #\1 ans2))
+          *standard-co* state nil)
+
+Typically, calls of cw are embedded in prog2$ forms, e.g.,
+
+     (prog2$ (cw ...)
+             (mv a b c))
+
+which has the side-effect of printing to the comment window and
+logically returning (mv a b c).
+
+     General Form:
+     (cw fmt-string arg1 arg2 ... argn)
+
+where n is between 0 and 9 (inclusive).  The macro uses
+fmt-to-comment-window, passing it the column 0 and evisc-tuple nil,
+after assembling the appropriate alist binding the fmt vars #\0 through
+#\9; see *note FMT::.  If you want
+
+     (a) more than 10 vars,
+     (b) vars other than the digit chars,
+     (c) a different column, or
+     (d) a different evisc-tuple,
+
+then call fmt-to-comment-window instead.
+
+
+File: acl2-doc-emacs.info,  Node: DECLARE,  Next: DENOMINATOR,  Prev: CW,  Up: PROGRAMMING
+
+DECLARE    declarations
+
+     Examples:
+     (declare (ignore x y z))
+     (declare (ignorable x y z)
+              (type integer i j k)
+              (type (satisfies integerp) m1 m2))
+     (declare (xargs :guard (and (integerp i)
+                                 (<= 0 i))
+                     :guard-hints (("Goal" :use (:instance lemma3
+                                                   (x (+ i j)))))))
+     
+     General Form:
+     (declare d1 ... dn)
+     where, in ACL2, each di is of one of the following forms:
+     
+       (ignore v1 ... vn) -- where each vi is a variable introduced in
+       the immediately superior lexical environment.  These variables must not
+       occur free in the scope of the declaration.
+     
+       (ignorable v1 ... vn) -- where each vi is a variable introduced in
+       the immediately superior lexical environment.  These variables need not
+       occur free in the scope of the declaration.  This declaration can be useful
+       for inhibiting compiler warnings.
+     
+       (type type-spec v1 ... vn) -- where each vi is a variable introduced in the
+       immediately superior lexical environment and type-spec is a type specifier
+       (as described in the documentation for type-spec).
+     
+       (xargs :key1 val1 ... :keyn valn) -- where the legal values of the keyi's
+       and their respective vali's are described in the documentation for
+       xargs.
+
+Declarations in ACL2 may occur only where dcl occurs below:
+
+       (DEFUN name args doc-string dcl ... dcl body)
+       (DEFMACRO name args doc-string dcl ... dcl body)
+       (LET ((v1 t1) ...) dcl ... dcl body)
+       (MV-LET (v1 ...) term dcl ... dcl body)
+
+Of course, if a form macroexpands into one of these (as let* expands
+into nested lets and our er-let* expands into nested mv-lets) then
+declarations are permitted as handled by the macros involved.
+
+Declare is defined in Common Lisp.  See any Common Lisp documentation
+for more information.
+
+
+File: acl2-doc-emacs.info,  Node: DENOMINATOR,  Next: DIGIT-CHAR-P,  Prev: DECLARE,  Up: PROGRAMMING
+
+DENOMINATOR    divisor of a ratio in lowest terms
+
+Completion Axiom:
+
+     (equal (denominator x)
+            (if (rationalp x)
+                (denominator x)
+              1))
+
+Guard for (denominator x):
+
+     (rationalp x)
+
+
+File: acl2-doc-emacs.info,  Node: DIGIT-CHAR-P,  Next: DIGIT-TO-CHAR,  Prev: DENOMINATOR,  Up: PROGRAMMING
+
+DIGIT-CHAR-P    the number, if any, corresponding to a given character
+
+(digit-char-p ch) is the integer corresponding to the character ch in
+base 10.  For example, (digit-char-p #\3) is equal to the integer 3.
+More generally, an optional second argument specifies the radix
+(default 10, as indicated above).
+
+The guard for digit-char-p (more precisely, for the function
+our-digit-char-p that calls of this macro expand to) requires its
+second argument to be an integer between 2 and 36, inclusive, and its
+first argument to be a character.
+
+Digit-char-p is a Common Lisp function, though it is implemented in the
+ACL2 logic as an ACL2 macro.  See any Common Lisp documentation for
+more information.
+
+
+File: acl2-doc-emacs.info,  Node: DIGIT-TO-CHAR,  Next: E0-ORD-<,  Prev: DIGIT-CHAR-P,  Up: PROGRAMMING
+
+DIGIT-TO-CHAR    map a digit to a character
+
+     Example:
+     ACL2 !>(digit-to-char 8)
+     #\8
+
+For an integer n from 0 to 15, (digit-to-char n) is the character
+corresponding to n in hex notation, using uppercase letters for digits
+exceeding 9.  If n is in the appropriate range, that result is of course
+also the binary, octal, and decimal digit.
+
+The guard for digit-to-char requires its argument to be an integer
+between 0 and 9, inclusive.
+
+
+File: acl2-doc-emacs.info,  Node: E0-ORD-<,  Next: E0-ORDINALP,  Prev: DIGIT-TO-CHAR,  Up: PROGRAMMING
+
+E0-ORD-<    the old ordering function for ACL2 ordinals
+
+See *Note O<:: for the current new ordering function for ACL2 ordinals.
+
+The functions e0-ordinalp and e0-ord-< were replaced in ACL2
+Version_2.8 by o-p and o<, respectively.  However, books created before
+that version used the earlier functions for termination proofs; the old
+functions might be of use in these cases.  To use the old functions in
+termination proofs, include the book books/ordinals/e0-ordinal and
+execute the event (set-well-founded-relation e0-ord-<) (see *note
+SET-WELL-FOUNDED-RELATION::).  For a more thorough discussion of these
+functions, see the documentation at the end of
+books/ordinals/e0-ordinal.lisp.
+
+
+File: acl2-doc-emacs.info,  Node: E0-ORDINALP,  Next: EIGHTH,  Prev: E0-ORD-<,  Up: PROGRAMMING
+
+E0-ORDINALP    the old recognizer for ACL2 ordinals
+
+See *Note O-P:: for the current recognizer for ACL2 ordinals.
+
+The functions e0-ordinalp and e0-ord-< were replaced in ACL2
+Version_2.8 by o-p and o<, respectively.  However, books created before
+that version used the earlier functions for termination proofs; the old
+functions might be of use in these cases.  To use the old functions in
+termination proofs, include the book books/ordinals/e0-ordinal and
+execute the event (set-well-founded-relation e0-ord-<) (see *note
+SET-WELL-FOUNDED-RELATION::).  For a more thorough discussion of these
+functions, see the documentation at the end of
+books/ordinals/e0-ordinal.lisp.
+
+
+File: acl2-doc-emacs.info,  Node: EIGHTH,  Next: ENDP,  Prev: E0-ORDINALP,  Up: PROGRAMMING
+
+EIGHTH    eighth member of the list
+
+See any Common Lisp documentation for details.
+
+
+File: acl2-doc-emacs.info,  Node: ENDP,  Next: EQ,  Prev: EIGHTH,  Up: PROGRAMMING
+
+ENDP    recognizer for empty lists
+
+In the ACL2 logic, (endp x) is the same as (atom x).  See *Note ATOM::.
+
+Unlike atom, the guard for endp requires that x is a cons pair or is
+nil.  Thus, endp is typically used as a termination test for functions
+that recur on a true-listp argument.  See *Note GUARD:: for general
+information about guards.
+
+Endp is a Common Lisp function.  See any Common Lisp documentation for
+more information.
+

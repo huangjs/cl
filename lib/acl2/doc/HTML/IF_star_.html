@@ -1,0 +1,206 @@
+<html>
+<head><title>IF_star_.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>IF*</h2>for conditional rewriting with BDDs
+<pre>Major Section:  <a href="BDD.html">BDD</a>
+</pre><p>
+
+The function <code>IF*</code> is defined to be <code><a href="IF.html">IF</a></code>, but it is used in a
+special way by ACL2's <a href="BDD.html">BDD</a> package.
+<p>
+As explained elsewhere (see <a href="BDD-ALGORITHM.html">bdd-algorithm</a>), ACL2's <a href="BDD.html">BDD</a>
+algorithm gives special treatment to <a href="TERM.html">term</a>s of the form
+<code>(IF* TEST TBR FBR)</code>.  In such cases, the algorithm simplifies
+<code>TEST</code> first, and the result of that simplification must be a
+constant (normally <code>t</code> or <code>nil</code>, but any non-<code>nil</code> explicit value is
+treated like <code>t</code> here).  Otherwise, the algorithm aborts.<p>
+
+Thus, <code>IF*</code> may be used to implement a sort of conditional
+rewriting for ACL2's <a href="BDD.html">BDD</a> package, even though this package only
+nominally supports unconditional rewriting.  The following contrived
+example should make this point clear.<p>
+
+Suppose that we want to prove that <code>(nthcdr (length x) (append x y))</code>
+is equal to <code>y</code>, but that we would be happy to prove this only for
+lists having length 4.  We can state such a theorem as follows.
+
+<pre>
+(let ((x (list x0 x1 x2 x3)))
+  (equal (nthcdr (length x) (append x y))
+         y))
+</pre>
+
+If we want to prove this formula with a <code>:</code><code><a href="BDD.html">BDD</a></code> hint, then we need to
+have appropriate rewrite rules around.  First, note that <code>LENGTH</code> is
+defined as follows (try <code>:</code><code><a href="PE.html">PE</a></code> <code><a href="LENGTH.html">LENGTH</a></code>):
+
+<pre>
+(length x)
+ =
+(if (stringp x)
+    (len (coerce x 'list))
+    (len x))
+</pre>
+
+Since <a href="BDD.html">BDD</a>-based rewriting is merely very simple unconditional
+rewriting (see <a href="BDD-ALGORITHM.html">bdd-algorithm</a>), we expect to have to prove a
+rule reducing <code><a href="STRINGP.html">STRINGP</a></code> of a <code><a href="CONS.html">CONS</a></code>:
+
+<pre>
+(defthm stringp-cons
+  (equal (stringp (cons x y))
+         nil))
+</pre>
+
+Now we need a rule to compute the <code>LEN</code> of <code>X</code>, because the definition
+of <code>LEN</code> is recursive and hence not used by the <a href="BDD.html">BDD</a> package.
+
+<pre>
+(defthm len-cons
+  (equal (len (cons a x))
+         (1+ (len x))))
+</pre>
+
+We imagine this rule simplifying <code>(LEN (LIST X0 X1 X2 X3))</code> in terms of
+<code>(LEN (LIST X1 X2 X3))</code>, and so on, and then finally <code>(LEN nil)</code> should
+be computed by execution (see <a href="BDD-ALGORITHM.html">bdd-algorithm</a>).<p>
+
+We also need to imagine simplifying <code>(APPEND X Y)</code>, where still <code>X</code> is
+bound to <code>(LIST X0 X1 X2 X3)</code>.  The following two rules suffice for
+this purpose (but are needed, since <code><a href="APPEND.html">APPEND</a></code>, actually <code><a href="BINARY-APPEND.html">BINARY-APPEND</a></code>,
+is recursive).
+
+<pre>
+(defthm append-cons
+  (equal (append (cons a x) y)
+         (cons a (append x y))))<p>
+
+(defthm append-nil
+  (equal (append nil x)
+         x))
+</pre>
+
+Finally, we imagine needing to simplify calls of <code><a href="NTHCDR.html">NTHCDR</a></code>, where the
+the first argument is a number (initially, the length of
+<code>(LIST X0 X1 X2 X3)</code>, which is 4).  The second lemma below is the
+traditional way to accomplish that goal (when not using BDDs), by
+proving a conditional rewrite rule.  (The first lemma is only proved
+in order to assist in the proof of the second lemma.)
+
+<pre>
+(defthm fold-constants-in-+
+  (implies (and (syntaxp (quotep x))
+                (syntaxp (quotep y)))
+           (equal (+ x y z)
+                  (+ (+ x y) z))))<p>
+
+(defthm nthcdr-add1-conditional
+  (implies (not (zp (1+ n)))
+           (equal (nthcdr (1+ n) x)
+                  (nthcdr n (cdr x)))))
+</pre>
+
+The problem with this rule is that its hypothesis makes it a
+conditional <a href="REWRITE.html">rewrite</a> rule, and conditional rewrite rules
+are not used by the <a href="BDD.html">BDD</a> package.  (See <a href="BDD-ALGORITHM.html">bdd-algorithm</a> for a
+discussion of ``BDD rules.'')  (Note that the hypothesis cannot
+simply be removed; the resulting formula would be false for <code>n = -1</code>
+and <code>x = '(a)</code>, for example.)  We can solve this problem by using
+<code>IF*</code>, as follows; comments follow.
+
+<pre>
+(defthm nthcdr-add1
+  (equal (nthcdr (+ 1 n) x)
+         (if* (zp (1+ n))
+              x
+              (nthcdr n (cdr x)))))
+</pre>
+
+How is <code>nthcdr-add1</code> applied by the <a href="BDD.html">BDD</a> package?  Suppose that the <a href="BDD.html">BDD</a>
+computation encounters a <a href="TERM.html">term</a> of the form <code>(NTHCDR (+ 1 N) X)</code>.
+Then the <a href="BDD.html">BDD</a> package will apply the <a href="REWRITE.html">rewrite</a> rule <code>nthcdr-add1</code>.  The
+first thing it will do when attempting to simplify the right hand
+side of that rule is to attempt to simplify the term <code>(ZP (1+ N))</code>.
+If <code>N</code> is an explicit number (which is the case in the scenario we
+envision), this test will reduce (assuming the executable
+counterparts of <code><a href="ZP.html">ZP</a></code> and <code><a href="BINARY-+.html">BINARY-+</a></code> are <a href="ENABLE.html">enable</a>d) to <code>t</code> or
+to <code>nil</code>.  In fact, the lemmas above (not including the lemma
+<code>nthcdr-add1-conditional</code>) suffice to prove our goal:
+
+<pre>
+(thm (let ((x (list x0 x1 x2 x3)))
+       (equal (nthcdr (length x) (append x y))
+              y))
+     :hints (("Goal" :bdd (:vars nil))))
+</pre>
+<p>
+
+If we execute the following form that disables the definition and
+executable counterpart of the function <code><a href="ZP.html">ZP</a></code>
+
+<pre>
+(in-theory (disable zp (zp)))
+</pre>
+
+before attempting the proof of the theorem above, we can see more
+clearly the point of using <code>IF*</code>.  In this case, the prover makes
+the following report.
+
+<pre>
+ACL2 Error in ( THM ...):  Unable to resolve test of IF* for term<p>
+
+(IF* (ZP (+ 1 N)) X (NTHCDR N (CDR X)))<p>
+
+under the bindings<p>
+
+((X (CONS X0 (CONS X1 (CONS X2 #)))) (N '3))<p>
+
+-- use SHOW-BDD to see a backtrace.
+</pre>
+
+If we follow the advice above, we can see rather clearly what
+happened.  See <a href="SHOW-BDD.html">show-bdd</a>.
+
+<pre>
+ACL2 !&gt;(show-bdd)<p>
+
+BDD computation on Goal yielded 21 nodes.
+==============================<p>
+
+BDD computation was aborted on Goal, and hence there is no
+falsifying assignment that can be constructed.  Here is a backtrace
+of calls, starting with the top-level call and ending with the one
+that led to the abort.  See :DOC show-bdd.<p>
+
+(LET ((X (LIST X0 X1 X2 X3)))
+     (EQUAL (NTHCDR (LENGTH X) (APPEND X Y)) Y))
+  alist: ((Y Y) (X3 X3) (X2 X2) (X1 X1) (X0 X0))<p>
+
+(NTHCDR (LENGTH X) (APPEND X Y))
+  alist: ((X (LIST X0 X1 X2 X3)) (Y Y))<p>
+
+(IF* (ZP (+ 1 N)) X (NTHCDR N (CDR X)))
+  alist: ((X (LIST* X0 X1 X2 X3 Y)) (N 3))
+ACL2 !&gt;
+</pre>
+
+Each of these term-alist pairs led to the next, and the test of the
+last one, namely <code>(ZP (+ 1 N))</code> where <code>N</code> is bound to <code>3</code>, was
+not simplified to <code>t</code> or to <code>nil</code>.<p>
+
+What would have happened if we had used <code><a href="IF.html">IF</a></code> in place of <code>IF*</code> in
+the rule <code>nthcdr-add1</code>?  In that case, if <code>ZP</code> and its executable
+counterpart were disabled then we would be put into an infinite
+loop!  For, each time a term of the form <code>(NTHCDR k V)</code> is
+encountered by the BDD package (where k is an explicit number), it
+will be rewritten in terms of <code>(NTHCDR k-1 (CDR V))</code>.  We would
+prefer that if for some reason the term <code>(ZP (+ 1 N))</code> cannot be
+decided to be <code>t</code> or to be <code>nil</code>, then the BDD computation should
+simply abort.<p>
+
+Even if there were no infinite loop, this kind of use of <code>IF*</code> is
+useful in order to provide feedback of the form shown above whenever
+the test of an <code>IF</code> term fails to simplify to <code>t</code> or to <code>nil</code>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

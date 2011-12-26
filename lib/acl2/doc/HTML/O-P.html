@@ -1,0 +1,188 @@
+<html>
+<head><title>O-P.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>O-P</h2>a recognizer for the ordinals up to epsilon-0
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+Using the nonnegative integers and lists we can represent the ordinals up to
+<code>epsilon-0</code>. The ordinal representation used in ACL2 has changed as
+of Version_2.8 from that of Nqthm-1992, courtesy of Pete Manoilios and Daron
+Vroon; additional discussion may be found in ``Ordinal Arithmetic in ACL2'',
+proceedings of ACL2 Workshop 2003,
+<code>http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/</code>.  Previously,
+ACL2's notion of ordinal was very similar to the development given in ``New
+Version of the Consistency Proof for Elementary Number Theory'' in The
+Collected Papers of Gerhard Gentzen, ed. M.E. Szabo, North-Holland
+Publishing Company, Amsterdam, 1969, pp 132-213.
+<p>
+The following essay is intended to provide intuition about ordinals.
+The truth, of course, lies simply in the ACL2 definitions of
+<code>o-p</code> and <code><a href="O_lt_.html">o&lt;</a></code>.<p>
+
+Very intuitively, think of each non-zero natural number as by being
+denoted by a series of the appropriate number of strokes, i.e.,
+
+<pre>
+0             0
+1             |
+2             ||
+3             |||
+4             ||||
+...           ...
+</pre>
+
+Then ``<code>omega</code>,'' here written as <code>w</code>, is the ordinal that might be
+written as
+
+<pre>
+w             |||||...,
+</pre>
+
+i.e., an infinite number of strokes.  Addition here is just
+concatenation.  Observe that adding one to the front of <code>w</code> in the
+picture above produces <code>w</code> again, which gives rise to a standard
+definition of <code>w</code>:  <code>w</code> is the least ordinal such that adding another
+stroke at the beginning does not change the ordinal.<p>
+
+We denote by <code>w+w</code> or <code>w*2</code> the ``<code>doubly infinite</code>'' sequence that we
+might write as follows.
+
+<pre>
+w*2           |||||... |||||... 
+</pre>
+
+One way to think of <code>w*2</code> is that it is obtained by replacing each
+stroke in <code>2</code> <code>(||)</code> by <code>w</code>.  Thus, one can imagine <code>w*3</code>, <code>w*4</code>, etc., which
+leads ultimately to the idea of ``<code>w*w</code>,'' the ordinal obtained by
+replacing each stroke in <code>w</code> by <code>w</code>.  This is also written as ``<code>omega</code>
+squared'' or <code>w^2</code>, or:
+
+<pre>
+ 2
+w             |||||... |||||... |||||... |||||... |||||... ...
+</pre>
+
+We can analogously construct <code>w^3</code> by replacing each stroke in <code>w</code> by
+<code>w^2</code> (which, it turns out, is the same as replacing each stroke in
+<code>w^2</code> by <code>w</code>).  That is, we can construct <code>w^3</code> as <code>w</code> copies of <code>w^2</code>,
+
+<pre>
+ 3              2       2       2       2
+w              w  ...  w  ...  w  ...  w ... ...
+</pre>
+
+Then we can construct <code>w^4</code> as <code>w</code> copies of <code>w^3</code>, <code>w^5</code> as <code>w</code> copies of
+<code>w^4</code>, etc., ultimately suggesting <code>w^w</code>.  We can then stack <code>omega</code>s,
+i.e., <code>(w^w)^w</code> etc.  Consider the ``limit'' of all of those stacks,
+which we might display as follows.
+
+<pre>
+       .         
+      .
+     .
+    w
+   w
+  w
+ w
+w
+</pre>
+
+That is epsilon-0.<p>
+
+Below we begin listing some ordinals up to <code>epsilon-0</code>; the reader can
+fill in the gaps at his or her leisure.  We show in the left column
+the conventional notation, using <code>w</code> as ``<code>omega</code>,'' and in the right
+column the ACL2 object representing the corresponding ordinal.
+
+<pre>
+  ordinal            ACL2 representation<p>
+
+  0                  0
+  1                  1
+  2                  2
+  3                  3
+  ...                ...
+  w                 '((1 . 1) . 0)
+  w+1               '((1 . 1) . 1)
+  w+2               '((1 . 1) . 2)
+  ...                ...
+  w*2               '((1 . 2) . 0)
+  (w*2)+1           '((1 . 2) . 1)
+  ...                ...
+  w*3               '((1 . 3) . 0)
+  (w*3)+1           '((1 . 3) . 1)
+  ...                ...<p>
+
+   2
+  w                 '((2 . 1) . 0)
+  ...                ...<p>
+
+   2
+  w +w*4+3          '((2 . 1) (1 . 4) . 3)
+  ...                ...<p>
+
+   3
+  w                 '((3 . 1) . 0)
+  ...                ...<p>
+
+
+   w
+  w                 '((((1 . 1) . 0) . 1) . 0)
+  ...                ...<p>
+
+   w  99
+  w +w  +w4+3       '((((1 . 1) . 0) . 1) (99 . 1) (1 . 4) . 3)
+  ...                ...<p>
+
+    2
+   w
+  w                 '((((2 . 1) . 0) . 1) . 0)<p>
+
+  ...                ...<p>
+
+    w 
+   w 
+  w                 '((((((1 . 1) . 0) . 1) . 0) . 1) . 0) 
+  ...               ... 
+</pre>
+
+Observe that the sequence of <code>o-p</code>s starts with the natural
+numbers (which are recognized by <code><a href="NATP.html">natp</a></code>). This is convenient
+because it means that if a term, such as a measure expression for
+justifying a recursive function (see <a href="O_lt_.html">o&lt;</a>) must produce an <code>o-p</code>,
+it suffices for it to produce a natural number.<p>
+
+The ordinals listed above are listed in ascending order.  This is
+the ordering tested by <code><a href="O_lt_.html">o&lt;</a></code>.<p>
+
+The ``<code>epsilon-0</code> ordinals'' of ACL2 are recognized by the recursively
+defined function <code>o-p</code>.  The base case of the recursion tells us that
+natural numbers are <code>epsilon-0</code> ordinals.  Otherwise, an <code>epsilon-0</code>
+ordinal is a list of <code><a href="CONS.html">cons</a></code> pairs whose final <code><a href="CDR.html">cdr</a></code> is a natural
+number, <code>((a1 . x1) (a2 . x2) ... (an . xn) . p)</code>.  This corresponds to
+the ordinal <code>(w^a1)x1 + (w^a2)x2 + ... + (w^an)xn + p</code>.  Each <code>ai</code> is an
+ordinal in the ACL2 representation that is not equal to 0.  The sequence of
+the <code>ai</code>'s is strictly decreasing (as defined by <code><a href="O_lt_.html">o&lt;</a></code>). Each <code>xi</code>
+is a positive integer (as recognized by <code><a href="POSP.html">posp</a></code>).<p>
+
+Note that infinite ordinals should generally be created using the ordinal
+constructor, <code><a href="MAKE-ORD.html">make-ord</a></code>, rather than <code><a href="CONS.html">cons</a></code>. The functions
+<code><a href="O-FIRST-EXPT.html">o-first-expt</a></code>, <code><a href="O-FIRST-COEFF.html">o-first-coeff</a></code>, and <code><a href="O-RST.html">o-rst</a></code> are ordinals
+destructors.  Finally, the function <code><a href="O-FINP.html">o-finp</a></code> and the macro <code><a href="O-INFP.html">o-infp</a></code>
+tell whether an ordinal is finite or infinite, respectively.<p>
+
+The function <code><a href="O_lt_.html">o&lt;</a></code> compares two <code>epsilon-0</code> ordinals, <code>x</code> and <code>y</code>.
+If both are integers, <code>(o&lt; x y)</code> is just <code>x&lt;y</code>.  If one is an integer
+and the other is a <code><a href="CONS.html">cons</a></code>, the integer is the smaller.  Otherwise,
+<code><a href="O_lt_.html">o&lt;</a></code> recursively compares the <code><a href="O-FIRST-EXPT.html">o-first-expt</a></code>s of the ordinals to
+determine which is smaller.  If they are the same, the <code><a href="O-FIRST-COEFF.html">o-first-coeff</a></code>s
+of the ordinals are compared.  If they are equal, the <code><a href="O-RST.html">o-rst</a></code>s of the
+ordinals are recursively compared.<p>
+
+Fundamental to ACL2 is the fact that <code><a href="O_lt_.html">o&lt;</a></code> is well-founded on
+<code>epsilon-0</code> ordinals.  That is, there is no ``infinitely descending
+chain'' of such ordinals.  See <a href="PROOF-OF-WELL-FOUNDEDNESS.html">proof-of-well-foundedness</a>.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

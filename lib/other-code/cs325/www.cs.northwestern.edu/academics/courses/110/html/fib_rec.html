@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+        "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+<TITLE>Recursion and Fibonacci Numbers</title>
+<LINK href="../cs110.css" rel="stylesheet" type="text/css">
+</HEAD>
+
+<BODY class="regular">
+
+<TABLE width="100%" border="0" cellspacing="0" cellpadding="10%">
+<TR>
+        <TD class="pagetitle">EECS 110: INTRODUCTION TO PROGRAMMING
+        </TD>
+        <TD class="menu">
+                <A class="menu" href="../index.html">Home</A><br>
+                <A class="menu" href="../html/info.html">General Info</A><br>
+                <A class="menu" href="../html/links.html">Help</A><br>
+        </TD>
+        <TD class="menu">
+                <A class="menu" href="../html/notes.html">Lectures</A><br>
+                <A class="menu" href="../html/hw.html"><B>Homework </B></A><br>
+    <!-- <A class="menu" href="exams.html">Exams</A><br> -->
+        </TD>
+
+</TR>
+</TABLE>
+
+<H1>Recursion and Fibonacci Numbers</H1>
+
+<h2>Bad Code Leads to Bad Conclusions</h2>
+
+<p>Section 6.9 of <a href="http://www.course.com/catalog/product.cfm?isbn=978-0-534-49132-1&CFID=19394294&CFTOKEN=73003176">our textbook</a> gives an example of recursive
+code to calculate Fibonacci numbers. Cleaning up the style a little,
+the code looks like this:</p>
+
+<blockquote><pre>long fib(long n)
+{
+    if (n == 0 || n == 1)
+    {
+        return n;
+    }
+    else
+    {
+      return fib(n - 1) + fib(n - 2);
+    }
+}</pre></blockquote>
+
+<p>Code like this can be found in many textbooks and
+on many web sites.
+From this example, the book concludes, on page 356,</p>
+
+<blockquote>"Table 6-2 leads us to the obvious conclusion that
+a recursive solution to calculate Fibonacci numbers is not
+realistic for more than 20 numbers."</blockquote>
+
+<p><strong>This conclusion is out and out wrong.</strong> The
+only thing Table 6-2 demonstrates is that the recursive code
+in Program 6-26 is not usable. That code is a naive implementation of 
+the mathematical equation for Fibonacci numbers. Just because</p>
+
+<blockquote>
+Fibonacci<sub>n</sub> = Fibonacci<sub>n - 1</sub> 
++ Fibonacci<sub>n - 2</sub> 
+</blockquote>
+
+<p>doesn't mean <code>fib(n)</code> should call <code>fib(n - 1)</code>
+and <code>fib(n - 2)</code>. In fact, it suggests exactly the opposite.</p>
+
+<h2>An Intelligent Recursive Fibonacci Solution</h2>
+
+<p>Since Fibonacci<sub>n</sub> needs to add the previous two Fibonacci numbers,
+it makes more sense to define a Fibonacci function that returns not only the Fibonacci for
+n, but for n - 1 too. To get the extra result, 
+we'll use a pointer variable (Section 4.4).
+We'll define a recursive function
+<code>fib2(long n, long * p)</code> that takes
+an positive integer <code>n</code> and a pointer to an integer
+location <code>p</code>.
+<code>fib2()</code> will store Fibonacci<sub>n - 1</sub> 
+in <code>p</code> and return Fibonacci<sub>n</sub>.</p>
+
+<p>As always with recursion, we define the base cases first, i.e., 
+the cases where a recursive function doesn't need to call itself.
+For <code>fib2()</code>, that is when <code>n</code> is 0 or 1. When
+that happens, all <code>fib2()</code> needs to do is store
+0 in <code>p</code> and return <code>n</code>, like this:</p>
+
+<blockquote><pre>long fib2(long n, long *p)
+{
+    if (n == 0 || n == 1)
+    {
+        *p = 0;
+        return n;
+    }
+    ...
+}</pre></blockquote>
+
+<p>What about when <code>n</code> is larger than 0? 
+For example, suppose <code>n</code> is 12.
+In that case, all <code>fib2()</code> needs to do is 
+call <code>fib2()</code> recursively with 11 and the address
+of some temporary integer to hold the "previous" <code>p</code>, say
+<code>pp</code>. The value of the recursive call will become
+the current <code>p</code> value, and that value plus the value in
+<code>pp</code> is the value to return.</p>
+
+<blockquote><pre>long fib2(long n, long *p)
+{
+    if (n == 0 || n == 1)
+    {
+        *p = 0;
+        return n;
+    }
+    else 
+    {
+        long pp;
+        *p = fib2(n - 1, &amp;pp);
+        return pp + *p;
+    }
+}</pre></blockquote>
+    
+    
+<p>Finally, we can define <code>fib(long n)</code> as a simple
+call to <code>fib2()</code>.</p>
+
+<blockquote><pre>long fib(long n)
+{
+    long p;
+    return fib2(n, &amp;p);
+}</pre></blockquote>
+
+<p>How efficient is this recursive solution? 
+It calls <code>fib2()</code> N times for an input number N.
+To see how that compares with the textbook code, compile and run 
+<a href="../code/fib_rec.c">this comparison program</a>,
+that does both versions, and prints out how many times the recursive
+function is called in each. As should be clear, the book's conclusion
+that a recursive solution for Fibonacci is not realistic for more than 20 
+is simply wrong.</p>
+
+<p>Here are the two versions, side by side, for comparison.</p>
+
+<table summary="recursive fib code" border="1">
+<tr>
+<td><pre>long fib(long n)
+{
+    if (n == 0 || n == 1)
+    {
+        return n;
+    }
+    else
+    {
+      return fib(n - 1) + fib(n - 2);
+    }
+}</pre></td>
+
+<td><pre>long fib(long n)
+{
+    long p;
+    return fib2(n, &amp;p);
+}
+
+long fib2(long n, long *p)
+{
+    if (n == 0 || n == 1)
+    {
+        *p = 0;
+        return n;
+    }
+    else 
+    {
+        long pp;
+        *p = fib2(n - 1, &amp;pp);
+        return pp + *p;
+    }
+}</pre></td>
+</tr>
+</table>
+
+<hr>
+  <p>
+    <a href="http://validator.w3.org/check?uri=referer"><img
+        src="http://www.w3.org/Icons/valid-html401"
+        alt="Valid HTML 4.01 Strict" height="31" width="88"></a>
+  </p>
+
+
+</BODY>
+</HTML>

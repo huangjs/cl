@@ -1,0 +1,293 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html><head>
+<title>Lisp Style</title>
+<link href="../styles/cs325.css" rel="stylesheet" type="text/css">
+</head>
+<BODY>
+<DIV ID="logo">
+<A CLASS="plain" HREF="../index.html" target=_top>
+<IMG SRC="../images/cs325logo.gif" ALT="CS 325 Logo" BORDER="0"></A>
+</DIV>
+<DIV ID="banner">Lisp Style</DIV>
+
+<H2><A NAME="anonymous"></A>No Anonymous Constants</H2>
+
+<P>The following stylistic principle applies to virtually every
+modern programming language</P>
+
+<BLOCKQUOTE><P><I>No Anonymous Constants</I></P></BLOCKQUOTE>
+
+<P>An anonymous constant is any unnamed number, string, character, or
+quoted expression in code. Here are some examples:</P>
+
+<UL>
+   <LI><TT>(update-due-date n 30)</TT>
+
+   <LI><TT>(eql ch #\q)</TT>
+
+   <LI><TT>(change-direction dir 1 -1)</TT>
+</UL>
+
+<P>The problem is not knowing what the constants are, it's knowing
+what they mean. An anonymous constant has no name to tell you what
+it's referring to. Does the constant <TT>12</TT> refer to "number of
+eggs in a carton," "number of apostles," "number of characters
+allowed in a last name," or what?</P>
+
+<P>There are two problems with anonymous constants:</P>
+
+<UL>
+   <LI>They are hard to read.
+
+   <LI>Therefore, they are hard to change.
+</UL>
+
+<P>The meaning of an anonymous constant has to be inferred from the
+code context, and that context may require reading the entire
+program. Furthermore, constants have a way of not staying constant.
+There are egg cartons now that hold 18 eggs. To fix a program
+calculating egg prices, written with anonymous constants, we would
+have to find every occurrence of 12 and look at the context to see if
+that 12 refers to carton size.</P>
+
+<H3>Defining Constants</H3>
+
+<P>The first and most obvious thing to do with anonymous constants is
+name them. In Common Lisp, we do that with <TT>defconstant</TT>,
+e.g.,</P>
+
+<PRE>(defconstant carton-size 12
+   "Number of eggs in one carton.")
+&nbsp;
+&nbsp;</PRE>
+
+<P>This special form is like <TT>defvar</TT> except that it tells
+Lisp that the variable being defined is supposed to be a constant.
+That means that</P>
+
+<UL>
+   <LI>Attempts to assign a new value to <TT>carton-size</TT> should
+   cause an error.
+
+   <LI>The compiler can assume <TT>carton-size</TT> won't change and
+   therefore, in compiled code, replace references to the variable
+   <TT>carton-size</TT> with a more efficient reference to the
+   constant <TT>12</TT>.
+</UL>
+
+<P>Here's how our example code with anonymous constants might look
+with named constants:</P>
+
+<UL>
+   <LI><TT>(update-due-date n default-month-length)</TT>
+
+   <LI><TT>(eql ch quit-char)</TT>
+
+   <LI><TT>(change-direction dir x-right y-down)</TT>
+</UL>
+
+<P>Common Lisp has a number of pre-defined named constants. The two
+best known are <TT>T</TT> and <TT>NIL</TT>. Other constants include
+<TT>pi</TT> and <TT>lambda-list-keywords</TT>.</P>
+
+<H3>Naming Constants</H3>
+
+<P>By convention, we put stars (asterisks) around the names of global
+variables declared with <TT>defvar</TT>, <TT>defparameter</TT>, or
+<TT>special</TT>. This is done because global special variables
+behave very differently than normal lexical variables:</P>
+
+<UL>
+   <LI>They are slower to access.
+
+   <LI>Changes to how they are assigned in one piece of code affects
+   what happens in code arbitrarily far away.
+</UL>
+
+<P>Neither of these points applies to constants:</P>
+
+<UL>
+   <LI>They can be compiled away, so they're more efficient than even
+   lexical variables.
+
+   <LI>They can't be re-assigned in code.
+</UL>
+
+<P>For this reason, constant names are not starred. This is true for
+built-in constants, such as <TT>nil</TT>, <TT>t</TT>, and
+<TT>pi</TT>, and should be true for your own constants.</P>
+
+<H2><A NAME="functions"></A>Use Short Well-Named
+Functions Freely</H2>
+
+<P>Most novice programmers and many experienced hackers define far
+too few functions. If you look at my code, even the code I generate
+on the fly in class, you'll see that I rarely write functions longer
+than 6 lines of Lisp code. Anything longer gets broken up into
+subfunctions. Why? Because code appropriately divided into many short
+functions is:</P>
+
+<UL>
+   <LI>self-documenting (because function names say what code is
+   doing, if the names are right)
+
+   <LI>easily skimmed (because you can ignore complex control
+   structures and just read the function names, if the names are
+   good)
+
+   <LI>easily modified (because change points are easily identified
+   and change effects are localized, if the functions have single
+   tasks and no side effects)
+
+   <LI>easily reused (because functions can be moved directly into
+   other  code, or a shared library, if free of side-effects and
+   global variables)
+</UL>
+
+<P>Of course, these advantages hold only if the parenthetical
+conditions hold: functions needs to be
+<A HREF="names.html">well-named</A>,
+<A HREF="cardinal-rule.html">single-tasked</A>, and side-effect free.
+</P>
+
+<P>For a very compatible view of functions from an experienced C++
+programmer and manager, see Steve McConnel's Best Practices column,
+"Why You Should use Routines...Routlinely" in <I>IEEE Software</I>,
+July/August 1998.</P>
+
+<H2><A NAME="accessors"></A>Accessor Functions</H2>
+
+<P>There are two ways to communicate global information.</P>
+
+<UL>
+   <LI>use global variables, e.g., <TT>*line-width*</TT>
+
+   <LI>use accessor functions, e.g., a reader like
+   <TT>(line-width)</TT> and a writer like <TT>(set-line-width
+   ...)</TT> or <TT>(setf (line-width) ...)</TT>
+</UL>
+
+<P>In the simplest situations, it's trivial to define a reader and
+writer given a global variable.</P>
+
+<PRE>(defvar *line-width* 72
+  "Line width for display functions.")
+&nbsp;
+(defun line-width () *line-width*)
+&nbsp;
+(defun set-line-width (n)
+  (setq *line-width* n))
+&nbsp;
+&nbsp;</PRE>
+
+<P>To enable <TT>(setf (line-width) ...)</TT> in Common Lisp 1 or 2,
+add</P>
+
+<PRE>(defsetf line-width set-line-width)
+&nbsp;
+&nbsp;</PRE>
+
+<P>In Common Lisp 2, you can replace <TT>set-line-width</TT> and
+<TT>defsetf</TT> with</P>
+
+<PRE>(defun (setf line-width) (n)
+  (setq *line-width* n))
+&nbsp;
+&nbsp;</PRE>
+
+<H3>10 Reasons Why Accessors are Better than Globals</H3>
+
+<DL>
+   <DT>Readability
+
+   <DD>Global variables should always have names with stars, e.g., 
+   <tt>*current-color*</tt>, to clearly document their special
+   status (pun intended). But starred variables clutter up code
+   badly. [When someone hands experienced programmers a page of 
+   code littered with starred variables, their
+   first reaction is "Asterisks! The gall!" (pun intended but
+   obscure)] Accessor functions however are just regular
+   functions and need no such special naming.
+
+   <DT>Read-only access
+
+   <DD>Often there is global information that the user should be able
+   to access, but not change. By exporting only a reader function,
+   you can prevent users from changing information that can not or
+   should not be changed.
+
+   <DT>Write-only access
+
+   <DD>While less common, sometimes there is information that needs
+   to be specified that should not be readable, by some users at
+   least. <TT>(set-password ...)</TT> comes to mind, here.
+
+   <DT>Uniform Access to Non-Variables
+
+   <DD>There's more to a computer than CPU and memory. There are
+   clocks, I/O ports, and so on. <TT>(current-time)</TT> and
+   <TT>(set-current-time ...)</TT> offer an easy to understand way to
+   access such information, despite the internal details.
+
+   <DT>Localized Values
+
+   <DD>Consider line width. When we set it to 50 characters, do we
+   mean that to apply to all output, including output to files, or
+   just to output to the screen or to some window on the screen? With
+   accessors, it's easy to extend the calling format to allow values
+   to be attached to local contexts, e.g., <TT>(set-line-width
+   </TT><I><TT>stream value</TT></I><TT>)</TT>.
+
+   <DT>Safe Assignment
+
+   <DD>Consider line width again. What happens if someone says
+   <TT>(setq *line-width* nil)</TT>? Chances are nothing happens
+   until later when printing is attempted, at which point an error
+   occurs. With an accessor like <TT>set-line-width</TT>, bad values
+   can be caught and prevented at assignment time.
+
+   <DT>Simplified Assignment
+
+   <DD>Consider line width once more. With an accessor like
+   <TT>set-line-width</TT>, we can extend the values it accepts to
+   include things like named standardized values, such as
+   <TT>(set-line-width :wide)</TT>.
+
+   <DT>Assignment by Example
+
+   <DD>Consider date formats. There are many ways dates can be
+   printed: full month names vs. abbreviated month names versus
+   digital months, two-digit vs. four-digit years, month-day-year vs.
+   day-month-year, hyphens vs slashes vs. spaces and commas, etc. A
+   clever way of making this complex combination of choices simple to
+   specify is to allow the user to given an <I>example</I> date,
+   e.g., <TT>(set-date-format "2/10/95")</TT>.<BR>
+
+   Another use of this would be to set a default pathname for files
+   by giving the <I>full</I> pathname for one file, from which the
+   default information could be extracted.
+
+   <DT>Assignment by Parts
+
+   <DD>Consider default pathnames, e.g., the default pathname for
+   module binary files. Even though it makes sense to store this
+   internally as one pathname, it makes more sense to allow the user
+   to modify pieces of it without worrying about the other parts,
+   e.g., <TT>(set-module-binary-pathname :directory "Lisp:")</TT>.
+
+   <DT>Traceable Access
+
+   <DD>You can't easily trace when someone gets or sets the value of
+   a global variable. No problem with accessor functions.
+</DL>
+
+<HR>
+
+<P ID="closing">Comments? <IMG SRC="../images/comments.gif"
+ALIGN=bottom> Send mail to <A HREF="mailto:riesbeck@cs.northwestern.edu">Chris
+Riesbeck</A>.</P>
+
+
+</BODY>
+</HTML>

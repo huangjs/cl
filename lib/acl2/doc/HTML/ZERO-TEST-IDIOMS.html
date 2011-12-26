@@ -1,0 +1,184 @@
+<html>
+<head><title>ZERO-TEST-IDIOMS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ZERO-TEST-IDIOMS</h2>how to test for 0
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+Below are six commonly used idioms for testing whether <code>x</code> is <code>0</code>.
+<code><a href="ZIP.html">Zip</a></code> and <code><a href="ZP.html">zp</a></code> are the preferred termination tests for recursions
+down the integers and naturals, respectively.
+
+<pre>
+idiom       logical              guard              primary
+            meaning                              compiled code*<p>
+
+(equal x 0)(equal x 0)        t                   (equal x 0)
+                             
+(eql x 0)  (equal x 0)        t                   (eql x 0)
+                             
+(zerop x)  (equal x 0)        x is a number       (= x 0)
+                             
+(= x 0)    (equal x 0)        x is a number       (= x 0)
+                             
+(zip x)    (equal (ifix x) 0) x is an integer     (= x 0)
+                             
+(zp x)     (equal (nfix x) 0) x is a natural      (int= x 0)
+                             
+(zpf x)    (equal (nfix x) 0) x is a fixnum &gt;= 0  (eql (the-fixnum x) 0)
+</pre>
+
+*See <a href="GUARDS-AND-EVALUATION.html">guards-and-evaluation</a>, especially the subsection titled
+``Guards and evaluation V: efficiency issues''.  Primary code is
+relevant only if <a href="GUARD.html">guard</a>s are verified.  The ``compiled code'' shown
+is only suggestive.
+<p>
+The first four idioms all have the same logical meaning and differ
+only with respect to their executability and efficiency.  In the
+absence of compiler optimizing, <code>(= x 0)</code> is probably the most
+efficient, <code>(equal x 0)</code> is probably the least efficient, and
+<code>(eql x 0)</code> is in between.  However, an optimizing compiler could
+always choose to compile <code>(equal x 0)</code> as <code>(eql x 0)</code> and, in
+situations where <code>x</code> is known at compile-time to be numeric,
+<code>(eql x 0)</code> as <code>(= x 0)</code>.  So efficiency considerations must, of
+course, be made in the context of the host compiler.<p>
+
+Note also that <code>(zerop x)</code> and <code>(= x 0)</code> are indistinguishable.
+They have the same meaning and the same <a href="GUARD.html">guard</a>, and can reasonably be
+expected to generate equally efficient code.<p>
+
+Note that <code>(zip x)</code> and <code>(zp x)</code> do not have the same logical
+meanings as the others or each other.  They are not simple tests for
+equality to <code>0</code>.  They each coerce <code>x</code> into a restricted domain,
+<code><a href="ZIP.html">zip</a></code> to the integers and <code><a href="ZP.html">zp</a></code> to the natural numbers, choosing
+<code>0</code> for <code>x</code> when <code>x</code> is outside the domain.  Thus, <code>1/2</code>, <code>#c(1 3)</code>,
+and <code>'abc</code>, for example, are all ``recognized'' as zero by both
+<code><a href="ZIP.html">zip</a></code> and <code><a href="ZP.html">zp</a></code>.  But <code><a href="ZIP.html">zip</a></code> reports that <code>-1</code> is different from
+<code>0</code> while <code><a href="ZP.html">zp</a></code> reports that <code>-1</code> ``is'' <code>0</code>.  More precisely,
+<code>(zip -1)</code> is <code>nil</code> while <code>(zp -1)</code> is <code>t</code>.<p>
+
+Note that the last five idioms all have <a href="GUARD.html">guard</a>s that restrict their
+Common Lisp executability.  If these last five are used in
+situations in which <a href="GUARD.html">guard</a>s are to be verified, then proof
+obligations are incurred as the price of using them.  If guard
+verification is not involved in your project, then the first five
+can be thought of as synonymous.<p>
+
+<code><a href="ZIP.html">Zip</a></code> and <code><a href="ZP.html">zp</a></code> are not provided by Common Lisp but are
+ACL2-specific functions.  Why does ACL2 provide these functions?
+The answer has to do with the admission of recursively defined
+functions and efficiency.  <code><a href="ZP.html">Zp</a></code> is provided as the zero-test in
+situations where the controlling formal parameter is understood to
+be a natural number.  <code><a href="ZIP.html">Zip</a></code> is analogously provided for the integer
+case.  We illustrate below.<p>
+
+Here is an admissible definition of factorial
+
+<pre>
+(defun fact (n) (if (zp n) 1 (* n (fact (1- n)))))
+</pre>
+
+Observe the classic recursion scheme: a test against <code>0</code> and recursion
+by <code><a href="1-.html">1-</a></code>.  Note however that the test against <code>0</code> is expressed with the
+<code><a href="ZP.html">zp</a></code> idiom.  Note also the absence of a <a href="GUARD.html">guard</a> making explicit our
+intention that <code>n</code> is a natural number.<p>
+
+This definition of factorial is readily admitted because when <code>(zp n)</code><p>
+
+is false (i.e., <code>nil</code>) then <code>n</code> is a natural number other than
+<code>0</code> and so <code>(1- n)</code> is less than <code>n</code>.  The base case, where <code>(zp n)</code>
+is true, handles all the ``unexpected'' inputs, such as arise with
+<code>(fact -1)</code> and <code>(fact 'abc)</code>.  When calls of <code>fact</code> are
+evaluated, <code>(zp n)</code> checks <code>(integerp n)</code> and <code>(&gt; n 0)</code>.  <a href="GUARD.html">Guard</a>
+verification is unsuccessful for this definition of <code>fact</code> because
+<code><a href="ZP.html">zp</a></code> requires its argument to be a natural number and there is no
+<a href="GUARD.html">guard</a> on <code>fact</code>, above.  Thus the primary raw lisp for <code>fact</code> is
+inaccessible and only the <code>:</code><code><a href="LOGIC.html">logic</a></code> definition (which does runtime
+``type'' checking) is used in computation.  In summary, this
+definition of factorial is easily admitted and easily manipulated by
+the prover but is not executed as efficiently as it could be.<p>
+
+Runtime efficiency can be improved by adding a <a href="GUARD.html">guard</a> to the definition.
+
+<pre>
+(defun fact (n)
+  (declare (xargs :guard (and (integerp n) (&gt;= n 0))))
+  (if (zp n) 1 (* n (fact (1- n)))))
+</pre>
+
+This <a href="GUARD.html">guard</a>ed definition has the same termination conditions as
+before -- termination is not sensitive to the <a href="GUARD.html">guard</a>.  But the <a href="GUARD.html">guard</a>s
+can be verified.  This makes the primary raw lisp definition
+accessible during execution.  In that definition, the <code>(zp n)</code> above
+is compiled as <code>(= n 0)</code>, because <code>n</code> will always be a natural number
+when the primary code is executed.  Thus, by adding a <a href="GUARD.html">guard</a> and
+verifying it, the elegant and easily used definition of factorial is
+also efficiently executed on natural numbers.<p>
+
+Now let us consider an alternative definition of factorial in which
+<code>(= n 0)</code> is used in place of <code>(zp n)</code>.
+
+<pre>
+(defun fact (n) (if (= n 0) 1 (* n (fact (1- n)))))
+</pre>
+
+This definition does not terminate.  For example <code>(fact -1)</code> gives
+rise to a call of <code>(fact -2)</code>, etc.  Hence, this alternative is
+inadmissible.  A plausible response is the addition of a <a href="GUARD.html">guard</a>
+restricting <code>n</code> to the naturals:
+
+<pre>
+(defun fact (n)
+ (declare (xargs :guard (and (integerp n) (&gt;= n 0))))
+ (if (= n 0) 1 (* n (fact (1- n)))))
+</pre>
+
+But because the termination argument is not sensitive to the <a href="GUARD.html">guard</a>,
+it is still impossible to admit this definition.  To influence the
+termination argument one must change the conditions tested.  Adding
+a runtime test that <code>n</code> is a natural number would suffice and allow
+both admission and <a href="GUARD.html">guard</a> verification.  But such a test would slow
+down the execution of the compiled function.<p>
+
+The use of <code>(zp n)</code> as the test avoids this dilemma.  <code><a href="ZP.html">Zp</a></code>
+provides the logical equivalent of a runtime test that <code>n</code> is a
+natural number but the execution efficiency of a direct <code><a href="=.html">=</a></code>
+comparison with <code>0</code>, at the expense of a <a href="GUARD.html">guard</a> conjecture to prove.
+In addition, if <a href="GUARD.html">guard</a> verification and most-efficient execution are
+not needed, then the use of <code>(zp n)</code> allows the admission of the
+function without a <a href="GUARD.html">guard</a> or other extraneous verbiage.<p>
+
+While general rules are made to be broken, it is probably a good
+idea to get into the habit of using <code>(zp n)</code> as your terminating
+``<code>0</code> test'' idiom when recursing down the natural numbers.  It
+provides the logical power of testing that <code>n</code> is a non-<code>0</code>
+natural number and allows efficient execution.<p>
+
+We now turn to the analogous function, <code><a href="ZIP.html">zip</a></code>.  <code><a href="ZIP.html">Zip</a></code> is the
+preferred <code>0</code>-test idiom when recursing through the integers toward
+<code>0</code>.  <code><a href="ZIP.html">Zip</a></code> considers any non-integer to be <code>0</code> and otherwise
+just recognizes <code>0</code>.  A typical use of <code><a href="ZIP.html">zip</a></code> is in the definition
+of <code><a href="INTEGER-LENGTH.html">integer-length</a></code>, shown below.  (ACL2 can actually accept this
+definition, but only after appropriate lemmas have been proved.)
+
+<pre>
+(defun integer-length (i)
+  (declare (xargs :guard (integerp i)))
+  (if (zip i)
+      0
+    (if (= i -1)
+      0
+      (+ 1 (integer-length (floor i 2))))))
+</pre>
+
+Observe that the function recurses by <code>(floor i 2)</code>.  Hence,
+calling the function on <code>25</code> causes calls on <code>12</code>, <code>6</code>, <code>3</code>,
+<code>1</code>, and <code>0</code>, while calling it on <code>-25</code> generates calls on
+<code>-13</code>, <code>-7</code>, <code>-4</code>, <code>-2</code>, and <code>-1</code>.  By making <code>(zip i)</code> the
+first test, we terminate the recursion immediately on non-integers.
+The <a href="GUARD.html">guard</a>, if present, can be verified and allows the primary raw
+lisp definition to check <code>(= i 0)</code> as the first terminating
+condition (because the primary code is executed only on integers).
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

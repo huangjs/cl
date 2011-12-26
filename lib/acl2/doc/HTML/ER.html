@@ -1,0 +1,49 @@
+<html>
+<head><title>ER.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>ER</h2>print an error message and ``cause an error''
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example Forms:
+(er hard  'top-level "Illegal inputs, ~x0 and ~x1." a b)
+(er hard? 'top-level "Illegal inputs, ~x0 and ~x1." a b)
+(er soft  'top-level "Illegal inputs, ~x0 and ~x1." a b)
+</pre>
+
+The examples above all print an error message to standard output saying that
+<code>a</code> and <code>b</code> are illegal inputs.  However, the first two abort evaluation
+after printing an error message, while the third returns <code>(mv t nil state)</code>
+after printing an error message.  The result in the third case can be
+interpreted as an ``error'' when programming with the ACL2 <code><a href="STATE.html">state</a></code>,
+something most ACL2 users will probably not want to do;
+see <a href="LD-ERROR-TRIPLES.html">ld-error-triples</a> and see <a href="ER-PROGN.html">er-progn</a>.<p>
+
+<code>Er</code> is a macro, and the above three examples expand to calls of ACL2
+functions, as shown below.  See <a href="ILLEGAL.html">illegal</a>, see <a href="HARD-ERROR.html">hard-error</a>, and see <a href="ERROR1.html">error1</a>,
+respectively.
+<p>
+
+<pre>
+General forms:
+(er hard  ctx fmt-string arg1 arg2 ... argk)
+  ==&gt; {macroexpands, in essence, to:}
+(ILLEGAL    CTX FMT-STRING
+            (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))<p>
+
+(er hard? ctx fmt-string arg1 arg2 ... argk)
+  ==&gt; {macroexpands, in essence, to:}
+(HARD-ERROR CTX FMT-STRING
+            (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))<p>
+
+(er soft  ctx fmt-string arg1 arg2 ... argk)
+  ==&gt; {macroexpands, in essence, to:}
+(ERROR1     CTX FMT-STRING
+            (LIST (CONS #\0 ARG1) (CONS #\1 ARG2) ... (CONS #\k ARGk)))
+</pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

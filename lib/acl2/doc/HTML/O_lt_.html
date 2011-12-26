@@ -1,0 +1,69 @@
+<html>
+<head><title>O_lt_.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>O&lt;</h2>the well-founded less-than relation on ordinals up to <code>epsilon-0</code>
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+If <code>x</code> and <code>y</code> are both <code>o-p</code>s (see <a href="O-P.html">o-p</a>) then
+<code>(o&lt; x y)</code> is true iff <code>x</code> is strictly less than <code>y</code>.  <code>o&lt;</code> is
+well-founded on the <code><a href="O-P.html">o-p</a></code>s.  When <code>x</code> and <code>y</code> are both nonnegative
+integers, <code>o&lt;</code> is just the familiar ``less than'' relation (<code><a href="_lt_.html">&lt;</a></code>).
+<p>
+<code>o&lt;</code> plays a key role in the formal underpinnings of the ACL2
+logic.  In order for a recursive definition to be admissible it must
+be proved to ``terminate.''  By terminate we mean that the arguments to
+the function ``get smaller'' as the function recurses and this sense
+of size comparison must be such that there is no ``infinitely
+descending'' sequence of ever smaller arguments.  That is, the
+relation used to compare successive arguments must be well-founded
+on the domain being measured.<p>
+
+The most basic way ACL2 provides to prove termination requires the
+user to supply (perhaps implicitly) a mapping of the argument tuples
+into the ordinals with some ``measure'' expression in such a way
+that the measures of the successive argument tuples produced by
+recursion decrease according to the relation <code>o&lt;</code>.  The validity
+of this method rests on the well-foundedness of <code>o&lt;</code> on the
+<code><a href="O-P.html">o-p</a></code>s.<p>
+
+Without loss of generality, suppose the definition in question
+introduces the function <code>f</code>, with one formal parameter <code>x</code> (which might
+be a list of objects).  Then we require that there exist a measure
+expression, <code>(m x)</code>, that always produces an <code><a href="O-P.html">o-p</a></code>.
+Furthermore, consider any recursive call, <code>(f (d x))</code>, in the body of
+the definition.  Let <code>hyps</code> be the conjunction of terms, each of which is
+either the test of an <code><a href="IF.html">if</a></code> in the body or else the negation of such a
+test, describing the path through the body to the recursive call in
+question.  Then it must be a theorem that
+
+<pre>
+  (IMPLIES hyps (O&lt; (m (d x)) (m x))).
+</pre>
+
+When we say <code>o&lt;</code> is ``well-founded'' on the <code><a href="O-P.html">o-p</a></code>s we
+mean that there is no infinite sequence of <code><a href="O-P.html">o-p</a></code>s such that
+each is smaller than its predecessor in the sequence.  Thus, the
+theorems that must be proved about <code>f</code> when it is introduced establish
+that it cannot recur forever because each time a recursive call is
+taken <code>(m x)</code> gets smaller.  From this, and the syntactic restrictions
+on definitions, it can be shown (as on page 44 in ``A Computational
+Logic'', Boyer and Moore, Academic Press, 1979) that there exists a
+function satisfying the definition; intuitively, the value assigned
+to any given <code>x</code> by the alleged function is that computed by a
+sufficiently large machine.  Hence, the logic is consistent if the
+axiom defining <code>f</code> is added.<p>
+
+See <a href="O-P.html">o-p</a> for a discussion of the ordinals and how to
+compare two ordinals.<p>
+
+The definitional principle permits the use of relations other than
+<code>o&lt;</code> but they must first be proved to be well-founded on some
+domain.  See <a href="WELL-FOUNDED-RELATION.html">well-founded-relation</a>.  Roughly put, alternative
+relations are shown well-founded by providing an order-preserving
+mapping from their domain into the ordinals.  See <a href="DEFUN.html">defun</a> for
+details on how to specify which well-founded relation is to be
+used.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

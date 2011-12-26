@@ -1,0 +1,137 @@
+<html>
+<head><title>MV-LET.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>MV-LET</h2>calling multi-valued ACL2 functions
+<pre>Major Section:  <a href="PROGRAMMING.html">PROGRAMMING</a>
+</pre><p>
+
+
+<pre>
+Example Form:
+(mv-let (x y z)              ; local variables
+        (mv 1 2 3)           ; multi-valued expression
+        (declare (ignore y)) ; optional declarations
+        (cons x z))          ; body
+</pre>
+
+The form above binds the three ``local variables,'' <code>x</code>, <code>y</code>, and <code>z</code>,
+to the three results returned by the multi-valued expression and
+then evaluates the body.  The result is <code>'(1 . 3)</code>.  The second local,
+<code>y</code>, is <a href="DECLARE.html">declare</a>d <code>ignore</code>d.  The multi-valued expression can be any ACL2
+expression that returns <code>k</code> results, where <code>k</code> is the number of local
+variables listed.  Often however it is simply the application of a
+<code>k</code>-valued function.  <code>Mv-let</code> is the standard way to invoke a
+multi-valued function when the caller must manipulate the vector of
+results returned.
+<p>
+
+<pre>
+General Form:
+(mv-let (var1 ... vark)
+        term
+        body)
+or
+(mv-let (var1 ... vark)
+        term
+        (declare ...) ... (declare ...)
+        body)
+</pre>
+
+where the <code>vari</code> are distinct variables, <code>term</code> is a term that returns
+<code>k</code> results and mentions only variables bound in the environment containing
+the <code>mv-let</code> expression, and <code>body</code> is a term mentioning only the
+<code>vari</code> and variables bound in the environment containing the <code>mv-let</code>.
+Each <code>vari</code> must occur in <code>body</code> unless it is <a href="DECLARE.html">declare</a>d <code>ignore</code>d
+or <code>ignorable</code> in one of the optional <code><a href="DECLARE.html">declare</a></code> forms, unless this
+requirement is turned off; see <a href="SET-IGNORE-OK.html">set-ignore-ok</a>.  The value of the <code>mv-let</code>
+term is the result of evaluating <code>body</code> in an environment in which the
+<code>vari</code> are bound, in order, to the <code>k</code> results obtained by evaluating
+<code>term</code> in the environment containing the <code>mv-let</code>.<p>
+
+Here is an extended example that illustrates both the definition of
+a multi-valued function and the use of <code>mv-let</code> to call it.  Consider
+a simple binary tree whose interior nodes are <code><a href="CONS.html">cons</a></code>es and whose
+leaves are non-<code><a href="CONS.html">cons</a></code>es.  Suppose we often need to know the number, <code>n</code>,
+of interior nodes of such a tree; the list, <code>syms</code>, of symbols that
+occur as leaves; and the list, <code>ints</code>, of integers that occur as
+leaves.  (Observe that there may be leaves that are neither symbols
+nor integers.)  Using a multi-valued function we can collect all
+three results in one pass.<p>
+
+Here is the first of two definitions of the desired function.  This
+definition is ``primitive recursive'' in that it has only one
+argument and that argument is reduced in size on every recursion.
+
+<pre>
+(defun count-and-collect (x)<p>
+
+; We return three results, (mv n syms ints) as described above.<p>
+
+  (cond ((atom x)<p>
+
+; X is a leaf.  Thus, there are 0 interior nodes, and depending on
+; whether x is a symbol, an integer, or something else, we return
+; the list containing x in as the appropriate result.<p>
+
+         (cond ((symbolp x) (mv 0 (list x) nil))
+               ((integerp x)(mv 0 nil      (list x)))
+               (t           (mv 0 nil      nil))))
+        (t <p>
+
+; X is an interior node.  First we process the car, binding n1, syms1, and
+; ints1 to the answers.<p>
+
+           (mv-let (n1 syms1 ints1)
+                   (count-and-collect (car x))<p>
+
+; Next we process the cdr, binding n2, syms2, and ints2.<p>
+
+                   (mv-let (n2 syms2 ints2)
+                           (count-and-collect (car x))<p>
+
+; Finally, we compute the answer for x from those obtained for its car
+; and cdr, remembering to increment the node count by one for x itself.<p>
+
+                           (mv (1+ (+ n1 n2))
+                               (append syms1 syms2)
+                               (append ints1 ints2)))))))
+</pre>
+
+This use of a multiple value to ``do several things at once'' is
+very common in ACL2.  However, the function above is inefficient
+because it <a href="APPEND.html">append</a>s <code>syms1</code> to <code>syms2</code> and <code>ints1</code> to <code>ints2</code>, copying the
+list structures of <code>syms1</code> and <code>ints1</code> in the process.  By adding
+``accumulators'' to the function, we can make the code more
+efficient.
+
+<pre>
+(defun count-and-collect1 (x n syms ints)
+  (cond ((atom x)
+         (cond ((symbolp x) (mv n (cons x syms) ints))
+               ((integerp x) (mv n syms (cons x ints)))
+               (t (mv n syms ints))))
+        (t (mv-let (n2 syms2 ints2)
+                   (count-and-collect1 (cdr x) (1+ n) syms ints)
+                   (count-and-collect1 (car x) n2 syms2 ints2)))))
+</pre>
+
+We claim that <code>(count-and-collect x)</code> returns the same triple of
+results as <code>(count-and-collect1 x 0 nil nil)</code>.  The reader is urged to
+study this claim until convinced that it is true and that the latter
+method of computing the results is more efficient.  One might try
+proving the theorem
+
+<pre>
+(defthm count-and-collect-theorem
+  (equal (count-and-collect1 x 0 nil nil) (count-and-collect x))).
+</pre>
+
+Hint:  the inductive proof requires attacking a more general
+theorem.<p>
+
+ACL2 does not support the Common Lisp construct
+<code>multiple-value-bind</code>, whose logical meaning seems difficult to
+characterize.  <code>Mv-let</code> is the ACL2 analogue of that construct.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

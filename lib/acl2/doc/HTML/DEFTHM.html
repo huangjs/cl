@@ -1,0 +1,67 @@
+<html>
+<head><title>DEFTHM.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>DEFTHM</h2>prove and name a theorem
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+(defthm assoc-of-app
+        (equal (app (app a b) c)
+               (app a (app b c))))
+</pre>
+
+The following nonsensical example illustrates all the optional
+arguments but is illegal because not all combinations are permitted.
+See <a href="HINTS.html">hints</a> for a complete list of <a href="HINTS.html">hints</a>.
+
+<pre>
+(defthm main
+        (implies (hyps x y z) (concl x y z))
+       :rule-classes (:REWRITE :GENERALIZE)
+       :instructions (induct prove promote (dive 1) x
+                             (dive 2) = top (drop 2) prove)
+       :hints (("Goal"
+                :do-not '(generalize fertilize)
+                :in-theory (set-difference-theories
+                             (current-theory :here)
+                             '(assoc))
+                :induct (and (nth n a) (nth n b))
+                :use ((:instance assoc-of-append
+                                 (x a) (y b) (z c))
+                      (:functional-instance
+                        (:instance p-f (x a) (y b))
+                        (p consp)
+                        (f assoc)))))
+       :otf-flg t
+       :doc "#0[one-liner/example/details]")
+<p>
+General Form:
+(defthm name term
+        :rule-classes rule-classes
+        :instructions instructions
+        :hints        hints
+        :otf-flg      otf-flg
+        :doc          doc-string)
+</pre>
+
+where <code>name</code> is a new symbolic name (see <a href="NAME.html">name</a>), <code>term</code> is a
+term alleged to be a theorem, and <code><a href="RULE-CLASSES.html">rule-classes</a></code>, <code><a href="INSTRUCTIONS.html">instructions</a></code>,
+<code><a href="HINTS.html">hints</a></code>, <code><a href="OTF-FLG.html">otf-flg</a></code> and <code><a href="DOC-STRING.html">doc-string</a></code> are as described in their
+respective <a href="DOCUMENTATION.html">documentation</a>.  The five keyword arguments above are
+all optional, however you may not supply both <code>:</code><code><a href="INSTRUCTIONS.html">instructions</a></code>
+and <code>:</code><code><a href="HINTS.html">hints</a></code>, since one drives the proof checker and the other
+drives the theorem prover.  If <code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code> is not specified,
+the list <code>(:rewrite)</code> is used; if you wish the theorem to generate
+no rules, specify <code>:</code><code><a href="RULE-CLASSES.html">rule-classes</a></code> <code>nil</code>.<p>
+
+When ACL2 processes a <code>defthm</code> event, it first tries to prove the
+<a href="TERM.html">term</a> using the indicated hints (see <a href="HINTS.html">hints</a>) or <a href="INSTRUCTIONS.html">instructions</a>
+(see <a href="PROOF-CHECKER.html">proof-checker</a>).  If it is successful, it stores the rules
+described by the rule-classes (see <a href="RULE-CLASSES.html">rule-classes</a>), proving the
+necessary corollaries.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

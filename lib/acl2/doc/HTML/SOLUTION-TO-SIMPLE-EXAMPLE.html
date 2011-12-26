@@ -1,0 +1,65 @@
+<html>
+<head><title>SOLUTION-TO-SIMPLE-EXAMPLE.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>SOLUTION-TO-SIMPLE-EXAMPLE</h3>solution to a simple example
+<pre>Major Section:  <a href="TUTORIAL-EXAMPLES.html">TUTORIAL-EXAMPLES</a>
+</pre><p>
+
+To see a statement of the problem solved below,
+see <a href="TUTORIAL-EXAMPLES.html">tutorial-examples</a>.
+<p>
+Here is a sequence of ACL2 <a href="EVENTS.html">events</a> that illustrates the use of ACL2
+to make definitions and prove theorems.  We will introduce the
+notion of the fringe of a tree, as well as the notion of a leaf of a
+tree, and then prove that the members of the fringe are exactly the
+leaves.<p>
+
+We begin by defining the fringe of a tree, where we identify
+trees simply as <a href="CONS.html">cons</a> structures, with <a href="ATOM.html">atom</a>s at the leaves.  The
+definition is recursive, breaking into two cases.  If <code>x</code> is a <a href="CONS.html">cons</a>,
+then the <code>fringe</code> of <code>x</code> is obtained by appending together the <code>fringe</code>s
+of the <code><a href="CAR.html">car</a></code> and <code><a href="CDR.html">cdr</a></code> (left and right child) of <code>x</code>.  Otherwise, <code>x</code> is an
+<a href="ATOM.html">atom</a> and its <code>fringe</code> is the one-element list containing only <code>x</code>.
+
+<pre><p>
+
+  (defun fringe (x)
+    (if (consp x)
+        (append (fringe (car x))
+                (fringe (cdr x)))
+      (list x)))<p>
+
+</pre>
+
+Now that <code>fringe</code> has been defined, let us proceed by defining the
+notion of an atom appearing as a ``leaf'', with the goal of proving
+that the leaves of a tree are exactly the members of its <code>fringe</code>.
+
+<pre><p>
+
+  (defun leaf-p (atm x)
+    (if (consp x)
+        (or (leaf-p atm (car x))
+            (leaf-p atm (cdr x)))
+      (equal atm x)))<p>
+
+</pre>
+
+The main theorem is now as follows.  Note that the rewrite rule
+below uses the equivalence relation <code><a href="IFF.html">iff</a></code> (see <a href="EQUIVALENCE.html">equivalence</a>)
+rather than <code><a href="EQUAL.html">equal</a></code>, since <code><a href="MEMBER.html">member</a></code> returns the tail of the given
+list that begins with the indicated member, rather than returning a
+Boolean.  (Use <code>:pe member</code> to see the definition of <code><a href="MEMBER.html">member</a></code>.)
+
+<pre><p>
+
+  (defthm leaf-p-iff-member-fringe
+    (iff (leaf-p atm x)
+         (member-equal atm (fringe x))))<p>
+
+</pre>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<html>
+<head><title>GCL.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>GCL</h2>tips on building and using ACL2 based on Gnu Common Lisp
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+See the installation instructions for basic information about building ACL2
+on top of GCL, including information about where to fetch GCL.  Here, we
+provide some tips that may be useful.
+<p>
+1. You can place forms to evaluate at start-up into file <code>init.lsp</code> in the
+directory where you are starting ACL2 (GCL), or into file <code>acl2-init.lsp</code>
+in your home directory.  For example, in order to evaluate both of the lisp
+forms mentioned in 2 below, you could put them both into <code>init.lsp</code> in the
+current directory or in <code>~/acl2-init.lsp</code> (either way, without <code>(lp)</code> or
+<code>:q</code>):
+
+<pre>
+(setq si::*optimize-maximum-pages* nil)
+(si::allocate 'cons 75000 t)
+</pre>
+<p>
+
+2. Suppose you run out of space, for example with an error like this:
+
+<pre>
+   Error: The storage for CONS is exhausted.
+     Currently, 59470 pages are allocated.
+     Use ALLOCATE to expand the space.
+</pre>
+
+The following suggestion from Camm Maguire will minimize the heap size, at
+the cost of more garbage collection time.
+
+<pre>
+:q   ; exit the ACL2 loop
+(setq si::*optimize-maximum-pages* nil)
+(lp) ; re-enter the ACL2 loop
+</pre>
+
+A second thing to try, suggested by several people, is to preallocate more
+pages before the run, e.g.:
+
+<pre>
+:q   ; exit the ACL2 loop
+(si::allocate 'cons 75000 t)
+(lp) ; re-enter the ACL2 loop
+</pre>
+
+Also see <a href="RESET-KILL-RING.html">reset-kill-ring</a> for a suggestion on how to free up space.<p>
+
+3. Windows users have seen this error:
+
+<pre>
+cc1.exe: unrecognized option `-fno-zero-initialized-in-bss'
+</pre>
+
+Camm Maguire suggests that a solution may be to evaluate the following in GCL
+before building ACL2.
+
+<pre>
+(in-package 'compiler)
+(let* ((x `-fno-zero-initialized-in-bss')
+       (i (search x *cc*))) 
+        (setq *cc* (concatenate 'string 
+                                (subseq *cc* 0 i)
+                                (subseq *cc* (+ i (length x))))))
+</pre>
+<p>
+
+4. It is possible to profile using ACL2 built on GCL.  See file
+<code>save-gprof.lsp</code> in the ACL2 source directory.<p>
+
+5. Some versions of GCL may have garbage-collector bugs that, on rare
+occasions, cause ACL2 (when built on GCL) to break.  If you run into this,
+a solution may be to execute the following:
+
+<pre>
+:q
+(si::sgc-on nil)
+(lp)
+</pre>
+
+Alternatively, put <code>(si::sgc-on nil)</code> in your <code>~/acl2-init.lsp</code> file.<p>
+
+A full regression test and found that this decreased performance by about
+10%.  But even with that, GCL may be the fastest Common Lisp for ACL2 on
+Linux (performance figures may often be found by following the ``Recent
+changes'' link on the ACL2 home page).<p>
+
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

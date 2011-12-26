@@ -1,0 +1,174 @@
+<html>
+<head><title>NOTE4.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>NOTE4</h2>Acl2 Version 1.4 Notes
+<pre>Major Section:  <a href="RELEASE-NOTES.html">RELEASE-NOTES</a>
+</pre><p>
+
+Once again <code><a href="LD.html">ld</a></code> only takes one required argument, as the <code>bind-flg</code> has
+been deleted.<p>
+
+Three commands have been added in the spirit of <code>:</code><code><a href="PE.html">pe</a></code>.  <code>:</code><code><a href="PE_bang_.html">Pe!</a></code> is
+similar to <code>:</code><code><a href="PE.html">pe</a></code> but it prints all <a href="EVENTS.html">events</a> with the given name, rather
+than just the most recent.  The command <code>:</code><code><a href="PF.html">pf</a></code> prints the corollary
+formula corresponding to a name or <a href="RUNE.html">rune</a>.  The command <code>:</code><code><a href="PL.html">pl</a></code> (print
+lemmas) prints rules whose top function symbol is the given name.
+See <a href="PE_bang_.html">pe!</a>, see <a href="PF.html">pf</a>, and see <a href="PL.html">pl</a>.<p>
+
+Book naming conventions have been changed somewhat.  The
+once-required <code>.lisp</code> extension is now prohibited!  Directories are
+supported, including a notion of ``connected book directory''.
+See <a href="BOOK-NAME.html">book-name</a>.  Also, the second argument of <code><a href="CERTIFY-BOOK.html">certify-book</a></code> is
+now optional, defaulting to <code>0</code>.<p>
+
+<a href="COMPILATION.html">Compilation</a> is now supported inside the Acl2 loop.  See <a href="COMP.html">comp</a>
+and see <a href="SET-COMPILE-FNS.html">set-compile-fns</a>.<p>
+
+The default color is now part of the Acl2 <a href="WORLD.html">world</a>;
+see <code>:</code><code><a href="DOC.html">doc</a></code> <code>default-color</code>.  <code>Ld-color</code> is no longer an <code><a href="LD.html">ld</a></code> special.
+Instead, colors are <a href="EVENTS.html">events</a>; see the documentation for <code>red</code>,
+<code>pink</code>, <code>blue</code>, and <code>gold</code>.<p>
+
+A <a href="TABLE.html">table</a> exists for controlling whether Acl2 prints comments when it
+<a href="FORCE.html">force</a>s hypotheses of rules; see <code>:</code><code><a href="DOC.html">doc</a></code> <code>force-table</code>.  Also, it is now
+possible to turn off the forcing of assumptions by disabling the
+definition of <a href="FORCE.html">force</a>; see <a href="FORCE.html">force</a>.<p>
+
+The event <code>defconstant</code> is no longer supported, but a very similar
+event, <code><a href="DEFCONST.html">defconst</a></code>, has been provided in its place.  See <a href="DEFCONST.html">defconst</a>.<p>
+
+The event for defining <a href="CONGRUENCE.html">congruence</a> relations is now <code><a href="DEFCONG.html">defcong</a></code>
+(formerly, <code>defcon</code>).<p>
+
+Patterns are now allowed in <code>:expand</code> <a href="HINTS.html">hints</a>.  See the documentation
+for <code>:expand</code> inside the documentation for <a href="HINTS.html">hints</a>.<p>
+
+We have improved the way we report rules used by the simplifier.
+All <a href="RUNE.html">rune</a>s of the same type are reported together in the running
+commentary associated with each goal, so that for example,
+executable counterparts are listed separately from definitions, and
+rewrite rules are listed separately from <a href="LINEAR.html">linear</a> rules.  The
+preprocessor now mentions ``simple'' rules; see <a href="SIMPLE.html">simple</a>.<p>
+
+The mechanism for printing warning messages for new rewrite rules,
+related to subsumption, now avoids worrying about nonrecursive
+function symbols when those symbols are <a href="DISABLE.html">disable</a>d.  These messages
+have also been eliminated for the case where the old rule is a
+<code>:</code><code><a href="DEFINITION.html">definition</a></code> rule.<p>
+
+Backquote has been modified so that it can usually provide
+predictable results when used on the left side of a rewrite rule.<p>
+
+Time statistics are now printed even when an event fails.<p>
+
+The Acl2 trace package has been modified so that it prints using the
+values of the Lisp globals <code>*print-level*</code> and <code>*print-length*</code>
+(respectively).<p>
+
+<a href="TABLE.html">Table</a> has been modified so that the <code>:clear</code> option lets you replace
+the entire <a href="TABLE.html">table</a> with one that satisfies the <code>val</code> and key guards (if
+any); see <a href="TABLE.html">table</a>.<p>
+
+We have relaxed the translation rules for <code>:measure</code> <a href="HINTS.html">hints</a> to <code><a href="DEFUN.html">defun</a></code>,
+so that the the same rules apply to these terms that apply to terms
+in <code><a href="DEFTHM.html">defthm</a></code> <a href="EVENTS.html">events</a>.  In particular, in <code>:measure</code> <a href="HINTS.html">hints</a> <code><a href="MV.html">mv</a></code> is treated
+just like <code><a href="LIST.html">list</a></code>, and <code><a href="STATE.html">state</a></code> receives no special handling.<p>
+
+The <a href="LOOP-STOPPER.html">loop-stopper</a> test has been relaxed.  The old test required that
+every new argument be strictly less than the corresponding old
+argument in a certain <a href="TERM-ORDER.html">term-order</a>.  The new test uses a lexicographic
+order on term lists instead.  For example, consider the following
+rewrite rule.
+
+<pre>
+  (equal
+   (variable-update var1
+                    val1 (variable-update var2 val2 vs))
+   (variable-update var2
+                    val2 (variable-update var1 val1 vs)))
+</pre>
+
+This rule is permutative.  Now imagine that we want to apply this
+rule to the term
+
+<pre>
+  (variable-update u y (variable-update u x vs)).
+</pre>
+
+Since the actual corresponding to both <code>var1</code> and <code>var2</code> is <code>u</code>, which
+is not strictly less than itself in the <a href="TERM-ORDER.html">term-order</a>, this rule would
+fail to be applied in this situation when using the old test.
+However, since the pair <code>(u x)</code> is lexicographically less than the
+pair <code>(u y)</code> with respect to our <a href="TERM-ORDER.html">term-order</a>, the rule is in fact
+applied using our new test.<p>
+
+Messages about <a href="EVENTS.html">events</a> now contain a space after certain left
+parentheses, in order to assist emacs users.  For example, the event
+
+<pre>
+  (defthm abc (equal (+ (len x) 0) (len x)))
+</pre>
+
+leads to a summary containing the line
+
+<pre>
+  Form:  ( DEFTHM ABC ...)
+</pre>
+
+and hence, if you search backwards for ``<code>(defthm abc</code>'', you won't
+stop at this message.<p>
+
+More tautology checking is done during a proof; in fact, no goal
+printed to the screen, except for the results of applying <code>:use</code> and
+<code>:by</code> <a href="HINTS.html">hints</a> or the top-level goals from an induction proof, are known
+to Acl2 to be tautologies.<p>
+
+The <code><a href="LD-QUERY-CONTROL-ALIST.html">ld-query-control-alist</a></code> may now be used to suppress printing of
+queries; see <a href="LD-QUERY-CONTROL-ALIST.html">ld-query-control-alist</a>.<p>
+
+Warning messages are printed with short summary strings, for example
+the string ``<code>Use</code>'' in the following message.
+
+<pre>
+  Acl2 Warning [Use] in DEFTHM:  It is unusual to :USE an enabled
+  :REWRITE or :DEFINITION rule, so you may want to consider
+  disabling FOO.
+</pre>
+
+At the end of the event, just before the time is printed, all such
+summary strings are printed out.<p>
+
+The keyword command <code>:u</code> has been introduced as an abbreviation for
+<code>:</code><code><a href="UBT.html">ubt</a></code> <code>:</code><code><a href="MAX.html">max</a></code>.  Printing of query messages is suppressed by <code>:u</code>.<p>
+
+The keyword <code>:cheat</code> is no longer supported by any event form.<p>
+
+Some irrelevant formals are detected; see <a href="IRRELEVANT-FORMALS.html">irrelevant-formals</a>.<p>
+
+A bug in the application of metafunctions was fixed: now if the
+output of a metafunction is equal to its input, the application of
+the metafunction is deemed unsuccessful and the next metafunction is
+tried.<p>
+
+An example has been added to the documentation for <a href="EQUIVALENCE.html">equivalence</a>
+to suggest how to make use of <a href="EQUIVALENCE.html">equivalence</a> relations in rewriting.<p>
+
+The following Common Lisp functions have been added to Acl2:
+<code><a href="ALPHA-CHAR-P.html">alpha-char-p</a></code>, <code><a href="UPPER-CASE-P.html">upper-case-p</a></code>, <code><a href="LOWER-CASE-P.html">lower-case-p</a></code>, <code><a href="CHAR-UPCASE.html">char-upcase</a></code>,
+<code><a href="CHAR-DOWNCASE.html">char-downcase</a></code>, <code><a href="STRING-DOWNCASE.html">string-downcase</a></code>, <code><a href="STRING-UPCASE.html">string-upcase</a></code>, and <code>digit-charp-p</code>.<p>
+
+A documentation section called <code><a href="PROOF-CHECKER.html">proof-checker</a></code> has been added for the
+interactive facility, whose documentation has been slightly
+improved.  See in particular the documentation for
+<a href="PROOF-CHECKER.html">proof-checker</a>, <code><a href="VERIFY.html">verify</a></code>, and <a href="MACRO-COMMAND.html">macro-command</a>.<p>
+
+A number of <a href="EVENTS.html">events</a> that had been inadvertently disallowed in <a href="BOOKS.html">books</a>
+are now permitted in <a href="BOOKS.html">books</a>.  These are:  <code><a href="DEFCONG.html">defcong</a></code>, <code>defcor</code>, <code><a href="DEFEQUIV.html">defequiv</a></code>,
+<code><a href="DEFREFINEMENT.html">defrefinement</a></code>, <code><a href="DEFSTUB.html">defstub</a></code>, and <code><a href="VERIFY-TERMINATION.html">verify-termination</a></code>.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

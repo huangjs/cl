@@ -1,0 +1,1149 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: A Flying Tour of ACL2,  Next: A Sketch of How the Rewriter Works,  Prev: Pages Written Especially for the Tours,  Up: Pages Written Especially for the Tours
+
+A Flying Tour of ACL2    A Flying Tour of ACL2
+
+On this tour you will learn a little about what ACL2 is for rather than
+how ACL2 works.  At the bottom of the "page" (which may extend beyond
+the end of your screen) there is a small "flying tour" icon.  Click on
+it to go to the next page of the tour.
+
+The tour visits the following topics sequentially.
+
+     The Flight Plan
+     * This Documentation
+     * What is ACL2?
+     * Mathematical Logic
+     * Mechanical Theorem Proving
+     * Mathematical Models in General
+     * Mathematical Models of Computing Machines
+          Formalizing Models
+          Running Models
+          Symbolic Execution of Models
+          Proving Theorems about Models
+     * Requirements of ACL2
+          The User's Skills
+          Training
+          Host System
+
+We intend the tour to take about 10 minutes of your time.  Some pages
+on the tour contain pointers to other documents.  You need not follow
+these pointers to stay on the tour.
+
+Flying Tour:  *note About the ACL2 Home Page::
+
+
+File: acl2-doc-emacs.info,  Node: A Sketch of How the Rewriter Works,  Next: A Tiny Warning Sign,  Prev: A Flying Tour of ACL2,  Up: Pages Written Especially for the Tours
+
+A Sketch of How the Rewriter Works    A Sketch of How the Rewriter Works
+
+Below we show the first target term, extracted from the current
+conjecture.  Below it we show the associativity rule.
+
+The variables of the rewrite rule are instantiated so that the
+left-hand side of the rule matches the target:
+
+          variable          term from target
+            a                     x1
+            b                     x2
+            c                     (app x3 x4)
+
+Then the target is replaced by the instantiated right-hand side of the
+rule.
+
+Sometimes rules have hypotheses.  To make a long story short, if the
+rule has hypotheses, then after matching the left-hand side, the
+rewriter instantiates the hypotheses and rewrites them recursively.
+This is called backchaining.  If they all rewrite to true, then the
+target is replaced as above.
+
+For more details on how the ACL2 rewriter works, see Boyer and Moore's
+book A Computational Logic, Academic Press, 1979.
+
+
+File: acl2-doc-emacs.info,  Node: A Tiny Warning Sign,  Next: A Trivial Proof,  Prev: A Sketch of How the Rewriter Works,  Up: Pages Written Especially for the Tours
+
+A Tiny Warning Sign    A Tiny Warning Sign
+
+This warning sign, which usually appears as "",  indicates that the
+link it marks takes you into ACL2's online  documentation.
+
+The documentation is a vast graph of documented topics intended to
+help the _user_ of ACL2 rather than the _potential user_.  If  you are
+exploring ACL2's home page to learn about the system,  perhaps you
+should go back rather than follow the link marked with  this sign.  But
+you are welcome to explore the online documentation  as well.  Good
+luck.
+
+
+File: acl2-doc-emacs.info,  Node: A Trivial Proof,  Next: A Typical State,  Prev: A Tiny Warning Sign,  Up: Pages Written Especially for the Tours
+
+A Trivial Proof    A Trivial Proof
+
+
+File: acl2-doc-emacs.info,  Node: A Typical State,  Next: A Walking Tour of ACL2,  Prev: A Trivial Proof,  Up: Pages Written Especially for the Tours
+
+A Typical State    A Typical State
+
+Observe that the states in typical models talk about
+
+     booleans    integers   vectors     records   caches
+     bits        symbols    arrays      stacks    files
+     characters  strings    sequences   tables    directories
+
+These objects are discrete rather than continuous; furthermore they are
+built incrementally or inductively by repeatedly using primitive
+operations to put together smaller pieces.
+
+The functions we need to manipulate these objects do things like
+concatenate, reverse, sort, search, count, etc.
+
+Flying Tour:  *note Functions for Manipulating these Objects::
+
+
+File: acl2-doc-emacs.info,  Node: A Walking Tour of ACL2,  Next: ACL2 Characters,  Prev: A Typical State,  Up: Pages Written Especially for the Tours
+
+A Walking Tour of ACL2    A Walking Tour of ACL2
+
+On this tour you will learn a little more about the ACL2 logic, the
+theorem prover, and the user interface.
+
+This time we will stick with really simple things, such as the
+associativity of list concatenation.
+
+We assume you have taken the Flying Tour but that you did not
+necessarily follow all the "off-tour" links.  So this tour may revisit
+some pages you've seen.  Just click on the Walking Tour icon at the
+bottom of each page.
+
+On this tour you will see many more links marked <>.  We would like to
+discourage you from following these links right now.  However we
+encourage you to note them.  Basically, the <> sign here illustrates
+the documentation and introduces you to its main entry points.  Once
+you have started to use ACL2 you can take the Walking Tour again but
+pursue more of the indicated links.
+
+Walking Tour:  *note Common Lisp::
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 Characters,  Next: ACL2 Conses or Ordered Pairs,  Prev: A Walking Tour of ACL2,  Up: Pages Written Especially for the Tours
+
+ACL2 Characters    ACL2 Characters
+
+ACL2 accepts 256 distinct characters, which are the characters
+obtained by applying the function code-char <> to each  integer from 0
+to 255.  Among these, Common Lisp designates certain  ones as
+*standard-characters*, namely those of the form  (code-char n) where n
+is from 33 to 126, together with  #\Newline and #\Space.  The actual
+standard characters may  be viewed by evaluating the constant expression
+*standard-chars*.
+
+The standard character constants are written by writing a hash mark
+followed by a backslash (#\) followed by the character.
+
+The function characterp <> recognizes characters.  For more  details,
+See *Note CHARACTERS:: <>.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 Conses or Ordered Pairs,  Next: ACL2 Strings,  Prev: ACL2 Characters,  Up: Pages Written Especially for the Tours
+
+ACL2 Conses or Ordered Pairs    ACL2 Conses or Ordered Pairs
+
+The function cons <> creates an ordered pair.  Car <> and cdr <> return
+the first and second components, respectively, of an ordered pair.  The
+function consp <> recognizes ordered pairs.
+
+Ordered pairs are used to represent lists and trees.  See any Common
+Lisp documentation for a discussion of how list constants are written
+and for the many list processing functions available.  Also, see *note
+PROGRAMMING:: <> where we list all the ACL2 primitive functions.
+
+Here are some examples of list constants to suggest their syntax.
+
+     '(a . b)                ; a pair whose car is 'a and cdr is 'b
+     '(a . nil)              ; a pair whose car is 'a and cdr is nil
+     '(a)                    ; another way to write the same thing
+     '(a b)                  ; a pair whose car is 'a and cdr is '(b)
+     '(a b c)                ; a pair whose car is 'a and cdr is '(b c)
+                             ;  i.e., a list of three symbols, a, b, and c.
+     '((a . 1) (b . 2))      ; a list of two pairs
+
+It is useful to distinguish "proper" conses from "improper" ones, the
+former being those cons trees whose right-most branch terminates with
+nil.  A "true list" (see *note TRUE-LISTP:: <>) is either nil or a
+proper cons.  (A b c . 7) is an improper cons and hence not a true list.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 Strings,  Next: ACL2 Symbols,  Prev: ACL2 Conses or Ordered Pairs,  Up: Pages Written Especially for the Tours
+
+ACL2 Strings    ACL2 Strings
+
+Strings of ACL2 characters are written as sequences of characters
+delimited by "double quotation marks" (").  To put a double quotation
+mark in a string (or, any other character such as backslash or newline
+that seems to cause problems), escape it by preceding it with a
+backslash (\).
+
+The function stringp <> recognizes strings and char <> will fetch the
+nth character of a string.  There are many other primitives for
+handling strings, such as string< <> for comparing two strings
+lexicographically.  We suggest you See *Note PROGRAMMING:: <> where we
+list all of the primitive ACL2 functions.  Alternatively, see any
+Common Lisp language documentation.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 Symbols,  Next: ACL2 System Architecture,  Prev: ACL2 Strings,  Up: Pages Written Especially for the Tours
+
+ACL2 Symbols    ACL2 Symbols
+
+Common Lisp's symbols are a data type representing words.  They are
+frequently regarded as atomic objects in the sense that they are not
+frequently broken down into their constituents.  Often the only
+important properties of symbols is that they are not numbers,
+characters, strings, or lists and that two symbols are not equal if
+they look different (!).  Examples of symbols include PLUS and
+SMITH::ABC.  All function and variable names in ACL2 are symbols.  When
+symbols are used as constants they must be quoted, as in 'PLUS.
+
+The symbol T is commonly used as the Boolean "true."  The symbol NIL is
+commonly used both as the Boolean "false" and as the "empty list."
+Despite sometimes being called the "empty list" NIL is a symbol not an
+"empty cons."  Unlike other symbols, T and NIL may be used as constants
+without quoting them.
+
+Usually, symbols are written as sequences of alphanumeric characters
+other than those denoting numbers.  Thus, A12, +1A and 1+ are symbols
+but +12 is a number.  Roughly speaking, when symbols are read lower
+case characters are converted to upper case, so we frequently do not
+distinguish ABC from Abc or abc.  See *Note Conversion:: for
+information about case conversion when symbols are read.  However, any
+character can be used in a symbol, but some characters must be
+"escaped" to allow the Lisp reader to parse the sequence as a symbol.
+For example, |Abc| is a symbol whose first character is capitalized and
+whose remaining characters are in lower case.  |An odd duck| is a symbol
+containing two #\Space characters.  See any Common Lisp documentation
+for the syntactic rules for symbols.
+
+Technically, a symbol is a special kind of pair consisting of a package
+name (which is a string) and a symbol name (which is also a string).
+(See *Note SYMBOL-PACKAGE-NAME:: <> and see *note SYMBOL-NAME:: <>.)
+The symbol SMITH::ABC is said to be in package "SMITH" and to have the
+symbol name "ABC".  The symbol ABC in package "SMITH" is generally not
+equal to the symbol ABC in package "JONES".  However, it is possible to
+"import" symbols from one package into another one, but in ACL2 this
+can only be done when the package is created.  (See *Note DEFPKG:: <>.)
+If the current-package <> is "SMITH" then SMITH::ABC may be more
+briefly written as just ABC.  Intern <> "creates" a symbol of a given
+name in a given package.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 System Architecture,  Next: ACL2 as an Interactive Theorem Prover,  Prev: ACL2 Symbols,  Up: Pages Written Especially for the Tours
+
+ACL2 System Architecture    ACL2 System Architecture
+
+The user interacts with the theorem prover by giving it definitions,
+theorems and advice (e.g., "use this lemma."), often in the form of
+books books <>.
+
+The theorem prover uses the rules in the library of books the user has
+selected.
+
+The theorem prover prints its proof attempts to the user.
+
+When a theorem is proved it is converted to a rule under the control of
+the user's rule-classes <>.
+
+The informed user can make ACL2 do amazing things.
+
+Walking Tour:  *note Rewrite Rules are Generated from DEFTHM Events::
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 as an Interactive Theorem Prover,  Next: ACL2 as an Interactive Theorem Prover (cont),  Prev: ACL2 System Architecture,  Up: Pages Written Especially for the Tours
+
+ACL2 as an Interactive Theorem Prover    ACL2 as an Interactive Theorem Prover
+
+The ACL2 theorem prover finds proofs in the ACL2 logic.  It can be
+automatic.  But most often the user must help it.
+
+The user usually guides ACL2 by suggesting that it first prove key
+lemmas.  Lemmas are just theorems used in the proofs of other theorems.
+
+See *Note ACL2 as an Interactive Theorem Prover (cont):: to continue.
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 as an Interactive Theorem Prover (cont),  Next: ACL2 is an Untyped Language,  Prev: ACL2 as an Interactive Theorem Prover,  Up: Pages Written Especially for the Tours
+
+ACL2 as an Interactive Theorem Prover (cont)    ACL2 as an Interactive Theorem Prover (cont)
+
+Theorems, lemmas, definitions, and advice of various sorts can be
+stored in books <>.
+
+When a theorem or definition is stored in a book, the user can specify
+how it should be used in the future.  When viewed this way, theorems
+and definitions are thought of as rules.
+
+The ACL2 theorem prover is rule driven.  The rules are obtained from
+books.
+
+See *Note ACL2 System Architecture:: to continue.
+
+Walking Tour:  *note ACL2 System Architecture::
+
+
+File: acl2-doc-emacs.info,  Node: ACL2 is an Untyped Language,  Next: About Models,  Prev: ACL2 as an Interactive Theorem Prover (cont),  Up: Pages Written Especially for the Tours
+
+ACL2 is an Untyped Language    ACL2 is an Untyped Language
+
+The example
+
+     ACL2 !>(app '(a b c) 27)
+     (A B C . 27)
+
+illustrates the fact that ACL2's logic is untyped (see *note About
+Types:: for a brief discussion of the typed versus untyped nature of
+the logic).
+
+The definition of app makes no restriction of the arguments to lists.
+The definition says that if the first argument satisfies endp <> then
+return the second argument.  In this example, when app has recursed
+three times down the cdr of its first argument, '(a b c), it reaches
+the final nil, which satisfies endp, and so 27 is returned.  It is
+naturally consed into the emerging list as the function returns from
+successive recursive calls (since cons does not require its arguments
+to be lists, either).  The result is an "improper" list, (a b c . 27).
+
+You can think of (app x y) as building a binary tree by replacing the
+right-most tip of the tree x with the tree y.
+
+
+File: acl2-doc-emacs.info,  Node: About Models,  Next: About Types,  Prev: ACL2 is an Untyped Language,  Up: Pages Written Especially for the Tours
+
+About Models    About Models
+
+ACL2 is used to construct mathematical models of computer hardware and
+software (i.e., "digital systems").
+
+A mathematical model is a set of mathematical formulas used to predict
+the behavior of some artifact.
+
+The use of mathematical models allows faster and cheaper delivery of
+better systems.
+
+Models need not be complete or perfectly accurate to be useful to the
+trained engineer.
+
+See *Note Models in Engineering:: for more discussion of these
+assertions in an engineering context.
+
+Flying Tour:  *note Models of Computer Hardware and Software::
+
+
+File: acl2-doc-emacs.info,  Node: About Types,  Next: About the ACL2 Home Page,  Prev: About Models,  Up: Pages Written Especially for the Tours
+
+About Types    About Types
+
+The universe of ACL2 objects includes objects of many different types.
+For example, t is a "symbol" and 3 is an "integer."  Roughly speaking
+the objects of ACL2 can be partitioned into the following types:
+
+     Numbers                   3, -22/7, #c(3 5/2)
+     Characters                #\A, #\a, #\Space
+     Strings                   "This is a string."
+     Symbols                   'abc, 'smith::abc
+     Conses (or Ordered Pairs) '((a . 1) (b . 2))
+
+When proving theorems it is important to know the types of object
+returned by a term.  ACL2 uses a complicated heuristic algorithm,
+called type-set <>, to determine what types of objects a  term may
+produce.  The user can more or less program the  type-set algorithm by
+proving type-prescription <>  rules.
+
+ACL2 is an "untyped" logic in the sense that the syntax is not  typed:
+It is legal to apply a function symbol of n arguments to any  n terms,
+regardless of the types of the argument terms.  Thus, it is  permitted
+to write such odd expressions as (+ t 3) which sums the  symbol t and
+the integer 3.  Common Lisp does not prohibit such  expressions.  We
+like untyped languages because they are simple to  describe, though
+proving theorems about them can be awkward because,  unless one is
+careful in the way one defines or states things,  unusual cases (like
+(+ t 3)) can arise.
+
+To make theorem proving easier in ACL2, the axioms actually define a
+value for such terms.  The value of (+ t 3) is 3; under the ACL2
+axioms, non-numeric arguments to + are treated as though they  were 0.
+
+You might immediately wonder about our claim that ACL2 is Common  Lisp,
+since (+ t 3) is "an error" (and will sometimes even  "signal an
+error") in Common Lisp.  It is to handle this problem that  ACL2 has
+guards.  We will discuss guards later in the Walking Tour.   However,
+many new users simply ignore the issue of guards entirely.
+
+You should now return to the Walking Tour.
+
+
+File: acl2-doc-emacs.info,  Node: About the ACL2 Home Page,  Next: About the Admission of Recursive Definitions,  Prev: About Types,  Up: Pages Written Especially for the Tours
+
+About the ACL2 Home Page    About the ACL2 Home Page
+
+The ACL2 Home Page is integrated into the ACL2 online documentation.
+Over 1.5 megabytes of text is available here.
+
+The vast majority of the text is user-level documentation.  For
+example, to find out about rewrite <> rules you could click on the word
+"rewrite <>."  But before you do that remember that you must then use
+your browser's back commands to come back here.
+
+The tiny warning signs <> mark pointers that lead out of the
+introductory-level material and into the user documentation.  If you are
+taking the Flying Tour, we advise you to avoid following such pointers
+the first time; it is easy to get lost in the full documentation unless
+you are pursuing the answer to a specific question.  If you do wander
+down these other paths, remember you can back out to a page containing
+the Flying Tour icon to resume the tour.
+
+At the end of the tour you will have a chance to return to The Flight
+Plan where you can revisit the main stops of the Flying Tour and
+explore the alternative paths more fully.
+
+Finally, every page contains two icons at the bottom.  The ACL2 icon
+leads you back to the ACL2 Home Page.  The Index icon allows you to
+browse an alphabetical listing of all the topics in ACL2's online
+documentation.
+
+Flying Tour:  *note What Is ACL2(Q)::
+
+
+File: acl2-doc-emacs.info,  Node: About the Admission of Recursive Definitions,  Next: About the Prompt,  Prev: About the ACL2 Home Page,  Up: Pages Written Especially for the Tours
+
+About the Admission of Recursive Definitions    About the Admission of Recursive Definitions
+
+You can't just add any formula as an axiom or definition and expect the
+logic to stay sound!  The purported "definition" of APP must have
+several properties to be admitted to the logic as a new axiom
+
+The key property a recursive definition must have is that the recursion
+terminate.  This, along with some syntactic criteria, ensures us that
+there exists a function satisfying the definition.
+
+Termination must be proved before the definition is admitted.  This is
+done in general by finding a measure of the arguments of the function
+and a well-founded relation such that the arguments "get smaller" every
+time a recursive branch is taken.
+
+For app the measure is the "size" of the first argument, x, as
+determined by the primitive function acl2-count <>.  The well-founded
+relation used in this example is o-p <>, which is the standard ordering
+on the ordinals less than "epsilon naught."  These particular choices
+for app were made "automatically" by ACL2.  But they are in fact
+determined by various "default" settings.  The user of ACL2 can change
+the defaults or specify a "hint" to the defun <> command to specify the
+measure and relation.
+
+You should now return to the Walking Tour.
+
+
+File: acl2-doc-emacs.info,  Node: About the Prompt,  Next: An Example Common Lisp Function Definition,  Prev: About the Admission of Recursive Definitions,  Up: Pages Written Especially for the Tours
+
+About the Prompt    About the Prompt
+
+The string "ACL2 !>" is the ACL2 prompt.
+
+The prompt tells the user that an ACL2 command <>is expected.  In
+addition, the prompt tells us a little about the current state of the
+ACL2 command interpreter.  We explain the prompt briefly below.  But
+first we talk about the command interpreter.
+
+An ACL2 command is generally a Lisp expression to be evaluated.  There
+are some unusual commands (such as :q <> for quitting ACL2) which cause
+other behavior.  But most commands are read, evaluated, and then have
+their results printed.  Thus, we call the command interpreter a
+"read-eval-print loop."  The ACL2 command interpreter is named LD <>
+(after Lisp's "load").
+
+A command like (defun app (x y) ...) causes ACL2 to evaluate the defun
+<> function on app, (x y) and ....  When that command is evaluated it
+prints some information to the terminal explaining the processing of
+the proposed definition.  It returns the symbol APP as its value, which
+is printed by the command interpreter.  (Actually, defun is not a
+function but a macro which expands to a form that involves state <>, a
+necessary precondition to printing output to the terminal and to
+"changing" the set of axioms.  But we do not discuss this further here.)
+
+The defun command is an example of a special kind of command called an
+"event."  Events <> are those commands that change the "logical world"
+by adding such things as axioms or theorems to ACL2's data base.  See
+*Note WORLD:: <>.  But not every command is an event command.
+
+A command like (app '(1 2 3) '(4 5 6 7)) is an example of a non-event.
+It is processed the same general way:  the function app is applied to
+the indicated arguments and the result is printed.  The function app
+does not print anything and does not change the "world."
+
+A third kind of command are those that display information about the
+current logical world or that "backup" to previous versions of the
+world.  Such commands are called "history" <> commands.
+
+What does the ACL2 prompt tell us about the read-eval-print loop?  The
+prompt "ACL2 !>" tells us that the command will be read with
+current-package <> set to "ACL2", that guard checking (see *note
+SET-GUARD-CHECKING:: <>) is on ("!"), and that we are at the top-level
+(there is only one ">").  For more about the prompt, see *note
+DEFAULT-PRINT-PROMPT:: <>.
+
+You should now return to the Walking Tour.
+
+
+File: acl2-doc-emacs.info,  Node: An Example Common Lisp Function Definition,  Next: An Example of ACL2 in Use,  Prev: About the Prompt,  Up: Pages Written Especially for the Tours
+
+An Example Common Lisp Function Definition    An Example Common Lisp Function Definition
+
+Consider the binary trees x and y below.
+
+In Lisp, x is written as the list '(A B) or, equivalently, as '(A B .
+NIL).  Similarly, y may be written '(C D E).  Suppose we wish to
+replace the right-most tip of x by the entire tree y.   This is denoted
+(app x y), where app stands for "append".
+
+We can define app with:
+
+     (defun app (x y)                           ; Concatenate x and y.
+       (declare (type (satisfies true-listp) x)); We expect x to end in NIL.
+       (cond ((endp x) y)                       ; If x is empty, return y.
+             (t (cons (car x)                   ; Else, copy first node
+                      (app (cdr x) y)))))       ;  and recur into next.
+
+If you defined this function in some Common Lisp, then to run app on
+the x and y above you could then type
+
+     (app '(A B) '(C D E))
+
+and Common Lisp will print the result (A B C D E).
+
+Walking Tour:  *note An Example of ACL2 in Use::
+
+
+File: acl2-doc-emacs.info,  Node: An Example of ACL2 in Use,  Next: Analyzing Common Lisp Models,  Prev: An Example Common Lisp Function Definition,  Up: Pages Written Especially for the Tours
+
+An Example of ACL2 in Use    An Example of ACL2 in Use
+
+To introduce you to ACL2 we will consider the app function discussed in
+the Common Lisp page, except we will omit for the moment the declare
+form, which in ACL2 is called a guard.    We will deal with guards
+later.
+
+Here is the definition again
+
+     (defun app (x y)
+       (cond ((endp x) y)
+             (t (cons (car x) 
+                      (app (cdr x) y)))))
+
+The next few stops along the Walking Tour will show you
+
+       * how to use the ACL2 documentation,
+       * what happens when the above definition is submitted to ACL2,
+       * what happens when you evaluate calls of app,
+       * what one simple theorem about app looks like,
+       * how ACL2 proves the theorem, and
+       * how that theorem can be used in another proof.
+
+Along the way we will talk about the definitional principle, types, the
+ACL2 read-eval-print loop, and how the theorem prover works.
+
+When we complete this part of the tour we will introduce the notion of
+guards and revisit several of the topics above in that context.
+
+Walking Tour:  *note How To Find Out about ACL2 Functions::
+
+
+File: acl2-doc-emacs.info,  Node: Analyzing Common Lisp Models,  Next: Common Lisp,  Prev: An Example of ACL2 in Use,  Up: Pages Written Especially for the Tours
+
+Analyzing Common Lisp Models    Analyzing Common Lisp Models
+
+To analyze a model you must be able to reason about the operations and
+relations involved.  Perhaps, for example, some aspect of the model
+depends upon the fact that the concatenation operation is associative.
+
+In any Common Lisp you can confirm that
+
+     (app '(A B) (app '(C D) '(E F)))
+
+and
+
+     (app (app '(A B) '(C D)) '(E F)))
+
+both evaluate to the same thing, (A B C D E F).
+
+But what distinguishes ACL2 (the logic) from applicative Common Lisp
+(the language) is that in ACL2 you can prove that the concatenation
+function app is associative when its arguments are true-lists, whereas
+in Common Lisp all you can do is test that proposition.
+
+That is, in ACL2 it makes sense to say that the following formula is a
+"theorem."
+
+     Theorem Associativity of App
+     (implies (and (true-listp a)
+                   (true-listp b))
+              (equal (app (app a b) c)
+                     (app a (app b c))))
+
+Theorems about the properties of models are proved by symbolically
+manipulating the operations and relations involved.  If the
+concatenation of sequences is involved in your model, then you may well
+need the theorem above in order to that your model has some particular
+property.
+
+
+File: acl2-doc-emacs.info,  Node: Common Lisp,  Next: Common Lisp as a Modeling Language,  Prev: Analyzing Common Lisp Models,  Up: Pages Written Especially for the Tours
+
+Common Lisp    Common Lisp
+
+The logic of ACL2 is based on Common Lisp.
+
+Common Lisp is the standard list processing programming language.  It
+is documented in:  Guy L. Steele, Common Lisp The Language, Digital
+Press, 12 Crosby Drive, Bedford, MA 01730, 1990.  See also
+http://www.cs.cmu.edu/Web/Groups/AI/html/cltl/cltl2.html.
+
+ACL2 formalizes only a subset of Common Lisp.  It includes such
+familiar Lisp functions as cons, car and cdr for creating and
+manipulating list structures, various arithmetic primitives such as +,
+*, expt and <=, and intern and symbol-name for creating and
+manipulating symbols.  Control primitives include cond, case and if, as
+well as function call, including recursion.  New functions are defined
+with defun and macros with defmacro.  See *Note PROGRAMMING:: <> for a
+list of the Common Lisp primitives supported by ACL2.
+
+ACL2 is a very small subset of full Common Lisp.  ACL2 does not include
+the Common Lisp Object System (CLOS), higher order functions, circular
+structures, and other aspects of Common Lisp that are non-applicative.
+Roughly speaking, a language is applicative if it follows the rules of
+function application.  For example, f(x) must be equal to f(x), which
+means, among other things, that the value of f must not be affected by
+"global variables" and the object x must not change over time.
+
+See *Note An Example Common Lisp Function Definition:: for a simple
+example of Common Lisp.
+
+Walking Tour:  *note An Example Common Lisp Function Definition::
+
+
+File: acl2-doc-emacs.info,  Node: Common Lisp as a Modeling Language,  Next: Conversion,  Prev: Common Lisp,  Up: Pages Written Especially for the Tours
+
+Common Lisp as a Modeling Language    Common Lisp as a Modeling Language
+
+In ACL2 we have adopted Common Lisp as the basis of our modeling
+language.  If you have already read our brief note on Common Lisp and
+recall the example of app, please proceed.  Otherwise see *note Common
+Lisp:: for an exceedingly brief introduction to Common Lisp and then
+come back here.
+
+In Common Lisp it is very easy to write systems of formulas that
+manipulate discrete, inductively constructed data objects.  In building
+a model you might need to formalize the notion of sequences and define
+such operations as concatenation, length, whether one is a permutation
+of the other, etc.  It is easy to do this in Common Lisp.  Furthermore,
+if you have a Common Lisp "theory of sequences" you can run the
+operations and relations you define.  That is, you can execute the
+functions on concrete data to see what results your formulas produce.
+
+If you define the function app as shown above and then type
+
+     (app '(A B) '(C D E))
+
+in any Common Lisp, the answer will be computed and will be (A B C D E).
+
+The executable nature of Common Lisp and thus of ACL2 is very handy
+when producing models.
+
+But executability is not enough for a modeling language because the
+purpose of models is to permit analysis.
+
+See *Note Analyzing Common Lisp Models:: to continue.
+
+
+File: acl2-doc-emacs.info,  Node: Conversion,  Next: Corroborating Models,  Prev: Common Lisp as a Modeling Language,  Up: Pages Written Especially for the Tours
+
+Conversion    Conversion to Uppercase
+
+When symbols are read by Common Lisp they are converted to upper case.
+Note carefully that this remark applies to the characters in _symbols_.
+The characters in strings are not converted upper case.
+
+To type a symbol containing lower case characters you can enclose the
+symbol in vertical bars, as in |AbC| or you can put a "backslash"
+before each lower case character you wish to preserve, as in A\bC.
+|AbC| and A\bC are two different ways of writing the same symbol (just
+like 2/4 and 1/2 are two different ways of writing the same rational).
+The symbol has three characters in its name, the middle one of which is
+a lower case b.
+
+
+File: acl2-doc-emacs.info,  Node: Corroborating Models,  Next: Evaluating App on Sample Input,  Prev: Conversion,  Up: Pages Written Especially for the Tours
+
+Corroborating Models    Corroborating Models
+
+After producing a model, it must be corroborated against reality.  The
+Falling Body Model has been corroborated by a vast number of
+experiments in which the time and distance were measured and compared
+according to the formula.  In general all models must be corroborated
+by experiment.
+
+The Falling Body Model can be derived from deeper models, namely
+Newton's laws of motion and the assertion that, over the limited
+distances concerned, graviation exerts a constant acceleration on the
+object.  When the model in question can be derived from other models,
+it is the other models that are being corroborated by our experiments.
+
+Because nature is not formal, we cannot prove that our models of it are
+correct.  All we can do is test our models against nature's behavior.
+
+Such testing often exposes restrictions on the applicability of our
+models.  For example, the Falling Body Model is inaccurate if air
+resistance is significant.  Thus, we learn not to use that model to
+predict how long it takes a feather to fall from a 200 foot tower in
+the earth's atmosphere.
+
+In addition, attempts at corroboration might reveal that the model is
+actually incorrect.  Careful measurements might expose the fact that
+the gravitational force increases as the body falls closer to earth.
+Very careful measurements might reveal relativistic effects.
+Technically, the familiar Falling Body Model is just wrong, even under
+excessive restrictions such as "in a perfect vacuum" and "over small
+distances."  But it is an incredibly useful model nonetheless.
+
+There are several morals here.
+
+Models need not be complete to be useful.
+
+Models need not be perfectly accurate to be useful.
+
+The user of a model must understand its limitations.
+
+Flying Tour:  *note Models of Computer Hardware and Software::
+
+
+File: acl2-doc-emacs.info,  Node: Evaluating App on Sample Input,  Next: Flawed Induction Candidates in App Example,  Prev: Corroborating Models,  Up: Pages Written Especially for the Tours
+
+Evaluating App on Sample Input    Evaluating App on Sample Input
+
+     ACL2 !>(app nil '(x y z))
+     (X Y Z)
+     
+     ACL2 !>(app '(1 2 3) '(4 5 6 7))
+     (1 2 3 4 5 6 7)
+     
+     ACL2 !>(app '(a b c d e f g) '(x y z))   ; see *note Conversion:: for an explanation
+     (A B C D E F G X Y Z)
+     
+     ACL2 !>(app (app '(1 2) '(3 4)) '(5 6))
+     (1 2 3 4 5 6)
+     
+     ACL2 !>(app '(1 2) (app '(3 4) '(5 6)))
+     (1 2 3 4 5 6)
+     
+     ACL2!>(let ((a '(1 2))
+                 (b '(3 4))
+                 (c '(5 6)))
+             (equal (app (app a b) c)
+                    (app a (app b c))))
+     T
+
+As we can see from these examples, ACL2 functions can be executed more
+or less as Common Lisp.
+
+The last three examples suggest an interesting property of app.
+
+Walking Tour:  *note The Associativity of App::
+
+
+File: acl2-doc-emacs.info,  Node: Flawed Induction Candidates in App Example,  Next: Free Variables in Top-Level Input,  Prev: Evaluating App on Sample Input,  Up: Pages Written Especially for the Tours
+
+Flawed Induction Candidates in App Example    Flawed Induction Candidates in App Example
+
+Induction on a is unflawed:  every occurrence of a in the conjecture
+
+     (equal (app (app a b) c)
+            (app a (app b c)))
+
+is in a position being recursively decomposed!
+
+Now look at the occurrences of b.  The first (shown in bold below) is
+in a position that is held constant in the recursion of (app a b).  It
+would be "bad" to induct on b here.
+
+     (equal (app (app a b) c)
+            (app a (app b c)))
+
+
+File: acl2-doc-emacs.info,  Node: Free Variables in Top-Level Input,  Next: Functions for Manipulating these Objects,  Prev: Flawed Induction Candidates in App Example,  Up: Pages Written Especially for the Tours
+
+Free Variables in Top-Level Input    Free Variables in Top-Level Input
+
+     ACL2 !>(equal (app (app a b) c)
+                   (app a (app b c))))
+     
+     ACL2 Error in TOP-LEVEL:  Global variables, such as C, B, and A, are
+     not allowed. See :DOC ASSIGN and :DOC @.
+
+ACL2 does not allow "global variables" in top-level input.  There is no
+"top-level binding environment" to give meaning to these variables.
+
+Thus, expressions involving no variables can generally be evaluated,
+
+     ACL2 !>(equal (app (app '(1 2) '(3 4)) '(5 6))
+                   (app '(1 2) (app '(3 4) '(5 6))))
+     (1 2 3 4 5 6)
+
+but expressions containing variables cannot.
+
+There is an exception to rule.  References to "single-threaded objects"
+may appear in top-level forms.  See *Note STOBJ:: <>.  A
+single-threaded object is an ACL2 object, usually containing many
+fields, whose use is syntactically restricted so that it may be given
+as input only to certain functions and must be returned as output by
+certain functions.  These restrictions allow single- threaded objects
+to be efficiently manipulated.  For example, only a single copy of the
+object actually exists, even though from a logical perspective one
+might expect the object to be "copied on write."
+
+The most commonly used single-threaded object in ACL2 is the ACL2
+system state, whose current value is always held in the variable state
+<>.
+
+ACL2 provides a way for you to use state to save values of computations
+at the top-level and refer to them later.  See assign <> and @ <>.
+
+
+File: acl2-doc-emacs.info,  Node: Functions for Manipulating these Objects,  Next: Guards,  Prev: Free Variables in Top-Level Input,  Up: Pages Written Especially for the Tours
+
+Functions for Manipulating these Objects    Functions for Manipulating these Objects
+
+Consider a typical "stack" of control frames.
+
+Suppose the model required that we express the idea of "the most recent
+frame whose return program counter points into MAIN."
+
+The natural expression of this notion involves
+
+function application - "fetch the return-pc of this frame"
+
+case analysis -  "if the pc is MAIN, then ..."
+
+iteration or recursion - "pop this frame off and repeat."
+
+The designers of ACL2 have taken the position that a programming
+language is the natural language in which to define such notions,
+provided the language has a mathematical foundation so that models can
+be analyzed and properties derived logically.
+
+is the language supported by ACL2.  See *Note Common Lisp:: for an
+optional and very brief introduction to Common Lisp.
+
+Flying Tour:  *note Modeling in ACL2::
+
+
+File: acl2-doc-emacs.info,  Node: Guards,  Next: Guessing the Type of a Newly Admitted Function,  Prev: Functions for Manipulating these Objects,  Up: Pages Written Especially for the Tours
+
+Guards    Guards
+
+Common Lisp functions are partial; they are not defined for all
+possible inputs.  But ACL2 functions are total.  Roughly speaking, the
+logical function of a given name in ACL2 is a completion of the Common
+Lisp function of the same name obtained by adding some arbitrary but
+"natural" values on arguments outside the "intended domain" of the
+Common Lisp function.
+
+ACL2 requires that every ACL2 function symbol have a "guard," which may
+be thought of as a predicate on the formals of the function describing
+the intended domain.  The guard on the primitive function car <>, for
+example, is (or (consp x) (equal x nil)), which requires the argument
+to be either an ordered pair or nil.  We will discuss later how to
+specify a guard for a defined function; when one is not specified, the
+guard is t which is just to say all arguments are allowed.
+
+But guards are entirely extra-logical:  they are not involved in the
+axioms defining functions.  If you put a guard on a defined function,
+the defining axiom added to the logic defines the function on all
+arguments, not just on the guarded domain.
+
+So what is the purpose of guards?
+
+The key to the utility of guards is that we provide a mechanism, called
+"guard verification," for checking that all the guards in a formula are
+true.  See *Note VERIFY-GUARDS::.  This mechanism will attempt to prove
+that all the guards encountered in the evaluation of a guarded function
+are true every time they are encountered.
+
+For a thorough discussion of guards, see the paper [km97] in the ACL2
+bibliography.
+
+
+File: acl2-doc-emacs.info,  Node: Guessing the Type of a Newly Admitted Function,  Next: Guiding the ACL2 Theorem Prover,  Prev: Guards,  Up: Pages Written Especially for the Tours
+
+Guessing the Type of a Newly Admitted Function    Guessing the Type of a Newly Admitted Function
+
+When a function is admitted to the logic, ACL2 tries to "guess" what
+type of object it returns.  This guess is codified as a term that
+expresses a property of the value of the function.  For app the term is
+
+     (OR (CONSP (APP X Y))
+         (EQUAL (APP X Y) Y))
+
+which says that app returns either a cons or its second argument.  This
+formula is added to ACL2's rule base as a type-prescription <> rule.
+Later we will discuss how rules are used by the ACL2 theorem prover.
+The point here is just that when you add a definition, the data base of
+rules is updated, not just by the addition of the definitional axiom,
+but by several new rules.
+
+You should now return to the Walking Tour.
+
+
+File: acl2-doc-emacs.info,  Node: Guiding the ACL2 Theorem Prover,  Next: Hey Wait! Is ACL2 Typed or Untyped(Q),  Prev: Guessing the Type of a Newly Admitted Function,  Up: Pages Written Especially for the Tours
+
+Guiding the ACL2 Theorem Prover    Guiding the ACL2 Theorem Prover
+
+Now that you have seen the theorem prover in action you might be
+curious as to how you guide it.
+
+The idea is that the user submits conjectures and advice and reads the
+proof attempts as they are produced.
+
+Most of the time, the conjectures submitted are lemmas to be used in
+the proofs of other theorems.
+
+Walking Tour:  *note ACL2 as an Interactive Theorem Prover (cont)::
+
+
+File: acl2-doc-emacs.info,  Node: Hey Wait! Is ACL2 Typed or Untyped(Q),  Next: How Long Does It Take to Become an Effective User(Q),  Prev: Guiding the ACL2 Theorem Prover,  Up: Pages Written Especially for the Tours
+
+Hey Wait!  Is ACL2 Typed or Untyped(Q)    Hey Wait!  Is ACL2 Typed or Untyped?
+
+The example
+
+     ACL2 !>(app 7 27)
+     
+     ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
+     is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+     call (ENDP 7).
+
+illustrates the fact that while ACL2 is an untyped language the ACL2
+evaluator can be configured so as to check "types" at runtime.  We
+should not say "types" here but "guards."  See *Note Undocumented
+Topic:: for a discussion of guards.
+
+The guard on endp <> requires its argument to be a true list.  Since 7
+is not a true list, and since ACL2 is checking guards in this example,
+an error is signaled by ACL2.  How do you know ACL2 is checking guards?
+Because the prompt tells us (see *note About the Prompt::) with its
+"!".
+
+
+File: acl2-doc-emacs.info,  Node: How Long Does It Take to Become an Effective User(Q),  Next: How To Find Out about ACL2 Functions,  Prev: Hey Wait! Is ACL2 Typed or Untyped(Q),  Up: Pages Written Especially for the Tours
+
+How Long Does It Take to Become an Effective User(Q)    How Long Does It Take to Become an Effective User?
+
+The training time depends primarily on the background of the user.
+
+We expect that a user who
+
+       * has a bachelor's degree in computer science or mathematics,
+     
+       * has some experience with formal methods,
+     
+       * has had some exposure to Lisp programming and is comfortable
+         with the Lisp notation,
+     
+       * is familiar with and has unlimited access to a Common Lisp
+         host processor, operating system, and text editor (we
+         use Sun workstations running Unix and GNU Emacs),
+     
+       * is willing to read and study the ACL2 documentation, and
+     
+       * is given the opportunity to start with ``toy'' projects before
+         being expected to tackle the company's Grand Challenge,
+
+will probably take several months to become an effective ACL2 user.
+
+Flying Tour:  *note Other Requirements::
+
+
+File: acl2-doc-emacs.info,  Node: How To Find Out about ACL2 Functions,  Next: How To Find Out about ACL2 Functions (cont),  Prev: How Long Does It Take to Become an Effective User(Q),  Up: Pages Written Especially for the Tours
+
+How To Find Out about ACL2 Functions    How To Find Out about ACL2 Functions
+
+Most ACL2 primitives are documented.  Here is the definition of app
+again, with the documented topics highlighted.  <> All of the links
+below lead into the ACL2 online documentation, 1.5 megabytes of
+hyperlinked text.  So follow these links around, but remember to come
+back here!
+
+     (defun app (x y)
+       (cond ((endp x) y)
+             (t (cons (car x)
+                      (app (cdr x) y)))))
+
+By following the link on endp <> we see that it is a Common Lisp
+function and is defined to be the same as atom <>, which recognizes
+non-conses.  But endp has a guard.  Since we are ignorning guards for
+now, we'll ignore the guard issue on endp.
+
+So this definition reads "to app x and y:  if x is an atom, return y;
+otherwise, app (cdr x) and y and then cons (car x) onto that."
+
+Walking Tour:  *note How To Find Out about ACL2 Functions (cont)::
+
+
+File: acl2-doc-emacs.info,  Node: How To Find Out about ACL2 Functions (cont),  Next: Modeling in ACL2,  Prev: How To Find Out about ACL2 Functions,  Up: Pages Written Especially for the Tours
+
+How To Find Out about ACL2 Functions (cont)    How To Find Out about ACL2 Functions (cont)
+
+You can always use the Index <> to find the documentation of functions.
+Try it.  Click on the Index icon below.  Then use the Find command of
+your browser to find "endp" in that document and follow the link.  But
+remember to come back here.
+
+The ACL2 documentation is also available via Emacs' TexInfo, allowing
+you to explore the hyperlinked documentation in the comfort of a text
+editor that can also interact with ACL2.
+
+In addition, runtime images of ACL2 have the hyperlinked text as a
+large ACL2 data structure that can be explored with ACL2's :doc
+command.  If you have ACL2 running, try the command :doc endp.
+
+Another way to find out about ACL2 functions, if you have an ACL2 image
+available, is to use the command :args <> which prints the formals,
+type, and guard of a function symbol.
+
+Of course, the ACL2 documentation can also be printed out as 700 page
+book.  See the ACL2 Home Page to download the Postscript.
+
+Now let's continue with app.
+
+Walking Tour:  *note The Admission of App::
+
+
+File: acl2-doc-emacs.info,  Node: Modeling in ACL2,  Next: Models in Engineering,  Prev: How To Find Out about ACL2 Functions (cont),  Up: Pages Written Especially for the Tours
+
+Modeling in ACL2    Modeling in ACL2
+
+Below we define mc(s,n) to be the function that single-steps n times
+from a given starting state, s.  In Common Lisp, "mc(s,n)" is written
+(mc s n).
+
+     (defun mc (s n)                     ; To step s n times:
+      (if (zp n)                         ; If n is 0
+          s                              ;    then return s
+          (mc (single-step s) (- n 1)))) ;    else step single-step(s)
+                                                           n-1 times.
+
+This is an example of a formal model in ACL2.
+
+Flying Tour:  *note Running Models::
+
+
+File: acl2-doc-emacs.info,  Node: Models in Engineering,  Next: Models of Computer Hardware and Software,  Prev: Modeling in ACL2,  Up: Pages Written Especially for the Tours
+
+Models in Engineering    Models in Engineering
+
+Frequently, engineers use mathematical models.  Use of such models
+frequently lead to
+
+better designs,
+
+faster completion of acceptable products, and
+
+reduced overall cost,
+
+because models allow the trained user to study the design before it is
+built and analyze its properties.  Usually, testing and analyzing a
+model is cheaper and faster than fabricating and refabricating the
+product.
+
+See *Note The Falling Body Model:: to continue.
+
+
+File: acl2-doc-emacs.info,  Node: Models of Computer Hardware and Software,  Next: Name the Formula Above,  Prev: Models in Engineering,  Up: Pages Written Especially for the Tours
+
+Models of Computer Hardware and Software    Models of Computer Hardware and Software
+
+Computing machines, whether hardware or software or some combintation,
+are frequently modeled as "state machines."
+
+To so model a computing machine we must represent its states as objects
+in our mathematical framework.
+
+Transitions are functions or relations on state objects.
+
+In what language shall we define these objects, functions, and
+relations?
+
+The mathematical languages we were taught in high school
+
+algebra,
+
+geometry,
+
+trignometry, and
+
+calculus
+
+are inappropriate for modeling digital systems.  They primarily let us
+talk about numbers and continuous functions.
+
+To see what kind of expressive power we need, take a closer look at
+what a typical state contains.
+
+Flying Tour:  *note A Typical State::
+
+
+File: acl2-doc-emacs.info,  Node: Name the Formula Above,  Next: Nontautological Subgoals,  Prev: Models of Computer Hardware and Software,  Up: Pages Written Especially for the Tours
+
+Name the Formula Above    Name the Formula Above
+
+When the theorem prover explicitly assigns a name, like *1, to a
+formula, it has decided to prove the formula by induction.
+
+
+File: acl2-doc-emacs.info,  Node: Nontautological Subgoals,  Next: Numbers in ACL2,  Prev: Name the Formula Above,  Up: Pages Written Especially for the Tours
+
+Nontautological Subgoals    Prover output omits some details
+
+The theorem prover's proof output is intended to suggest an outline of
+the reasoning process employed by its proof engine, which is virtually
+always more than is necessary for the ACL2 user.  In particular, the
+output often omits subgoals that are sufficiently trivial, including
+tautologies.
+

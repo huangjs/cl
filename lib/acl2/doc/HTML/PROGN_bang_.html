@@ -1,0 +1,64 @@
+<html>
+<head><title>PROGN_bang_.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>PROGN!</h2>evaluate some forms, not necessarily <a href="EVENTS.html">events</a>
+<pre>Major Section:  <a href="EVENTS.html">EVENTS</a>
+</pre><p>
+
+<strong>WARNING!</strong>  This event is intended for advanced users who, in essence,
+want to build extensions of ACL2.  See see <a href="DEFTTAG.html">defttag</a>, in particular, the
+``WARNING'' there.<p>
+
+<code>Progn!</code> can be used like <code><a href="PROGN.html">progn</a></code>, even in <a href="BOOKS.html">books</a>.  But unlike
+<code><a href="PROGN.html">progn</a></code>, <code>progn!</code> does not require its constituent forms to be
+<a href="EVENTS.html">events</a> (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).  (However, see <a href="MAKE-EVENT.html">make-event</a> for a
+``Restriction to the Top Level'' that still applies under a call of
+<code>progn!</code>.)<p>
+
+Because <code>progn!</code> allows non-events, it differs from <code>progn</code> in another
+important respect: <code>progn!</code> is illegal unless there is an active ttag;
+see <a href="DEFTTAG.html">defttag</a>.<p>
+
+See <code>book/misc/hacker.lisp</code> for two macros, <code>with-raw-mode</code> and
+<code>with-redef-allowed</code>, each defined in terms of <code>progn!</code>, that allow
+arbitrary forms in contexts that would normally require legal embedded event
+forms.
+<p>
+Given a form <code>(progn! form1 form2 ... formk)</code>, ACL2 will evaluate each
+<code>formi</code> in turn (for i from 1 to k).  If a form returns more than one value
+(see <a href="MV.html">mv</a>) where the first value returned is not <code>nil</code>, then no later form
+will be evaluated and the result returned by the <code>progn!</code> call will be
+<code>(mv erp val state)</code> for some non-<code>nil</code> value <code>erp</code>, signifying an
+error (see <a href="LD-ERROR-TRIPLES.html">ld-error-triples</a>).  Otherwise the evaluation is considered to
+have succeeded, and will continue on later forms.<p>
+
+The normal undoing mechanism does not generally apply to forms within a
+<code>progn!</code> that are not legal ACL2 <a href="EVENTS.html">events</a> (see <a href="EMBEDDED-EVENT-FORM.html">embedded-event-form</a>).
+In particular, note that a non-<code><a href="LOCAL.html">local</a></code> call of <code>progn!</code> in an
+<code><a href="ENCAPSULATE.html">encapsulate</a></code> event will generally be evaluated twice: once on each pass.
+This fact is worth keeping in mind if you are using <code>progn!</code> to change the
+state of the system; ask yourself if it is acceptable to apply that
+state-changing operation more than once.<p>
+
+The following rather sophisticated example illustrates the power of
+<code>progn!</code>.  Here, <code>state-global-let*</code> is an advanced programming feature
+that binds <a href="STATE.html">state</a> global variables (see <a href="STATE.html">state</a>, in particular the
+discussion of the global table) to values.
+
+<pre>
+(progn!<p>
+
+ (remove-untouchable 'ld-redefinition-action nil)<p>
+
+ (state-global-let*
+  ((ld-redefinition-action '(:doit . :overwrite)))<p>
+
+  (defund foo (x)
+    (cons x x)))
+
+ (push-untouchable 'ld-redefinition-action nil))
+ </pre>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

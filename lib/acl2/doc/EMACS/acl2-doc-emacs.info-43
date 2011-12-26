@@ -1,0 +1,756 @@
+This is acl2-doc-emacs.info, produced by makeinfo version 4.5 from
+acl2-doc-emacs.texinfo.
+
+This is documentation for ACL2 Version 3.1
+Copyright (C) 2006  University of Texas at Austin
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Written by:  Matt Kaufmann and J Strother Moore
+Department of Computer Sciences
+University of Texas at Austin
+Austin, TX 78712-1188 U.S.A.
+
+INFO-DIR-SECTION Math
+START-INFO-DIR-ENTRY
+* acl2: (acl2-doc-emacs.info). Applicative Common Lisp
+END-INFO-DIR-ENTRY
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-BUG-FIXES,  Next: NOTE-2-8-GUARDS,  Prev: NOTE-2-8,  Up: NOTE-2-8
+
+NOTE-2-8-BUG-FIXES    ACL2 Version  2.8 Notes on Bug Fixes
+
+We have fixed a soundness bug in the tautology checker's handling of
+expressions of the form (not (not x)).  This bug has gone back at least
+as far as Version_2.4.  All of the regression tests passed after the
+fix, without modification.  So we hope that this bug has rarely bitten
+anyone.  Thanks to Qiang Zhang for sending us a proof of nil that led
+us to this fix: (thm (equal (and p q) (not (or (not p) (not q))))).
+And thanks to Matyas Sustik for an observation that led to an
+improvement of our initial fix.
+
+The preceding version (2.7) introduced a soundness bug in handling of
+ACL2 arrays, in which functions compress1 and compress2 were returning
+the input alist rather than compressing it appropriately.  Here is a
+proof of nil that no longer succeeds, based on a bug report from Warren
+Hunt, who we thank for bringing this problem to our atttention.
+
+     (defthm bad
+       (not (let* ((ar2 (aset1 'my-array ar1 3 10))
+                   (ar3 (compress1 'my-array ar2))
+                   (ar4 (reverse (reverse ar2)))
+                   (ar5 (compress1 'my-array ar4)))
+              (and (equal ar2 ar4)
+                   (not (equal ar3 ar5)))))
+       :rule-classes nil)
+     (defthm contradiction
+       nil
+       :rule-classes nil
+       :hints (("Goal" :use
+                ((:instance bad
+                            (ar1 (compress1 'my-array
+                                            '((3 . 5)
+                                              (:HEADER :DIMENSIONS (5)
+                                                       :MAXIMUM-LENGTH 6
+                                                       :DEFAULT 0
+                                                       :NAME MY-ARRAY)))))))))
+
+On a related note, a new function flush-compress can be used for subtle
+control of under-the-hood raw Lisp support for fast array access,
+although we expect it to be very rare that users need this extra
+support.
+
+Previous versions have had two soundness bugs that can occur when using
+the proof-checker:
+
+     o The first bug pertains to the expand command, and hence x and
+     x-dumb commands (which call expand); see *note
+     PROOF-CHECKER-COMMANDS::.  The bug can occur when applying the
+     above commands when the current term is a call of a constrained
+     function symbol for which there is a :definition rule.  Now, the
+     expand command will succeed only when the function symbol of the
+     current term is a defined function symbol, in which case the
+     original definition is always used, in analogy to how the :expand
+     hint works in the prover; see *note HINTS::.  Thanks to John
+     Erickson for sending an example that led us to wonder if there
+     might be a soundness problem.
+
+     o The second bug pertains to the s command (and commands that call
+     it, e.g., s-prop).  The proof-checker forms a context out of the
+     top-level hypotheses and the if-terms governing the current term.
+     If there is a contradiction in the top-level hypotheses, the
+     proof-checker can appropriately consider the goal to be proved,
+     and it does so.  But formerly, the criterion was weaker:  the
+     contradiction could involve the combination of the top-level
+     hypotheses and if-term governors.  Thanks to Rob Sumners for
+     noticing this bug.
+
+A soundness bug could be provoked in some Lisps by applying defpkg to
+the empty string.  This has been disallowed.
+
+We fixed a soundness bug related to packages caused by a failure to
+track axioms introduced locally on behalf of defpkg events.  See *Note
+HIDDEN-DEATH-PACKAGE::.
+
+We fixed a soundness bug caused by a failure to check that a
+:type-prescription rule can be processed when proofs are skipped or
+under a defequiv event.  The former case can occur when processing an
+encapsulate or include-book event, where the rule could depend on a
+local :compound-recognizer rule preceding the proposed
+:type-prescription rule under the same encapsulate or include-book
+event.  See *Note LOCAL-INCOMPATIBILITY:: for such an example.
+
+We fixed a potential soundness bug relating to reclassifying a :program
+mode function to :logic mode (as done by verify-termination or the
+submission of an appropriate "redundant" definition) without adequate
+checking that stobj usage was identical.  Allegedly redundant
+definitions must now preserve the stobjs declaration as well as the
+formals, body, guard and type declarations.  We thank Vernon Austel for
+pointing out this problem.
+
+It was possible to get a raw Lisp error by introducing a locally defined
+function with guard verification inhibited and then subsequently
+introducing the same definition non-locally without that inhibition.
+The following example will clarify.
+
+     (encapsulate nil
+       (local
+         (defun foo (x) (declare (xargs :guard t :verify-guards nil)) (car x)))
+       (defun foo (x) (declare (xargs :guard t)) (car x)))
+     ; The following causes a raw lisp error because ACL2 runs the Common Lisp
+     ; definition of foo, because it thinks that foo's guard of t was verified.
+     (thm (equal (foo 3) xxx))
+
+Thanks to Jared Davis for bringing this problem to our attention.  We
+are particularly grateful to Jared because his example exploited this
+bug by applying it to a function defined using mbe (introduced in this
+same version, 2.8), in order to prove nil!
+
+The sort of error message shown below can legitimately occur when
+certifying a book in a certification world where there was an
+include-book command with a relative pathname (see *note PATHNAME::).
+However, it was occurring more often than necessary.  This has been
+fixed.
+
+     ACL2 Error in (CERTIFY-BOOK "foo" ...): The certification world has
+     include-book commands for book "bar" that correspond to different
+     full pathnames, namely "/u/dir1/bar" and "/u/dir2/bar".  ACL2
+     cannot currently certify a book in such a world.  To work around
+     this problem, use an absolute pathname for at least one of these
+     books (see :DOC pathname).
+
+Bugs were fixed in with-output, in particular related to the use of
+values :all.  Also, documentation for with-output has been improved.
+Thanks to Vernon Austel for pointing out the bugs.
+
+Fixed a lisp error occurring when bash proof-checker command was given
+illegal syntax, e.g., (bash (("Goal" :in-theory (enable
+binary-append)))) instead of (bash ("Goal" :in-theory (enable
+binary-append))).
+
+We added an appropriate guard to find-rules-of-rune, which will avoid
+hard lisp errors when this function is called on non-rune arguments.
+Thanks to Eric Smith for pointing out this issue.
+
+It was possible for a redundant include-book form (see *note
+REDUNDANT-EVENTS::) to leave a command in the ACL2 logical world and to
+cause (re-)loading of a compiled file.  These behaviors have been
+fixed.  In particular, if book1 has already been included in the
+current ACL2 world and (include-book "book1") occurs in book2, then the
+compiled file for book1 will not be loaded again when book2 is
+included.  Thanks to Dave Greve for bringing our attention to these
+problems, and to Eric Smith for bringing up a special case earlier
+(where "//" occurred in the book name).
+
+The summary printed at the end of a proof had not listed :induction
+rules used in a proof.  This has been corrected.
+
+The use of proof trees in emacs redefined `control-c control-c' in such
+a way that in telnet mode, the telnet session was interrupted and
+perhaps could not be continued.  This has been fixed.
+
+Source function load-theory-into-enabled-structure contained a
+guard-violating call of compress1.  Thanks to Vernon Austel for
+bringing this problem to our attention; even though this bug was benign
+(as he pointed out), we like keeping the source code free of guard
+violations.
+
+A number of proof-checker atomic macros caused a hard error when all
+goals have already been proved.  This has been fixed.  Thanks to John
+Erickson for sending an example of the issue.
+
+A bug has been fixed in add-match-free-override.  Formerly, a table
+guard violation occurred when calling add-match-free-override more than
+once with first argument other than :clear.
+
+Defininitions of functions involving large constants could cause stack
+overflows.  This has been fixed, at least in some of the most egregious
+cases (by making a source function fn-count-evg tail-recursive).  Thanks
+to Jared Davis for bringing this problem to our attention.
+
+Evaluation of computed hints could cause stack overflows.  This has been
+fixed.  Thanks to Eric Smith for bringing this problem to our attention.
+
+Evaluation of :monitor on :definition runes is now fast even if the
+specified function is part of a very large mutual-recursion nest.
+Thanks to Eric Smith for sending an example showing that this wasn't
+always the case.
+
+Fixed a bug in books/bdd/cbf.lisp that was causing certification of
+distributed bdd books to fail when the connected book directory (see
+*note CBD::) differs from the current working directory.  Thanks to
+Scott Guthery for bringing this bug to our attention and supplying a
+helpful log.
+
+Duplicate rule names have been eliminated from warnings generated upon
+the use of enabled :rewrite or :definition rules.  Thanks to Eric Smith
+for pointing out this problem.
+
+The trace utilities (see *note TRACE::), as modified for GCL and
+Allegro Common Lisp, had failed to show more than the first return
+value for so-called "*1*" functions (essentially,
+executable-counterpart functions) when they were returning multiple
+values (via mv).  This has been fixed.  Thanks to Erik Reeber for
+pointing out this problem.  Also, it is now possible to refer to
+arglist in trace$ forms when ACL2 is built on GCL, not just when ACL2
+is built on Allegro Common Lisp.
+
+Uses of hide introduced during proofs by failed attempts to evaluate
+constrained functions (see *note HIDE::) are now tracked, so that the
+rune (:DEFINITION HIDE) will show up in the summary.
+
+The following bug, introduced back in Version  2.7, has been fixed.
+The bug applied only to GCL and may well not have affected anyone.  But
+the function proclamation computed by ACL2 for compilation usually had
+an output type of nil where it should have been t.
+
+The macro gc$ had a bug exhibited when it was supplied one or more
+arguments.  This has been fixed.
+
+The macro defabbrev broke when supplied a string and no documentation,
+e.g., (defabbrev foo () "").  Thanks to Rob Sumners for noticing this
+problem and providing a fix, which we have incorporated.
+
+For ACL2 executables built on Allegro Common Lisp, a Lisp error
+occurred when trace$ was called on other than a defined function
+symbol.  Now ACL2 prints a more useful error message.
+
+The proof-checker no longer accepts a (verify) command when some
+function symbol in the original goal no longer exists in the current
+ACL2 logical world.  Thanks to John Erickson for bringing this issue to
+our attention.
+
+The function ld-redefinition-action may now be called by the user.
+Thanks to Vernon Austel for suggesting that we remove this symbol from
+the list of so-called untouchables.
+
+The handling of free variables in hypotheses (see *note
+FREE-VARIABLES::) of rewrite and linear rules had a bug that prevented
+some proofs from going through.  Here is a simple example, essentially
+provided by Diana Moisuc, who we thank for bringing this issue to our
+attention.  The proof of the thm below had failed, but now will
+succeed.  This particular bug prevented, for example, the :all behavior
+from occurring when the first hypothesis of the rule does not have free
+variables.  NOTE:  Now that this bug has been fixed, you may find some
+proofs running much more slowly than before.  You can use
+accumulated-persistence to locate rules that are slowing down your
+proofs because of excessive attention to free variables, and then
+execute add-match-free-override for those rules (or, just change the
+rules themselves to specify :once in the :rule-classes).
+
+     (defstub foo1 (* ) => *)
+     (skip-proofs
+      (defthm aux-foo1
+        (implies (and (integerp a)
+                      (integerp i)
+                      (equal (foo1 0)  (list 0 i)))
+                 (equal (foo1 a) (list 0 (+ a i))))
+        :rule-classes ((:rewrite :match-free :all))))
+     (thm
+      (implies (and (integerp i)
+                    (integerp a)
+                    (equal (foo1 0) (list 0 i)))
+               (equal (foo1 a) (list 0 (+ a i)))))
+
+Formerly, creation of large arrays could cause an error in the
+underlying Common Lisp implementation without helpful messages for the
+user.  Now, we check Common Lisp restrictions on arrays and print a
+helpful error message if they are violated, namely: each dimension must
+be less than the value of Common Lisp constant array-dimension-limit,
+and the product of the dimensions must be less than the value of Common
+Lisp constant array-total-size-limit.  Thanks to Warren Hunt for
+bringing this issue to our attention.  Note:  this change also removes
+a former restriction of stobj array fields to size smaller than 2^28-1,
+provided the underlying Lisp can support larger arrays.
+
+The default-hints in the current logical world were ignored by
+verify-guards.  This has been fixed.  Thanks to Jared Davis for
+pointing out this bug and sending a helpful example.
+
+The brr mechanism has been cleaned up in order to avoid hard errors and
+infinite loops that can arrive when typing interrupts (control-c) or
+end-of-files (control-d) inside the brr loop.  Thanks to Dave Greve,
+Olga Matlin, Eric Smith, and Serita Van Groningen for bringing this
+issue to our attention.  As a byproduct, if you type control-d (or if
+inside emacs, control-c control-d), you may now quit entirely out of
+ACL2 and lisp (see *note GOOD-BYE::) in some cases where you formerly
+would not have, for example when sitting at the ACL2 prompt (which
+formerly, in Allegro Common Lisp for example, would merely take you
+into raw Lisp rather than quitting everything).
+
+We have eliminated structural flaws in the HTML documentation pages that
+could make them unreadable in some browsers.  Thanks to Bill Young for
+bringing this issue to our attention and to Joe Hendrix for diagnosing
+the problem.
+
+The proof-checker could run very slowly after many instructions in a
+given session.  This has been fixed; thanks to Art Flatau for bringing
+this problem to our attention.  (Implementation detail: We now keep
+tag-trees duplicate-free when we accumulate them into state.  This
+change could have minor speed advantages for some top-level proofs too,
+not just in the proof-checker.)
+
+The printing of accesses to stobjs using nth or update-nth has been done
+using symbolic constants since ACL2 Version_2.6.  However, there was a
+bug that prevented this feature from working for update-nth except at a
+top-level call.  This has been fixed.  Thanks to Julien Schmaltz for
+bringing this problem to our attention.  For example, consider these
+events:
+
+     (defstobj st field0 field1)
+     (thm (equal (nth 1 (update-nth 0 17 st)) (car (cons xxx yyy)))
+          :hints (("Goal" :in-theory (disable nth update-nth))))
+
+Before the fix, the proof attempt of the above silly thm printed the
+following.
+
+     (NTH 1 (UPDATE-NTH *FIELD0* 17 ST))
+
+After the fix, we instead see the following.
+
+     (NTH *FIELD1* (UPDATE-NTH *FIELD0* 17 ST))
+
+It is now possible to certify and subsequently include books that
+require guard-checking to be off.  For example, the book can contain
+the form (defconst *silly* (car 3)) even though 3 fails to satisfy the
+guard of car.  Formerly, it was necessary to execute
+:set-guard-checking nil before a certify-book or include-book in order
+for such a form to be handled without error.  Thanks to Hanbing Liu for
+bringing this problem to our attention.
+
+Fixed a proof-checker bug that could cause probably cause strange error,
+"Attempt to access the plist field".  Thanks to Bill Young for bringing
+this problem to our attention.
+
+Fixed a proof-checker bug that was failing to record applications of
+rewrite rules using the proof-checker's :rewrite command, causing the
+proof summary to omit mention of that rule (for example, when using the
+proof-checker's :exit command to generate an :instructions hint).
+Thanks to Bill Young for pointing out this bug.
+
+Modernized some of the proof-tree emacs and infix printing stuff,
+thanks to suggestions made by Camm Maguire.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-GUARDS,  Next: NOTE-2-8-NEW-FUNCTIONALITY,  Prev: NOTE-2-8-BUG-FIXES,  Up: NOTE-2-8
+
+NOTE-2-8-GUARDS    ACL2 Version  2.8 Notes on Guard-related Changes
+
+All the guard-related changes may be found elsewhere; in particular,
+see *note NOTE-2-8-BUG-FIXES::.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-NEW-FUNCTIONALITY,  Next: NOTE-2-8-ORDINALS,  Prev: NOTE-2-8-GUARDS,  Up: NOTE-2-8
+
+NOTE-2-8-NEW-FUNCTIONALITY    ACL2 Version  2.8 Notes on New Functionality
+
+WARNING: You may find that control-d (in emacs, control-c control-d)
+can throw you completely out of Lisp where it had not formerly done so.
+
+(CLISP and Allegro CL only) ACL2 now starts up inside the ACL2 loop --
+that is, (LP) is executed automatically -- when built on CLISP or
+Allegro CL.  This was already the case for GCL and CMUCL, and it still
+is not true for Lispworks.  Thanks to Joe Corneli for bringing the CLISP
+command-line option "-i" to our attention, which led to this CLISP
+change and inspired reconsideration of how to do this for Allegro CL.
+
+Pete Manolios and Daron Vroon have changed the representation of
+ordinals in ACL2, defined algorithms for ordinal arithmetic, and
+created a library of theorems to reason about ordinal arithmetic.  We
+thank them for these nice contributions.  See *Note NOTE-2-8-ORDINALS::
+for details, in particular, for how to preserve existing proofs that
+depend on the previous ordinal representation.
+
+Sometimes users create rules of class :rewrite that cause an infinite
+loop in the ACL2 rewriter.  This has lead to Lisp stack overflows and
+even segmentation faults.  Now, the depth of calls of functions in the
+ACL2 rewriter is limited, and under user control.  See *Note
+REWRITE-STACK-LIMIT::.
+
+Macros mbe ("must be equal") and mbt ("must be true") have been
+introduced, which allow the user to attach fast executable definitions
+to (presumably slower) :logic mode functions.  Thanks to Vernon Austel
+for a key idea.  Also provided is a macro defexec, which employs mbe
+but enforces the requirement that the executable definition also
+terminates.  Thanks to Jose Luis Ruiz Reina for collaborating in the
+design and development of defexec, and for useful comments from a
+number of others as well in the development of mbe including Joe
+Hendrix and Rob Sumners.
+
+Definitions have been added for functions rassoc-eq and rassoc-equal,
+which are like rassoc but use different tests and have different
+guards.  (Compare assoc-eq and assoc-equal, which are in similar
+relation to assoc.)
+
+The user can now control multiple matching for free variables in
+hypotheses for :forward-chaining rules, as has already been supported
+for :rewrite and :linear rules.  For :forward-chaining rules, "free
+variables" are those in the hypotheses not bound by a given trigger
+term.  As for :rewrite and :linear rules, free-variable matching may be
+limited to the first successful attempt by specifying :match-free :once
+with :forward-chaining in the :rule-classes, and
+add-match-free-override may be used to modify the behavior of an
+existing rule.  Thanks to Erik Reeber for most of the implementation of
+these new capabilities, as well as significant assistance with a
+corresponding new documentation topic (see *note
+FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING::).
+
+It is no longer necessary to specify (set-match-free-error nil) in order
+to avoid errors when a rule with free variables in its hypotheses is
+missing the :match-free field.  (This was already true during book
+certification, but now it is the case in interactive sessions as well.)
+
+The form (break-on-error) causes, at least for most Lisps, entry into
+the Lisp debugger whenever ACL2 causes an error.  See *Note
+BREAK-ON-ERROR::.  Thanks to John Erickson for providing encouragement
+to provide this feature.
+
+A new table has been provided so that advanced users can override the
+built-in untranslate functionality.  See *Note
+USER-DEFINED-FUNCTIONS-TABLE::.
+
+The pstack mechanism (formerly denoted checkpoints) has been improved.
+The "process [prover] stack," or pstack, is automatically printed when
+proofs abort.  Evaluation of function calls on explicit arguments
+during proofs is now tracked.  Actual parameters are shown with (pstack
+t) rather than formals.  Thanks to Bill Legato for suggesting the first
+two of these improvements and, in general, encouraging changes that
+make ACL2 easier to use.
+
+The defstobj event is now allowed to take an :inline argument, which
+can speed up execution.  Thanks to Rob Sumners for suggesting and
+implementing this new feature.
+
+Macro assert$ has been added in order to make it easy to write
+assertions in one's code.  Semantically, (assert$ test form) is the same
+as form, but it causes a hard error (using illegal) if test evaluates
+to nil.
+
+Macro cw-gstack no longer takes arguments for the gstack or state.
+However, it now takes a keyword argument (which is optional),
+:evisc-tuple, that can be used to control how it prints terms.  In
+particular, cw-gstack abbreviates large terms by default, but
+(cw-gstack :evisc-tuple nil) causes terms to be printed in full.
+Thanks to Robert Krug and Eric Smith for requesting this improvement.
+
+The advanced user now has more control over the evisceration of terms.
+See *Note LD-EVISC-TUPLE::, in particular the new paragraph on "The
+printing of error messages and warnings."
+
+The include-book event now has an additional (optional) keyword, :dir.
+The value of :dir should be a keyword that is associated with an
+absolute directory pathname to be used in place of the current book
+directory (see *note CBD::) for resolving the first argument of
+include-book to an absolute pathname.  At start-up, the only such
+keyword is :system, so that for example (include-book "arithmetic/top"
+:dir :system) will include the book "arithmetic/top" under the "books/"
+directory of your ACL2 installation.  But you can associate "projects"
+with keywords using add-include-book-dir, e.g., (add-include-book-dir
+:my-project "/u/smith/project0/").  See *Note ADD-INCLUDE-BOOK-DIR::
+and also see *note DELETE-INCLUDE-BOOK-DIR:: and see *note
+INCLUDE-BOOK::.  Note: You will probably not find :dir :system to be
+useful if the distributed books are not placed in the path of their
+original location, pointed to by :dir :system, which will often happen
+if the executable image is obtained from another site.  Also see *note
+INCLUDE-BOOK::, in particular its "soundness warning".
+
+The printing of results in raw mode (see *note SET-RAW-MODE::) may now
+be partially controlled by the user:  see *note ADD-RAW-ARITY::.  Also,
+newlines are printed when necessary before the value is printed.
+
+For those using Unix/Linux make: A cert.acl2 file can contain forms to
+be evaluated before an appropriate certify-book command is invoked
+automatically (not included in cert.acl2).
+
+Jared Davis has contributed a new set of books for ordered finite set
+theory to the standard distribution,
+books/finite-set-theory/osets-0.81/.  See the README file in that
+directory.  Thanks, Jared.
+
+Robert Krug has contributed two related changes (thanks, Robert!) in
+support of stronger arithmetic reasoning.  First, one can now enable
+and disable nonlinear arithmetic with a :nonlinearp hint, which will
+override the default provided by set-non-linearp (initially, nil).  See
+*Note HINTS::.  Second, computed-hints can now have access to the
+HISTORY, PSPV, and CTX variables of the waterfall, which (for example)
+allows the writing of a hint which will enable nonlinear arithmetic on
+precisely those goals that are stable-under-simplificationp.  See *Note
+COMPUTED-HINTS::.
+
+Robert Krug has contributed a new set of arithmetic books to the
+standard distribution, books/arithmetic-3/.  See the README file in that
+directory.  Thanks, Robert.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-ORDINALS,  Next: NOTE-2-8-OTHER,  Prev: NOTE-2-8-NEW-FUNCTIONALITY,  Up: NOTE-2-8
+
+NOTE-2-8-ORDINALS    ACL2 Version  2.8 Notes on Changes to the Ordinals
+
+Please see *note ORDINALS::.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-OTHER,  Next: NOTE-2-8-PROOF-CHECKER,  Prev: NOTE-2-8-ORDINALS,  Up: NOTE-2-8
+
+NOTE-2-8-OTHER    ACL2 Version  2.8 Notes on Miscellaneous Changes
+
+Execution of table events has been sped up in many cases by avoiding
+excessive consing.
+
+ACL2 now warns if :rewrite (or :definition) rules contain free
+variables on the right-hand side.  Thanks to Dave Greve for raising this
+issue.
+
+Emacs file emacs/emacs-acl2.el has been updated to better comprehend the
+notion of the "ACL2 shell", which is the buffer to which ACL2 forms are
+written by commands defined in the above file.  Thus, command control-t
+e has been modified always to write to the ACL2 shell (which is
+"*shell*" by default), and the following new commands have been defined.
+
+     o control-t c
+     Set the ACL2 shell to the current buffer.  o control-t b
+     Change to the ACL2 shell.
+
+
+The commands :pl and :pr may now be given a macro name that corresponds
+via the macro-aliases-table to a function name, so that for example :pl
+append is treated the same as :pl binary-append.  A more interesting
+improvement, for :pl only, is that :pl may now take any term.  When :pl
+is given a term other than a symbol, it will print all rewrite rules
+that match that term.  Thanks to David Russinoff, Robert Krug, and Bill
+Legato for getting this going.
+
+A new function, pkg-witness, returns a symbol in the given package.
+
+The installation instructions have been updated, for example to give
+more guidance on obtaining Lisp implementations and to mention the
+acl2-help mailing list.
+
+Jared Davis has suggested some symbols to be added to *acl2-exports*,
+and we have done so.  Thanks, Jared.
+
+     o MFC (used in syntaxp and extended-metafunctions; thanks also to
+     Robert Krug for this one) o ID, CLAUSE, WORLD, and
+     STABLE-UNDER-SIMPLIFICATIONP (used   in computed-hints) o
+     SET-DEFAULT-HINTS
+
+
+The command :pe has been improved so that when the event is inside an
+included book, the path of included books (from the top-level book down
+to the one containing the event) is shown.  Thanks to Eric Smith
+(perhaps among others) for pointing out the utility of this improvement.
+
+A new release of the rtl library has been included: books/rtl/rel4/.
+See the README file in that directory.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-PROOF-CHECKER,  Next: NOTE-2-8-PROOFS,  Prev: NOTE-2-8-OTHER,  Up: NOTE-2-8
+
+NOTE-2-8-PROOF-CHECKER    ACL2 Version  2.8 Notes on Proof-checker Changes
+
+Added new proof-checker commands wrap1, wrap, and wrap-induct.  Wrap
+replaces multiple goals by their conjunction: (wrap instr1 instr2 ...)
+employs wrap1 so that the indicated instructions create only at most
+one new goal.  Wrap-induct is a simple example of the use of wrap, so
+that induction creates only one goal (the conjunction of the base and
+induction steps).  Wrap1 can be used immediately after a prover call
+(bash, prove, reduce, bdd, or induct) to collapse the new goals into
+one.  See *Note PROOF-CHECKER-COMMANDS::.
+
+The proof-checker command = failed to work as expected when a governing
+IF-test of the current term is T.  This has been fixed (by fixing
+source function conjuncts-of).  Thanks to Yoann Padioleau for bringing
+this problem to our attention.
+
+The type-alist command now takes optional arguments that control whether
+or not the governors and/or conclusion are used in computing the context
+that is printed (see *note PROOF-CHECKER-COMMANDS::, specifically
+subtopic type-alist).  Thanks to Rob Sumners for suggesting this
+improvement.
+
+The macro toggle-pc-macro has always taken an optional second argument
+of atomic-macro or macro.  However, this was not clearly documented,
+and those two symbols had to be in the ACL2 package.  Both of these
+problems have been remedied.  Thanks to John Erickson for bringing the
+lack of documentation of the second argument to our attention.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-PROOFS,  Next: NOTE-2-8-RULES,  Prev: NOTE-2-8-PROOF-CHECKER,  Up: NOTE-2-8
+
+NOTE-2-8-PROOFS    ACL2 Version  2.8 Notes on Changes in Proof Engine
+
+ACL2 now prevents certain rewriting loops; see *note
+REWRITE-STACK-LIMIT::.
+
+During the computation of constraints for functional instantiation,
+(prog2$ term1 term2) and (the type term2) are now treated as term2.
+
+A change has been made in heuristics for controlling rewriting during
+proofs by induction.  Formerly, during induction proofs, ACL2
+suppressed rewriting of certain "induction hypothesis" terms, and
+forced expansion of certain "induction conclusion" terms, until
+rewriting had stabilized.  This meddling with the rewriter is still
+turned off when rewriting has stabilized, but it is now turned off
+earlier once an ancestor has been through the rewriter and the current
+goal is free of "induction conclusion" terms.  Thanks to Dave Greve and
+Matt Wilding for providing an example and associated analysis that led
+us to look for a heuristic modification.
+
+A change has been made in the heuristics for handling certain "weak"
+compound-recognizer rules when building contexts.  Those who want to dig
+deeply into this change are welcome to look at the code following the
+call of most-recent-enabled-recog-tuple in the code for function
+assume-true-false in the ACL2 sources.
+
+The handling of free variables in a hypothesis of a rewrite rule (see
+*note FREE-VARIABLES::) has been improved in the case that the
+hypothesis is of the form (equiv x y), where equiv is a known
+equivalence relation (see *note EQUIVALENCE::).  Previously, if the
+rewriter was attempting to rewrite the hypothesis (equiv x y) of a
+rewrite rule, in a context where x' is an instance of x, then the
+rewriter could fail to notice a term (equiv x' y') true in the current
+context where y' is an instance of y, in the case that x' precedes y'
+in the term-order.  This has been remedied.  This improvement applies
+regardless of whether x, y, or (we believe) both are already fully
+instantiated in the present context.  Thanks to Joe Hendrix for
+bringing up an example and to Vernon Austel for providing another,
+simple example.
+
+A very minor change has been made to the rewriter in the case that an
+equality appears on the left-hand side of a :rewrite rule.  Formerly,
+when such an equality (equal x y) was commuted to (equal y x) in order
+for the rule to match the current term, then all equalities on the
+instantiated right-hand side of the rule were commuted, except for
+those occurring inside another equality.  The instantiated right-hand
+side is no longer modified.  It seems very unlikely that this change
+will cause proofs to fail, though we cannot completely rule out that
+possibility.
+
+We have modified how the ACL2 simplifier handles the application of a
+defined function symbol to constant arguments in certain cases, which
+we now describe.  As before, ACL2 attempts to simplify such a function
+application by evaluation, provided the :executable-counterpart of the
+function is enabled.  And as before, if that evaluation fails due to a
+subroutine call of a constrained function (introduced by encapsulate),
+ACL2 may wrap a call of hide around this function application.  (See
+*Note HIDE::.)  But now, ACL2 attempts to apply definitions and rewrite
+rules in the case that this evaluation fails, and only if the resulting
+term is unchanged does ACL2 wrap hide around this function application.
+Thanks to Matt Wilding for bringing up the idea of this modification.
+
+The generation of "Goal" for recursive (and mutually-recursive)
+definitions now uses the subsumption/replacement limitation (default
+500).  See *Note CASE-SPLIT-LIMITATIONS::.
+
+Default hints now apply to hints given in definitions, not just
+theorems.  See *Note DEFAULT-HINTS::.
+
+Thanks to Robert Krug for implementing the following two improvements
+involving linear arithmetic reasoning: linear arithmetic now uses the
+conclusions of forward-chaining rules, and type-set now uses a small
+amount of linear reasoning when deciding inequalities.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-RULES,  Next: NOTE-2-8-SYSTEM,  Prev: NOTE-2-8-PROOFS,  Up: NOTE-2-8
+
+NOTE-2-8-RULES    ACL2 Version  2.8 Notes on Changes in Rules, Definitions, and Constants
+
+The theory minimal-theory has been changed by adding the definition
+rune for mv-nth to the theory.  A corresponding change has been made to
+the theory warning mechanism, which was failing to warn if the
+definition of mv-nth is disabled, even though calls of mv-nth can be
+expanded by special-purpose code in the rewriter.  Thanks to Serita Van
+Groningen for pointing out this problem with the theory warning
+mechanism.
+
+The defevaluator event has been modified so that in the body of the
+evaluator function, to add a new case (ATOM X) (returning nil) has been
+inserted immediately after the case (EQ (CAR X) 'QUOTE).  This is a
+no-op semantically but may speed up proofs.  Thanks to Warren Hunt for
+suggesting this change.
+
+A new form of :compound-recognizer rule is now allowed:
+
+     (if (fn x) concl1 concl2)
+
+This is equivalent to an existing form:
+
+     (and (implies (fn x) concl1)
+          (implies (not (fn x)) concl2))
+
+Thanks to Josh Purinton for bringing this to our attention.
+
+Rewrite rules realpart-+ and imagpart-+ have been added in order to
+simplify the realpart and imagpart (respectively) of a sum.  They
+follow from a theorem add-def-complex that equates a sum with the
+complex number formed by adding real and imaginary parts.  All three of
+these theorems may be found in source file axioms.lisp.  Thanks to Eric
+Smith for raising a question leading to these additions, as well as to
+Joe Hendrix and Vernon Austel for helpful suggestions.
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8-SYSTEM,  Prev: NOTE-2-8-RULES,  Up: NOTE-2-8
+
+NOTE-2-8-SYSTEM    ACL2 Version  2.8 Notes on System-level Changes
+
+ACL2 now runs on OpenMCL, "an opensourced Common Lisp implementation,
+derived from Digitool's Macintosh Common Lisp product."  Thanks to Greg
+Wright and Robert Krug for doing most of the work for this port.
+
+When (LP) is first executed, the underlying raw Lisp package will
+change to "ACL2" (if that is not already the current package in raw
+Lisp).  This is a minor change that will probably not be noticed, since
+up to now it has probably been the case that the ACL2 executable starts
+up with "ACL2" as the underlying raw Lisp package.  But this change was
+made because we have been informed that ACL2 executables based on
+OpenMCL need not start up with "ACL2" as the underlying raw Lisp
+package.
+
+ACL2 now runs on MCL 5.0.  Thanks to Pascal Costanza for updates to the
+instructions in file mcl-acl2-startup.lisp and for an update to the
+ACL2 sources (parameter *compiled-file-extension*).
+
+
+File: acl2-doc-emacs.info,  Node: NOTE-2-8(R),  Next: NOTE-2-9,  Prev: NOTE-2-8,  Up: RELEASE-NOTES
+
+NOTE-2-8(R)    ACL2 Version  2.8(r) (March, 2003) Notes
+
+The Makefile has been modified by adding a new target, clean-links.
+This can be used in order to remove all soft links, which is useful if
+the directory is copied or moved to a new location or if there are file
+system changes that cause problems with link pathnames.
+
+Please also see *note NOTE-2-8:: for changes to Version_2.8 of ACL2.
+

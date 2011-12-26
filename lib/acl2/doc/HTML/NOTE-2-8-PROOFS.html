@@ -1,0 +1,82 @@
+<html>
+<head><title>NOTE-2-8-PROOFS.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h3>NOTE-2-8-PROOFS</h3>ACL2 Version  2.8 Notes on Changes in Proof Engine
+<pre>Major Section:  <a href="NOTE-2-8.html">NOTE-2-8</a>
+</pre><p>
+
+ACL2 now prevents certain rewriting loops; see <a href="REWRITE-STACK-LIMIT.html">rewrite-stack-limit</a>.<p>
+
+During the computation of <code><a href="CONSTRAINT.html">constraint</a></code>s for functional instantiation,
+<code>(prog2$ term1 term2)</code> and <code>(the type term2)</code> are now treated as
+<code>term2</code>.<p>
+
+A change has been made in heuristics for controlling rewriting during proofs
+by induction.  Formerly, during induction proofs, ACL2 suppressed rewriting
+of certain ``induction hypothesis'' terms, and forced expansion of certain
+``induction conclusion'' terms, until rewriting had stabilized.  This
+meddling with the rewriter is still turned off when rewriting has stabilized,
+but it is now turned off earlier once an ancestor has been through the
+rewriter and the current goal is free of ``induction conclusion'' terms.
+Thanks to Dave Greve and Matt Wilding for providing an example and associated
+analysis that led us to look for a heuristic modification.<p>
+
+A change has been made in the heuristics for handling certain ``weak''
+<a href="COMPOUND-RECOGNIZER.html">compound-recognizer</a> rules when building contexts.  Those who want to dig
+deeply into this change are welcome to look at the code following the call of
+<code>most-recent-enabled-recog-tuple</code> in the code for function
+<code>assume-true-false</code> in the ACL2 sources.<p>
+
+The handling of free variables in a hypothesis of a <a href="REWRITE.html">rewrite</a> rule
+(see <a href="FREE-VARIABLES.html">free-variables</a>) has been improved in the case that the hypothesis is of
+the form <code>(equiv x y)</code>, where <code>equiv</code> is a known equivalence relation
+(see <a href="EQUIVALENCE.html">equivalence</a>).  Previously, if the rewriter was attempting to rewrite
+the hypothesis <code>(equiv x y)</code> of a rewrite rule, in a context where <code>x'</code>
+is an instance of <code>x</code>, then the rewriter could fail to notice a term
+<code>(equiv x' y')</code> true in the current context where <code>y'</code> is an instance of
+<code>y</code>, in the case that <code>x'</code> precedes <code>y'</code> in the <code><a href="TERM-ORDER.html">term-order</a></code>.  This
+has been remedied.  This improvement applies regardless of whether <code>x</code>,
+<code>y</code>, or (we believe) both are already fully instantiated in the present
+context.  Thanks to Joe Hendrix for bringing up an example and to Vernon
+Austel for providing another, simple example.<p>
+
+A very minor change has been made to the rewriter in the case that an
+equality appears on the left-hand side of a <code>:</code><code><a href="REWRITE.html">rewrite</a></code> rule.
+Formerly, when such an equality <code>(equal x y)</code> was commuted to
+<code>(equal y x)</code> in order for the rule to match the current term, then all
+equalities on the instantiated right-hand side of the rule were commuted,
+except for those occurring inside another equality.  The instantiated
+right-hand side is no longer modified.  It seems very unlikely that this
+change will cause proofs to fail, though we cannot completely rule out that
+possibility.<p>
+
+We have modified how the ACL2 simplifier handles the application of a defined
+function symbol to constant arguments in certain cases, which we now
+describe.  As before, ACL2 attempts to simplify such a function application
+by evaluation, provided the <code>:</code><code><a href="EXECUTABLE-COUNTERPART.html">executable-counterpart</a></code> of the function
+is enabled.  And as before, if that evaluation fails due to a subroutine call
+of a constrained function (introduced by <code><a href="ENCAPSULATE.html">encapsulate</a></code>), ACL2 may wrap a
+call of <code>hide</code> around this function application.  (See <a href="HIDE.html">hide</a>.)  But now,
+ACL2 attempts to apply definitions and rewrite rules in the case that this
+evaluation fails, and only if the resulting term is unchanged does ACL2 wrap
+<code><a href="HIDE.html">hide</a></code> around this function application.  Thanks to Matt Wilding for
+bringing up the idea of this modification.<p>
+
+The generation of "Goal" for recursive (and mutually-recursive) definitions
+now uses the subsumption/replacement limitation (default 500).
+See <a href="CASE-SPLIT-LIMITATIONS.html">case-split-limitations</a>.<p>
+
+Default hints now apply to hints given in definitions, not just theorems.
+See <a href="DEFAULT-HINTS.html">default-hints</a>.<p>
+
+Thanks to Robert Krug for implementing the following two improvements
+involving linear arithmetic reasoning: linear arithmetic now uses the
+conclusions of <code><a href="FORWARD-CHAINING.html">forward-chaining</a></code> rules, and <code><a href="TYPE-SET.html">type-set</a></code> now uses a
+small amount of linear reasoning when deciding inequalities.<p>
+
+
+<p>
+
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

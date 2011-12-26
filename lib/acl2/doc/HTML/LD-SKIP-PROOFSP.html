@@ -1,0 +1,114 @@
+<html>
+<head><title>LD-SKIP-PROOFSP.html  --  ACL2 Version 3.1</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+<h2>LD-SKIP-PROOFSP</h2>how carefully ACL2 processes your <a href="COMMAND.html">command</a>s
+<pre>Major Section:  <a href="MISCELLANEOUS.html">MISCELLANEOUS</a>
+</pre><p>
+
+
+<pre>
+Examples:
+ACL2 !&gt;(set-ld-skip-proofsp t state)
+ T
+ACL2 !s&gt;(set-ld-skip-proofsp nil state)
+ NIL
+ACL2 !&gt;(set-ld-skip-proofsp 'include-book state)
+ INCLUDE-BOOK
+ACL2 !s&gt;
+</pre>
+
+<p>
+A global variable in the ACL2 <code><a href="STATE.html">state</a></code>, called <code>'ld-skip-proofsp</code>,
+determines the thoroughness with which ACL2 processes your <a href="COMMAND.html">command</a>s.
+This variable may take on one of three values: <code>t</code>, <code>nil</code> or
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.  When <code>ld-skip-proofsp</code> is non-<code>nil</code>, the system assumes
+that which ought to be proved and is thus unsound.  The form
+<code>(set-ld-skip-proofsp flg state)</code> is the general-purpose way of
+setting <code>ld-skip-proofsp</code>.  This global variable is an ``<code><a href="LD.html">ld</a></code> special,''
+which is to say, you may call <code><a href="LD.html">ld</a></code> in such a way as to ``bind'' this
+variable for the dynamic extent of the <code><a href="LD.html">ld</a></code>.<p>
+
+When <code>ld-skip-proofsp</code> is non-<code>nil</code>, the default <a href="PROMPT.html">prompt</a> displays the
+character <code>s</code>.  Thus, the <a href="PROMPT.html">prompt</a>
+
+<pre>
+ACL2 !s&gt;
+</pre>
+
+means that the default <a href="DEFUN-MODE.html">defun-mode</a> is <code>:</code><code><a href="LOGIC.html">logic</a></code> (otherwise the
+character <code>p</code>, for <code>:</code><code><a href="PROGRAM.html">program</a></code>, would also be printed;
+see <a href="DEFAULT-PRINT-PROMPT.html">default-print-prompt</a>) but ``proofs are being skipped.''<p>
+
+Observe that there are two legal non-<code>nil</code> values, <code>t</code> and
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.  When <code>ld-skip-proofsp</code> is <code>t</code>, ACL2 skips all proof
+obligations but otherwise performs all other required analysis of
+input <a href="EVENTS.html">events</a>.  When <code>ld-skip-proofsp</code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, ACL2 skips not
+only proof obligations but all analysis except that required to
+compute the effect of successfully executed <a href="EVENTS.html">events</a>.  To explain the
+distinction, let us consider one particular event, say a <code><a href="DEFUN.html">defun</a></code>.
+Very roughly speaking, a <code><a href="DEFUN.html">defun</a></code> event normally involves a check of
+the syntactic well-formedness of the submitted definition, the
+generation and proof of the termination conditions, and the
+computation and storage of various rules such as a <code>:</code><code><a href="DEFINITION.html">definition</a></code> rule
+and some <code>:</code><code><a href="TYPE-PRESCRIPTION.html">type-prescription</a></code> rules.  By ``normally'' above we mean
+when <code>ld-skip-proofsp</code> is <code>nil</code>.  How does a <code><a href="DEFUN.html">defun</a></code> behave when
+<code>ld-skip-proofsp</code> is non-<code>nil</code>?<p>
+
+If <code>ld-skip-proofsp</code> is <code>t</code>, then <code><a href="DEFUN.html">defun</a></code> performs the syntactic
+well-formedness checks and computes and stores the various rules,
+but it does not actually carry out the termination proofs.  If
+<code>ld-skip-proofsp</code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, <code><a href="DEFUN.html">defun</a></code> does not do the syntactic
+well-formedness check nor does it carry out the termination proof.
+Instead, it merely computes and stores the rules under the
+assumption that the checks and proofs would all succeed.  Observe
+that a setting of <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code> is ``stronger'' than a setting of <code>t</code>
+in the sense that <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code> causes <code><a href="DEFUN.html">defun</a></code> to assume even more
+about the admissibility of the event than <code>t</code> does.<p>
+
+As one might infer from the choice of name, the <code><a href="INCLUDE-BOOK.html">include-book</a></code> event
+sets <code>ld-skip-proofsp</code> to <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code> when processing the <a href="EVENTS.html">events</a> in
+a book being loaded.  Thus, <code><a href="INCLUDE-BOOK.html">include-book</a></code> does the miminal work
+necessary to carry out the effects of every event in the book.  The
+syntactic checks and proof obligations were, presumably,
+successfully carried out when the book was certified.<p>
+
+A non-<code>nil</code> value for <code>ld-skip-proofsp</code> also affects the system's output
+messages.  Event summaries (the paragraphs that begin ``Summary''
+and display the event forms, rules used, etc.) are not printed when
+<code>ld-skip-proofsp</code> is non-<code>nil</code>.  Warnings and observations are printed
+when <code>ld-skip-proofsp</code> is <code>t</code> but are not printed when it is
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+Intuitively, <code>ld-skip-proofsp</code> <code>t</code> means skip just the proofs and
+otherwise do all the work normally required for an event; while
+<code>ld-skip-proofsp</code> <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code> is ``stronger'' and means do as little
+as possible to process <a href="EVENTS.html">events</a>.  In accordance with this intuition,
+<code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> are processed when <code>ld-skip-proofsp</code> is <code>t</code> but are skipped
+when <code>ld-skip-proofsp</code> is <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>.<p>
+
+The ACL2 system itself uses only two settings, <code>nil</code> and
+<code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code>, the latter being used only when executing the <a href="EVENTS.html">events</a>
+inside of a book being included.  The <code>ld-skip-proofsp</code> setting of <code>t</code>
+is provided as a convenience to the user.  For example, suppose one
+has a file of <a href="EVENTS.html">events</a>.  By loading it with <code><a href="LD.html">ld</a></code> with <code>ld-skip-proofsp</code>
+set to <code>t</code>, the <a href="EVENTS.html">events</a> can all be checked for syntactic correctness
+and assumed without proof.  This is a convenient way to recover a
+state lost by a system crash or to experiment with a modification of
+an <a href="EVENTS.html">events</a> file.<p>
+
+The foregoing discussion is actually based on a lie.
+<code>ld-skip-proofsp</code> is allowed two other values, <code>'initialize-acl2</code> and
+<code>'include-book-with-locals</code>.  The first causes behavior similar to <code>t</code>
+but skips <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a> and avoids some error checks that would
+otherwise prevent ACL2 from properly booting.  The second is
+identical to <code>'</code><code><a href="INCLUDE-BOOK.html">include-book</a></code> but also executes <code><a href="LOCAL.html">local</a></code> <a href="EVENTS.html">events</a>.  These
+additional values are not intended for use by the user, but no
+barriers to their use have been erected.<p>
+
+We close by reminding the user that ACL2 is potentially unsound if
+<code>ld-skip-proofsp</code> is ever set by the user.  We provide access to it
+simply to allow experimentation and rapid reconstruction of lost or
+modified logical <a href="WORLD.html">world</a>s.
+<br><br><br><a href="acl2-doc.html"><img src="llogo.gif"></a> <a href="acl2-doc-index.html"><img src="index.gif"></a>
+</body>
+</html>

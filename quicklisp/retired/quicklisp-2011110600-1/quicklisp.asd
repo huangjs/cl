@@ -5,7 +5,7 @@
   :author "Zach Beane <zach@quicklisp.org>"
   :license "BSD-style"
   :serial t
-  :version "2012010700"
+  :version "2011110600"
   :components ((:file "package")
                (:file "utils")
                (:file "config")
@@ -16,7 +16,6 @@
                (:file "http")
                (:file "deflate")
                (:file "minitar")
-               (:file "cdb")
                (:file "dist")
                (:file "setup")
                (:file "client")

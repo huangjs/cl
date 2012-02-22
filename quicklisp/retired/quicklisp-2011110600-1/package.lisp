@@ -118,14 +118,6 @@
   (:use #:cl)
   (:export #:gunzip))
 
-(defpackage #:ql-cdb
-  (:documentation
-   "Read and write CDB files; code adapted from ZCDB.")
-  (:use #:cl)
-  (:export #:lookup
-           #:map-cdb
-           #:convert-index-file))
-
 (defpackage #:ql-dist
   (:documentation
    "Generic functions, variables, and classes for interacting with the
@@ -236,13 +228,6 @@
            #:dependency-tree
            #:clean))
 
-(defpackage #:ql-dist-user
-  (:documentation
-   "A package that uses QL-DIST; useful for playing around in without
-   clobbering any QL-DIST internals.")
-  (:use #:cl
-        #:ql-dist))
-
 (defpackage #:quicklisp-client
   (:documentation
    "The Quicklisp client package, intended for end-user Quicklisp
@@ -283,8 +268,7 @@
            #:help
            #:register-local-projects
            #:local-projects-searcher
-           #:*local-project-directories*
-           #:list-local-projects))
+           #:*local-project-directories*))
 
 (in-package #:quicklisp-client)
 

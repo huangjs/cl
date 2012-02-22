@@ -54,8 +54,7 @@ PATHNAME. Current format is one native namestring per line."
                           :direction :output
                           :if-exists :rename-and-delete)
     (dolist (system-file (local-project-system-files pathname))
-      (let ((system-path (enough-namestring system-file pathname)))
-        (write-line (native-namestring system-path) stream)))
+      (write-line (native-namestring system-file) stream))
     (probe-file stream)))
 
 (defun find-valid-system-index (pathname)
@@ -80,7 +79,7 @@ SYSTEM, return its full pathname."
     (loop for namestring = (read-line stream nil)
           while namestring
           when (string= system (pathname-name namestring))
-          return (truename (merge-pathnames namestring index-file)))))
+          return (truename namestring))))
 
 (defun local-projects-searcher (system-name)
   "This function is added to ASDF:*SYSTEM-DEFINITION-SEARCH-FUNCTIONS*
@@ -89,26 +88,7 @@ to use the local project directory and cache to find systems."
     (when (probe-directory directory)
       (let ((system-index (ensure-system-index directory)))
         (when system-index
-          (let ((system (find-system-in-index system-name system-index)))
-            (when system
-              (return system))))))))
-
-(defun list-local-projects ()
-  "Return a list of pathnames to local project system files."
-  (let ((result (make-array 16 :fill-pointer 0 :adjustable t))
-        (seen (make-hash-table :test 'equal)))
-    (dolist (directory *local-project-directories*
-             (coerce result 'list))
-      (let ((index (ensure-system-index directory)))
-        (when index
-          (with-open-file (stream index)
-            (loop for line = (read-line stream nil)
-                  while line do
-                  (let ((pathname (merge-pathnames line index)))
-                    (unless (gethash (pathname-name pathname) seen)
-                      (setf (gethash (pathname-name pathname) seen) t)
-                      (vector-push-extend (merge-pathnames line index)
-                                          result))))))))))
+          (return (find-system-in-index system-name system-index)))))))
 
 (defun register-local-projects ()
   "Force a scan of the local projects directory to create the system

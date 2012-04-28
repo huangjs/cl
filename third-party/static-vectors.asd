@@ -1,0 +1,1 @@
+static-vectors/src/static-vectors.asd

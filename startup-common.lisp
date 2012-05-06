@@ -38,11 +38,12 @@
       *print-array* t
       *print-pretty* t)
 
-;;; my libs
+;;; essential libs
 (ql:quickload :alexandria)
 (ql:quickload :iterate)
-;; (load-clocc-system :screamer)
 (setf iterate::*always-declare-variables* t)
+(ql:quickload :screamer)
+;; (asdf :cl-project)
 
 ;; (progn
 ;;   (asdf :cl-interpol)

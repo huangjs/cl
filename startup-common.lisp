@@ -43,7 +43,6 @@
 (ql:quickload :iterate)
 (setf iterate::*always-declare-variables* t)
 (ql:quickload :screamer)
-;; (asdf :cl-project)
 
 ;; (progn
 ;;   (asdf :cl-interpol)

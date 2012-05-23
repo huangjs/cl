@@ -23,10 +23,12 @@
   :license "<% @var license %>"
   :depends-on (<% (format t "~{:~(~A~)~^~%               ~}"
                           (getf env :depends-on)) %>)
+  :serial t
   :components ((:module "src"
+                :serial t
                 :components
                 ((:file "package")
-                 (:file "<% @var name %>" :depends-on ("package"))
+                 (:file "<% @var name %>")
                  )))
   :description "<% @var description %>"
   :long-description

@@ -13,8 +13,10 @@
   :license "<% @var license %>"
   :depends-on (:<% @var name %>
                :stefil)
+  :serial t
   :components ((:module "t"
+                :serial t
                 :components
                 ((:file "package")
-                 (:file "unit-test" :depends-on ("package"))
+                 (:file "unit-test")
                  ))))

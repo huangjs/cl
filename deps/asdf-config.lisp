@@ -17,7 +17,7 @@
   #+ecl "ecl"
   #+abcl "abcl")
 
-(defparameter *source-root* (truename #p"/huang/")
+(defparameter *source-root* (truename #p"/home/hjs/")
   "Root of source directories")
 
 (defparameter *fasl-root* (truename
@@ -26,14 +26,14 @@
 		      (user-homedir-pathname)))
   "Root of implementation's directories of binary files")
 
-(defparameter *third-part-systems* (truename (merge-pathnames #p"cl/third-party/" (user-homedir-pathname))))
+;; (defparameter *third-part-systems* (truename (merge-pathnames #p"cl/third-party/" (user-homedir-pathname))))
 
-;; add system definition folder
-(eval-when (:load-toplevel :execute)
-  (pushnew *third-part-systems*
-           (symbol-value (intern (symbol-name :*central-registry*)
-                                 (find-package :asdf)))
-           :test #'equalp))
+;; ;; add system definition folder
+;; (eval-when (:load-toplevel :execute)
+;;   (pushnew *third-part-systems*
+;;            (symbol-value (intern (symbol-name :*central-registry*)
+;;                                  (find-package :asdf)))
+;;            :test #'equalp))
 
 (compile
  (defun pathname-prefix-p (prefix pathname)

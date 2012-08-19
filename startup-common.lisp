@@ -2,7 +2,7 @@
 
 ;;; The following lines added by ql:add-to-init-file:
 #-quicklisp
-(let ((quicklisp-init #P"/huang/cl/quicklisp/setup.lisp"))
+(let ((quicklisp-init #P"/home/hjs/quicklisp/setup.lisp"))
   (when (probe-file quicklisp-init)
     (load quicklisp-init)))
 
@@ -42,7 +42,7 @@
 (ql:quickload :alexandria)
 (ql:quickload :iterate)
 (setf iterate::*always-declare-variables* t)
-(ql:quickload :screamer)
+#-lispworks (ql:quickload :screamer)
 
 ;; (progn
 ;;   (asdf :cl-interpol)

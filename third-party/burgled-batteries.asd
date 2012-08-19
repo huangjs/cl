@@ -1,1 +1,0 @@
-burgled-batteries/burgled-batteries.asd

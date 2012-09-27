@@ -1,0 +1,2145 @@
+#!/usr/bin/env bash
+# (we use env for non-Linux OSes)
+#
+# Script to update/install the latest versions of all the most
+# important Common Lisp projects. Uses SBCL but otherwise tries to be
+# somewhat independent of your local environment.
+#
+# Intended to quickly bootstrap a working development environment for
+# Lisp free software hackers.
+#
+# Idea from jhbuild by James Henstridge (a Gnome hacker).
+#
+# Contributors:
+#   Luke Gorrie <luke@member.fsf.org>
+#   Anthony Chaumas-Pellet <achaumas@wispery.info>
+#   Christophe Rhodes <csr21@cantab.net>
+#   David Lichteblau <david@lichteblau.com>
+#   Eric Marsden <eric.marsden@free.fr>
+#   Andreas Fuchs <asf@boinkor.net>
+#   Albert Krewinkel
+#   Daniel White
+#   Ryan Davis
+#   Michael Weber
+#   (and probably others)
+
+set -e
+
+if [ "$CLNET_USER" == "" ]; then
+    CLNET_USER=:pserver:anonymous:anonymous
+fi
+export CLNET_USER
+
+# MacOS doesn't have "readlink -e", needed to follow symlinks.
+# We hack it using readlink, dirname, and cd.
+readlink_e() {
+    self="$0"
+    while test -h "$self"; do
+	cd "$(dirname $self)"
+	self=`readlink "$self"`
+    done
+    cd "$(dirname $self)"
+    pwd
+}
+BASE=$(readlink_e)
+system_dir="$BASE/systems"
+source_dir="$BASE/source"
+target_dir="$BASE/target"
+
+if test x`uname -o 2>/dev/null` = xCygwin; then
+	windowsp=1
+else
+	windowsp=""
+fi
+
+if test "$(uname -s)" = Darwin -a "$(uname -p)" = powerpc; then
+    darwinppc=1
+else
+    darwinppc=""
+fi
+
+source "$BASE/clbuild.conf.default"
+if test -f "$BASE/clbuild.conf"; then
+    source "$BASE/clbuild.conf"
+fi
+
+# All files which contain information about projects.  Also include
+# personal projects listed in 'my-projects'.
+PROJECT_LISTING_FILES="$BASE/projects $BASE/wnpp-projects $BASE/implementations"
+if test -f "$BASE/my-projects"; then
+    PROJECT_LISTING_FILES="$BASE/my-projects $PROJECT_LISTING_FILES"
+fi
+
+
+if test -f "$BASE/my-dependencies"; then
+    DEPENDENCY_FILES="$BASE/dependencies $BASE/my-dependencies"
+else
+    DEPENDENCY_FILES="$BASE/dependencies"
+fi
+
+# Fix up pathnames
+make_absolute_pn() {
+	if [ -n "$1" ] ; then
+		(cd "$BASE"
+		echo "$(cd "$(dirname "$1")" ; pwd)/$(basename "$1")")
+	fi
+}
+case $UPDATE_SCRIPT in
+    update_project)
+	# okay, new name
+	;;
+    update.sh)
+	# old name
+	UPDATE_SCRIPT=update_project
+	;;
+    *)
+	# do will still want this?
+	UPDATE_SCRIPT="$(make_absolute_pn "$UPDATE_SCRIPT")"
+	;;
+esac
+USER_INIT="$(make_absolute_pn "$USER_INIT")"
+
+if test -n "$windowsp" -a x$USER_INIT = x/dev/null; then
+	USER_INIT=NUL
+fi
+
+# CLIM configuration
+case x$CLIM_BACKEND in
+    xgraphic-forms|xgtkairo|xbeagle)
+        EXTRA_CLIM_FEATURES="(pushnew :clim-$CLIM_BACKEND *features*)"
+	maybe_load_clx="nil"
+        ;;
+    x|xclx)
+        EXTRA_CLIM_FEATURES="nil"
+	maybe_load_clx="(unless (find-package :xlib) (asdf:operate 'asdf:load-op :clx))"
+        ;;
+    *)
+        echo "invalid $CLIM_BACKEND, see clbuild.conf.default for examples." 1>&2
+        exit 1
+        ;;
+esac
+
+if test -n "$windowsp"; then
+	system_namestring="`cygpath -m $system_dir`/"
+	source_namestring="`cygpath -m $source_dir`/"
+	target_namestring="`cygpath -m $target_dir`/"
+	self="c:/cygwin/bin/bash $self"
+else
+	system_namestring="$system_dir/"
+	source_namestring="$source_dir/"
+	target_namestring="$target_dir/"
+fi
+if test -n "$SETF_CENTRAL_REGISTRY"; then
+    set_central_registry="(setq asdf:*central-registry* '(#p\"${system_namestring}\"))"
+else
+    set_central_registry="(push #p\"${system_namestring}\" asdf:*central-registry*)"
+fi
+
+set_lisp_warning() {
+    echo "Warning: Cannot find an executable for implementation $1" 1>&2
+}
+
+# Try to find an executable/command for a given lisp implementation
+set_lisp_command() {
+    case "$1" in
+        sbcl)
+            if [ -x ${target_dir}/bin/sbcl ]; then
+                export SBCL_HOME=${target_namestring}lib/sbcl/
+                export SBCL="${target_dir}/bin/sbcl"
+                if ! test -f "$BASE"/monster.core; then
+	            SBCL="$SBCL --core ${target_namestring}lib/sbcl/sbcl.core"
+                fi
+            elif which sbcl >/dev/null ; then
+                export SBCL="$(which sbcl)"
+            else
+                set_lisp_warning sbcl
+            fi
+            ;;
+        alisp)
+            if which alisp >/dev/null ; then
+                export ALISP="$(which alisp)"
+            else
+                set_lisp_warning alisp
+            fi
+            ;;
+        cmu)
+	    if which lisp >/dev/null ; then
+                export CMU="$(which lisp)"
+            else
+                set_lisp_warning cmu
+            fi
+            ;;
+        ecl)
+            export DYLD_LIBRARY_PATH="${target_dir}/lib:$DYLD_LIBRARY_PATH"
+            export ECL="${target_dir}/bin/ecl"
+            ;;
+        ccl)
+	    case `uname` in
+		Linux)
+		    case `uname -m` in
+			x86_64)
+			    binary=lx86cl64
+			    ;;
+                        *)
+                            set_lisp_warning ccl
+			    exit 1
+			    ;;
+			esac
+		    ;;
+                Darwin)
+                    case `uname -p` in
+                        powerpc)
+                            binary=dppccl
+                            ;;
+                        i386)
+                            binary=dx86cl64
+                            ;;
+                        *)
+                            set_lisp_warning ccl
+			    exit 1
+                            ;;
+                    esac
+                    ;;
+                *)
+                    set_lisp_warning ccl
+                    ;;
+            esac
+            if [ -x ${source_dir}/ccl/${binary} ]; then
+                export CCL=${source_dir}/ccl/${binary}
+            else
+                set_lisp_warning ccl
+                exit 1
+            fi
+            ;;
+        clisp)
+            if [ -x "${target_dir}/bin/clisp" ]; then
+                export CLISP="${target_dir}/bin/clisp"
+            else
+                set_lisp_warning clisp
+                exit 1
+            fi
+            ;;
+        ecl)
+            if [ -x "${target_namestring}bin/ecl" ]; then
+                export ECL="${target_namestring}bin/ecl"
+            else
+                set_lisp_warning ecl
+            fi
+            ;;
+        *)
+            set_lisp_warning "$1"
+            ;;
+    esac
+}
+
+configure_ccl() {
+    if [ -z "$CCL" ]; then
+        set_lisp_command ccl
+    fi
+    lisp=${1:-$CCL}
+    noinform="-Q"
+    end_toplevel_options="" #fixme
+    quit="(ccl:quit)"
+    eval="--eval"
+    require_asdf="(require :asdf)"
+    core_option="-I"
+
+    if test x"$USER_INIT" = x/dev/null; then
+	# -l /dev/null does not work
+	common_options="-n"
+    elif test -n "$USER_INIT"; then
+	common_options="-n -l $USER_INIT"
+    else
+	common_options=""
+    fi
+
+    # fixme: this doesn't quite match the SBCL version yet:
+    build_options="$noinform --batch $common_options"
+    run_options="--batch $common_options"
+}
+
+configure_clisp() {
+    if [ -z "$CLISP" ]; then
+        set_lisp_command clisp
+    fi
+    lisp={$1:-$CLISP}
+
+    echo '*** Using CLISP.  Please note that CLISP support is not complete.'
+    lisp="$CLISP -repl"
+
+    noinform="" #fixme
+    end_toplevel_options="" #fixme
+    quit="(ext:quit)"
+    eval="-x"
+    require_asdf="(load \"$BASE/source/asdf-for-clisp/asdf.lisp\")"
+    core_option="-M"
+
+    if test -n "$USER_INIT"; then
+	common_options="-norc -i $USER_INIT"
+    else
+	common_options=""
+    fi
+
+    build_options="-on-error exit $common_options"
+    run_options="-on-error exit $common_options"
+
+    if test -d "$BASE/source/asdf-for-clisp"; then
+	echo "*** asdf checkout found"
+	echo
+    else
+	echo "NEW checking out asdf for use with clisp"
+	(cd "$BASE/source" && cvs -d ${SF_USER}@sbcl.cvs.sourceforge.net:/cvsroot/sbcl co -d asdf-for-clisp sbcl/contrib/asdf)
+    fi
+}
+
+configure_alisp() {
+    if [ -z "$ALISP" ]; then
+        set_lisp_command alisp
+    fi
+    lisp={$1:-$ALISP}
+
+    lisp="$ALISP"
+
+    noinform="" #fixme
+    end_toplevel_options="" #fixme
+    quit="(excl:exit)"
+    eval="-e"
+    require_asdf="(require :sdf)"
+    core_option="-I"
+
+    if test -n "$USER_INIT"; then
+	common_options="-qq -L $USER_INIT"
+    else
+	common_options=""
+    fi
+
+    # fixme
+    build_options="$common_options"
+    run_options="$common_options"
+}
+
+configure_sbcl() {
+    if [ -z "$SBCL" ]; then
+        set_lisp_command sbcl
+    fi
+    lisp=${1:-$SBCL}
+
+    noinform="--noinform"
+    end_toplevel_options="--end-toplevel-options"
+    quit="(sb-ext:quit)"
+    eval="--eval"
+    require_asdf="(require :asdf)"
+    core_option="--core"
+
+    if test -n "$USER_INIT"; then
+	common_options="--userinit $USER_INIT"
+    else
+	common_options=""
+    fi
+
+    build_options="$noinform --noprint --disable-debugger $common_options"
+    run_options="--disable-debugger $common_options"
+}
+
+configure_cmu() {
+    if [ -z "$CMU" ]; then
+        set_lisp_command cmu
+    fi
+    lisp=${1:-$CMU}
+
+    noinform="-quiet"
+    end_toplevel_options="--"
+    quit="(ext:quit)"
+    eval="-eval"
+    # require_asdf="(require :asdf)"
+    require_asdf="(let* ((lisp \"$BASE/source/asdf/asdf.lisp\") (fasl (compile-file-pathname lisp))) (unless (probe-file fasl) (compile-file lisp)) (load fasl :verbose nil :print nil))"
+    core_option="-core"
+
+    if test x"$USER_INIT" = x/dev/null; then
+	common_options="-noinit"
+    elif test -n "$USER_INIT"; then
+	common_options="-init $USER_INIT"
+    else
+	common_options=""
+    fi
+
+    build_options="$noinform -batch $common_options"
+    run_options="-batch $common_options"
+
+    if ! test -d "$BASE/source/asdf"; then
+	(cd "$BASE/source" && cvs -d ${SF_USER}@sbcl.cvs.sourceforge.net:/cvsroot/sbcl co -d asdf sbcl/contrib/asdf)
+    fi
+}
+
+# Allow --implementation system_sbcl
+configure_system_sbcl() {
+    configure_sbcl
+    lisp=$(which sbcl)
+}
+
+configure_ecl() {
+    if [ -z "$ECL" ]; then
+        set_lisp_command ecl
+    fi
+    lisp=${1:-$ECL}
+
+    noinform="-q"
+    end_toplevel_options="--"
+    quit="(cl-user:quit)"
+    eval="-eval"
+    require_asdf="(require :asdf)"
+    core_option="-c"
+    
+    if test -n "$USER_INIT" -a x"$USER_INIT" != x/dev/null; then
+        common_options="-load $USER_INIT"
+    else
+        common_options=""
+    fi
+
+    build_options="$noinform $common_options"
+    run_options="$common_options"
+}
+
+configure_lisp_implementation() {
+    # Get the implementation type (member sbcl ccl clisp alisp ecl cmu)
+    implementation=${1}
+
+    # if the given parameter specifies a lisp implementation by name, the name
+    # is used.  Otherwise the DEFAULT_LISP_IMPLEMENTATION is used.  Also check
+    # for environment variables for backwards comparability. Defaults to SBCL.
+    if [ -z ${implementation} ]; then
+        if [ -n "${DEFAULT_LISP_IMPLEMENTATION}" ]; then
+            implementation=${DEFAULT_LISP_IMPLEMENTATION}
+        elif [ -n "${CCL}" ]; then
+            implementation=ccl
+        elif [ -n "${CLISP}" ]; then
+            implementation=clisp
+        elif [ -n "${ALISP}" ]; then
+            implementation=alisp
+        elif [ -n "${ECL}" ]; then
+            implementation=ecl
+        elif [ -n "${CMU}" ]; then
+            implementation=cmu
+        else
+            implementation=sbcl
+        fi
+    fi
+
+    if [ "$(type -t "configure_$implementation")" = function ] && \
+        "configure_$implementation"; then
+        return
+    else
+        echo "Unknown implementation '$implementation'" 1>&2
+        exit 1
+    fi
+}
+
+export implementation=''
+if [ "$1" = "--implementation" ]; then
+    implementation=$2
+    configure_lisp_implementation $implementation
+    shift 2
+else
+    configure_lisp_implementation
+fi
+
+[ -d "$system_dir" ] || mkdir "$system_dir"
+[ -d "$source_dir" ] || mkdir "$source_dir"
+[ -d "$target_dir" ] || mkdir "$target_dir"
+
+clbuild_lisp() {
+    ${lisp} $common_options \
+	$eval "$require_asdf" \
+	$eval "$set_central_registry" \
+	$eval "$EXTRA_CLIM_FEATURES" \
+	"$@"
+}
+
+lisp_trampoline() {
+    # Start the Lisp with user arguments.  For SBCL, we can do that using
+    # --end-toplevel-options.  For other Lisps, go through a temporary
+    # file.
+
+    options="$1"
+    shift
+
+    if test -n "$end_toplevel_options"; then
+	${lisp} \
+	    $options \
+	    $eval "$require_asdf" \
+	    $eval "$set_central_registry" \
+	    $eval "$EXTRA_CLIM_FEATURES" \
+	    $eval "(load \"$BASE/clbuild.lisp\")" \
+	    $end_toplevel_options \
+	    "$@"
+    else
+        TMPDIR=`mktemp -d /tmp/clbuild.XXXXXXXXXX`
+	export TMPDIR
+
+        cleanup() {
+            rm -rf $TMPDIR
+        }
+        trap cleanup EXIT
+
+	while test -n "$1"; do
+	    # fixme: whitespacea
+	    echo $1 >>$TMPDIR/args
+	    shift
+	done
+
+	${lisp} \
+	    $options \
+	    $eval "$require_asdf" \
+	    $eval "$set_central_registry" \
+	    $eval "$EXTRA_CLIM_FEATURES" \
+	    $eval "(defparameter cl-user::*clbuild-args* \"$TMPDIR/args\")" \
+	    $eval "(load \"$BASE/clbuild.lisp\")"
+    fi
+}
+
+start_application() {
+    lisp_trampoline "$noinform $run_options" "$@"
+}
+
+recompile() {
+	if test x"$1" = x--dump; then
+	    dump="--dump t"
+	    shift
+	else
+	    dump=""
+	fi
+
+	concatenated_args="$@"
+	if test -z "$concatenated_args"; then
+	    concatenated_args="$main_projects"
+	fi
+
+	cd "$BASE"
+	lisp_trampoline "$build_options" \
+	    recompile-systems \
+	    $dump \
+	    "$concatenated_args"
+}
+
+count_systems() {
+	n_asd=`ls -1 "$system_dir"/*.asd | wc -l`
+	echo "$n_asd system definition files registered"
+}
+
+blank_line="                                                                  "
+tail_last() {
+    if tty 0>&1 >/dev/null; then
+	while read line; do
+	    echo -e '\r\c'
+	    echo -n "$blank_line"
+	    echo -e '\r\c'
+	    echo -n $line | cut -b 1-65 | tr -d '\n'
+	done
+	echo -e '\r\c'
+	echo -n "$blank_line"
+	echo -e '\r\c'
+    else
+	while read line; do
+	    echo $line
+	done
+    fi
+}
+
+dribble_get() {
+    label="$1"
+    name="$2"
+
+    if [ -d $name ]; then
+	echo -n "UPDATE "
+    else
+	echo -n "NEW "
+    fi
+    echo "$label $name"
+}
+
+darcs_record_import() {
+    local name="$1"
+    local url="$2"
+
+    IMPORT_MESSAGE="Imported $name from $url on $(date)"
+
+    darcs record -a -l -A clbuild -m "$IMPORT_MESSAGE"
+}
+
+dry_run_ok() {
+   if test -n "$dry_run"; then
+       echo "OK: $1"
+   fi
+}
+
+dry_run_missing() {
+   if test -n "$dry_run"; then
+       echo "MISSING: $1"
+   fi
+}
+
+get_hg() {
+    local name="$1"
+    local url="$2"
+
+    if [ -d $name ]; then
+	local actual=$(cd $name && hg showconfig paths.default)
+	if [ "x$actual" = "x$url" ]; then
+	    dry_run_ok $name
+	else
+	    echo "MISMATCH: $name was installed from $actual, current is $url"
+	fi
+    else
+	dry_run_missing $name
+    fi
+    if [ -n "$dry_run" ]; then
+	exit 0
+    fi
+
+    if [ -d $name ]; then
+	dribble_get "hg pull" $name
+	(
+	    cd $name
+	    if [ ! -d ".hg" ]; then
+		echo "ERROR: not a mercurial repository"
+		exit 1
+	    fi
+	    hg pull --update
+	    )
+    else
+	dribble_get "hg clone" $name
+	hg clone $url $name
+    fi
+}
+
+get_darcs() {
+    name="$1"
+    url="$2"
+
+    if [ -d $name ]; then
+	actual="`cat $name/_darcs/prefs/defaultrepo`"
+	if test "x$actual" = "x$url"; then
+	    dry_run_ok $1
+	else
+	    echo "MISMATCH: $1 was installed from $actual, current is $url"
+	fi
+    else
+	dry_run_missing $1
+    fi
+    if test -n "$dry_run"; then
+	exit 0
+    fi
+
+    # don't use tail_last, since darcs already has this kind of progress bar
+    if [ -d $name ]; then
+	dribble_get "darcs pull" $name
+	(
+	    cd $name
+	    if ! test -d _darcs; then
+		echo ERROR: not a darcs repository
+		exit 1
+	    fi
+	    darcs pull --all
+	    )
+    else
+	dribble_get "darcs get" $name
+	darcs get --lazy $url $name
+    fi
+}
+
+get_git() {
+    name="$1"
+    url="$2"
+
+    if [ -d $name ]; then
+	actual="`cd $name && git config --get remote.origin.url`"
+	if test "x$actual" = "x$url"; then
+	    dry_run_ok $1
+	else
+	    echo "MISMATCH: $1 was installed from $actual, current is $url"
+	fi
+    else
+	dry_run_missing $1
+    fi
+    if test -n "$dry_run"; then
+	exit 0
+    fi
+
+    if [ -d $name ]; then
+	dribble_get "git pull" $name
+	(
+	    cd $name
+	    if ! test -d .git; then
+		echo ERROR: not a git repository
+		exit 1
+	    fi
+	    git pull
+	    )
+    else
+	dribble_get "git clone" $name
+	git clone $url $name
+    fi
+}
+
+get_svn() {
+    name="$1"
+    url="$2"
+
+    if [ -d $name ]; then
+	actual="`cd $name && svn info | grep ^URL: | awk '{print $2;}'`"
+	if test "x$actual" = "x$url"; then
+	    dry_run_ok $1
+	else
+	    echo "MISMATCH: $1 was installed from $actual, current is $url"
+	fi
+    else
+	dry_run_missing $1
+    fi
+    if test -n "$dry_run"; then
+	exit 0
+    fi
+
+    dribble_get "svn co" $name
+
+    svn co $url $name | tail_last
+}
+
+get_cvs_aux() {
+    module="$1"
+    repository="$2"
+    target_directory="$3"
+
+    if [ -d $module ]; then
+	actual="`cat $module/CVS/Root`"
+	if test "x$actual" = "x$repository"; then
+	    dry_run_ok $1
+	else
+	    echo "MISMATCH: $1 was installed from $actual, current is $repository"
+	fi
+    else
+	dry_run_missing $1
+    fi
+    if test -n "$dry_run"; then
+	exit 0
+    fi
+
+    dribble_get "cvs co" $module
+
+    cvs -d $repository co ${3+-d "$3"} $module | tail_last
+}
+
+get_cvs_full() {
+    get_cvs_aux $3 $2 $1
+}
+
+get_tarball() {
+    local name="$1"
+    local url="$2"
+    local flags="${3:-z}"
+
+    if [ -d $name ]; then
+	dry_run_ok $name
+    else
+	dry_run_missing $name
+    fi
+    if [ -n "$dry_run" ]; then
+	exit 0
+    fi
+
+    # if repository does not exist, then create and populate one
+    if [ ! -d "$name/_darcs" ]; then
+       	(
+	    darcs init --repodir=$name
+	    cd $name
+	    darcs_record_import $name $url
+	    )
+    fi
+
+    # pull repository into temporary directory
+    dribble_get "wget" $name
+    (
+	local tmp="${name}.tar.gz"
+
+	cd $TMPDIR
+
+	# clone the original directory
+	darcs get "${source_dir}/${name}"
+
+	wget \
+	    --no-check-certificate \
+	    --progress=dot \
+	    -O "$tmp" \
+	    $url \
+	    2>&1 | tail_last
+	tar v${flags}xf "$tmp" | tail_last
+	rm $tmp
+
+	# if directory names differ, copy into main directory
+	local other_dir=$(echo ${name}?*/ | awk '{print $1}')
+	if [ -d $other_dir ]; then
+	    cp -R ${other_dir}* $name
+	fi
+	)
+
+    # record any changes and pull back into original directory
+    (
+	cd $TMPDIR/$name
+	darcs_record_import $name $url
+	darcs push -a -p "$IMPORT_MESSAGE" "$source_dir/$name"
+	)
+}
+
+get_svn_clnet() {
+    name="$1"
+    path="$2"
+
+    get_svn $name svn://common-lisp.net/project/$name/svn/$2
+}
+
+get_cvs_clnet() {
+    module="$1"
+    project="${2:-$1}"
+
+    get_cvs_aux $module ${CLNET_USER}@common-lisp.net:/project/$project/cvsroot
+}
+
+get_cvs_clnet_full() {
+    clbuildproject="$1"
+    clnetproject="${2:-$1}"
+    path="$3"
+
+    get_cvs_aux $path ${CLNET_USER}@common-lisp.net:/project/$clnetproject/cvsroot $clbuildproject
+}
+
+get_cvs_sfnet() {
+    module="$1"
+    project="${2:-$1}"
+
+    get_cvs_aux $module ${SF_USER}@$project.cvs.sourceforge.net:/cvsroot/$project
+}
+
+get_ediware() {
+    get_darcs $1 http://common-lisp.net/~loliveira/ediware/$1
+}
+
+get_clbuild_mirror() {
+    get_darcs $1 http://common-lisp.net/project/clbuild/mirror/$1
+}
+
+get_tarball_bz2() {
+    get_tarball "$1" "$2" j
+}
+
+get_github() {
+    project="$1"
+    user="$2"
+    repo="${3:-$1}"
+    if test "$GITHUB_USER" = $user; then
+        if test -n "$GITHUB_USE_HTTP"; then
+            get_git $project https://$user@github.com/$user/$repo.git
+        else
+            get_git $project git@github.com:$user/$repo.git
+        fi
+    else
+        if test -n "$GITHUB_USE_HTTP"; then
+            get_git $project http://github.com/$user/$repo.git
+        else
+            get_git $project git://github.com/$user/$repo.git
+        fi
+    fi
+}
+
+update_project() {
+    if test x$1 = x--dry-run; then
+	shift
+	dry_run=1
+    else
+	unset dry_run
+    fi
+    export dry_run
+
+    if test $# -ne 1; then
+	exec 1>&2
+	echo error: invalid number of arguments
+	echo usage: ... update [--dry-run] PROJECT_NAME
+	exit 1
+    fi
+
+    if ! grep -h "^$1 " $PROJECT_LISTING_FILES >/dev/null; then
+       echo Error: cannot download unknown project $1
+       rm "$BASE/.clbuild-resume"
+       exit 1
+    fi
+    found=`grep -h "^$1 " $PROJECT_LISTING_FILES | cut -d\# -f1`
+    update_project_2 $found
+}
+
+update_project_2() {
+    name="$1"
+    action="$2"
+    shift
+    shift
+    ( $action $name "$@" )
+}
+
+update() {
+    if test -n "$clbuild_resume"; then
+	if test $# -gt 0; then
+	    echo "error: --resume conflicts with arguments" 1>&2
+	    exit 1
+	fi
+	previous=`cat "$BASE/.clbuild-resume"`
+	CLBUILD_DEPENDENCIES=no update_1 $previous
+    elif test $# -gt 0; then
+	rm -f $source_dir/*/.clbuild-skip-update
+	update_1 $*
+    else
+	exec 1>&2
+	echo "Error: arguments expected"
+	echo "Usage:"
+	echo "  clbuild update PROJECT1 PROJECT2 PROJECT3...  # only these"
+	echo "  clbuild update --resume            # resume interrupted update"
+	echo "  clbuild update --main-projects     # all in projects file"
+	echo "  clbuild update --wnpp-projects     # all in wnpp-projects file"
+	echo "  clbuild update --all-projects      # both files"
+	echo "  clbuild update --installed         # everything in source/"
+	exit 1
+    fi
+}
+
+update_1() {
+        touch "$BASE"/.core-is-stale
+
+        TMPDIR=`mktemp -d /tmp/clbuild.XXXXXXXXXX`
+	export TMPDIR
+
+        cleanup() {
+	    if test -f "$BASE/.clbuild-resume"; then
+		exec 1>&2
+		echo
+		echo error: update was interrupted.
+		echo 'Use "clbuild update --resume" to retry.  (See also "clbuild skip PROJECT").'
+	    fi
+            rm -rf $TMPDIR
+        }
+        trap cleanup EXIT
+
+	cd "$source_dir"
+
+	touch $TMPDIR/dependencies0
+	while test $# -ge 1; do
+	    echo $1 >>$TMPDIR/arguments0
+	    if cat $DEPENDENCY_FILES | grep "^$1 ">/dev/null; then
+		found=`cat $DEPENDENCY_FILES |grep "^$1 "`
+		for x in $found; do
+		    echo $x >>$TMPDIR/dependencies0
+		done
+	    else
+		echo $1 >>$TMPDIR/dependencies0
+		echo "warning: no dependencies for $1 found" 1>&2
+	    fi
+	    shift
+	done
+	sort <$TMPDIR/arguments0 | uniq >$TMPDIR/arguments
+	sort <$TMPDIR/dependencies0 | uniq >$TMPDIR/dependencies
+
+	if ! cmp $TMPDIR/arguments $TMPDIR/dependencies >/dev/null; then
+	    case "$CLBUILD_DEPENDENCIES" in
+		ask)
+		    extra=`diff $TMPDIR/arguments $TMPDIR/dependencies | grep '^>' | cut -d' ' -f2 | xargs echo`
+		    echo "The following extra dependencies were found: $extra"
+		    echo -n "include dependencies in update? (Y/n)"
+		    read reply
+		    case _"$reply" in
+			_Y|_y|_)
+			    ;;
+			_n)
+			    mv $TMPDIR/arguments $TMPDIR/dependencies
+			    ;;
+			*)
+			    echo Invalid reply
+			    exit 1
+			    ;;
+		    esac
+		    ;;
+		yes)
+		    ;;
+		no)
+		    mv $TMPDIR/arguments $TMPDIR/dependencies
+		    ;;
+		*)
+		    echo "error: invalid \$CLBUILD_DEPENDENCIES" 1>&2
+		    exit 1
+	    esac
+	fi
+
+	cp $TMPDIR/dependencies "$BASE/.clbuild-resume"
+
+	for project in $(cat $TMPDIR/dependencies); do
+	    skipfile="$project"/.clbuild-skip-update
+	    if test -f "$skipfile" -a -n "$clbuild_resume"; then
+		echo "resume: skipping update of $project"
+	    else
+		${UPDATE_SCRIPT} ${UPDATE_ARGS} $project
+		register_asd $project "quiet"
+		touch "$skipfile"
+	    fi
+	done
+
+	link_extra_asds
+
+	rm "$BASE/.clbuild-resume"
+
+	echo "update complete"
+	count_systems
+        cd ..
+}
+
+show_project() {
+    name=$1
+
+    unset match
+    for f in $PROJECT_LISTING_FILES; do
+	match=$(grep "^$name " $f || true)
+	if test -n "$match"; then
+	    matching_file=$f
+	    break;
+	fi
+    done
+    if test -z "$match"; then
+	echo Error: no such project: $name
+	exit 1
+    fi
+    case $(basename $matching_file) in
+	projects) 
+	    comment="this is a main project"
+	    ;;
+	wnpp-projects) 
+	    comment="this is a work-needing or prospective project"
+	    ;;
+	my-projects) 
+	    comment="this is a local project"
+	    ;;
+    esac
+    cat <<EOF
+Package: $name
+  Project file: $matching_file ($comment)
+  Installed: $(if test -d $source_dir/$name; then echo yes; else echo no; fi)
+
+  Description:
+    $(echo "$match" | cut -d\# -f 2)
+
+  Will be downloaded using:
+    $(echo "$match" | cut -d\# -f 1)
+EOF
+}
+
+register_asd() {
+    local project="$1"
+    local quiet="$2" # any value will stop printing the linked .asd files
+    local dir="source/$project"
+
+    register_all_asd_in_path $dir $quiet
+}
+
+register_other_asd() {
+    local path="source/$1"
+    local quiet="quiet"
+    local abspath="$BASE/$path"
+
+    # Test if path given is not a globbed pattern
+    if [ -f "$abspath" ]; then
+	local name="$2"
+	register_single_asd $path ${quiet:-""} $name
+    elif [ -d "$abspath" ]; then
+	# use given directory to register .asd files
+	register_all_asd_in_path $path $quiet
+    elif [ "$abspath" == "$(echo $abspath)" ]; then
+        # if pattern and expansion are identical, globbing failed
+	if [ -z $quiet ]; then
+	    echo "Ignoring invalid path: $path"
+	fi
+    else
+	# path must be a valid pattern so register *.asd for each directory
+	for path in $(relative_glob "$path"); do
+	    if [ -d $path ]; then
+		register_all_asd_in_path $path $quiet
+	    fi
+	done
+    fi
+}
+
+relative_glob() {
+    cd "$BASE"
+    echo $1
+}
+
+register_all_asd_in_path() {
+    local path="$1"
+    local quiet="$2"
+
+    for file in $(relative_glob "$path/*.asd"); do
+	register_single_asd $file $quiet
+    done
+}
+
+register_single_asd() {
+    local asd_file="$1"
+    local quiet="$2" # any value will stop printing the linked .asd files
+    local name="$3"  # optionally provide a different name for link
+
+    : ${name:=$(basename $asd_file)} # default to the name of the asd file
+
+    if [ -f "$BASE/$asd_file" ]; then
+	if [ -z $quiet ]; then
+	    echo "$asd_file"
+	fi
+	register_single_asd_as $name $asd_file
+    fi
+}
+
+register_single_asd_as() {
+    local name="$1"
+    local asd_file="$2"
+
+    ln -f -s "../$asd_file" "${system_dir}/${name}"
+}
+
+link_extra_asds() {
+    # some (buggy) projects try to hide their .asd files from us:
+    register_other_asd mcclim/Experimental/freetype
+    register_other_asd iolib/src
+    register_other_asd editor-hints/named-readtables
+    register_other_asd "graphic-forms/src/external-libraries/*/*"
+    register_other_asd "clg/*"
+    register_other_asd "swf2/*"
+    register_other_asd eclipse/system.lisp eclipse.asd
+
+    # also, override uffi:
+    register_other_asd cffi/uffi-compat/uffi.asd
+}
+
+short_help() {
+	cat <<EOF
+Usage:
+  $0 COMMAND [ARGS...]
+
+Important commands are:
+
+  projects              show a list of projects
+  install   PROJECT     install this project
+  uninstall PROJECT     uninstall this project
+
+  slime                 run Lisp (using Emacs, recommended)
+  lisp                  run Lisp (using the terminal)
+
+  check                 check for helper applications
+
+EXAMPLE:
+
+  $0 install cl-ppcre
+  $0 slime
+
+After starting SLIME, use ASDF to compile and load installed
+programs, for example by typing
+
+  (asdf:operate 'asdf:load-op 'ENTER-NAME-OF-SYSTEM-HERE)
+
+See also 'clbuild --long-help' for a full list of commands.
+
+EOF
+}
+
+long_help() {
+	cat <<EOF
+Usage:
+  check         check availability of all necessary helper applications
+
+  list [PATTERN]  list all projects, or projects matching PATTERN
+
+  update [--dependencies|--no-dependencies] PROJECT_SPEC
+                download/update this project
+  update [--resume]
+                download/update main projects.  With --resume, consider
+                only projects that a previous update run failed to fetch.
+  skip PROJECT_NAME
+                mark this project as done for the purposes of update --resume
+
+  recompile SYSTEMS compile fasls
+  dumpcore SYSTEMS  recompile and dump a core file for faster startup
+
+  diff          show local changes (for all version-controlled projects)
+  check-urls    compared installed repository urls agains current locations
+  clean-links   remove broken symlinks in systems/
+  rebuild-links removes and adds .asd file symlinks for all projects
+  update-missing  download only projects not present yet
+  register-asd PROJECT  add .asd file symlinks for PROJECT
+
+  compile-implementation sbcl [XC_HOST]  compile SBCL
+
+  clean [PROJECT]  delete all compiled object files [in source/PROJECT]
+  trash PROJECT    move source/PROJECT to trash/
+  mrproper         trash all projects
+
+  slime         run the Superior Lisp Interaction Mode in a fresh Emacs
+  lisp          run Lisp in the terminal (using sbcl.core)
+  preloaded     run Lisp in the terminal (using monster.core)
+  slime-configuration  print .emacs excerpt for slime
+
+  make-project NAME   set up an new, empty project
+
+  record-dependencies   rebuild dependency information file
+
+For update/recompile/dumpcore a PROJECT_SPEC can be used:
+  PROJECT1 PROJECT2 PROJECT3...  # only these
+  --main-projects                # all in projects file
+  --wnpp-projects                # all in wnpp-projects file
+  --all-projects                 # both files
+  --installed                    # everything in source/
+
+For all commands, the lisp implementation to be invoked can be specified using
+  clbuild --implementation LISP_IMPLEMENTATION COMMAND...
+where LISP_IMPLEMENTATION can be one of sbcl, clisp, ccl, ecl, or alisp or
+the path to a lisp executable.  Please note that only sbcl is fully supported
+at this time!
+
+Starting applications:
+
+  run APPLICATION   run this application
+  run --help        show help for applications
+
+If you do 'compile-implementation sbcl' then SBCL will be installed in
+target/ and used for future commands. If you don't run these commands
+(or you remove target/) then clbuild uses the 'sbcl' in your PATH.
+
+For configuration options (including for non-SBCL lisps), see clbuild.conf.
+
+EOF
+}
+
+help_run() {
+	cat <<EOF
+clbuild run APPLICATION [ARGS...]
+
+  run clim-launcher run clim-launcher (from clim-desktop)
+  run listener      run the McCLIM listener
+  run gsharp        run the Gsharp score editor 
+  run climacs       run the Climacs text editor
+  run closure [HOME_PAGE_URL]   run the CLOSURE web browser
+                    (required Debian packages: gif2png,libjpeg-progs)
+  run beirc         run the Beirc IRC client
+  run climplayer    run the CLIMPlayer music player
+                    (required Debian packages: mplayer, fileschanged, fam)
+  run demodemo      run some random CLIM examples
+  run clim-alerts   run CLIM alerts
+  run eclipse [DPY] run the eclipse window manager
+
+  run hunchentoot   run the Hunchentoot web server test
+  run webdav DIR    run the CL-WEBDAV server, serving directory DIR
+                    (required Debian packages: libssl-dev)
+
+  run parse-xml FILENAME
+                    check XML for well-formedness
+  run validate-xml FILENAME
+                    check XML for validity
+  run validate-relax-ng [--compact yes] XML-FILENAME SCHEMA-FILENAME
+                    check XML for validity against a Relax NG Schema
+  run html-to-xhtml HTML-FILENAME OUTPUT-FILENAME
+  run xhtml-to-html XML-FILENAME OUTPUT-FILENAME
+                convert between HTML 4 and XHTMl
+  run xuriella [--output OUTPUT-FILENAME] XSL-FILENAME XML-FILENAME
+                    apply an XSLT stylesheet
+
+  run vecto-demo         generate a test image using vecto
+  run adw-charting-demo  generate a test image using adw-charting
+
+  run ltk-demo      show a dialog using ltk
+
+  run clpython      run the CLPython REPL
+
+  run qt-tutorial-14  step 14 of the Qt tutorial
+
+  run any SYSTEM FORM  load this system, eval this form
+EOF
+}
+
+check_error() {
+    MISSING_PROGRAMS=$1 ${MISSING_PROGRAMS}
+    if [ -z "$2" ]; then
+	echo Error: Cannot find a working installation of "$1" 1>&2
+	exit 1
+    else
+        echo Warning: Cannot find a working installation of "$1"! 1>&2
+    fi
+}
+
+check_program() {
+    if ! "$1" --help 2>/dev/null >/dev/null; then
+        check_error $1 $2
+    else
+        echo "found `which $1`"
+    fi
+}
+
+# for programs that don't understand --help, or (like cvs) are stupid enough
+# to return a failure code when invoked using a correct --help option... 
+check_misdesigned_program() {
+    if ! which "$1" 2>&1 >/dev/null; then
+        check_error $1 $2
+    else
+        echo "found `which $1`"
+    fi
+}
+
+check() {
+    MISSING_PROGRAMS=""
+    echo "Checking for helper applications..."
+    check_misdesigned_program cvs
+    check_program svn
+    check_program darcs
+    check_program wget warn
+    check_program hg warn
+    # get_tarball is evil and unused anyway, so no need to bother the FreeBSD
+    # users with warnings about their non-GNU version of tar
+#    check_program tar
+    check_misdesigned_program curl warn
+    check_misdesigned_program git
+    check_misdesigned_program mktemp
+    if [ -z ${MISSING_PROGRAMS} ]; then
+        echo "Success: All helper applications found."
+    else
+        echo "WARNING: Some projects can not be build without" \
+        "the following programs:"
+        echo ${MISSING_PROGRAMS}
+    fi
+
+	
+    echo
+    echo "Checking Lisp startup..."
+    if ! test -e "${lisp% *}"; then
+      echo "Error: Don't have a Lisp system to bootstrap from."
+      echo "Please install e.g. ${implementation} and try again."
+      exit 1
+    elif ${lisp} $run_options $eval $quit >/dev/null; then
+	echo "Success: Lisp starts up using \"$lisp\""
+    else
+	echo "Error: Cannot run Lisp using \"$lisp\""
+	exit 1
+    fi
+
+    echo
+    echo "Looking for installable systems..."
+    count_systems
+}
+
+dumpcore() {
+    rm -f "$BASE"/.core-is-stale
+    rm -f "$BASE"/monster.core
+    recompile --dump "$@"
+}
+
+if test -f "$BASE"/monster.core; then
+    # Initially I thought this warning might be helpful, but it's usually
+    # false alarm:
+#     if test -f "$BASE/.core-is-stale"; then
+# 	echo "using $BASE/monster.core"
+# 	echo 'note: "clbuild update" was used since core file creation'
+# 	echo 'note: consider re-running dumpcore'
+#     fi
+    run_options="$core_option "$BASE"/monster.core $run_options"
+fi
+
+scan_projects() {
+    cat $1 | awk '{print $1;}' | while read name; do
+	if test -n "$name" -a x"$name" != 'x#'; then
+	    echo -n "$name "
+	fi
+    done
+}
+
+scan_installed() {
+    for f in ${source_dir}/*; do
+	name=`basename "$f"`
+	if test -d "$f"; then
+	    if test -d "$f"/_darcs \
+		-o -d "$f"/.git \
+		-o -d "$f"/.svn \
+		-o -d "$f"/CVS \
+		&& grep "^$name " "$BASE/dependencies" >/dev/null
+	    then
+		echo $name
+	    else
+		echo "skipping $f" 1>&2
+	    fi
+	fi
+    done
+}
+
+if test -f $BASE/my-projects; then
+    my_projects=`scan_projects "$BASE/my-projects"`
+else
+    my_projects=""
+fi
+main_projects=`scan_projects "$BASE/projects"`
+wnpp_projects=`scan_projects "$BASE/wnpp-projects"`
+all_projects="$main_projects $wnpp_projects $my_projects"
+
+implementations=`scan_projects "$BASE/implementations"`
+
+set_installed_projects() {
+    installed_projects=`scan_installed`
+}
+
+list() {
+    pattern="$1"
+
+    TMPDIR=`mktemp -d /tmp/clbuild.XXXXXXXXXX`
+    export TMPDIR
+    
+    cleanup() {
+        rm -rf $TMPDIR
+    }
+    trap cleanup EXIT
+
+    cat $PROJECT_LISTING_FILES | sort | grep -i -E "$pattern" | while read project rest; do
+	if test -n "$project" -a x"$project" != 'x#'; then
+	    description=`echo $rest | cut -d\# -f2`
+	    case `cd $source_dir && ${UPDATE_SCRIPT} --dry-run $project | cut -d: -f1` in
+		MISSING)
+		    status=u
+		    ;;
+		MISMATCH)
+		    status="!"
+		    ;;
+		OK)
+		    status="i"
+		    ;;
+		*)
+		    echo "failed to check URL" 1>&2
+		    ;;
+	    esac
+
+	    echo "$status $project" >>$TMPDIR/left
+	    echo $description >>$TMPDIR/right
+	fi
+    done
+    paste $TMPDIR/left $TMPDIR/right | expand -t 25
+    exit 0
+}
+
+ensure_clppcre() {
+    if ! test -d "$source_dir/cl-ppcre"; then
+	(
+	    cd "$source_dir"
+	    update_project cl-ppcre
+	    ln -f -s $source_dir/cl-ppcre/*.asd "${system_dir}"/
+	)
+    fi
+}
+
+write_slime_configuration() {
+    if test -n "$START_SLIME_USING_CORE"; then
+	cmd=preloaded
+    else
+	cmd=lisp
+    fi
+    cat <<EOF
+
+;; possibly controversial as a global default, but shipping a lisp
+;; that dies trying to talk to slime is stupid, so:
+(set-language-environment "UTF-8")
+(setq slime-net-coding-system 'utf-8-unix)
+
+;; load slime:
+(setq load-path (cons "${source_namestring}slime" load-path))
+(setq load-path (cons "${source_namestring}slime/contrib" load-path))
+(setq slime-backend "$BASE/.swank-loader.lisp")
+(setq inhibit-splash-screen t)
+(load "${source_namestring}slime/slime")
+(setq inferior-lisp-program "$BASE/clbuild $cmd")
+(slime-setup '(slime-fancy slime-tramp slime-asdf))
+(slime-require :swank-listener-hooks)
+(slime)
+EOF
+    # while we're at it, also write the swank loader
+    cat >$BASE/.swank-loader.lisp <<EOF
+(unless (find-package 'swank-loader)
+  (load "$source_dir/slime/swank-loader.lisp"))
+EOF
+}
+
+wnpp_check() {
+        error=""
+        for project in $main_projects; do
+	    for dependency in `grep "^$project " dependencies`; do
+		if ! grep "^$dependency " projects >/dev/null; then
+		    echo "Warning: main project $project depends on non-main project $dependency."
+		    error=1
+		fi
+	    done
+	done
+	if test -n "$error"; then
+	    echo
+	    echo "Please demote each project listed above to wnpp-projects,"
+	    echo "unless its dependency is known to be stable enough that"
+	    echo "it can be promoted to the main project list instead."
+	    echo
+	    echo "Alternatively, consider blacklisting parts of the projects"
+	    echo "that might be causing an unnecessary dependency of this"
+	    echo "kind."
+	else
+	    echo ok
+	fi
+}
+
+trash() {
+    mkdir -p "$BASE/trash"
+    basename=`basename $1`
+    today=`date +'%Y-%m-%d'`
+    trash="$BASE/trash/$today"
+    if test -e "$trash"; then
+	if test -e "$trash/$basename"; then
+	    trash=`mktemp -d $BASE/trash/${today}_${basename}_XXXXXXXXXX`
+	fi
+    else
+	mkdir $trash
+    fi
+    echo moving "$1" to "$trash/$basename"
+    mv "$1" "$trash"
+}
+
+clean_links() {
+    cd $BASE/systems
+    local quiet="$1"
+    for link in $(find "$BASE/systems" -maxdepth 1 -type l); do
+	local link_target=$(readlink "$link")
+	if [ ! -e $link_target ]; then
+	    if [ -z $quiet ]; then
+		echo "removing broken link from $link to $link_target"
+	    fi
+	    rm -- "$link"
+	fi
+    done
+}
+
+update_missing() {
+    local CLBUILD_DEPENDENCIES=no
+    for project in $1; do
+	if ! test -d "${source_dir}/$project"; then
+	    update $project
+	fi
+    done
+}
+
+case $1 in
+    check)
+	check
+	;;
+    list)
+	list "${2:-.*}"
+	;;
+    projects)
+	cat <<EOF
+
+************************************************************************
+*** The following projects are part of the main project list.  This list
+*** includes software that is tested regularly by clbuild committers and
+*** that (usually) compiles without problems on at least SBCL.
+
+$main_projects
+
+************************************************************************
+*** The following projects are part of the wnpp project list, including
+*** "work-needing and prospective projects".  (Some of these projects
+*** are known be broken at this point.)
+
+$wnpp_projects
+
+************************************************************************
+*** The following projects (if any) are part of your local project list:
+
+${my_projects:-(none)}
+
+
+************************************************************************
+
+Use "$0 install PROJECT" to download a project from one of these lists.
+
+EOF
+	;;
+    clean)
+	clean_fasls() {
+	    echo cleaning fasls in `pwd`
+	    find . -name "*.fasl" -exec rm {} \;
+	    find . -name "*.lx64fsl" -exec rm {} \;
+	}
+	if test $# -gt 1; then
+	    while test $# -gt 1; do
+		( cd "$source_dir/$2" && clean_fasls )
+		shift
+	    done
+	else
+	    core="$BASE"/monster.core
+	    if test -f "$core"; then
+		echo removing $core
+		rm -f "$core"
+	    fi
+	    cd $source_dir
+	    clean_fasls
+	fi
+	;;
+    trash|uninstall)
+	if test $# -le 1; then
+	    echo 'usage: $1 [PROJECT...]'
+	    exit 1
+	fi
+	while test $# -gt 1; do
+	    d="$source_dir/$2"
+	    if test -d "$d"; then
+		trash "$d"
+		clean_links "quiet"
+	    else
+		echo "cannot trash non-existing directory $d"
+	    fi
+	    shift
+	done
+	;;
+    show)
+	if test $# -ne 2; then
+	    exec 1>&2
+	    echo error: invalid number of arguments
+	    echo usage: $0 show PROJECT_NAME
+	    exit 1
+	fi
+	show_project $2
+	;;
+    mrproper)
+	for d in $source_dir/* $target_dir; do
+	    if test -d "$d"; then
+		trash "$d"
+	    else
+		echo "skipping $d"
+	    fi
+	done
+	echo "deleting monster.core systems/*"
+	rm -f "$BASE"/monster.core ${system_dir}/*
+	;;
+    skip)
+	touch "$source_dir/$2/.clbuild-skip-update"
+	;;
+    update|install)
+	unset clbuild_resume
+	unset extra
+	while test -n "$2"; do
+	    case "$2" in
+		--no-dependencies)
+		    CLBUILD_DEPENDENCIES="no"
+		    shift
+		    ;;
+		--dependencies)
+		    CLBUILD_DEPENDENCIES="yes"
+		    shift
+		    ;;
+		--resume)
+		    clbuild_resume="yes"
+		    shift
+		    ;;
+		--main-projects)
+		    extra="$extra $main_projects"
+		    shift
+		    ;;
+		--wnpp-projects)
+		    extra="$extra $wnpp_projects"
+		    shift
+		    ;;
+                --my-projects)
+                    extra="$extra $my_projects"
+                    shift
+                    ;;
+		--all-projects)
+		    extra="$extra $all_projects"
+		    shift
+		    ;;
+		--installed)
+		    set_installed_projects
+		    extra="$extra $installed_projects"
+		    shift
+		    ;;
+		*)
+		    break
+		    ;;
+	    esac
+	done
+	export clbuild_resume
+	export CLBUILD_DEPENDENCIES
+	shift
+	update "$@" $extra
+	;;
+    update-missing)
+	update_missing "${2:-$main_projects}"
+	;;
+    recompile|dumpcore)
+	operation="$1"
+	shift
+	unset projects
+	while test -n "$1"; do
+	    case "$1" in
+		--main-projects)
+		    projects="$projects $main_projects"
+		    shift
+		    ;;
+		--wnpp-projects)
+		    projects="$projects $wnpp_projects"
+		    shift
+		    ;;
+                --my-projects)
+                    projects="$projects $my-projects"
+                    shift
+                    ;;
+		--all-projects)
+		    projects="$projects $all_projects"
+		    shift
+		    ;;
+		--installed)
+		    CLBUILD_DEPENDENCIES="yes"
+		    set_installed_projects
+		    projects="$projects $installed_projects"
+		    shift
+		    ;;
+		*)
+		    break
+		    ;;
+	    esac
+	done
+	if test -z "$projects" -a $# -eq 0; then
+	    exec 1>&2
+	    echo "Error: arguments expected"
+	    echo "Usage:"
+	    echo "  clbuild $operation PROJECT1 PROJECT2 PROJECT3...  # only these"
+	    echo "  clbuild $operation --main-projects     # all in projects file"
+	    echo "  clbuild $operation --wnpp-projects     # all in wnpp-projects file"
+	    echo "  clbuild $operation --my-projects       # all in my-projects file"
+	    echo "  clbuild $operation --all-projects      # all three files"
+	    echo "  clbuild $operation --installed         # everything in source/"
+	    exit 1
+	fi
+	ensure_clppcre
+	case $operation in
+	    recompile)
+		recompile "$@" $projects
+		;;
+	    dumpcore)
+		dumpcore "$@" $projects
+		;;
+	esac
+	;;
+    updatesbcl)
+	exec 1>&2
+	echo "error: invalid command updatesbcl"
+	echo "Use 'clbuild update sbcl' instead."
+	exit 1
+	;;
+    buildsbcl)
+	exec 1>&2
+	echo "error: invalid command buildsbcl"
+	echo "Use 'clbuild compile-implementation sbcl' instead."
+	exit 1
+	;;
+    compile-implementation)
+	case $2 in
+	    sbcl)
+		if [ -n "$CCL" ]; then
+		    echo "Cowardly refusing to build SBCL when \$CCL is set." 1>&2
+		    exit 1
+		fi
+		if ! test -d ${source_dir}/sbcl; then
+		    echo "sbcl not found, try running 'clbuild update sbcl'" 1>&2
+		    exit 1
+		fi
+                # Enable threads
+		if test -z "$windowsp" -a -z "$darwinppc"; then
+		    ctf=$source_dir/sbcl/customize-target-features.lisp
+		    if test -f $ctf; then
+			echo $ctf already exists
+		    else
+			echo creating $ctf
+			cat >$ctf <<EOF
+(lambda (list)
+  (pushnew :sb-thread list)
+  list)
+EOF
+		    fi
+		fi
+		(cd $source_dir/sbcl; sh make.sh "$3"; SBCL_HOME= INSTALL_ROOT=${target_dir} sh install.sh)
+		;;
+	    ccl)
+		if [ -z "$CCL" ]; then
+		    echo "can't build CCL unless \$CCL is set." 1>&2
+		    exit 1
+		fi
+		if ! test -d ${source_dir}/ccl; then
+		    echo "ccl not found, try running 'clbuild update ccl'" 1>&2
+		    exit 1
+		fi
+		ccl_old=`dirname "$CCL"`
+		ccl_new=${source_dir}/ccl
+		case `uname` in
+		    Linux)
+			case `uname -m` in
+			    x86_64)
+				headerdir=x86-headers64
+				binary=lx86cl64
+				image=LX86CL64
+				;;
+			    *)
+				echo "don't know how to build CCL for your ISA, please adjust clbuild as needed" 2>&1
+				exit 1
+				;;
+			esac
+			;;
+                    Darwin)
+                        case `uname -p` in
+                            powerpc)
+                                headerdir=darwin-headers
+                                binary=dppccl
+                                image=dppccl.image
+                                ;;
+                            i386)
+                                headerdir=darwin-x86-headers64
+                                binary=dx86cl64
+                                image=dx86cl64.image
+                                ;;
+                            *)
+				echo "don't know how to build CCL for your ISA, please adjust clbuild as needed" 2>&1
+				exit 1
+                                ;;
+                        esac
+                        ;;
+		    *)
+			echo "don't know how to build CCL for your OS, please adjust clbuild as needed" 2>&1
+			exit 1
+			;;
+		esac
+		if ! test -f "$ccl_old/$image"; then
+		    echo "can't find existing CCL installation in $ccl_old" 2>&1
+		    exit 1
+		fi
+		# cp $ccl_old/$headerdir/libc/*.cdb $ccl_new/$headerdir/libc/
+		cp -r $ccl_old/$headerdir $ccl_new/ || true
+		cp $ccl_old/$binary $ccl_old/$image $ccl_new/
+		cd $ccl_new
+		chmod +x $binary
+		./$binary -e '(rebuild-ccl :force t)'
+		cat <<EOF
+
+
+Done compiling CCL.
+Set this in clbuild.conf to enable the new CCL:
+  CCL=$ccl_new/$binary
+EOF
+		;;
+	    clisp)
+                if [ `uname` = 'Darwin' ]; then
+                    LIBSIGSEGV_PREFIX=/sw
+                else
+                    LIBSIGSEGV_PREFIX=/usr
+                fi
+		if ! test -d ${source_dir}/clisp; then
+		    echo "clisp not found, try running 'clbuild update clisp'" 1>&2
+		    exit 1
+		fi
+		cd $source_dir/clisp
+		#./autogen.sh
+		ulimit -s 16384
+		rm -f src/config.cache
+		./configure --with-libsigsegv-prefix=${LIBSIGSEGV_PREFIX} --prefix=$target_dir
+		cd src
+		make
+                make install
+		;;
+            ecl)
+                cd $source_dir/ecl
+                # If we don't clean the directory first, we get strange errors
+                # on some mac systems, telling that there is no applicable
+                # type for cl-fixnum..
+                make distclean || make clean || true
+                ./configure --enable-slow-config --with-system-gmp=no \
+                            --prefix=${target_dir}
+                make
+                make install
+                ;;
+
+	    *)
+		echo "unrecognized argument.  valid are: sbcl ccl clisp" 2>&1
+		exit 1
+		;;
+	esac
+	;;
+    lisp)
+	shift;
+        clbuild_lisp "$@"
+        ;;
+    prepl)
+	shift;
+	if test -f "$BASE"/monster.core; then
+	    common_options="$core_option "$BASE"/monster.core $common_options"
+	fi
+        clbuild_lisp "$@" \
+	    $eval "(asdf:operate 'asdf:load-op :hemlock.tty)" \
+	    $eval "(hemlock:repl)"
+        ;;
+    preloaded)
+	shift;
+	if test -f "$BASE"/monster.core; then
+	    common_options="$core_option "$BASE"/monster.core $common_options"
+	fi
+        clbuild_lisp "$@"
+        ;;
+    slime)
+	shift
+	emacs_args="$@"
+	emacs=${EMACS-emacs}
+	write_slime_configuration >"$BASE/.start-slime.el"
+	$emacs -l "$BASE/.start-slime.el" ${emacs_args}
+	;;
+    slime-configuration)
+	shift
+	echo ';; add this to your ~/.emacs to use clbuild and its slime:'
+	echo ';;'
+	write_slime_configuration
+	;;
+    make-project)
+	if test $# -ne 2; then
+	    exec 1>&2
+	    echo error: invalid number of arguments
+	    echo usage: $0 create-new-project NEW_PROJECT_NAME
+	    exit 1
+	fi
+	project="$2"
+	if echo "$project" | grep '[ :/\\"'\'']' >/dev/null; then
+	    exec 1>&2
+	    echo error: invalid project name
+	    exit 1
+	fi
+	for existing in $all_projects; do
+	    if test x"$existing" = x"$project"; then
+		exec 1>&2
+		echo error: project name already known: "$project"
+		exit 1
+	    fi
+	done
+	if test -f "$source_dir/$project"; then
+	    exec 1>&2
+	    echo error: "$source_dir/$project" already exists
+	    exit 1
+	fi
+	mkdir "$source_dir/$project"
+	cd "$source_dir/$project"
+	cat >>$project.asd <<EOF
+;;; -*- mode: lisp; indent-tabs: nil -*-
+
+(defsystem :$project
+  :serial t
+  ;; add new files to this list:
+  :components ((:file "package") (:file "$project"))
+  :depends-on (#+nil :cl-ppcre))
+EOF
+	cat >>package.lisp <<EOF
+;;; -*- mode: lisp; indent-tabs: nil -*-
+
+(defpackage :$project
+  (:use :cl)
+  (:export #:test))
+EOF
+	cat >>$project.lisp <<EOF
+;;; -*- mode: lisp; indent-tabs: nil -*-
+
+(in-package :$project)
+
+(defun test ()
+  (format t "Hello World from new project $project~%"))
+EOF
+	cat >>$project.sh <<EOF
+#!/bin/sh
+clbuild run any :$project "($project:test)"
+EOF
+	chmod +x "$project.sh"
+	git init
+	git add .
+	git commit -m "New project $project initialized by clbuild"
+	register_asd "$project"
+	cat <<EOF
+
+A new project directory $source_dir/$project has been set up.
+
+Run
+  $source_dir/$project.sh
+
+to try it from the shell or run clbuild slime and type this in the lisp
+listener:
+
+  (asdf:operate 'asdf:load-op :$project)
+  ($project:test)
+
+EOF
+        ;;
+    run)
+	shift
+	case $1 in
+	    --help)
+		help_run
+		exit 0
+		;;
+	    any)
+		if test $# -ne 3; then
+		    exec 1>&2
+		    echo error: invalid number of arguments
+		    echo usage: clbuild run any SYSTEM FORM
+		    exit 1
+		fi
+		system="$2"
+		form="$3"
+		common_options="$noinform $common_options"
+		if test -f "$BASE"/monster.core; then
+		    common_options="$core_option "$BASE"/monster.core $common_options"
+		fi
+		clbuild_lisp \
+		    $eval "(asdf:operate 'asdf:load-op :$system)" \
+		    $eval "$form" \
+		    $eval "$quit"
+		exit $?
+		;;
+	    climplayer)
+		check_program fileschanged
+		check_misdesigned_program mplayer
+		;;
+	    hunchentoot|webdav)
+		if ! test -f /usr/lib/libssl.so; then
+		    echo "WARNING: /usr/lib/libssl.so not found, did you install OpenSSL?"
+		    echo "(type RET to continue anyway)"
+		    read
+		fi
+		;;
+	    perfectstorm)
+		if ! test -f /usr/include/GL/glut.h; then
+		    echo "WARNING: /usr/include/GL/glut.h not found, did you install OpenGL libraries?"
+		    echo "(type RET to continue anyway)"
+		    read
+		fi
+		;;
+	    hemlock-slave)
+		# override --disable-debugger etc. for this command
+		run_options="$common_options"
+		;;
+	esac
+	start_application "$@"
+	;;
+    record-dependencies)
+	cd "$BASE"
+	update_missing "$all_projects"
+	# hack: don't want the core here
+	run_options="$build_options"
+	start_application record-dependencies \
+	    "$main_projects $wnpp_projects" \
+	    dependencies
+	start_application record-dependencies \
+	    "$my_projects" \
+	    my-dependencies.new
+	wnpp_check
+	if ! test -f my-dependencies; then
+	    mv my-dependencies.new my-dependencies
+	elif ! cmp my-dependencies.new my-dependencies >/dev/null; then
+	    mv -i my-dependencies.new my-dependencies
+	fi
+	;;
+    check-urls)
+	cd "$source_dir"
+	for project in ${2:-$all_projects}; do
+	    ${UPDATE_SCRIPT} --dry-run $project
+	done
+	;;
+    clean-links)
+	clean_links
+	;;
+    rebuild-links)
+	rm -f ${system_dir}/*
+	for project in ${all_projects}; do
+	    register_asd $project
+	done
+	link_extra_asds
+	count_systems
+	;;
+    register-asd)
+	project="$2"
+	dir="$source_dir/$project"
+
+	if test -z "$project"; then
+	    echo "usage: clbuild register-asd PROJECT" 1>&2
+	    exit 1
+	fi
+	if ! test -d "$dir"; then
+	    echo "cannot find $dir" 1>&2
+	    exit 1
+	fi
+
+	register_asd $project
+	link_extra_asds
+	count_systems
+	;;
+    pwd)
+	echo $BASE
+	;;
+    wnpp-check)
+        wnpp_check
+        ;;
+    diff)
+	diff="${source_dir}/.diff"
+	cp /dev/null "$diff"
+	cd "${source_dir}"
+	darcs diff -u >>"$diff"
+	set +e
+	for f in *; do
+	    g="${source_dir}/$f"
+	    if test -d "$g"; then
+		cd "$g"
+		echo -n diffing $f... 1>&2
+		if test -d CVS; then
+		    cvs diff -u 2>/dev/null | grep -v '^?' >>"$diff"
+		elif test -d .svn; then
+		    svn diff >>"$diff"
+		elif test -d '{arch}'; then
+		    baz diff >>"$diff"
+		elif test -d _darcs; then
+		    darcs diff -u >>"$diff"
+		elif test -d .git; then
+		    git diff >>"$diff"
+		else
+		    echo -n " FAILED" 1>&2
+		fi
+		echo 1>&2
+	    fi
+	done
+	less "$diff"
+	;;
+    --long-help)
+	case $2 in
+	    run)
+		help_run
+		;;
+	    *)
+		long_help
+	esac
+	;;
+    help|-H|""|--help|-h)
+	case $2 in
+	    run)
+		help_run
+		;;
+	    *)
+		short_help
+	esac
+	;;
+    *)
+	echo "invalid command $1, try --help for help"
+	exit 1
+esac

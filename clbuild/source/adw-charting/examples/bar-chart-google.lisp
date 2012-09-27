@@ -1,0 +1,7 @@
+(dolist (chart-type '(:v-bar :h-bar :v-gbar))
+  (with-gchart (chart-type 400 300)
+    (add-series "A" '((-1 -2) (0 4) (1 5) (4 6) (5 -3)))
+    (add-series "B" '((-1 4) (0 -2) (1 6) (5 -2) (6 5)) :color (make-color "ff0000"))
+    (add-features :label)
+    (add-title chart-type)
+    (save-file (format nil "bar-chart-google-~a.png" chart-type))))

@@ -1,0 +1,52 @@
+? Map_Sym.txt
+? hyperdoc.fasl
+? hyperdoc.lisp
+? hyperdoc.patch
+? hyperspec-lookup.fasl
+? package.fasl
+? variable.fasl
+Index: hyperspec-lookup.lisp
+===================================================================
+RCS file: /project/hyperspec-lookup/cvsroot/hyperspec-lookup/hyperspec-lookup.lisp,v
+retrieving revision 1.1.1.1
+diff -u -r1.1.1.1 hyperspec-lookup.lisp
+--- hyperspec-lookup.lisp	13 Nov 2003 19:12:22 -0000	1.1.1.1
++++ hyperspec-lookup.lisp	14 Nov 2003 11:03:28 -0000
+@@ -5,6 +5,12 @@
+ 
+ (in-package :hs)
+ 
++(defvar *hyperdoc-base-uri* t) ;; KLUDGE
++
++(defun hyperdoc-lookup (base symbol type)
++  (declare (ignore base type))
++  (lookup (symbol-name symbol)))
++
+ (defun read-sym-file (&optional (pathname *hyperspec-map-file*))
+   "Read the sym file and return it as an alist."
+   (let ((alist nil))
+Index: variable.lisp
+===================================================================
+RCS file: /project/hyperspec-lookup/cvsroot/hyperspec-lookup/variable.lisp,v
+retrieving revision 1.1.1.1
+diff -u -r1.1.1.1 variable.lisp
+--- variable.lisp	13 Nov 2003 19:12:22 -0000	1.1.1.1
++++ variable.lisp	14 Nov 2003 11:03:28 -0000
+@@ -9,7 +9,7 @@
+   "Table of symbol -> partial-URL mappings for the Common Lisp
+ Hyperspec.")
+ (defparameter *hyperspec-map-file*
+-  #p"/usr/share/doc/hyperspec/Data/Map_Sym.txt"
++  (merge-pathnames "Map_Sym.txt" *load-pathname*)
+   "Pathname for file that maps symbol to partial-URLs for the Common
+ Lisp Hyperspec.")
+ 
+@@ -23,7 +23,7 @@
+ System MetoObject Protocol.")
+   
+ (defparameter *mop-map-file*
+-  #p"/home/eenge/dev/net-nittin-hyperspec/Mop_Sym.txt"
++  (merge-pathnames "Mop_Sym.txt" *load-pathname*)
+   "Pathname for file that maps symbol to partial-URLs for the Common
+ Lisp Object System MetoObject Protocol.")
+ 

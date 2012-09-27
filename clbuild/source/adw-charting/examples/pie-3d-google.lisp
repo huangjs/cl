@@ -1,0 +1,6 @@
+(with-gchart (:pie-3d 400 200)
+  (add-slice "foo" 10d0)
+  (add-slice "bar" 10d0)
+  (add-slice "baz" 20d0)
+  (add-features :label)
+  (save-file "pie-3d-google.png"))

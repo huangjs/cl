@@ -1,0 +1,141 @@
+<!--
+    image-data-plugins.xml
+
+    Copyright (c) 2006, Jack D. Unrue
+-->
+<section id="Image Data Plugins">
+  <title>Image Data Plugins</title>
+  <indexterm><primary>Image Data Plugins</primary></indexterm>
+
+  <bridgehead renderas="sect2">Rationale</bridgehead>
+
+  <para role="normal">
+    An important feature of a user interface library is the display of
+    graphical images, which are aggregates of pixel data and color information.
+    The Windows GDI provides adequate support
+    <footnote>
+      <para role="small">
+        Nowadays, the Windows platform offers alternatives, such as GDI+
+        which adds among other features native support for additional image
+        formats. Graphic-Forms sticks with plain-old GDI to avoid the
+        possibility of these alternatives not being installed.
+      </para>
+    </footnote>
+    for the basic tasks of
+    creating system objects populated with image data, drawing on them,
+    rendering them on the screen, and querying their attributes. Central to the
+    GDI concept of an image is the bitmap. This format has a long history which
+    becomes evident as one learns about features designed at a time when memory
+    and CPU performance were markedly constrained compared to today's machines.
+    For our purposes, the GDI bitmap serves as a normalized representation of
+    image data. Graphic-Forms encapsulates gdi bitmap functionality via the
+    graphics-context and image classes, plus related functions and macros.
+  </para>
+
+  <para role="normal">
+    A traditional Windows application embeds bitmap data within its binary
+    executable (or DLL) via the Windows resource compiler. Such an application
+    then uses Win32 API calls to access the resource data and instantiate
+    bitmap objects. Windows applications may also choose to store image data
+    in other locations, such as within files on disk. Graphic-Forms relies on
+    this latter arrangement instead of the resource infrastructure.
+    <footnote>
+      <para role="small">
+        As do GUI bindings in other languages such as Java.
+      </para>
+    </footnote>
+  </para>
+
+  <bridgehead renderas="sect2">Image file loading</bridgehead>
+
+  <para role="normal">
+    When an image file is to be loaded, such as when a pathname is supplied to
+    the <filename>:file</filename> keyword for the image or icon-bundle classes,
+    the library traverses a <emphasis>list</emphasis> of file loader functions
+    bound to the <emphasis>gfg::*image-plugins*</emphasis> variable,
+    funcall'ing each one in turn until one of them returns a non-nil
+    <emphasis>list</emphasis>, or the members of
+    <emphasis>gfg::*image-plugins*</emphasis> is exhausted. In the latter
+    case, a toolkit-error is raised to notify application code that no
+    registered plugin supports the file.
+  </para>
+
+  <para role="normal">
+    Under normal circumstances, the library will manage the
+    <emphasis>list</emphasis> bound to
+    <emphasis>gfg::*image-plugins*</emphasis> behind the scenes. However,
+    applications requiring precise control over loader function calling
+    order may directly modify <emphasis>gfg::*image-plugins*</emphasis>
+    <emphasis>but must take care to do so properly.</emphasis> Improper
+    modifications, such as accidentally assigning some other data structure,
+    or adding the wrong kind of object, will result in program errors. 
+  </para>
+
+  <bridgehead renderas="sect2">Plugins bundled with the library</bridgehead>
+
+  <para role="normal">
+    Graphic-Forms includes two plugins in the distribution. 
+  </para>
+
+  <para role="normal">
+    The <emphasis>Default</emphasis> plugin is available to applications
+    unless the <filename>:skip-default-plugin</filename> keyword symbol
+    is pushed onto <emphasis>*features*</emphasis> prior to loading the
+    system. This plugin implements support for the BMP and ICO formats
+    directly in Common Lisp, thus imposing no additional external dependencies
+    on applications.
+  </para>
+
+  <para role="normal">
+    The <emphasis>ImageMagick</emphasis> plugin is loaded when the
+    <filename>:load-imagemagick-plugin</filename> keyword symbol is pushed
+    onto <emphasis>*features*</emphasis> prior to loading the system. Thanks
+    to the ImageMagick library, this plugin supports most of the image formats
+    one might expect to need. However, it requires additional preparation
+    compared to the <emphasis>Default</emphasis> plugin. Developers must
+    download the ImageMagick Q16 distribution and install it.
+    <footnote>
+      <para role="small">
+        See the main ImageMagick <ulink url="http://imagemagick.org">website</ulink>
+        for downloads and documentation.
+      </para>
+    </footnote>
+    When delivering applications, the developer must execute the ImageMagick
+    installation process, or else replicate the expected directory structure and
+    registry entries. Also, bear in mind that due to the rich functionality
+    offered by ImageMagick, applications will pull in additional DLLs and may
+    have larger memory requirements. 
+  </para>
+
+  <bridgehead renderas="sect2">Implementing additional plugins</bridgehead>
+
+  <para role="normal">
+    <emphasis role="bold">Note:</emphasis> this subsection will gain additional
+    content once the plugin system has matured further.
+  </para>
+
+  <para role="normal">
+    As described in the rationale, the role of an image data plugin is to
+    translate an external library representation of image data. In a nutshell,
+    this is accomplished by subclassing image-data-plugin and implementing
+    certain generic functions. Third parties may implement and register
+    additional plugins in an identical fashion.
+  </para>
+
+  <para role="normal">
+    As a convenience, the symbol <emphasis>gfg::*image-file-types*</emphasis>
+    is bound to an <emphasis>alist</emphasis> where the first of each pair is
+    a string naming a
+    file extension, and the second of each pair is a string supplying a brief
+    description of the format. Plugin developers may retrieve these pairs to
+    avoid duplication of the same information in their own code.
+  </para>
+
+  <para role="normal">
+    Developers are welcome to inspect the source code of bundled plugins
+    (located under <filename>src/uitoolkit/graphics/plugins</filename> in
+    the Graphic-Forms distribution) for additional hints as to how these
+    plugins may be implemented.
+  </para>
+
+</section>

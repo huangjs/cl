@@ -1,0 +1,372 @@
+<?xml version="1.0"?>
+<!--
+    gfg-class-symbols.xml
+
+    Copyright (c) 2007, Jack D. Unrue
+-->
+
+<symbols name="gfg">
+
+  <!-- CONDITIONS -->
+
+  <!-- CLASSES -->
+
+  <class name="cursor">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      This class encapsulates a native cursor handle. A cursor is an image whose
+      screen location is determined by a pointing device; when the user moves the
+      pointing device, the system changes the location of the cursor image to
+      match.
+    </description>
+    <initargs>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":file">
+        <description>
+          Specifies a <refclhs>pathname</refclhs> for a file containing cursor image
+          data.
+        </description>
+      </argument>
+      <argument name=":hotspot">
+        <description>
+          A <reftopic>gfs:point</reftopic> identifying the pixel location within the
+          cursor image that determines which screen location is affected by mouse
+          events. By default, the location (0, 0) is used. For cursors loaded
+          via the :system initarg and cursors loaded from *.cur files, the hotspot
+          is predefined.
+        </description>
+      </argument>
+      <argument name=":image">
+        <description>
+          Specifies a <reftopic>gfg:image</reftopic> whose data will be copied and
+          transformed into a cursor.
+        </description>
+      </argument>
+      <argument name=":system">
+        <description>
+          Identifies the cursor to be displayed. See <reftopic>system cursors</reftopic>
+          for a list of cursor identifiers.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:with-cursor</reftopic>
+      <reftopic>gfw:with-wait-cursor</reftopic>
+      <reftopic>gfw:set-cursor</reftopic>
+      <reftopic>gfw:show-cursor</reftopic>
+      <reftopic>gfw:cursor-of</reftopic>
+    </seealso>
+  </class>
+
+  <class name="font">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      This class encapsulates a native font handle.
+    </description>
+    <initargs>
+      <argument name=":data">
+        <description>
+          A <reftopic>gfg:font-data</reftopic> object. If this initarg
+          is specified, then a value for the :gc
+          initarg is also required.
+        </description>
+      </argument>
+      <argument name=":gc">
+        <description>
+          A <reftopic>gfg:graphics-context</reftopic> object. If this
+          initarg is specified, then a value for the
+          :data initarg is also required.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfg:data-object</reftopic>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfg:font-metrics</reftopic>
+      <reftopic>gfg:text-extent</reftopic>
+    </seealso>
+  </class>
+
+  <class name="graphics-context">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      This class wraps a Win32 device context, thus instances of this class
+      are used to perform drawing operations. Application code usually obtains
+      a <reftopic>gfg:graphics-context</reftopic> via
+      <reftopic>gfw:event-paint</reftopic>, but initargs are also provided to
+      create a context associated with a <reftopic>gfg:image</reftopic> or a
+      <reftopic>gfw:widget</reftopic> outside the scope of a paint event.
+    </description>
+    <initargs>
+      <argument name=":image">
+        <description>
+          A <reftopic>gfg:image</reftopic> on which to draw or whose graphics
+          attributes are to be manipulated.
+        </description>
+      </argument>
+      <argument name=":widget">
+        <description>
+          A <reftopic>gfw:widget</reftopic> on which to draw or whose graphics
+          attributes are to be manipulated.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="icon-bundle">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class encapsulates a collection of Win32 icon handles. Icons are used to
+        decorate window title bars, to represent a file or application on the desktop,
+        to represent an application in the &lt;Alt&gt;&lt;Tab&gt; task switching dialog,
+        and in the Windows Start menu. See the <refwin32api>Icons in Win32</refwin32api>
+        topic of the MSDN documentation for further discussion of standard icon sizes,
+        color depths, and file format.
+      </para>
+      <para role="normal">
+        This class supports multiple-sized versions of the same image. Library
+        components that consume icon-bundle instances can, in some cases, select a
+        size appropriate for the context in which the icon is needed. To retrieve
+        or set an individual <reftopic>gfg:image</reftopic>, call
+        <reftopic>gfg:icon-image-ref</reftopic>. To find out how many images
+        are stored, call <reftopic>gfg:icon-bundle-length</reftopic>.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":file">
+        <description>
+          A <refclhs>pathname</refclhs> identifying a file to be loaded, as described
+          for the initarg of the same name for <reftopic>gfg:image</reftopic>. Note
+          that the ICO format can store multiple images, all of which will be loaded.
+          Since icon-bundle needs a transparency mask for each image in order to create
+          Windows icons, a value may be supplied for the
+          :transparency-pixel initarg of this class;
+          otherwise, the pixel color at location (0, 0) in each image is used by
+          default.
+        </description>
+      </argument>
+      <argument name=":images">
+        <description>
+          A <refclhs>list</refclhs> of <reftopic>gfg:image</reftopic> objects. Since
+          icon-bundle needs a transparency mask for each image to create Windows icons,
+          the application may either SETF <reftopic>gfg:transparency-pixel</reftopic>
+          for each image ahead of time (especially important when the proper pixel
+          location is different from one image to the next), or provide a value for
+          the :transparency-pixel initarg of this class.
+          By default, the pixel color at location (0, 0) in each image will be used.
+        </description>
+      </argument>
+      <argument name=":system">
+        <description>
+          A <reftopic label="system icon">system icons</reftopic> constant.
+        </description>
+      </argument>
+      <argument name=":transparency-pixel">
+        <description>
+          A <reftopic>gfs:point</reftopic> identifying a pixel location providing
+          the background <reftopic>gfg:color</reftopic> to be used when creating a
+          transparency mask. This location applies to all images except system icons.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>Image Data Plugins</reftopic>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfg:icon-bundle-length</reftopic>
+      <reftopic>gfg:icon-image-ref</reftopic>
+      <reftopic>gfg:load</reftopic>
+      <reftopic>gfg:push-icon-image</reftopic>
+    </seealso>
+  </class>
+
+  <class name="image">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      This class wraps a Win32 bitmap handle. Instances may be drawn using
+      <reftopic>gfg:draw-image</reftopic> or displayed within certain controls
+      such as a <reftopic>gfw:label</reftopic>. Image data may be deserialized
+      from a variety of formats.
+    </description>
+    <initargs>
+      <argument name=":file">
+        <description>
+          A <refclhs>pathname</refclhs> identifying an image file to be loaded.
+        </description>
+      </argument>
+      <argument name=":transparency-pixel">
+        <description>
+          A <reftopic>gfs:point</reftopic> identifying a pixel location providing
+          the background <reftopic>gfg:color</reftopic> to be used when creating
+          a transparency mask. This location applies to all images except system icons.
+        </description>
+      </argument>
+      <argument name=":size">
+        <description>
+          A <reftopic>gfs:size</reftopic> specifying the dimensions of a new image
+          to be created.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>Image Data Plugins</reftopic>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfg:depth</reftopic>
+      <reftopic>gfg:load</reftopic>
+      <reftopic>gfg:data-object</reftopic>
+      <reftopic>gfg:image-data</reftopic>
+      <reftopic>gfs:size</reftopic>
+      <reftopic>gfg:transparency-mask</reftopic>
+      <reftopic>gfg:with-image-transparency</reftopic>
+    </seealso>
+  </class>
+
+  <class name="image-data">
+    <description>
+      Instances of this class represent images in external formats. Such
+      formats may be loaded and then converted to a <reftopic>gfg:image</reftopic>
+      object. The tasks of setting or querying image attributes is delegated to a
+      plugin object.
+    </description>
+    <initargs>
+      <argument name=":plugin">
+        <description>
+          An instance of <reftopic>gfg:image-data-plugin</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>Image Data Plugins</reftopic>
+      <reftopic>gfg:depth</reftopic>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfg:load</reftopic>
+      <reftopic>gfg:data-object</reftopic>
+      <reftopic>gfs:size</reftopic>
+    </seealso>
+  </class>
+
+  <class name="image-data-plugin">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      This is the base class of plugin objects that encapsulate external
+      library representations of images.
+    </description>
+    <initargs>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>Image Data Plugins</reftopic>
+      <reftopic>gfg:load</reftopic>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <!-- STRUCTURES -->
+
+  <structure name="color">
+    <description>
+      This structure represents a color in the RGB color model. Each color
+      component value is specified in the range 0 - 255.
+    </description>
+    <seealso>
+      <reftopic>gfg:copy-color</reftopic>
+      <reftopic>gfg:make-color</reftopic>
+      <reftopic>gfg:color-red</reftopic>
+      <reftopic>gfg:color-green</reftopic>
+      <reftopic>gfg:color-blue</reftopic>
+      <reftopic>gfg:color->rgb</reftopic>
+      <reftopic>gfg:rgb->color</reftopic>
+      <reftopic label="Standard Colors">colors</reftopic>
+    </seealso>
+  </structure>
+
+  <structure name="font-data">
+    <description>
+      This structure describes logical attributes of a
+      <reftopic>gfg:font</reftopic> that the system font mapper can use
+      to find a match. Thus, application code can use this structure to
+      request fonts.
+    </description>
+    <seealso>
+      <reftopic>gfg:copy-font-data</reftopic>
+      <reftopic>gfg:font</reftopic>
+      <reftopic>gfg:data-object</reftopic>
+      <reftopic>gfg:make-font-data</reftopic>
+    </seealso>
+  </structure>
+
+  <structure name="font-metrics">
+    <description>
+      This structure describes attributes of a <reftopic>gfg:font</reftopic>
+      which application code may use to position and align graphical elements.
+    </description>
+    <seealso>
+      <reftopic>gfg:ascent</reftopic>
+      <reftopic>gfg:average-char-width</reftopic>
+      <reftopic>gfg:copy-font-metrics</reftopic>
+      <reftopic>gfg:descent</reftopic>
+      <reftopic>gfg:font-data</reftopic>
+      <reftopic>gfg:height</reftopic>
+      <reftopic>gfg:leading</reftopic>
+      <reftopic>gfg:make-font-metrics</reftopic>
+      <reftopic>gfg:maximum-char-width</reftopic>
+      <reftopic>gfg:metrics</reftopic>
+    </seealso>
+  </structure>
+
+</symbols>

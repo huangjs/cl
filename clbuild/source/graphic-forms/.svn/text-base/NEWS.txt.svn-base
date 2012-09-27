@@ -1,0 +1,287 @@
+
+
+
+==============================================================================
+
+Release 0.8.0 of Graphic-Forms, a Common Lisp library for Windows GUI
+programming, is now available. The API and feature set is still evolving,
+so this is still another alpha release.
+
+New in this release:
+
+. Added a new macro GFW:DEFMENU2 and associated function GFW:MAKE-MENU
+  to allow applications to create reusable menu factories.
+
+. Latest CFFI is required to take advantage of built-in support for the
+  stdcall calling convention.
+
+. Integrated patch submitted by Leon van Dyk that enables dialog-only
+  applications. The GFT::STANDALONE-DIALOG function demonstrates this
+  feature, but NOTE that when this is invoked from SLIME, an old problem
+  reappears where the dialog is not initially visible; however, the same
+  demo run directly from the REPL works OK.
+
+. Ported the library to Allegro CL 8.0.
+
+. Upgraded to LispWorks 5.0.1 (note: 4.4.6 is no longer supported)
+
+. Implemented GFW:STATUS-BAR which currently allow a single text field.
+  Multi-part status bars, and nested widget support, will be added in a
+  future release.
+
+. Implemented GFW:PROGRESS-BAR, which provides visual progress feedback. This
+  control can be configured for horizontal or vertical orientation, and can
+  display a segmented or continuous indicator.
+
+. Simplified the mechanism for specifying fixed, non-resizable windows by
+  adding a new GFW:TOP-LEVEL style called :FIXED-SIZE and enhancing GFW:PACK
+  to do the right thing if that style flag has been specified.
+
+. Greatly expanded the symbols for accessing predefined colors, and now
+  provide access to system color settings in a similar manner.
+
+. Implemented a new graphics context function GFG:CLEAR that is a convenient
+  way to fill a window or image with a background color.
+
+. GFS:OBTAIN-SYSTEM-METRICS now includes version information for comctl32.dll
+  and shell32.dll.
+
+The README.txt file in the release zip file also has additional important
+information about this release.
+
+Download the release zip file here:
+http://prdownloads.sourceforge.net/graphic-forms/graphic-forms-0.8.0.zip?download
+
+The project website is:
+http://common-lisp.net/project/graphic-forms/
+
+Jack Unrue
+jdunrue (at) gmail (dot) com
+20 August 2007
+
+==============================================================================
+
+Release 0.7.0 of Graphic-Forms, a Common Lisp library for Windows GUI
+programming, is now available. This is an alpha release, meaning that
+the feature set and API have not yet stabilized.
+
+Here is what's new in this release:
+
+. Implemented cursor support. Applications can choose from the system-defined
+  cursors or load them from external files. Also provided are convenience
+  macros GFW:WITH-CURSOR and GFW:WITH-WAIT-CURSOR.
+
+. Implemented a new layout manager called GFW:BORDER-LAYOUT which allows
+  applications to assign children to regions around the perimeter of a
+  window or the center.
+
+. Implemented GFS:OBTAIN-SYSTEM-METRICS as a higher-level interface to the
+  Win32 GetSystemMetrics() API. It returns a hash table containing slightly
+  post-processed system metrics values.
+
+. Implemented the function GFW:PROCESS-EVENTS to help applications flush
+  the event queue of pending events.
+
+. GFW:APPEND-ITEM now accepts an optional classname argument so that
+  applications can use custom item classes.
+
+. Implemented a new macro GFW:WITH-ROOT-WINDOW which manages the lifetime
+  of an instance of GFW:ROOT-WINDOW for use within the macro body.
+
+. Fixed ASDF loading problems.
+
+The README.txt file in the release zip file also has additional important
+information about this release.
+
+Download the release zip file here:
+http://prdownloads.sourceforge.net/graphic-forms/graphic-forms-0.7.0.zip?download
+
+The project website is:
+http://common-lisp.net/project/graphic-forms/
+
+Jack Unrue
+jdunrue (at) gmail (dot) com
+1 December 2006
+
+==============================================================================
+
+Release 0.6.0 of Graphic-Forms, a Common Lisp library for Windows GUI
+programming, is now available. This is an alpha release, meaning that
+the feature set and API have not yet stabilized.
+
+Here is what's new in this release:
+
+. CFFI snapshot 060925 or later is now required if you are running
+  CLISP 2.40 or later (due to a change in the argument list of
+  CLISP's FFI:FOREIGN-LIBRARY-FUNCTION).
+
+. Completely revamped the Programming Reference. DocBook/XSL is now used
+  for help authoring, and the manual is delivered in HTML Help format.
+
+. Implemented scrolling protocol and related helper objects and functions
+  to facilitate scrolling functionality in applications:
+
+  * window styles :horizontal-scrollbar and :vertical-scrollbar
+
+  * functions to retrieve window scrollbars
+
+  * GFW:EVENT-SCROLL function for handling low-level scrolling events
+
+  * GFW:SCROLLING-HELPER for automatic management of a scrollable
+    child panel and window scrollbars (works in combination with
+    GFW:HEAP-LAYOUT)
+
+  * integral scrolling and resizing for step sizes greater than 1
+
+. Initial list box control functionality implemented:
+
+  * three selection modes (none / multiple / extend)
+
+  * list item data comprised by arbitrary application-defined data
+
+  * application defined sorting predicates
+
+  * querying and programmatic control of item selection states
+
+  * customizability of vertical scrollbar mode and keyboard input
+
+  Additional list box features are planned for a future release.
+
+. Implemented stand-alone scrollbar and slider control types.
+
+. Renamed functions that query the standard color, file, and font dialogs
+  to make their naming scheme more consistent.
+
+. Implemented GFW:EVENT-PRE-RESIZE function so that applications can customize
+  the behavior of a window's size drag rectangle.
+
+. Implemented GFW:EVENT-PRE-MOVE function so that applications can customize
+  the behavior of a window's move drag rectangle.
+
+. Improved GFW:HEAP-LAYOUT such that it obeys the top child's minimum and
+  maximum sizes, if any such sizes are set.
+
+. Added GFG:FONT method for querying the current font selected for a window.
+
+. Did some housecleaning of the item-manager protocol and heavily refactored
+  the implementation of item-manager base functionality.
+
+. Implemented GFW:ENABLE-REDRAW to enable applications to temporarily
+  disable (and later re-enable) drawing of widget content.
+
+. Fixed a bug in GFW:CHECKED-P (and GFW:SELECTED-P) for checkbox and
+  radio button -style buttons.
+
+. Fixed a bug in the initialization of the paint rectangle in the WM_PAINT
+  message handling method; the correct rectangle is now passed to
+  GFW:EVENT-PAINT
+
+. Fixed a bug in the SETF functions for GFW:MAXIMUM-SIZE and GFW:MINIMUM-SIZE
+  for windows whereby the size value was not being set in the appropriate
+  slot if there were no layout set for the window.
+
+The README.txt file in the release zip file also has additional important
+information about this release.
+
+Download the release zip file here:
+http://prdownloads.sourceforge.net/graphic-forms/graphic-forms-0.6.0.zip?download
+
+The project website is:
+http://common-lisp.net/project/graphic-forms/
+
+Jack Unrue
+jdunrue (at) gmail (dot) com
+22 October 2006
+
+==============================================================================
+
+Release 0.5.0 of Graphic-Forms, a Common Lisp library for Windows GUI
+programming, is now available. This is an alpha release, meaning that
+the feature set and API have not yet stabilized.
+
+Here is what's new in this release:
+
+. SBCL is now supported (specifically version 0.9.15). Graphic-Forms
+  includes a small patch provided to the SBCL community by
+  Alastair Bridgewater to enable the stdcall calling convention for
+  alien callbacks. Please see src/external-libraries/sbcl-callback-patch
+
+. Implemented a plugin mechanism for integrating graphics libraries. This
+  means that ImageMagick is now optional -- if your application can get
+  by with just BMP and ICO formats, then the default plugin (which has no
+  external dependencies) may be used. This feature also allows applications
+  to integrate other graphics libraries of their choice.
+
+. In addition to ImageMagick now being optional, external library
+  dependencies have been further simplified. Several small libraries
+  are now directly bundled with the Graphic-Forms. Cells is no longer
+  used in the library proper nor in the demos (but may return at a
+  later point).
+
+. Implemented a class called icon-bundle which may be populated with
+  multiple images and then used to set icon data for window frames.
+  This includes the concept of there being 'large' and 'small' icon
+  sizes.
+
+. Simplified the argument lists for the event-*** generic functions.
+  Provided gfw:obtain-event-time as a substitute for passing a time
+  argument to every function (for which the vast majority of methods
+  had no use).
+
+. Defined the following new generic functions:
+
+  * event-session GF so applications can participate in the
+    WM_QUERYENDSESSION / WM_ENDSESSION protocol.
+
+  * event-activate and event-deactivate GFs so applications can respond
+    to window activation state changes.
+
+  * GFs for querying undo and redo state. Implemented corresponding
+    methods for edit controls.
+
+  * GFs for configuring auto-scrolling and scrollbar visibility. Implemented
+    corresponding methods for edit controls.
+
+  * GFs representing text clipboard data convenience functionality.
+    Implemented corresponding methods for edit controls.
+
+. Made other miscellaneous improvements to flesh out edit control
+  support.
+
+. Implemented the standard color chooser dialog and associated
+  convenience macro 'with-color-dialog'.
+
+. Added the macro 'with-graphics-context' as a convenience for code that
+  needs to instantiate a context outside of event-paint.
+
+. Heavily revised internal layout manager code in preparation for
+  supporting more sophisticated layouts. A new class called layout-managed
+  has been created to serve as a mix-in when defining objects (not
+  necessarily only windows) that have children to be sized and positioned.
+
+. Implemented a new demo program called textedit which is essentially
+  a Notepad clone. Its purpose is to show off the multi-line edit
+  control and the standard Find/Replace dialog.
+
+. Upgraded to the latest lisp-unit and changed test loading code so that
+  unit-tests are no longer compiled.
+
+. Wrote more documentation and reorganized existing content a bit.
+  Added discussion of certain naming convention choices.
+
+. Made a variety of bug fixes.
+
+The README.txt file in the release zip file also has additional important
+information about this release.
+
+Download the release zip file here:
+http://prdownloads.sourceforge.net/graphic-forms/graphic-forms-0.5.0.zip?download
+
+The project website is:
+http://common-lisp.net/project/graphic-forms/
+
+Jack Unrue
+jdunrue (at) gmail (dot) com
+22 August 2006
+
+==============================================================================

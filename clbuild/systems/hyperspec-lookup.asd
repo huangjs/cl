@@ -1,0 +1,1 @@
+../source/hyperspec-lookup/hyperspec-lookup.asd

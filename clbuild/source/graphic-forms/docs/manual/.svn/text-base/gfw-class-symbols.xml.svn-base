@@ -1,0 +1,2360 @@
+<?xml version="1.0"?>
+<!--
+    gfw-class-symbols.xml
+
+    Copyright (c) 2007, Jack D. Unrue
+-->
+
+<symbols name="gfw">
+
+  <!-- CONDITIONS -->
+
+  <!-- CLASSES -->
+
+  <class name="border-layout">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:layout-manager</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This layout manager organizes the space within a container as 5 regions,
+        one region for each edge of the container and a center region. Applications
+        specify the region for each component via <reftopic>gfw:layout-attribute</reftopic>,
+        using one of the following keywords:
+        <enum>
+          <argument name=":center">
+            <description>
+              Place the component in the central region of the container.
+            </description>
+          </argument>
+          <argument name=":bottom">
+            <description>
+              Place the component in the bottom region of the container; note that
+              the bottom region extends to the left and right sides of the container.
+            </description>
+          </argument>
+          <argument name=":left">
+            <description>
+              Place the component in the left-hand region of the container. This region
+              is bounded vertically by the top and bottom regions.
+            </description>
+          </argument>
+          <argument name=":right">
+            <description>
+              Place the component in the right-hand region of the container. This region
+              is bounded vertically by the top and bottom regions.
+            </description>
+          </argument>
+          <argument name=":top">
+            <description>
+              Place the component in the top region of the container; note that
+              the top region extends to the left and right sides of the container.
+            </description>
+          </argument>
+        </enum>
+        Note that only one child may be assigned to each region at a time.
+      </para>
+<!--
+      <para role="normal">
+        Spacing between adjacent regions can also be specified via
+        <reftopic>gfw:layout-attribute</reftopic> using one or more
+        of the following keywords (note that not all keywords apply
+        to all regions):
+        <enum>
+          <argument name=":center-spacing">
+            <description>
+              An <refclhs>integer</refclhs> specifying the number of pixels between
+              the center region and a region on the perimeter.
+            </description>
+          </argument>
+          <argument name=":leading-spacing">
+            <description>
+              An <refclhs>integer</refclhs> specifying the number of pixels between
+              neighboring regions on the leading edge of the specified region.
+            </description>
+          </argument>
+          <argument name=":trailing-spacing">
+            <description>
+              An <refclhs>integer</refclhs> specifying the number of pixels between
+              neighboring regions on the trailing edge of the specified region.
+            </description>
+          </argument>
+          <argument name=":spacing">
+            <description>
+              An <refclhs>integer</refclhs> specifying the number of pixels between
+              a region and its immediate neighbors.
+            </description>
+          </argument>
+        </enum>
+      </para>
+-->
+      <para role="normal">
+        The :top and :bottom components may be stretched horizontally, while the
+        :left and :right components may be stretched vertically. The :center component
+        will be sized to fill the remaining space. Each component's extent on the
+        secondary axis is determined by <reftopic>gfw:preferred-size</reftopic>. When
+        positive <emphasis>width-hint</emphasis> and/or <emphasis>height-hint</emphasis>
+        values are provided to <reftopic>gfw:layout</reftopic>, the available space
+        is parceled out in amounts proportional to the preferred sizes for each
+        component.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":bottom-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":left-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":right-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":top-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":horizontal-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":vertical-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:heap-layout</reftopic>
+      <reftopic>gfw:flow-layout</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:perform</reftopic>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:compute-size</reftopic>
+    </seealso>
+  </class>
+
+  <class name="flow-layout">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:layout-manager</reftopic>
+        </inherits>
+      </hierarchy>
+      This layout manager arranges child widgets in a row or column.
+    </description>
+    <initargs>
+      <argument name=":spacing">
+        <description>
+          An <refclhs>integer</refclhs> value specifying the number of pixels
+          between neighboring child widgets.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> containing keyword symbols, as follows.
+          One of the following primary styles:
+          <enum>
+            <argument name=":horizontal">
+              <description>Horizontal orientation is the default.</description>
+            </argument>
+            <argument name=":vertical">
+              <description>Vertical orientation.</description>
+            </argument>
+          </enum>
+          Zero or more of the following optional styles:
+          <enum>
+            <argument name=":normalize">
+              <description>
+                Children will be sized equally in the dimension opposite to
+                the layout orientation, using the maximum of the preferred sizes.
+              </description>
+            </argument>
+            <argument name=":wrap">
+              <description>
+                Enables wrapping of the layout flow if the available horizontal
+                (or vertical) space within the container is less than the layout
+                requests for a full row (or column). The default layout mode is unwrapped.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":bottom-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":left-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":right-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":top-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":horizontal-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":vertical-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:border-layout</reftopic>
+      <reftopic>gfw:heap-layout</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:compute-size</reftopic>
+      <reftopic>gfw:perform</reftopic>
+    </seealso>
+  </class>
+
+  <class name="heap-layout">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:layout-manager</reftopic>
+        </inherits>
+      </hierarchy>
+      This layout manager creates a virtual heap of child widgets, where only
+      one child is visible at a time (known as the <emphasis>top child</emphasis>).
+      Application code can select a different child to be the
+      <emphasis>top child</emphasis> as needed, with a subsequent call to
+      <reftopic>gfw:layout</reftopic> updating the layout visually. If no
+      maximum or minimum size is set for
+      any children, all children are resized according to the maximum of their
+      preferred sizes.
+    </description>
+    <initargs>
+      <argument name=":top-child">
+        <description>
+          The child widget that should be initially visible.
+        </description>
+      </argument>
+      <argument name=":bottom-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":left-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":right-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":top-margin">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":horizontal-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":vertical-margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+      <argument name=":margins">
+        <description>
+          See <reftopic>gfw:layout-manager</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:border-layout</reftopic>
+      <reftopic>gfw:flow-layout</reftopic>
+      <reftopic>gfw:perform</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:compute-size</reftopic>
+    </seealso>
+  </class>
+
+  <class name="layout-manager">
+    <description>
+      <hierarchy>
+        <inheritedby>
+          <reftopic>gfw:border-layout</reftopic>
+          <reftopic>gfw:flow-layout</reftopic>
+          <reftopic>gfw:heap-layout</reftopic>
+        </inheritedby>
+      </hierarchy>
+      <para role="normal">
+        This is the base class for objects that manage the sizes and positions
+        of child widgets inside container windows. Subclasses implement specialized
+        layout strategies.
+      </para>
+      <para role="normal">
+        This class is not meant to be instantiated directly.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":bottom-margin">
+        <description>
+          An <refclhs>integer</refclhs> value specifying the thickness of the margin
+          between the layout area and the bottom edge of the container, in pixels.
+        </description>
+      </argument>
+      <argument name=":left-margin">
+        <description>
+          An <refclhs>integer</refclhs> value specifying the thickness of the
+          margin between the layout area and the left edge of the container,
+          in pixels.
+        </description>
+      </argument>
+      <argument name=":right-margin">
+        <description>
+          An <refclhs>integer</refclhs> value specifying the thickness of the
+          margin between the layout area and the right edge of the container,
+          in pixels.
+        </description>
+      </argument>
+      <argument name=":top-margin">
+        <description>
+          An <refclhs>integer</refclhs> value specifying the thickness of the
+          margin between the layout area and the top edge of the container,
+          in pixels.
+        </description>
+      </argument>
+      <argument name=":horizontal-margins">
+        <description>
+          An <refclhs>integer</refclhs> value specifying margin thickness in pixels,
+          for both the left and right sides of the container.
+        </description>
+      </argument>
+      <argument name=":vertical-margins">
+        <description>
+          An <refclhs>integer</refclhs> value specifying margin thickness in pixels,
+          for both the top and bottom sides of the container.
+        </description>
+      </argument>
+      <argument name=":margins">
+        <description>
+          An <refclhs>integer</refclhs> value specifying margin thickness in pixels,
+          for all sides of the container.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> of keyword symbols used to configure the layout's
+          behavior. Each layout manager can define its own specific style keywords.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:perform</reftopic>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:compute-size</reftopic>
+    </seealso>
+  </class>
+
+  <class name="menu">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+          <reftopic>gfw:item-manager</reftopic>
+        </inherits>
+      </hierarchy>
+    This class represents a container for menu items and submenus.
+    </description>
+    <initargs>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:menu-item</reftopic>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:append-separator</reftopic>
+      <reftopic>gfw:append-submenu</reftopic>
+      <reftopic>gfw:defmenu</reftopic>
+    </seealso>
+  </class>
+
+  <class name="menu-item">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:item</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents an element of a <reftopic>gfw:menu</reftopic>.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          See <reftopic>gfw:item</reftopic>.
+        </description>
+      </argument>
+      <argument name=":data">
+        <description>
+          See <reftopic>gfw:item</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="display">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        Instances of this class describe characteristics of monitors attached
+        to the system.
+      </para>
+      <para role="normal">
+        This class is not meant to be instantiated by application code.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:obtain-displays</reftopic>
+      <reftopic>gfw:obtain-primary-display</reftopic>
+    </seealso>
+  </class>
+
+  <class name="event-dispatcher">
+    <description>
+      <hierarchy>
+        <inheritedby>
+          <reftopic>gfw:scrolling-helper</reftopic>
+        </inheritedby>
+      </hierarchy>
+      Applications define subclasses of this class and implement one
+      or more of the event generic functions.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </class>
+
+  <class name="scrolling-helper">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:event-dispatcher</reftopic>
+        </inherits>
+      </hierarchy>
+      This is an event dispatcher specialized for processing scroll events
+      on behalf of windows. It uses <reftopic>gfw:update-scrolling-state</reftopic>.
+    </description>
+    <initargs>
+      <argument name=":step-increments">
+        <description>
+          A <reftopic>gfs:size</reftopic> object describing how large a
+          single step represents in pixels. The default is 1 pixel.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfw:thumb-position</reftopic>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:page-increment</reftopic>
+      <reftopic>gfw:step-increment</reftopic>
+      <reftopic>gfw:scroll</reftopic>
+    </seealso>
+  </class>
+
+  <class name="layout-managed">
+    <description>
+      <hierarchy>
+        <inheritedby>
+          <reftopic>gfw:window</reftopic>
+          <reftopic>gfw:status-bar</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is a mix-in for widgets that employ a <reftopic>gfw:layout-manager</reftopic>
+      to position children.
+    </description>
+    <initargs>
+      <argument name=":layout">
+        <description>
+          An instance of a <reftopic>gfw:layout-manager</reftopic> subclass.
+        </description>
+      </argument>
+    </initargs>
+    <seealso/>
+  </class>
+
+  <class name="event-source">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfs:native-object</reftopic>
+        </inherits>
+        <inheritedby>
+          <reftopic>gfw:item</reftopic>
+          <reftopic>gfw:standard-scrollbar</reftopic>
+          <reftopic>gfw:timer</reftopic>
+          <reftopic>gfw:widget</reftopic>
+        </inheritedby>
+      </hierarchy>
+      <para role="normal">
+        This is the base class for user interface objects having a native
+        system resource that generates events.
+      </para>
+      <para role="normal">
+        This class defines a class-allocated slot holding a symbol
+        identifying an event function (e.g., <reftopic>gfw:event-select</reftopic>),
+        to be supplied along with a function pointer in calls to the internal
+        define-dispatcher function. The purpose of this is to facilitate
+        implementation of shortcuts for defining dispatchers where definition of
+        a primary event function is sufficient, as is the case when a control
+        class wants to support a :callback initarg. The choice of event function
+        is determined by each subclass, hence this slot is shadowed by each such
+        subclass. Application code typically is not concerned with this slot,
+        except when an application defines new kinds of event sources.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>
+        </description>
+      </argument>
+      <argument name=":callbacks">
+        <description>
+          An <refclhs>alist</refclhs> where the CAR of each entry is a
+          symbol identifying one of the event generic functions and the
+          CDR is a function with congruent arguments. This constitutes
+          a specification for a new <reftopic>gfw:event-dispatcher</reftopic>
+          subclass and event methods.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          The <reftopic>gfw:event-dispatcher</reftopic> instance wrapping
+          responsibility for processing events on behalf of this object.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="item">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:event-source</reftopic>
+        </inherits>
+        <inheritedby>
+          <reftopic>gfw:list-item</reftopic>
+          <reftopic>gfw:menu-item</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is the base class for non-windowed user interface objects serving
+      as elements of a <reftopic>gfw:item-manager</reftopic>. For example,
+      each entry in a <reftopic>gfw:list-box</reftopic> control is represented
+      by an item.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          A callback function whose arguments are congruent with
+          <reftopic>gfw:event-select</reftopic>.
+        </description>
+      </argument>
+      <argument name=":data">
+        <description>
+          An application-supplied object to be represented by an item instance.
+        </description>
+      </argument>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:owner</reftopic>
+    </seealso>
+  </class>
+
+  <class name="standard-scrollbar">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:event-source</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class encapsulates a window standard scrollbar, which is
+        Microsoft's term for a scrollbar widget attached to the right
+        side or bottom of a window.
+      </para>
+      <para role="normal">
+        This class is not meant to be instantiated by application code.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":orientation">
+        <description>
+          A system value specifying whether the scrollbar is horizontal
+          or vertical.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:obtain-horizontal-scrollbar</reftopic>
+      <reftopic>gfw:obtain-vertical-scrollbar</reftopic>
+      <reftopic>gfw:enable-scrollbars</reftopic>
+      <reftopic>gfw:horizontal-scrollbar-p</reftopic>
+      <reftopic>gfw:vertical-scrollbar-p</reftopic>
+    </seealso>
+  </class>
+
+  <class name="item-manager">
+    <description>
+      <hierarchy>
+        <inheritedby>
+          <reftopic>gfw:menu</reftopic>
+          <reftopic>gfw:list-box</reftopic>
+          <reftopic>gfw:status-bar</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is a mix-in for widgets that contain and display sub-elements.
+    </description>
+    <initargs>
+      <argument name=":image-provider">
+        <description>
+          A function accepting one argument and returning an instance of
+          <reftopic>gfg:image</reftopic>. The function's argument will be
+          the application-supplied object for the <reftopic>gfw:item</reftopic>
+          being rendered. The default implementation returns NIL.
+        </description>
+      </argument>
+      <argument name=":sort-predicate">
+        <description>
+          A function accepting two arguments and returning a <refclhs>boolean</refclhs>.
+          This serves as a predicate for the purpose of ordering the members of the
+          item-manager. The arguments are two of the application-supplied objects.
+          Not all subclasses of item-manager make use of this feature.
+        </description>
+      </argument>
+      <argument name=":text-provider">
+        <description>
+          A function accepting one argument and returning a <refclhs>string</refclhs>.
+          The function's argument will be the application-supplied object for the
+          <reftopic>gfw:item</reftopic> being rendered. The default implementation
+          checks whether the argument is a <refclhs>string</refclhs>, and if so,
+          just returns it; otherwise, <refclhs>format</refclhs> is called.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:update-from-items</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+      <reftopic>gfw:selected-items</reftopic>
+    </seealso>
+  </class>
+
+  <class name="list-item">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:item</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents an element of a <reftopic>gfw:list-box</reftopic>.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          See <reftopic>gfw:item</reftopic>.
+        </description>
+      </argument>
+      <argument name=":data">
+        <description>
+          See <reftopic>gfw:item</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="widget">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:event-source</reftopic>
+        </inherits>
+        <inheritedby>
+          <reftopic>gfw:control</reftopic>
+          <reftopic>gfw:color-dialog</reftopic>
+          <reftopic>gfw:file-dialog</reftopic>
+          <reftopic>gfw:font-dialog</reftopic>
+          <reftopic>gfw:menu</reftopic>
+          <reftopic>gfw:window</reftopic>
+          <reftopic>gfw:status-bar</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is the base class for all windowed user interface objects whose
+      behavior can be extended by applications.
+    </description>
+    <initargs>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> of keyword symbols supplying additional
+          information about the desired look-and-feel or behavior of the widget;
+          style keywords are widget-specific.
+        </description>
+      </argument>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="color-dialog">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class provides a standard dialog for choosing (or defining new) colors.
+        The <reftopic>gfw:with-color-dialog</reftopic> macro wraps the creation of
+        this dialog type and subsequent retrieval of the user's <reftopic>gfg:color</reftopic>
+        choice. However, applications may choose to implement these steps manually,
+        in which case the <reftopic>gfw:obtain-chosen-color</reftopic> function can be
+        used.
+      </para>
+      <para role="normal">
+        Like other system dialogs in Graphic-Forms, color-dialog is derived from
+        <reftopic>gfw:widget</reftopic> rather than <reftopic>gfw:dialog</reftopic>
+        since the majority of its functionality is implemented by the system. A
+        future release will provide a customization mechanism.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":initial-color">
+        <description>
+          This initarg causes the dialog to show the specified
+          <reftopic>gfg:color</reftopic> as initially selected.
+        </description>
+      </argument>
+      <argument name=":initial-custom-colors">
+        <description>
+          This initarg accepts a <refclhs>list</refclhs> of <reftopic>gfg:color</reftopic>
+          objects which are used to populate the custom color editing portion of the dialog.
+          A maximum of 16 colors are used, with any extras supplied in the
+          <refclhs>list</refclhs> being
+          ignored. Fewer than 16 may be supplied, in which case black is displayed as
+          a default color for the remaining entries.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> of keyword symbols specifying how the color dialog
+          is to look and behave. One or more of the following:
+          <enum>
+            <argument name=":allow-custom-colors">
+              <description>
+                This configures the dialog to enable the
+                <emphasis>Define Custom Color</emphasis> button, which when
+                clicked reveals additional controls for creating custom colors.
+              </description>
+            </argument>
+            <argument name=":display-solid-only">
+              <description>
+                This configures the dialog to only display solid colors in
+                the set of basic colors.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":owner">
+        <description>
+          A value is required for this initarg, which may be either a
+          <reftopic>gfw:window</reftopic> or a <reftopic>gfw:dialog</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="file-dialog">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class provides a standard dialog for navigating the file system
+        to select or enter file names. A variety of configurations are possible.
+        Please note that in :save mode, the user will be prompted to
+        confirm overwrite when an existing file is selected.
+      </para>
+      <para role="normal">
+        The <reftopic>gfw:with-file-dialog</reftopic> macro wraps the creation
+        of a file-dialog and subsequent retrieval of the file paths selected by
+        the user. However, applications may choose to implement these steps
+        manually, in which case the <reftopic>gfw:obtain-chosen-files</reftopic>
+        function can be used to obtain the user's selection(s). Unless the
+        :multiple-select style keyword is specified, there will at most be one
+        selected file returned. In either case, zero is returned if the user
+        cancelled the dialog. Manual construction of an instance must be followed
+        by an explicit call to <reftopic>gfs:dispose</reftopic>.
+      </para>
+      <para role="normal">
+        Like other system dialogs in Graphic-Forms, file-dialog is derived from
+        <reftopic>gfw:widget</reftopic> rather than <reftopic>gfw:dialog</reftopic>
+        since the majority of its functionality is implemented by the system. A
+        future release will provide a customization mechanism.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":default-extension">
+        <description>
+          Specifies a default extension to be appended to a file name
+          if the user fails to provide one. Any embedded periods `.'
+          will be removed. Also, only the first three characters are used.
+        </description>
+      </argument>
+      <argument name=":filters">
+        <description>
+          This initarg accepts a list of conses, CAR holding a string that
+          describes a filter, e.g., `Text Files', and CDR specifying the actual
+          filter pattern, e.g., `*.TXT'. Note that multiple filter patterns can
+          be grouped with a single description by separating them with semicolons,
+          e.g., `*.TXT;*.BAK'.
+        </description>
+      </argument>
+      <argument name=":initial-directory">
+        <description>
+          This initarg accepts a directory <refclhs>namestring</refclhs> identifying
+          the location in the file system whose contents are to be browsed by the
+          file dialog. Note: setting this value will result in the side-effect of
+          changing the current working directory of the lisp process. Also, the
+          supplied value is used only if the <refclhs>namestring</refclhs> supplied
+          for :initial-filename does not contain a path.
+        </description>
+      </argument>
+      <argument name=":initial-filename">
+        <description>
+          This initarg accepts a file <refclhs>namestring</refclhs> for the following
+          purposes:
+          <itemizedlist mark="bullet" spacing="compact">
+            <listitem>
+              populate the edit field in the file dialog with the file name and extension
+            </listitem>
+            <listitem>
+              set the initial directory of the file dialog (and hence the current
+              working directory of the lisp process) if it contains a directory path
+            </listitem>
+            <listitem>
+              if a file actually exists in the directory, set the other components of
+              the dialog to reflect the attributes of the file.
+            </listitem>
+          </itemizedlist>
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> of keyword symbols specifying how the font dialog
+          is to look and behave. One or more of the following:
+          <enum>
+            <argument name=":add-to-recent">
+              <description>
+                This enables the system to add a link to the selected file in the
+                directory that contains the user's most recently used documents. 
+              </description>
+            </argument>
+            <argument name=":multiple-select">
+              <description>
+                This configures the dialog to accept multiple selections.
+              </description>
+            </argument>
+            <argument name=":path-must-exist">
+              <description>
+                This keyword enables a validation check that constrains the user's
+                selection to file paths that actually exist. A warning dialog will
+                be displayed if the user supplies a non-existent path.
+              </description>
+            </argument>
+            <argument name=":show-hidden">
+              <description>
+                This keyword enables the dialog to display files marked hidden by
+                the system. Note: files marked both hidden and system will not be
+                displayed in any case. Also, be aware that using this keyword
+                effectively overrides the user's preference settings.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          This initarg accepts a <clhs>string</clhs> that will become the title of
+          the file dialog. By default, a file dialog with the :open style flag will
+          display `Open' whereas the :save style flag will result in a title of
+          `Save As'.
+        </description>
+      </argument>
+      <argument name=":owner">
+        <description>
+          A value is required for this initarg, which may be either a
+          <reftopic>gfw:window</reftopic> or a <reftopic>gfw:dialog</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="font-dialog">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class provides a standard dialog for choosing attributes of a
+        font, either from scratch or relative to an existing font. A variety
+        of style options may be selected, including strikeout and font color.
+      </para>
+      <para role="normal">
+        The <reftopic>gfw:with-font-dialog</reftopic> macro wraps the creation
+        of a font-dialog and provides a new <reftopic>gfg:font</reftopic> object
+        based on the user's selections. However, applications may choose to implement
+        these steps manually, in which case the <reftopic>gfw:obtain-chosen-font</reftopic>
+        function can be called to obtain the results of the user's selections. Manual
+        construction of an instance must be followed by an explicit call to
+        <reftopic>gfs:dispose</reftopic>.
+      </para>
+      <para role="normal">
+        Like other system dialogs in Graphic-Forms, font-dialog is derived from
+        <reftopic>gfw:widget</reftopic> rather than <reftopic>gfw:dialog</reftopic>
+        since the majority of its functionality is implemented by the system. A
+        future release will provide a customization mechanism.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":gc">
+        <description>
+          This required initarg accepts a <reftopic>gfg:graphics-context</reftopic>
+          object providing context for the font selection, such as when the set of
+          fonts to be offered depends on a printer device.
+        </description>
+      </argument>
+      <argument name=":initial-color">
+        <description>
+          This initarg accepts a <reftopic>gfg:color</reftopic> object which the
+          font dialog will use for its initial color selection (as long as the
+          :no-effects style is not set).
+        </description>
+      </argument>
+      <argument name=":initial-font">
+        <description>
+          This initarg accepts a <reftopic>gfg:font</reftopic> object which the
+          font dialog will use for its initial font attribute selections. If not
+          specified, the dialog will be set to the system font's attributes.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          A <refclhs>list</refclhs> of keyword symbols specifying how the font dialog
+          is to look and behave. One or more of the following:
+          <enum>
+            <argument name=":all-fonts">
+              <description>
+                This is a convenience style, used by default if no other font criteria
+                are specified, that enables the dialog to offer all possible fonts.
+              </description>
+            </argument>
+            <argument name=":fixed-pitch-fonts">
+              <description>
+                Enables the dialog to offer fixed pitch fonts. 
+              </description>
+            </argument>
+            <argument name=":no-effects">
+              <description>
+                Causes the font dialog to hide the controls that allow the user to
+                specify strikeout, underline, and text color attributes.
+              </description>
+            </argument>
+            <argument name=":printer-fonts">
+              <description>
+                Enables the dialog to offer fonts supported by the printer associated
+                with the <reftopic>gfg:graphics-context</reftopic> supplied via the
+                :gc initarg.
+              </description>
+            </argument>
+            <argument name=":screen-fonts">
+              <description>
+                Enables the dialog to offer screen fonts supported by the system. 
+              </description>
+            </argument>
+            <argument name=":truetype-fonts">
+              <description>
+                Enables the dialog to offer TrueType fonts. 
+              </description>
+            </argument>
+            <argument name=":wysiwyg-fonts">
+              <description>
+                Enables the dialog to offer the intersection of the sets of fonts
+                available on the screen and the printer associated with the
+                <reftopic>gfg:graphics-context</reftopic> specified by the :gc
+                initarg.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":owner">
+        <description>
+          A value is required for this initarg, which may be either a
+          <reftopic>gfw:window</reftopic> or a <reftopic>gfw:dialog</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="window">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+          <reftopic>gfw:layout-managed</reftopic>
+        </inherits>
+        <inheritedby>
+          <reftopic>gfw:dialog</reftopic>
+          <reftopic>gfw:panel</reftopic>
+          <reftopic>gfw:root-window</reftopic>
+          <reftopic>gfw:top-level</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is the base class for user-defined widgets that serve as containers.
+    </description>
+    <initargs>
+      <argument name=":style">
+        <description>
+          See <reftopic>gfw:widget</reftopic>.
+        </description>
+      </argument>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":layout">
+        <description>
+          See <reftopic>gfw:layout-managed</reftopic>
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:owner</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:text</reftopic>
+    </seealso>
+  </class>
+
+  <class name="root-window">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:window</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This class represents the desktop window, which is the root of the
+        window hierarchy. Operations on a root-window are constrained
+        compared to other window subclasses -- not all functions normally
+        implemented are available for root-window.
+      </para>
+      <para role="normal">
+        If an application attempts to use a root-window instance as the owner
+        of a <reftopic>gfw:dialog</reftopic>, the library will substitute NIL.
+        <ulink url="http://blogs.msdn.com/oldnewthing/archive/2004/02/24/79212.aspx">
+        This blog entry</ulink> explains why the desktop window must be
+        handled specially.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:owner</reftopic>
+      <reftopic>gfw:parent</reftopic>
+    </seealso>
+  </class>
+
+  <class name="dialog">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:window</reftopic>
+        </inherits>
+      </hierarchy>
+      <para role="normal">
+        This is the base class for application-defined dialogs. A dialog is a
+        windowed UI component, usually containing at least one
+        <reftopic>gfw:panel</reftopic> or <reftopic>gfw:control</reftopic>, that
+        remains on top of application window(s). A dialog's typical role is to
+        collect additional information from the user; a secondary role is to
+        interrupt the user with important notification messages. Note that some
+        applications are entirely dialog-based.
+      </para>
+      <para role="normal">
+        A <emphasis>modal</emphasis> dialog forces the user to respond to it
+        before returning to other application functionality, whereas a
+        <emphasis>modeless</emphasis> dialog does not.
+      </para>
+    </description>
+    <initargs>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the dialog. One of the following
+          primary styles may be specified:
+          <enum>
+            <argument name=":application-modal">
+              <description>
+                Specifies that the dialog is modal with respect to all top-level
+                windows and dialogs created by the application (specifically those
+                created by the calling thread which are still realized on-screen).
+              </description>
+            </argument>
+            <argument name=":modeless">
+              <description>
+                Specifies that the dialog is modeless, meaning that while the dialog
+                floats on top of all application-created windows, the user may still
+                interact with other windows and dialogs. 
+              </description>
+            </argument>
+            <argument name=":owner-modal">
+              <description>
+                Specifies that the dialog is modal only in relation to its owner
+                (which could be a window or another dialog). This style is the default
+                if no style keywords are specified.
+              </description>
+            </argument>
+          </enum>
+          The following optional style may also be specified:
+          <enum>
+            <argument name=":status-bar"/>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          A <refclhs>string</refclhs> supplying the dialog's title.
+        </description>
+      </argument>
+      <argument name=":owner">
+        <description>
+          Specifies the owner of the dialog. Although no error will be thrown,
+          the library does not allow <reftopic>gfw:root-window</reftopic> to be
+          the owner of any dialog -- dialog initialization code instead
+          substitutes NIL for the owner.
+        </description>
+      </argument>
+      <argument name=":layout">
+        <description>
+          See <reftopic>gfw:layout-managed</reftopic>
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:owner</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:text</reftopic>
+      <reftopic>gfw:status-bar-of</reftopic>
+    </seealso>
+  </class>
+
+  <class name="top-level">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:window</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents windows that are self-contained and parented to
+      <reftopic>gfw:root-window</reftopic>. Except when created with the
+      :borderless or :palette styles, they are resizable and have title bars
+      (also called `captions'). They may have scrollbars if either of the
+      :horizontal-scrollbar or :vertical-scrollbar styles are specified, with
+      further control over scrollbar visibility being possible.
+    </description>
+    <initargs>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the window. One of the following primary styles
+          may be specified:
+          <enum>
+            <argument name=":borderless">
+              <description>
+                Specifies a window with a one-pixel border (so not really
+                borderless in the strictest sense); no frame icon, system menu,
+                minimize/maximize buttons, or close buttons; the system does not
+                paint the background. 
+              </description>
+            </argument>
+            <argument name=":frame">
+              <description>
+                Specifies the standard top-level frame style with system menu,
+                close box, and minimize/maximize buttons; this window type is
+                resizable; it differs from the :workspace style in that the
+                application is completely responsible for painting the contents.
+              </description>
+            </argument>
+            <argument name=":miniframe">
+              <description>
+                Specifies a resizable window with a shorter than normal caption;
+                has a close box but no system menu or minimize/maximize buttons;
+                the system does not paint the background.
+              </description>
+            </argument>
+            <argument name=":palette">
+              <description>
+                Similar to the :miniframe style, except that this style also restricts
+                the window from having a resize frame.
+              </description>
+            </argument>
+            <argument name=":workspace">
+              <description>
+                Specifies the standard top-level frame style with system menu, close box,
+                and minimize/maximize buttons; this window type is resizable; it differs
+                from the :frame style in that the system paints the background using the
+                color_appworkspace Win32 color scheme.
+              </description>
+            </argument>
+          </enum>
+          One or more of the following optional styles:
+          <enum>
+            <argument name=":fixed-size">
+              <description>
+                The resulting window cannot be dragged to a new size, but a layout
+                manager can still resize it programmatically.
+              </description>
+            </argument>
+            <argument name=":horizontal-scrollbar"/>
+            <argument name=":status-bar"/>
+            <argument name=":vertical-scrollbar"/>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":maximum-size">
+        <description>
+          A <reftopic>gfs:size</reftopic> specifying the maximum dimensions to which
+          the user is allowed to resize the window by dragging the border.
+        </description>
+      </argument>
+      <argument name=":minimum-size">
+        <description>
+          A <reftopic>gfs:size</reftopic> specifying the minimum dimensions to which
+          the user is allowed to resize the window by dragging the border.
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          A <refclhs>string</refclhs> supplying the window's title.
+        </description>
+      </argument>
+      <argument name=":layout">
+        <description>
+          See <reftopic>gfw:layout-managed</reftopic>
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:owner</reftopic>
+      <reftopic>gfw:text</reftopic>
+      <reftopic>gfw:obtain-horizontal-scrollbar</reftopic>
+      <reftopic>gfw:obtain-vertical-scrollbar</reftopic>
+      <reftopic>gfw:status-bar-of</reftopic>
+    </seealso>
+  </class>
+
+  <class name="panel">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:window</reftopic>
+        </inherits>
+      </hierarchy>
+      This is the base class for windows that are children of top-level windows,
+      dialogs, or other panels.
+    </description>
+    <initargs>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the window. One or more of the following
+          styles may be specified:
+          <enum>
+            <argument name=":border">
+              <description>
+                Specifies a window with a one-pixel border (so not really
+                borderless in the strictest sense); no frame icon, system menu,
+                minimize/maximize buttons, or close buttons; the system does not
+                paint the background. 
+              </description>
+            </argument>
+            <argument name=":horizontal-scrollbar"/>
+            <argument name=":vertical-scrollbar"/>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          A <reftopic>gfw:window</reftopic> that will be the parent of the
+          panel.
+        </description>
+      </argument>
+      <argument name=":layout">
+        <description>
+          See <reftopic>gfw:layout-managed</reftopic>
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+    </seealso>
+  </class>
+
+  <class name="timer">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:event-source</reftopic>
+        </inherits>
+      </hierarchy>
+      A timer is a non-windowed object that generates events at a regular
+      (adjustable) frequency. Applications handle timer events by implementing
+      methods for the <reftopic>gfw:event-timer</reftopic> generic function.
+    </description>
+    <initargs>
+      <argument name=":initial-delay">
+        <description>
+          A non-negative <refclhs>integer</refclhs> value specifying the number
+          of milliseconds until the first timer event is delivered.
+        </description>
+      </argument>
+      <argument name=":delay">
+        <description>
+          A non-negative <refclhs>integer</refclhs> value specifying the number
+          of milliseconds between successive timer events. If
+          <emphasis>:initial-delay</emphasis> is
+          not specified, then this value will be used as the initial delay as well.
+          Setting <emphasis>:delay</emphasis> to 0 and
+          <emphasis>:initial-delay</emphasis> to a positive value has the effect
+          of creating a <emphasis>one-shot</emphasis> timer.
+        </description>
+      </argument>
+      <argument name=":callbacks">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="control">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+        </inherits>
+        <inheritedby>
+          <reftopic>gfw:button</reftopic>
+          <reftopic>gfw:edit</reftopic>
+          <reftopic>gfw:label</reftopic>
+          <reftopic>gfw:list-box</reftopic>
+          <reftopic>gfw:scrollbar</reftopic>
+          <reftopic>gfw:slider</reftopic>
+        </inheritedby>
+      </hierarchy>
+      This is the base class for widgets associated with an underlying native
+      control.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          This initarg associates a function with a <reftopic>gfw:event-dispatcher</reftopic>
+          subclass that is generated behind-the-scenes and then instantiated to serve as
+          the control's event dispatcher. Each control subclass specifies the particular
+          event function (e.g., <reftopic>gfw:event-select</reftopic>) that this callback
+          will implement; see the documentation for specific control subclasses for more
+          information on this initarg.
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          This initarg specifies the parent of the control.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:update-native-style</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:style-of</reftopic>
+    </seealso>
+  </class>
+
+  <class name="button">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+    This class represents selectable controls that generate an event when clicked.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          The function supplied via this initarg will be used as the
+          implementation of <reftopic>gfw:event-select</reftopic> in
+          a <reftopic>gfw:event-dispatcher</reftopic> configured for the button.
+        </description>
+      </argument>
+      <argument name=":image">
+        <description>
+          Accepts a <reftopic>gfg:image</reftopic> to be used as the button's
+          label.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the button. The :push-button style is the
+          default. Currently, only one of the following may be specified:
+          <enum>
+            <argument name=":cancel-button">
+              <description>
+                Placing a :cancel-button in a dialog enables the escape key
+                accelerator for dismissing the dialog. This action should be
+                interpreted as the user discarding the content of the dialog.
+              </description>
+            </argument>
+            <argument name=":check-box">
+              <description>
+                This style specifies a button having a small box, which may
+                contain a check mark depending on the button's selection state,
+                adjacent to a text label.
+              </description>
+            </argument>
+            <argument name=":default-button">
+              <description>
+                Placing a :default-button in a dialog enables the return key
+                accelerator for dismissing the dialog. This action should be
+                interpreted as the user accepting the content of the dialog.
+                Also, the button is rendered with an extra thick border.
+              </description>
+            </argument>
+            <argument name=":push-button">
+              <description>
+                This style specifies a traditional push button control. No
+                special keyboard accelerators are enabled.
+              </description>
+            </argument>
+            <argument name=":radio-button">
+              <description>
+                This style specifies a button having a small circle, which may
+                be filled or unfilled depending on the button's selection state,
+                adjacent to a text label. Radio buttons are typically used in
+                groups and are managed such that only one member of the group
+                is enabled at a time.
+              </description>
+            </argument>
+            <argument name=":toggle-button">
+              <description>
+                This style specifies a control that when unselected looks like
+                a push button. But when in the selected state, the button
+                maintains a sunken look. It is similar in function to a :check-box.
+              </description>
+            </argument>
+            <argument name=":tri-state">
+              <description>
+                This style specifies a control that looks similar to a :check-box,
+                but the box can be grayed as well as checked or cleared. The grayed
+                look indicates an undetermined state.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          Accepts a <refclhs>string</refclhs> supplying the text for the
+          button label.
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="edit">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents a rectangular area that permits the user to enter
+      and edit text. The <reftopic>gfw:event-focus-gain</reftopic> and
+      <reftopic>gfw:event-focus-loss</reftopic> methods of each edit control's
+      <reftopic>gfw:event-dispatcher</reftopic> are invoked when focus is given
+      or taken away. The <reftopic>gfw:event-modify</reftopic> method is invoked
+      when the user edits text.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          The function supplied via this initarg will be used as the
+          implementation of <reftopic>gfw:event-modify</reftopic> in
+          a <reftopic>gfw:event-dispatcher</reftopic> configured for
+          the edit control.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the edit control. Zero or more of the following
+          may be specified:
+          <enum>
+            <argument name=":auto-hscroll">
+              <description>
+                Specifies that the edit control will scroll text content to
+                the right (by 10 characters, an amount defined by the system)
+                when the user types a character at the end of the line. For
+                single-line edit controls, this style is automatically set by
+                Graphic-Forms.
+              </description>
+            </argument>
+            <argument name=":auto-vscroll">
+              <description>
+                Specifies that the edit control will scroll text up by a page
+                when the user types enter on the last line. This style
+                is only meaningful when :multi-line is also specified.
+              </description>
+            </argument>
+            <argument name=":horizontal-scrollbar">
+              <description>
+                Specifies that a horizontal scrollbar should be displayed. 
+              </description>
+            </argument>
+            <argument name=":mask-characters">
+              <description>
+                Specifies that each character of text be masked by a configurable
+                echo character instead of the one literally typed. The asterisk
+                character is used by default.
+              </description>
+            </argument>
+            <argument name=":multi-line">
+              <description>
+                Edit controls default to single-line text fields. By specifying
+                :multi-line, multiple lines of text can be supplied. When the
+                edit control is in a dialog, the &lt;Enter&gt; key will invoke
+                the default button's <reftopic>gfw:event-dispatcher</reftopic>,
+                unless :want-return is also specified. If :auto-hscroll is not
+                specified, then text will be automatically word-wrapped.
+              </description>
+            </argument>
+            <argument name=":no-border">
+              <description>
+                By default, an edit control is rendered with a border; this style
+                disables that feature.
+              </description>
+            </argument>
+            <argument name=":no-hide-selection">
+              <description>
+                This specifies that any selection remain rendered even when the
+                edit control loses input focus. By default, the selection is hidden
+                when focus is lost.
+              </description>
+            </argument>
+            <argument name=":read-only">
+              <description>
+                Specifies that the edit control's contents cannot be modified by the
+                user. 
+              </description>
+            </argument>
+            <argument name=":vertical-scrollbar">
+              <description>
+                Specifies that a vertical scrollbar should be displayed. This style
+                is only meaningful when :multi-line is also specified. 
+              </description>
+            </argument>
+            <argument name=":want-return">
+              <description>
+                Specifies that a carriage return be inserted when the user types
+                &lt;Enter&gt;. This style only applies when the :multi-line style
+                is also specified. Without this style, within a dialog the act of
+                typing enter has the same effect as pressing the dialog's default
+                button.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          Accepts a <refclhs>string</refclhs> supplying the text for the
+          button label.
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+      <reftopic>gfw:echo-character</reftopic>
+      <reftopic>gfw:enable-auto-scrolling</reftopic>
+      <reftopic>gfw:text</reftopic>
+    </seealso>
+  </class>
+
+  <class name="label">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+    This class represents non-selectable controls that display a string, image,
+    or etched line
+    </description>
+    <initargs>
+      <argument name=":separator">
+        <description>
+          Specify T to configure the label to render itself as an etched
+          horizontal (or vertical) divider. The :style initarg is used to
+          select the desired orientation.
+        </description>
+      </argument>
+      <argument name=":image">
+        <description>
+          Accepts a <reftopic>gfg:image</reftopic> to be rendered inside
+          the label.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the label. The symbols appropriate for a
+          label depend on which mode (image, separator, or text) is
+          configured:
+          <enum>
+            <argument name=":beginning">
+              <description>text mode</description>
+            </argument>
+            <argument name=":center">
+              <description>text mode</description>
+            </argument>
+            <argument name=":ellipsis">
+              <description>text mode</description>
+            </argument>
+            <argument name=":end">
+              <description>text mode</description>
+            </argument>
+            <argument name=":wrap">
+              <description>text mode</description>
+            </argument>
+            <argument name=":raised">
+              <description>text or image mode</description>
+            </argument>
+            <argument name=":sunken">
+              <description>text or image mode</description>
+            </argument>
+            <argument name=":horizontal">
+              <description>separator mode</description>
+            </argument>
+            <argument name=":vertical">
+              <description>separator mode</description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":text">
+        <description>
+          Accepts a <refclhs>string</refclhs> supplying the text for the
+          label.
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="list-box">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+          <reftopic>gfw:item-manager</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents a list of selectable items. The list is always visible,
+      unlike a <reftopic>gfw:combo-box</reftopic>.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          The function supplied via this initarg will be used as the
+          implementation of <reftopic>gfw:event-select</reftopic> in
+          a <reftopic>gfw:event-dispatcher</reftopic> configured for the
+          list-box.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the list-box. One of the following primary
+          styles may be specified:
+          <enum>
+            <argument name=":extend-select">
+              <description>
+                Causes the list-box to allow multiple items to be selected
+                by use of the &lt;Shift&gt; key and the mouse or special keys.
+              </description>
+            </argument>
+            <argument name=":multiple-select">
+              <description>
+                Enables individual toggling of multiple item selections within
+                the list-box.
+              </description>
+            </argument>
+            <argument name=":no-select">
+              <description>
+                This style keyword configures the list-box to display items
+                but not allow any selections.
+              </description>
+            </argument>
+          </enum>
+          Zero or more of the following optional styles may be specified:
+          <enum>
+            <argument name=":scrollbar-always">
+              <description>
+                Configures the list-box to show a disabled vertical scrollbar
+                when it does not contain enough items to scroll. By default,
+                the scrollbar will be hidden until needed. 
+              </description>
+            </argument>
+            <argument name=":tab-stops">
+              <description>
+                This style keyword configures the list-box to to expand tab
+                characters when rendering <reftopic>gfw:list-item</reftopic>
+                text.
+              </description>
+            </argument>
+            <argument name=":want-keys">
+              <description>
+                Allows the application to perform special processing when the
+                list-box has focus and the user presses a key.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":estimated-count">
+        <description>
+          A positive <refclhs>integer</refclhs> value indicating the expected
+          number of items that the list-box will hold. If supplied, it enables
+          an optimization in storage allocation by the underlying native control.
+          As the name of the initarg implies, this is an estimate, which may be
+          too high (in which case heap space may be wasted) or too low (in which
+          case the control will re-allocate storage as necessary).
+        </description>
+      </argument>
+      <argument name=":items">
+        <description>
+          This initarg accepts a list of application-defined objects
+          for populating the contents of the list-box; each one is
+          automatically wrapped with an instance of <reftopic>gfw:list-item</reftopic>.
+          The list-box will hold references to the supplied objects. 
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:update-native-style</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:style-of</reftopic>
+      <reftopic>gfw:list-item</reftopic>
+      <reftopic>gfw:auto-vscroll-p</reftopic>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+      <reftopic>gfw:update-from-items</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+    </seealso>
+  </class>
+
+  <class name="progress-bar">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents non-selectable controls that provide visual feedback
+      for lengthy operations. The content of the progress-bar is filled as the
+      associated operation proceeds.
+    </description>
+    <initargs>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the progress-bar.
+          <enum>
+            <argument name=":horizontal">
+              <description>Specifies horizontal orientation (default).</description>
+            </argument>
+            <argument name=":smooth">
+              <description>
+                The progress-bar is filled in a continuous manner rather than in
+                segments.
+              </description>
+            </argument>
+            <argument name=":vertical">
+              <description>Specifies vertical orientation.</description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:bar-position</reftopic>
+      <reftopic>gfw:inner-limits</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:step</reftopic>
+      <reftopic>gfw:step-increment</reftopic>
+    </seealso>
+  </class>
+
+  <class name="status-bar">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:widget</reftopic>
+          <reftopic>gfw:layout-managed</reftopic>
+          <reftopic>gfw:item-manager</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents the status bar widget with which <reftopic>gfw:top-level</reftopic>
+      instances may be configured. Application code does not instantiate this class directly.
+    </description>
+    <initargs>
+      <argument name=":parent">
+        <description>
+          This initarg specifies the parent of the control.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:update-native-style</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:style-of</reftopic>
+      <reftopic>gfw:status-item</reftopic>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+      <reftopic>gfw:update-from-items</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+    </seealso>
+  </class>
+
+  <class name="status-item">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:item</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents an element of a <reftopic>gfw:status-bar</reftopic>.
+    </description>
+    <initargs>
+      <argument name=":parent">
+        <description>
+          This initarg specifies the parent of the control.
+        </description>
+      </argument>
+      <argument name=":data">
+        <description>
+          See <reftopic>gfw:item</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+    </seealso>
+  </class>
+
+  <class name="scrollbar">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents a control having a proportional sliding-thumb
+      component and step arrows at either end. Unlike a
+      <reftopic>gfw:standard-scrollbar</reftopic>, scrollbar controls can
+      be placed anywhere inside a container.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          The function supplied via this initarg will be used as the
+          implementation of <reftopic>gfw:event-scroll</reftopic> in
+          a <reftopic>gfw:event-dispatcher</reftopic> configured for the
+          scrollbar.
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the scrollbar. Currently, only one of the
+          following styles may be specified:
+          <enum>
+            <argument name=":horizontal"/>
+            <argument name=":vertical"/>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:event-scroll</reftopic>
+      <reftopic>gfw:update-scrolling-state</reftopic>
+    </seealso>
+  </class>
+
+  <class name="slider">
+    <description>
+      <hierarchy>
+        <inherits>
+          <reftopic>gfw:control</reftopic>
+        </inherits>
+      </hierarchy>
+      This class represents a control having a sliding-thumb component
+      and optional tick marks.
+    </description>
+    <initargs>
+      <argument name=":callback">
+        <description>
+          The function supplied via this initarg will be used as the
+          implementation of <reftopic>gfw:event-scroll</reftopic> in
+          a <reftopic>gfw:event-dispatcher</reftopic> configured for the
+          slider.
+        </description>
+      </argument>
+      <argument name=":outer-limit">
+        <description>
+          Accepts an <refclhs>integer</refclhs> describing the maximum possible
+          slider positions (the minimum is 0).
+        </description>
+      </argument>
+      <argument name=":style">
+        <description>
+          This is a <refclhs>list</refclhs> of keyword symbols that define
+          the look-and-feel of the slider. By default, sliders are oriented
+          horizontally with a tick mark below the control at the beginning
+          and end. One of the following primary
+          styles may be specified:
+          <enum>
+            <argument name=":auto-ticks">
+              <description>
+                Specifies that the slider will display a tick mark for each
+                increment in its value range; the opposite of :no-ticks.
+              </description>
+            </argument>
+            <argument name=":horizontal">
+              <description>
+                Configures the slider to be oriented horizontally. 
+              </description>
+            </argument>
+            <argument name=":no-ticks">
+              <description>
+                Specifies that the slider will not display any tick marks;
+                the oppposite of :auto-ticks.
+              </description>
+            </argument>
+            <argument name=":vertical">
+              <description>
+                Configures the slider to be oriented vertically.
+              </description>
+            </argument>
+          </enum>
+          Zero or more of the following optional styles may be specified:
+          <enum>
+            <argument name=":border">
+              <description>
+                By default, a slider is drawn without a border; this style
+                enables a border around the control.
+              </description>
+            </argument>
+            <argument name=":ticks-after">
+              <description>
+                Specifies that the slider should display its tick marks to
+                the right of (or below) the control. This style can be
+                combined with :ticks-before.
+              </description>
+            </argument>
+            <argument name=":ticks-before">
+              <description>
+                Specifies that the slider should display its tick marks to the
+                left of (or above) the control. This style can be combined with
+                :ticks-after.
+              </description>
+            </argument>
+          </enum>
+        </description>
+      </argument>
+      <argument name=":parent">
+        <description>
+          See <reftopic>gfw:control</reftopic>.
+        </description>
+      </argument>
+      <argument name=":dispatcher">
+        <description>
+          See <reftopic>gfw:event-source</reftopic>.
+        </description>
+      </argument>
+      <argument name=":handle">
+        <description>
+          See <reftopic>gfs:native-object</reftopic>.
+        </description>
+      </argument>
+    </initargs>
+    <seealso>
+      <reftopic>gfs:dispose</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:inner-limits</reftopic>
+      <reftopic>gfw:outer-limit</reftopic>
+      <reftopic>gfw:page-increment</reftopic>
+      <reftopic>gfw:step-increment</reftopic>
+      <reftopic>gfw:thumb-position</reftopic>
+    </seealso>
+  </class>
+
+  <!-- STRUCTURES -->
+
+</symbols>

@@ -1,0 +1,1 @@
+../source/trivial-garbage/trivial-garbage.asd

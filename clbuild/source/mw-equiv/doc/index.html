@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html> 
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>MW-EQUIV - Extensible Object Equivalence for Common Lisp</title>
+  <style type="text/css">
+  body { background-color: white; text-align: justify; }
+  pre { padding:5px; background-color:#e0e0e0 }
+  h3, h4 { text-decoration: underline; }
+  a { text-decoration: none; }
+  a.noborder { border:0px }
+  a.noborder:hover { border:0px }  
+  a.none { border:1px solid white; }
+  a.none:hover { border:1px solid white; }
+  a { border:1px solid white; }
+  a:hover   { border: 1px solid black; } 
+  a.noborder { border:0px }
+  a.noborder:hover { border:0px }
+  </style>
+
+</head>
+
+<body>
+
+<h2>MW-EQUIV &mdash; An Extensible Object Equivalence for Common Lisp</h2>
+
+<blockquote>
+<br>&nbsp;<br><h3><a name=abstract class=none>Abstract</a></h3>
+
+<p>
+  Common Lisp comes with quite some functions to compare objects for
+  equality, yet none is applicable in every situation and in general
+  this is hard, as <a href="#references">equality of objects depends
+  on the semantics of operations on them</a>.  As consequence, users
+  find themselves regularly in a situation where they have to roll
+  their own specialized equality test.
+</p>
+
+<p>
+  This module provides one of many possible equivalence relations
+  between standard Common Lisp objects.  However, it can be extended
+  for new objects through a simple CLOS protocol.  The rules when two
+  objects are considered equivalent distinguish
+  between <em>mutating</em> and <em>frozen objects</em>.  A frozen
+  object is promised not to be mutated in the future in a way that
+  operations on it can notice the difference.
+</p>
+<p>
+  We have chosen to compare mutating objects only for identity
+  (pointer equality), to avoid various problems.  Equivalence for
+  frozen objects on the other hand is established by recursing on
+  the objects' constituent parts and checking their equivalence.
+  Hence, two objects are equivalent under
+  the <a href="#object="><code>OBJECT=</code></a> relation, if they
+  are either identical, or if they are frozen and structurally
+  equivalent, i.e, their constituents are point-wise equivalent.
+</p>
+<p>
+  Since many objects are potentially mutable, but are not necessarily
+  mutated from a certain point in their life time on, it is possible
+  to promise to the equivalence relation that they remain frozen for
+  the rest of their life time, thus enabling coarser equivalence than
+  the often too fine-grained pointer equality.
+</p>
+
+<p>
+The code comes with
+a <a
+href="http://www.opensource.org/licenses/bsd-license.php">BSD-style
+license</a> so you can basically do with it whatever you want.
+</p>
+
+<p>
+The canonical location for MW-EQUIV is
+ <a href="http://www.foldr.org/~michaelw/projects/mw-equiv/">http://www.foldr.org/~michaelw/projects/mw-equiv/</a>.
+</p>
+<p>
+<font color=red>Download shortcut:</font> <a href="http://www.foldr.org/~michaelw/projects/mw-equiv/mw-equiv.tar.gz">http://www.foldr.org/~michaelw/projects/mw-equiv/mw-equiv.tar.gz</a>.
+</p>
+</blockquote>
+
+<br>&nbsp;<br><h3><a class=none name="contents">Contents</a></h3>
+<ol>
+  <li><a href="#download">Download</a>
+  <li><a href="#support">Support</a>
+  <li><a href="#quickstart">Quick Start</a>
+  <li><a href="#dictionary">The MW-EQUIV dictionary</a>
+    <ol>
+      <li><a href="#object-constituents"><code>object-constituents</code></a>
+      <li><a href="#object-frozenp"><code>object-frozenp</code></a>
+      <li><a href="#object-sequence="><code>object-sequence=</code></a>
+      <li><a href="#object-vector="><code>object-vector=</code></a>
+      <li><a href="#object="><code>object=</code></a>
+    </ol>
+  <li><a href="#references">References</a>
+  <li><a href="#ack">Acknowledgements</a>
+</ol>
+
+<br>&nbsp;<br><h3><a class=none name="download">Download</a></h3>
+
+<p>
+  MW-EQUIV together with this documentation can be downloaded from 
+  <a href="http://www.foldr.org/~michaelw/projects/mw-equiv/mw-equiv.tar.gz">http://www.foldr.org/~michaelw/projects/mw-equiv/mw-equiv.tar.gz</a>. 
+  Alternatively, it can be installed via <a href="http://www.cliki.net/ASDF-Install">ASDF-Install</a>:
+</p>
+
+<pre>
+  (asdf-install:install "http://www.foldr.org/~michaelw/projects/mw-equiv/mw-equiv.tar.gz")
+</pre>
+
+<p>
+  The current released version is 0.1.3.
+</p>
+
+<p>
+  A <a href="http://subversion.tigris.org/">Subversion</a> repository
+  is available
+  at <a href="http://svn.foldr.org/~michaelw/mw-equiv/">http://svn.foldr.org/~michaelw/mw-equiv/</a>.
+</p>
+
+<br>&nbsp;<br><h3><a class=none name="support">Support</a></h3>
+
+<p>
+Please direct bug reports, patches, questions, and any other feedback
+to <a href="mailto:michaelw+equiv@foldr.org">Michael Weber</a>.
+</p>
+
+<br>&nbsp;<br><h3><a class=none name="quickstart">Quick Start</a></h3>
+
+<p>
+  To extend the equivalence
+  relation <a href="#object="><code>OBJECT=</code></a> for a new type,
+  the following steps are necessary:
+</p>
+
+<ul>
+  <li>Specialize <a
+    href="#object-frozenp"><code>OBJECT-FROZENP</code></a> for
+    instances of the new type to reflect whether they are frozen or not.</li>
+  <li>Specialize <a href="#object-constituents"><code>OBJECT-CONSTITUENTS</code></a> for the new
+    type.</li>
+</ul>
+
+<br>&nbsp;<br><h3><a class=none name="dictionary">The MW-EQUIV dictionary</a></h3>
+
+
+<!-- Entry for OBJECT-CONSTITUENTS -->
+
+<p><br>[Generic function]<br><a class=none name='object-constituents'><b>object-constituents</b> <i>type</i> =&gt; <i>list</i></a>
+<blockquote><br>
+
+<p>Returns list of accessors used to determine equivalence of objects of type TYPE. </p>
+
+</blockquote>
+
+<!-- End of entry for OBJECT-CONSTITUENTS -->
+
+
+<!-- Entry for OBJECT-CONSTITUENTS -->
+
+<p><br>[Method]<br><a class=none><b>object-constituents</b> <i>(type (eql cons))</i> =&gt; <i>list</i></a>
+<blockquote><br>
+
+  Frozen <a
+  href="http://www.lispworks.com/documentation/HyperSpec/Body/14_a.htm">cons</a>es
+  are compared by their CAR and CDR entries.  Note that by default
+  (as per <a href="#object-frozenp"><code>OBJECT-FROZENP</code></a>), conses are
+  potentially mutable.  Thus, two conses are only regarded equivalent
+  when they are pointer-equal, i.e, the same.
+
+</blockquote>
+
+<!-- End of entry for OBJECT-CONSTITUENTS -->
+
+
+<!-- Entry for OBJECT-CONSTITUENTS -->
+
+<p><br>[Method]<br><a class=none><b>object-constituents</b> <i>(type (eql pathname))</i> =&gt; <i>list</i></a>
+<blockquote><br>
+
+  <a
+  href="http://www.lispworks.com/documentation/HyperSpec/Body/19_ab.htm">Pathnames</a>
+  are compared according to their directory, name, type, version, host and
+  device.
+
+</blockquote>
+
+<!-- End of entry for OBJECT-CONSTITUENTS -->
+
+
+<!-- Entry for OBJECT-FROZENP -->
+
+<p><br>[Generic function]<br><a class=none name='object-frozenp'><b>object-frozenp</b> <i>object</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+<p>
+  Indicates whether OBJECT is frozen.  That is, this function must
+  return true only if OBJECT will not be mutated in an observable way
+  from the point of the call until the end of its life time, otherwise
+  false.
+</p>
+
+</blockquote>
+
+<!-- End of entry for OBJECT-FROZENP -->
+
+
+<!-- Entry for OBJECT-FROZENP -->
+
+<p><br>[Method]<br><a class=none><b>object-frozenp</b> <i>object</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+  Unknown objects are conservatively assumed to be mutating, hence this
+  method returns false.
+
+</blockquote>
+
+<!-- End of entry for OBJECT-FROZENP -->
+
+
+<!-- Entry for OBJECT-FROZENP -->
+
+<p><br>[Method]<br><a class=none><b>object-frozenp</b> <i>(object cons)</i> =&gt; <i>generalized-boolean</i></a>
+<br><a class=none><b>object-frozenp</b> <i>(object string)</i> =&gt; <i>generalized-boolean</i></a>
+<br><a class=none><b>object-frozenp</b> <i>(object vector)</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+Returns false.
+
+</blockquote>
+
+<!-- End of entry for OBJECT-FROZENP -->
+
+
+<!-- Entry for OBJECT-FROZENP -->
+
+<p><br>[Method]<br><a class=none><b>object-frozenp</b> <i>(object pathname)</i> =&gt; <i>generalized-boolean</i></a>
+<br><a class=none><b>object-frozenp</b> <i>(object number)</i> =&gt; <i>generalized-boolean</i></a>
+<br><a class=none><b>object-frozenp</b> <i>(object character)</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+Returns true.
+
+</blockquote>
+
+<!-- End of entry for OBJECT-FROZENP -->
+
+
+<!-- Entry for OBJECT-SEQUENCE= -->
+
+<p><br>[Function]<br><a class=none name='object-sequence='><b>object-sequence=</b> <i>xs ys</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+<p>Checks whether sequences XS and YS are element-wise equivalent, by
+  means of <a href="#object="><code>OBJECT=</code></a>, and of the
+  same length. </p>
+
+</blockquote>
+
+<!-- End of entry for OBJECT-SEQUENCE= -->
+
+
+<!-- Entry for OBJECT-VECTOR= -->
+
+<p><br>[Function]<br><a class=none name='object-vector='><b>object-vector=</b> <i>xs ys</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+<p>Checks whether vectors XS and YS are element-wise equivalent, by
+  means of <a href="#object="><code>OBJECT=</code></a>, and of the
+  same length.
+  Use <a href="#object-sequence="><code>OBJECT-SEQUENCE=</code></a> instead.
+</p>
+
+</blockquote>
+
+<!-- End of entry for OBJECT-VECTOR= -->
+
+
+<!-- Entry for OBJECT= -->
+
+<p><br>[Function]<br><a class=none name='object='><b>object=</b> <i>x y <tt>&amp;optional</tt> frozenp</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+Returns true if X and Y are (observationally) equivalent. Hence, <a href="#object="><code>OBJECT=</code></a> is an equivalence relation: <ol><li>(object= x x) </li>
+<li>(equal (object= x y frozenp) (object= y x frozenp)) </li>
+<li>(implies (and (object= x y frozenp) (object= y z frozenp))         (object= x z frozenp)) </li>
+</ol>
+<p>Frozen objects (i.e., objects which are promised not to mutate) are
+compared by recursing into their constituents, as specified
+by <a
+href="#object-constituents"><code>OBJECT-CONSTITUENTS</code></a>.
+Mutating (i.e., not frozen) objects are compared
+with the pointer equality EQ. </p><p>FROZENP can be used to override
+the defaults for X and Y given
+by <a href="#object-frozenp"><code>OBJECT-FROZENP</code></a>.  It is a
+promise that none of the objects X and Y are referring to with their
+constituents, or <strong>any of the constituents'
+constituents</strong>, are mutated from the time of the call
+to <a href="#object="><code>OBJECT=</code></a> onwards. </p><p>If one
+lies with
+FROZENP, <a href="#object-frozenp"><code>OBJECT-FROZENP</code></a>,
+or <a
+href="#object-constituents"><code>OBJECT-CONSTITUENTS</code></a>, all
+bets are off and the result
+of <a href="#object="><code>OBJECT=</code></a> is
+meaningless. </p><p><a href="#object="><code>OBJECT=</code></a>
+diverges if both X and Y are circular data structures. </p><p>See
+also: <a
+href="http://home.pipeline.com/~hbaker1/ObjectIdentity.html">http://home.pipeline.com/~hbaker1/ObjectIdentity.html</a></p>
+
+</blockquote>
+
+<!-- End of entry for OBJECT= -->
+
+<br>&nbsp;<br><h3><a class=none name="references">References</a></h3>
+
+<ol>
+  <li><em>Kent M. Pitman</em>, <a href="http://www.nhplace.com/kent/PS/EQUAL.html">EQUAL
+      Rights&mdash;and Wrongs&mdash; in Lisp</a>, 1997</li>
+  <li><em>Henry G. Baker</em>, <a
+  href="http://home.pipeline.com/~hbaker1/ObjectIdentity.html">Equal
+      Rights for Functional Objects</a>, 1992</li>
+</ol>
+
+<br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
+<p>
+This documentation was prepared with <a href="http://weitz.de/documentation-template/">DOCUMENTATION-TEMPLATE</a>.
+</p>
+<p><a href="http://www.foldr.org/~michaelw/">BACK TO MY HOMEPAGE</a></p>
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>
+	  clbuild
+	</title>
+<link rel="stylesheet" type="text/css" href="index.css">
+</head>
+<body style="width: 62em">
+<div id="header"><div style="margin-left: 30px"><b><span style="color: #55a6e0">cl</span><span style="color: #000000">build</span></b></div></div>
+<div id="homepage" class="main">
+  <p>
+    A script to update/install the latest versions of all the most
+    important Common Lisp packages.
+  </p>
+
+  <h3>About</h3>
+
+  <p>
+    clbuild is a shell script helping with the download, compilation, an
+    invocation of Common Lisp applications.  It defaults to SBCL but
+    otherwise tries to be somewhat independent of your local
+    environment.
+  </p>
+
+  <p>
+    clbuild was originally written by Luke Gorrie.
+    (Idea from jhbuild by James Henstridge, a Gnome hacker).
+  </p>
+
+<!--
+  <p>
+    The last time someone updated this web page, the following libraries and
+    applications were supported as part of the main project list:
+  </p>
+  <div style="border: 1px dotted #55a6e0;
+              padding: 1em;">
+  acl-compat adw-charting alexandria arnesi babel beirc bordeaux-threads cffi
+  chipz chunga cl+ssl cl-base64 cl-dot cl-fad cl-irc cl-pdf cl-ppcre
+  cl-typesetting cl-vectors cl-webdav cl-who cl-yacc clim-alerts climacs
+  climplayer closer-mop closure closure-common closure-html clsql clx cxml
+  cxml-rng cxml-stp drakma fiveam flexi-streams flexichain graphic-forms gsharp
+  hunchentoot ieee-floats ironclad iterate ltk lw-compat mcclim md5 mel-base
+  midi mw-equiv net-telent-date parse-number plexippus-xpath postmodern psgraph
+  puri redshank rfc2388 rt salza salza2 series skippy slime spatial-trees
+  split-sequence trivial-features trivial-gray-streams trivial-sockets
+  trivial-utf-8 url-rewrite usocket vecto zip zpb-ttf zpng
+  </div> 
+  <p>
+    And the following projects were part of the wnnp list (work-needing
+    and prospective projects):
+  </p>
+  <div style="border: 1px dotted #55a6e0;        padding: 1em;">
+  cells cells-gtk cffi-net cl-opengl clawk clg cljl eclipse ftd gtk-ffi lisa parse-html ph-maths pod-utils regex s-base64 s-http-client s-sysdeps s-utils s-xml s-xml-rpc xuriella zebu
+  </div> 
+-->
+
+  <p>
+    Please send patches bug reports
+    to <a href="mailto:clbuild-devel@common-lisp.net">
+      clbuild-devel@common-lisp.net</a>
+    (<a href="http://common-lisp.net/cgi-bin/mailman/listinfo/clbuild-devel">list information</a>).
+  </p>
+
+  <h3>Adding projects</h3>
+  <p>
+    Add projects or submit corrections like this, please:
+  </p>
+  <div style="padding: 5px; border: 4px solid #55a6e0">
+    <ol>
+      <li style="margin-top: 3px">Add new projects to <tt>clbuild/wnpp-projects</tt>.
+	Fix <tt>clbuild/projects</tt> or <tt>clbuild/wnpp-projects</tt>
+	for existing projects.</li>
+      <li style="margin-top: 3px">Use <tt>darcs record</tt> to make the change permanent.</li>
+      <li style="margin-top: 3px"><b>Make your repository available over http.</b>  This is where
+	others can get the change from you.</li>
+      <li style="margin-top: 3px">Send a <b>pull request</b> to the list, so that we can pull
+	from the patch from your repository.  This means to send an
+	email stating your repository URL and what you have changed.
+      </li>
+    </ol>
+  </div>
+
+  <h3>FAQ</h3>
+
+  <p>
+    <b> How does clbuild differ from asdf-install?
+    </b>
+  </p>
+  <p>
+     clbuild includes a list of <span style="font-weight: bold; color: #000077">selected</span> libraries
+    and applications and their <span style="font-weight: bold; color: #000077">well-known locations</span>, and
+    downloads the <span style="font-weight: bold; color: #000077">newest version or CVS/SVN/darcs repositories</span> if
+    possible.  It can also build SBCL for you and includes convenient
+    commands to start various applications.
+  </p>
+  <p>
+    <i>In contrast</i>, asdf-install can install <span style="font-weight: bold; color: #000077">any software</span>
+    listed on Cliki.  It always downloads <span style="font-weight: bold; color: #000077">release tarballs</span>.  (It
+    is up to the user to hunt down the trustworthy <span style="font-weight: bold; color: #000077">PGP keys as a
+    protection agains malicous wiki entries</span>.)
+  </p>
+
+  <p>
+    <div>
+      <b> My favourite application is not supported.  How can I
+      add it?
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+       <p>
+	 Yes, please see above.
+       </p>
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_tarballs">
+    </a>
+    <div>
+      <b> Why did you get rid of all tarball-only downloads?
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+       <p>
+         We use version-controlled download mechanisms to avoid losing local
+	 changes when updating.
+       </p>
+       <p>
+	 clbuild's source directory is meant as an area
+	 where hackers can do their work, and we wouldn't feel confident
+	 recommending it for that purpose if we had to delete and move
+	 directories or extract tarballs in there.
+       </p>
+       <p>
+	 Instead, we have the <a
+	 href="http://common-lisp.net/project/clbuild/mirror/">clbuild
+	 mirror</a> with darcs conversions of tarball-only projects.
+       </p>
+       <p>
+	 (Future versions of clbuild <i>might</i> do that darcs conversion
+	 on-the-fly somewhere in a new directory clbuild/import, and then use
+	 darcs pull from that directory into clbuild/source.  The downside of
+	 that approach would be that different users (and separate clbuild
+	 checkouts by the same user) would have incompatible darcs checkouts
+	 for the same project.)</p>
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_sbclrc">
+    </a>
+    <div>
+      <b> It doesn't load my ~/.sbclrc!
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      Yes, that's the default.  But you can change it in
+      clbuild.conf using the USER_INIT configuration variable.
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_preloaded">
+    </a>
+    <div>
+      <b> "clbuild lisp" doesn't seem to use my monster.core!
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      Yes, use "clbuild preloaded" if you want that.
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_start_slime_using_core">
+    </a>
+    <div>
+      <b> Can I start the lisp with swank already preloaded?
+      (Or: "clbuild slime" doesn't seem to load my monster.core)
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      Yes, you can change that behaviour in clbuild.conf  using the
+      START_SLIME_USING_CORE configuration variable.  To preload swank, you can
+      run "clbuild dumpcore slime" before doing that.
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_slime_configuration">
+    </a>
+    <div>
+      <b> Can I run emacs and slime without going through "clbuild slime"?
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      Yes, just run "clbuild slime-configuration".  It prints a
+      .emacs excerpt.  Copy&amp;paste it into your .emacs.
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_dependencies">
+    </a>
+    <div>
+      <b>Is the "dependencies" file autogenerated?
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      Yes, using "clbuild record-dependencies", which requires a complete
+      check-out of all projects, including wnpp-projects.<br>
+      <br>
+      You don't have to run this command when sending us patches for new
+      projects.  Anyone merging such a patch will rebuild the dependencies
+      before comitting anyway.<br>
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_dependency_details">
+    </a>
+    <div>
+      <b>The "dependencies" file is broken!
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+      <p> This file is an educated guess and sometimes not perfect.  We prefer
+      to err on the side of too many dependencies rather than too few.
+      </p>
+      <p>
+However, the following situations are <i>not</i> necessarily bugs:
+      </p>
+      <ul>
+  	<li>
+   circular dependencies:
+    (cffi depends on trivial-features, which depends on cffi itself.
+    That is <i>not</i> a problem.
+  <li> non-transitive dependencies:
+    (if A depends on B, which depends on C, it does <i>not</i> follow that A
+    depends on C.)
+   </ul>
+      </p>
+      <p>
+Make sure to distinguish between project dependencies and system
+dependencies.
+      </p>
+      <p>
+The following process computes the "project dependencies" of a project
+FOO:
+      </p>
+      <ul>
+  <li> look for all files named clbuild/source/FOO/*.asd and load them.
+    (Except for some special projects that force us to scan recursively
+    for asd files.)
+  <li> for each system BAR that we found a file FOO/bar.asd for, compute
+    the systems that BAR depends on.
+    (ASDF provides no function that I am aware of to find those
+    dependencies, so we scan the in-order-to slot to make an educated
+    guess what those dependencies are.)
+    As an extra exception, we sometimes add dependencies at this point,
+    for example to force mcclim to always depend on cffi, no matter
+    whether the caller currently has gtkairo enabled or not.
+
+  <li> for each such system that is a dependency, map the system back to
+    its asd file, and if that asd file is found somewhere in
+    clbuild/source/BAZ/, consider it to be part of project BAZ
+
+  <li> The projects found in the last step are the dependencies of FOO.
+      </ul>
+      </p>
+      <p>
+This process implies that dependencies between projects are not
+transitive.
+      </p>
+      <p>
+For example, the project `babel' depends on the project `rt' because the
+system BABEL-TEST depends on the system RT.
+      </p>
+      <p>
+But the system HUNCHENTOOT depends only on BABEL, not BABEL-TEST, so the
+project `hunchentoot' does not depend on the project `rt'.
+      </p>
+      <p>
+Think about "clbuild update hunchentoot" as "install everything I need
+to use/hack all parts of hunchentoot", which doesn't include BABEL-TEST
+or RT.  "clbuild update babel" means "install everything I need to
+use/hack babel", which includes BABEL-TEST and hence RT.
+      </p>
+    </div>
+  </p>
+
+  <p>
+    <a name="faq_shell"></a>
+    <div>
+      <b>Why is clbuild written in shell?  Lisp is so much better.
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+There are many answers to this question.  Here are just a few of them:
+
+  <ul>
+  <li> Luke originally wrote clbuild as a shell script.
+
+  <li> clbuild is not a mere shell script.  At least `recompile' and
+    `record-dependencies' are now written in Lisp.
+
+  <li> We basically just call out to darcs, git, cvs, and svn anyway.
+
+  <li> Thanks to the shell script, we can install lisp projects before
+    having built a clean SBCL, and without having to worry whether the
+    Lisp in $PATH is good enough.
+
+  <li> Building SBCL from a shell script seems like a natural thing to do.
+
+  <li> Other projects have tried to explore different parts of the design
+    space for lisp software installers.  There is cl-librarian written
+    in Lisp, clget written in Perl, and so on.
+      </ul>
+      </p>
+    </div>
+  </p>
+
+  <p>
+    <div>
+      <b> Does it work on cygwin?
+    </b>
+    </div>
+  </p>
+  <p>
+    <div>
+       It used to work on cygwin.
+       Beware that cygwin support is tested only occasionally and might
+       not be complete or functional anymore.
+
+       (In any case, you need to recompile SBCL with
+	an <a href="http://www.lichteblau.com/blubba/shortcut/">ASDF
+	patch for shortcut support</a> first.)
+    To start clbuild's slime, make sure to use the Windows version of
+    Emacs, not cygwin's Emacs.
+    </div>
+  </p>
+  
+
+  <h3>Download and Usage</h3>
+
+  <p>
+    clbuild is maintained in darcs.
+  </p>
+  <pre>$ <b>darcs get http://common-lisp.net/project/clbuild/clbuild</b></pre>
+
+  <p>You might want to make the shell script executable:</p>
+  <pre>$ <b>cd clbuild</b>
+clbuild$ <b>chmod +x clbuild</b></pre>
+
+  <p>
+    clbuild depends on various helper applications.
+    Try <tt>check</tt> to make sure they are installed:
+  </p>
+  <pre>clbuild$ <b>./clbuild check</b>
+Checking for helper applications...
+found /usr/bin/X11/cvs
+found /usr/bin/X11/svn
+found /usr/bin/X11/darcs
+found /usr/bin/X11/wget
+found /bin/tar
+found /bin/mktemp
+Success: All helper applications found.
+
+Checking Lisp startup...
+Success: Lisp starts up using "sbcl"
+
+Looking for installable systems...
+0 systems definition files registered</pre>
+
+  <p>
+    Use <tt>list</tt> to search for projects:
+  </p>
+  <pre>clbuild$ <b>./clbuild list web</b>
+i cl-webdav              WebDAV server
+i closure                CLIM-based web browser
+i hunchentoot            web server formerly known as TBNL</pre>
+  <p>
+    Run <tt>update</tt> to download the userland:
+  </p>
+  <pre>clbuild$ <b>./clbuild update --main-projects</b>
+cvs co flexichain...
+cvs co mcclim...
+<i>... lots of output not shown ...</i>
+update complete                                                   
+46 systems definition files registered</pre>
+
+  <p>
+    You do not have to download all default projects (and in particular,
+    wnpp-projects are not part of the default download anyway).  Instead,
+    you can specify a particular project, and download it with its
+    dependencies only:
+  </p>
+  <pre>clbuild$ <b>./clbuild update climacs</b>
+clbuild update climacs
+climacs depends on: climacs clx flexichain mcclim slime spatial-trees 
+include dependencies in update? (Y/n)<b>y</b>
+cvs co climacs...
+cvs co clx...
+<i>... lots of output not shown ...</i></pre>
+  <p>
+    To reduce start up times, you can dump a core file including all
+    main projects (or the projects specified on the command line, just like
+    with <i>update</i>):
+  </p>
+  <pre>clbuild$ <b>./clbuild climacs</b>   # slow, from fasls
+clbuild$ <b>./clbuild dumpcore climacs</b>
+...
+clbuild$ <b>./clbuild climacs</b>   # fast, using monster.core</pre>
+  <h3>Building SBCL</h3>
+  <p>
+    You can also download and recompile SBCL using <tt>buildsbcl</tt>
+    or <tt>buildworld</tt>:
+  </p>
+  clbuild$ <b>./clbuild buildsbcl</b></pre>
+
+  <h3>Command line arguments</h3>
+  <p>
+    For other options, see <tt>help</tt>:
+  </p>
+  <pre>clbuild$ <b>./clbuild help</b>
+Usage:
+  check         check availability of all necessary helper applications
+
+  list [PATTERN]  list all projects, or projects matching PATTERN
+
+  update [--dependencies|--no-dependencies] PROJECT_NAME
+                download/update this project
+  update [--resume]
+                download/update main projects.  With --resume, consider
+                only projects that a previous update run failed to fetch.
+  skip PROJECT_NAME
+                mark this project as done for the purposes of update --resume
+
+  recompile [PROJECT_NAME] recompile main applications (or just PROJECT_NAME)
+  dumpcore [PROJECT_NAME]  recompile and dump a core file for faster startup
+  build [PROJECT_NAME]     update &amp;&amp; dumpcore
+
+  diff          show local changes (for all version-controlled projects)
+  check-urls    compared installed repository urls agains current locations
+  clean-links   remove broken symlinks in systems/
+  update-missing  download only projects not present yet
+  register-asd PROJECT  add .asd file symlinks for PROJECT
+
+  buildsbcl [XC_HOST]  download/update and compile SBCL
+  world         buildsbcl && build
+
+  clean         delete all compiled object files
+  mrproper      delete all downloaded source and fasl files
+
+  slime         run the Superior Lisp Interaction Mode in a fresh Emacs
+  lisp          run Lisp in the terminal
+
+  record-dependencies   rebuild dependency information file
+
+Starting applications:
+
+  run APPLICATION   run this application
+  run --help        show help for applications
+
+If you do 'world' or 'buildsbcl' then SBCL will be installed in
+target/ and used for future commands. If you don't run these commands
+(or you remove target/) then clbuild uses the 'sbcl' in your PATH.
+
+For configuration options (including for non-SBCL lisps), see clbuild.conf.
+</pre>
+
+  <h3>Application startup</h3>
+  <pre>clbuild$ <b>./clbuild run --help</b>
+clbuild run APPLICATION [ARGS...]
+
+  run listener      run the McCLIM listener
+  run gsharp        run the Gsharp score editor 
+  run climacs       run the Climacs text editor
+  run closure [HOME_PAGE_URL]   run the CLOSURE web browser
+                    (required Debian packages: gif2png,libjpeg-progs)
+  run beirc         run the Beirc IRC client
+  run climplayer    run the CLIMPlayer music player
+                    (required Debian packages: mplayer, fileschanged, fam)
+  run demodemo      run some random CLIM examples
+  run clim-alerts   run CLIM alerts
+  run eclipse [DPY] run the eclipse window manager
+
+  run hunchentoot   run the Hunchentoot web server test
+  run webdav DIR    run the CL-WEBDAV server, serving directory DIR
+                    (required Debian packages: libssl-dev)
+
+  run parse-xml FILENAME
+                    check XML for well-formedness
+  run validate-xml FILENAME
+                    check XML for validity
+  run validate-relax-ng [--compact yes] XML-FILENAME SCHEMA-FILENAME
+                    check XML for validity against a Relax NG Schema
+  run html-to-xhtml HTML-FILENAME OUTPUT-FILENAME
+  run xhtml-to-html XML-FILENAME OUTPUT-FILENAME
+                convert between HTML 4 and XHTMl
+
+  run vecto-demo    generate a test image using vecto
+</pre>
+</body>
+</html>

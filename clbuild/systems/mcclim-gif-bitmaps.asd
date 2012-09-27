@@ -1,0 +1,1 @@
+../source/mcclim/mcclim-gif-bitmaps.asd

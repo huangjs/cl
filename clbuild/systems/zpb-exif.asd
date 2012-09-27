@@ -1,0 +1,1 @@
+../source/zpb-exif/zpb-exif.asd

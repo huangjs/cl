@@ -1,0 +1,73 @@
+? fasl
+Index: slime.el
+===================================================================
+RCS file: /project/slime/cvsroot/slime/slime.el,v
+retrieving revision 1.275
+diff -u -r1.275 slime.el
+--- slime.el	23 Apr 2004 22:09:11 -0000	1.275
++++ slime.el	24 Apr 2004 20:54:56 -0000
+@@ -485,7 +485,7 @@
+     ("\C-m" slime-macroexpand-1 :prefixed t :inferior t)
+     ("\M-m" slime-macroexpand-all :prefixed t :inferior t)
+     ("\M-0" slime-restore-window-configuration :prefixed t :inferior t)
+-    ("\C-h" slime-hyperspec-lookup :prefixed t :inferior t :sldb t)
++    ("\C-h" slime-hyperdoc-key :prefixed t :inferior t :sldb t)
+     ([(control meta ?\.)] slime-next-location :inferior t)
+     ;; Emacs20 on LinuxPPC signals a 
+     ;; "Invalid character: 400000040, 2147479172, 0xffffffd8"
+@@ -6619,6 +6619,20 @@
+ (defun sldb-xemacs-post-command-hook ()
+   (when (get-text-property (point) 'point-entered)
+     (funcall (get-text-property (point) 'point-entered))))
++
++
++;;; Hyperdoc
++(defun slime-hyperdoc-key ()
++  (interactive)
++  (slime-hyperdoc (symbol-name (slime-function-called-at-point/line))))
++
++(defun slime-hyperdoc (symbol-name)
++  (interactive (list (slime-read-symbol "Hyperdoc for: ")))
++  (slime-eval-async 
++   `(swank:hyperdoc ,symbol-name)
++   (slime-buffer-package)
++   (lambda (uri)
++     (browse-url uri))))
+ 
+ 
+ ;;; Finishing up
+Index: swank-sbcl.lisp
+===================================================================
+RCS file: /project/slime/cvsroot/slime/swank-sbcl.lisp,v
+retrieving revision 1.83
+diff -u -r1.83 swank-sbcl.lisp
+--- swank-sbcl.lisp	6 Apr 2004 10:42:53 -0000	1.83
++++ swank-sbcl.lisp	24 Apr 2004 20:54:56 -0000
+@@ -40,6 +40,7 @@
+   (require 'sb-bsd-sockets)
+   (require 'sb-introspect)
+   (require 'sb-posix)
++  (require 'hyperdoc)
+   )
+ 
+ (declaim (optimize (debug 3)))
+Index: swank.lisp
+===================================================================
+RCS file: /project/slime/cvsroot/slime/swank.lisp,v
+retrieving revision 1.171
+diff -u -r1.171 swank.lisp
+--- swank.lisp	22 Apr 2004 21:37:50 -0000	1.171
++++ swank.lisp	24 Apr 2004 20:54:57 -0000
+@@ -2063,6 +2063,12 @@
+ 			(with-connection (connection)
+ 			  (simple-break))))))
+ 
++(defslimefun hyperdoc (string)
++  (multiple-value-bind (name package-name internal-p)
++      (tokenize-symbol-designator (case-convert-input string))
++    (declare (ignore internal-p))
++    (hyperdoc:lookup package-name name)))
++
+ ;;; Local Variables:
+ ;;; eval: (font-lock-add-keywords 'lisp-mode '(("(\\(defslimefun\\)\\s +\\(\\(\\w\\|\\s_\\)+\\)"  (1 font-lock-keyword-face) (2 font-lock-function-name-face))))
+ ;;; End:

@@ -1,0 +1,3954 @@
+<?xml version="1.0"?>
+<!--
+    gfw-function-symbols.xml
+
+    Copyright (c) 2007, Jack D. Unrue
+-->
+
+<symbols name="gfw">
+
+  <!-- FUNCTIONS -->
+
+  <function name="process-events">
+    <syntax>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Call this function to processing pending events until the event queue
+      is empty.
+    </description>
+    <seealso>
+      <reftopic>gfw:default-message-filter</reftopic>
+      <reftopic>gfw:message-loop</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-pointer-location">
+    <syntax>
+      <return>
+        <reftopic>gfs:point</reftopic>
+      </return>
+    </syntax>
+    <description>
+      This function returns the current location of the pointing device in
+      screen coordinates.
+    </description>
+    <seealso>
+      <reftopic>gfw:translate-point</reftopic>
+    </seealso>
+  </function>
+
+  <function name="translate-point">
+    <syntax>
+      <arguments>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> representing the source or
+            target coordinate system, depending on the value of <arg1/>.
+          </description>
+        </argument>
+        <argument name="system">
+          <description>
+            One of the <refclhs>symbol</refclhs>s :display or :client to
+            indicate the target coordinate system.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            The <reftopic>gfs:point</reftopic> to be converted.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:point</reftopic>
+      </return>
+    </syntax>
+    <description>
+      This function converts the coordinates specified by <arg2/> from <arg0/>
+      (or the display's) coordinate system to the display (or <arg0/>).
+    </description>
+  </function>
+
+  <function name="cursor-of">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> whose cursor is to be
+            returned (modified).
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfg:cursor</reftopic>
+      </return>
+    </syntax>
+    <description>
+      This function returns (sets) the cursor image associated with a widget. For
+      subclasses of <reftopic>gfw:window</reftopic>, this function will always return
+      a cursor, although this may be the window class cursor. For non-window
+      objects, this function may return NIL. The SETF function will dispose the
+      previously-assigned cursor, if any, and then assume ownership of the new cursor.
+      The association remains in effect until the next call to the SETF function.
+    </description>
+    <seealso>
+      <reftopic>gfw:show-cursor</reftopic>
+      <reftopic>gfw:with-cursor</reftopic>
+      <reftopic>gfw:with-wait-cursor</reftopic>
+      <reftopic>gfg:cursor</reftopic>
+    </seealso>
+  </function>
+
+  <function name="show-cursor">
+    <syntax>
+      <arguments>
+        <argument name="flag">
+          <description>
+            A <refclhs>boolean</refclhs>; pass NIL to hide the cursor, or
+            non-NIL to make the cursor visible.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Use this function to control the visibility of the mouse cursor.
+      The system maintains a display counter whose value must be
+      greater than 0 for the cursor to actually be visible. When <arg1/> is
+      NIL, then the system counter is decremented; when <arg1/> is non-NIL,
+      the counter is incremented.
+    </description>
+    <seealso>
+      <reftopic>gfw:cursor-of</reftopic>
+      <reftopic>gfw:with-cursor</reftopic>
+      <reftopic>gfw:with-wait-cursor</reftopic>
+      <reftopic>gfg:cursor</reftopic>
+    </seealso>
+  </function>
+
+  <function name="startup">
+    <syntax>
+      <arguments>
+        <argument name="string">
+          <description>
+            A <refclhs>string</refclhs> identifying the application's name.
+          </description>
+        </argument>
+        <argument name="function">
+          <description>
+            A <emphasis>function</emphasis> with initialization code for the
+            application.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      This is the main entry point for applications.
+    </description>
+    <seealso>
+      <reftopic>gfw:shutdown</reftopic>
+    </seealso>
+  </function>
+
+  <function name="shutdown">
+    <syntax>
+      <arguments>
+        <argument name="integer">
+          <description>
+            An <refclhs>integer</refclhs> exit code.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Applications call this function to perform graceful cleanup and exit.
+      One of the side effects of this function is the posting of a WM_QUIT
+      message.
+    </description>
+    <seealso>
+      <reftopic>gfw:startup</reftopic>
+    </seealso>
+  </function>
+
+  <function name="capture-mouse">
+    <syntax>
+      <arguments>
+        <argument name="window">
+          <description>
+            The <reftopic>gfw:window</reftopic> in which to capture the mouse.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Enables <arg0/> to receive mouse input events even when the mouse pointer
+      is outside its bounds, and at the same time, prevent other windows from
+      receiving those mouse events. Only one window at a time can capture the
+      mouse. This function is primarily intended for use with a window in the
+      foreground; background windows may still capture the mouse, but only mouse
+      move events will be received and those only when the mouse hotspot is within
+      the visible portions of such a window.
+    </description>
+    <seealso>
+      <reftopic>gfw:release-mouse</reftopic>
+    </seealso>
+  </function>
+
+  <function name="release-mouse">
+    <syntax>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Clears the mouse capture state to restore normal mouse input processing.
+    </description>
+    <seealso>
+      <reftopic>gfw:capture-mouse</reftopic>
+    </seealso>
+  </function>
+
+  <function name="layout-attribute">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="layout-manager">
+          <description>
+            The <reftopic>gfw:layout-manager</reftopic> responsible for
+            positioning <arg1/>'s children.
+          </description>
+        </argument>
+        <argument name="thing">
+          <description>
+            An object whose position and size are managed by <arg0/>.
+          </description>
+        </argument>
+        <argument name="symbol">
+          <description>
+            A <refclhs>symbol</refclhs> identifying an attribute supported by
+            <arg0/>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>object</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Each <reftopic>gfw:layout-manager</reftopic> subclass can support attributes
+      that apply to each <arg1/>, which this function allows to be set
+      or retrieved. After setting attribute values, call <reftopic>gfw:layout</reftopic>
+      on the container managed by <arg0/>.
+    </description>
+  </function>
+
+  <function name="default-message-filter">
+    <syntax>
+      <arguments>
+        <argument name="gm-code">
+          <description>
+            The value returned by the Win32 API function
+            <refwin32api>GetMessage</refwin32api>.
+          </description>
+        </argument>
+        <argument name="msg-ptr">
+          <description>
+            A foreign pointer to a Win32 <refwin32api>MSG</refwin32api>
+            structure, filled in by <refwin32api>GetMessage</refwin32api>,
+            containing raw event data to be translated and dispatched.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Processes messages for all windows, non-modal dialogs, and controls.
+        Accelerator keys are translated by this function. Returns NIL
+        so that <reftopic>gfw:message-loop</reftopic> will continue, unless
+        <arg0/> is less than or equal to 0, in which case T is returned
+        so that <reftopic>gfw:message-loop</reftopic> will exit. More
+        specifically, when <arg0/> is 0, <arg1/> identifies a WM_QUIT
+        message indicating normal shutdown; if <arg0/> is -1, then the system
+        has reported an error during message retrieval; in this situation,
+        the application should attempt a graceful shutdown.
+      </para>
+      <para role="normal">
+        This function is not intended to be called by application code; rather,
+        it is passed to <reftopic>gfw:message-loop</reftopic>.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:process-events</reftopic>
+    </seealso>
+  </function>
+
+  <function name="message-loop">
+    <syntax>
+      <arguments>
+        <argument name="msg-filter">
+          <description>
+            A function to process each message.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      This function retrieves messages from the queue associated with the
+      current thread, passing each one to the function specified by <arg0/>
+      so that it may be translated and dispatched. The return value of the
+      <arg0/> function determines whether message-loop continues or returns
+      -- it must return NIL if message-loop should continue, or non-NIL if
+      message-loop should exit.
+    </description>
+    <seealso>
+      <reftopic>gfw:default-message-filter</reftopic>
+      <reftopic>gfw:process-events</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-event-time">
+    <syntax>
+      <return>
+        <emphasis>milliseconds</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Returns the millisecond timestamp of the event currently being processed.
+    </description>
+  </function>
+
+  <function name="obtain-chosen-files">
+    <syntax>
+      <arguments>
+        <argument name="file-dialog">
+          <description>
+            The <reftopic>gfw:file-dialog</reftopic> to query.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Interrogates the data structure associated with <arg0/> to obtain the
+      <refclhs>namestring</refclhs>s for selected files. This return value is
+      NIL if the user cancelled the dialog. Use this function when manually
+      constructing a file dialog.
+    </description>
+    <seealso>
+      <reftopic>gfw:with-file-dialog</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-chosen-font">
+    <syntax>
+      <arguments>
+        <argument name="font-dialog">
+          <description>
+            The <reftopic>gfw:font-dialog</reftopic> to query.
+          </description>
+        </argument>
+        <argument name="graphic-context">
+          <description>
+            A <reftopic>gfg:graphics-context</reftopic> object.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfg:font</reftopic>
+        <reftopic>gfg:color</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Interrogates the data structure associated with an instance of
+      <reftopic>gfw:font-dialog</reftopic> to obtain the font and color
+      corresponding to selections made by the user. <arg1/> should be the
+      same context with which the dialog was created. If the user cancelled
+      the dialog, the <emphasis>font</emphasis>
+      and <emphasis>color</emphasis> values will be NIL. Also, the
+      <emphasis>color</emphasis> value will be NIL if the dialog was created
+      with the :no-effects style keyword. Use this function when manually
+      constructing a font dialog. 
+    </description>
+    <seealso>
+      <reftopic>gfw:with-font-dialog</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-chosen-color">
+    <syntax>
+      <arguments>
+        <argument name="color-dialog">
+          <description>
+            The <reftopic>gfw:color-dialog</reftopic> to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfg:color</reftopic>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Interrogates the data structure associated with <arg0/> to retrieve
+      the selected color. The secondary value is a <refclhs>list</refclhs>
+      of <reftopic>gfg:color</reftopic> objects corresponding to custom
+      colors displayed by the dialog. If the user cancelled the dialog,
+      NIL is returned for both values. Use this function when manually
+      constructing a color dialog. 
+    </description>
+    <seealso>
+      <reftopic>gfw:with-color-dialog</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-displays">
+    <syntax>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns a <refclhs>list</refclhs> of <reftopic>gfw:display</reftopic>
+      objects, each of which describes a monitor attached to the system. The
+      system specifies that one of these is the primary display.
+    </description>
+    <seealso>
+      <reftopic>gfw:obtain-primary-display</reftopic>
+      <reftopic>gfw:primary-p</reftopic>
+    </seealso>
+  </function>
+
+  <function name="obtain-primary-display">
+    <syntax>
+      <return>
+        <reftopic>gfw:display</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns a <reftopic>gfw:display</reftopic> object that is regarded
+      by the system as being the primary.
+    </description>
+    <seealso>
+      <reftopic>gfw:obtain-displays</reftopic>
+      <reftopic>gfw:primary-p</reftopic>
+    </seealso>
+  </function>
+
+  <function name="primary-p">
+    <syntax>
+      <arguments>
+        <argument name="display">
+          <description>
+            The <reftopic>gfw:display</reftopic> to test for primary status.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if the system regards <arg0/> as the primary display; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:obtain-displays</reftopic>
+      <reftopic>gfw:primary-p</reftopic>
+    </seealso>
+  </function>
+
+  <function name="update-scrolling-state">
+    <syntax>
+      <arguments>
+        <argument name="window">
+          <description>
+            The <reftopic>gfw:window</reftopic> that was scrolled.
+          </description>
+        </argument>
+        <notarg name="&amp;optional"/>
+        <argument name="axis">
+          <description>
+            NIL or one of the following keyword symbols as described
+            for <reftopic>gfw:event-scroll</reftopic>:
+            <enum>
+              <argument name=":horizontal"/>
+              <argument name=":vertical"/>
+            </enum>
+          </description>
+        </argument>
+        <argument name="detail">
+          <description>
+            See <reftopic>gfw:event-scroll</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>symbol</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Call this function to respond to a scrolling event so that the content
+        of <arg0/> can be scrolled and <arg0/>'s scrollbar state(s) updated.
+        The dispatcher assigned to <arg0/> must be an instance of (or an
+        instance of a subclass of) <reftopic>gfw:scrolling-helper</reftopic>.
+      </para>
+      <para role="normal">
+        <arg1/> can be :horizontal or :vertical to request processing in the
+        corresponding direction; or if unspecified, scroll processing will
+        occur in both directions. <arg2/> can be one of the values described
+        for <reftopic>gfw:event-scroll</reftopic>; or if unspecified,
+        :thumb-position will be assumed. This function returns the value of
+        <arg2/>.
+      </para>
+      <para role="normal">
+        Note that <reftopic>gfw:scrolling-helper</reftopic> calls this function
+        on behalf of a window when set as that window's dispatcher. Application
+        code may also call this function as needed.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:standard-scrollbar</reftopic>
+      <reftopic>gfw:scrollbar</reftopic>
+      <reftopic>gfw:thumb-position</reftopic>
+      <reftopic>gfw:page-increment</reftopic>
+      <reftopic>gfw:step-increment</reftopic>
+      <reftopic>gfw:event-scroll</reftopic>
+    </seealso>
+  </function>
+
+  <!-- GENERIC FUNCTIONS -->
+
+  <generic-function name="compute-layout">
+    <syntax>
+      <arguments>
+        <argument name="layout-manager">
+          <description>
+            The <reftopic>gfw:layout-manager</reftopic> dictating how children
+            of <arg1/> are to be arranged.
+          </description>
+        </argument>
+        <argument name="layout-managed">
+          <description>
+            The <reftopic>gfw:layout-managed</reftopic> container whose children
+            are to be sized and positioned.
+          </description>
+        </argument>
+        <argument name="width-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical width
+            value, or negative if <arg1/>'s width is not constrained.
+          </description>
+        </argument>
+        <argument name="height-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical height
+            value, or negative if <arg1/>'s height is not constrained.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      This function is responsible for the actual layout of children. Returns
+      a <refclhs>list</refclhs> of (child . rectangle) pairs describing the
+      new bounds of each child within <arg1/>. A <reftopic>gfw:layout-manager</reftopic>
+      subclass implements a method for this generic function based on its particular
+      layout strategy, possibly using attributes set by the user via
+      <reftopic>gfw:layout-attribute</reftopic>.
+    </description>
+    <seealso>
+      <reftopic>gfw:compute-size</reftopic>
+      <reftopic>gfw:perform</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="compute-size">
+    <syntax>
+      <arguments>
+        <argument name="layout-manager">
+          <description>
+            The <reftopic>gfw:layout-manager</reftopic> dictating how children
+            of <arg1/> are to be arranged.
+          </description>
+        </argument>
+        <argument name="layout-managed">
+          <description>
+            The <reftopic>gfw:layout-managed</reftopic> container whose children
+            are to be sized and positioned.
+          </description>
+        </argument>
+        <argument name="width-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical width
+            value, or negative if <arg1/>'s width is not constrained.
+          </description>
+        </argument>
+        <argument name="height-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical height
+            value, or negative if <arg1/>'s height is not constrained.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Computes and returns the new <reftopic>gfs:size</reftopic> of <arg1/>'s
+      client area. A <reftopic>gfw:layout-manager</reftopic> subclass implements
+      a method for this generic function based on its particular layout strategy,
+      possibly using attributes set by the user via
+      <reftopic>gfw:layout-attribute</reftopic>.
+    </description>
+    <seealso>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:perform</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="perform">
+    <syntax>
+      <arguments>
+        <argument name="layout-manager">
+          <description>
+            The <reftopic>gfw:layout-manager</reftopic> dictating how children
+            of <arg1/> are to be arranged.
+          </description>
+        </argument>
+        <argument name="layout-managed">
+          <description>
+            The <reftopic>gfw:layout-managed</reftopic> container whose children
+            are to be sized and positioned.
+          </description>
+        </argument>
+        <argument name="width-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical width
+            value, or negative if <arg1/>'s width is not constrained.
+          </description>
+        </argument>
+        <argument name="height-hint">
+          <description>
+            A positive <refclhs>integer</refclhs> specifying a hypothetical height
+            value, or negative if <arg1/>'s height is not constrained.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Calls <reftopic>gfw:compute-layout</reftopic> for <arg1/> and then moves
+      and resizes <arg1/>'s children. Subclasses may implement their own methods
+      on this generic function, but note that most derivations should call
+      CALL-NEXT-METHOD to allow the base implementation to execute.
+    </description>
+    <seealso>
+      <reftopic>gfw:compute-layout</reftopic>
+      <reftopic>gfw:compute-size</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="update-native-style">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:control</reftopic> subclass.
+          </description>
+        </argument>
+        <argument name="integer">
+          <description>
+            An <refclhs>integer</refclhs> specifying replacement style flags.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        This function replaces the native style flags of <arg0/> with
+        <arg1/> and calls any additional API needed to ensure that
+        <arg0/>'s visual representation is refreshed. <arg1/>
+        is returned.
+      </para>
+      <para role="normal">
+        This function is not intended to be called from application code.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:style-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="update-from-items">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:item-manager</reftopic> subclass.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Synchronizes <arg0/>'s internal model (i.e., a native control's
+        data structures) with data derived from the <emphasis>items</emphasis>
+        slot. If <arg0/> has been assigned a sorting predicate, the array of
+        items will be sorted prior to the internal model update.
+      </para>
+      <para role="normal">
+        This function is not intended to be called from application code.
+        However, applications defining new control types may need to implement
+        this.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="update">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Forces all outstanding paint requests for <arg0/> to be processed
+      before this function returns.
+    </description>
+    <seealso>
+      <reftopic>gfw:redraw</reftopic>
+      <reftopic>gfw:with-drawing-disabled</reftopic>
+      <reftopic>gfw:enable-redraw</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="bar-position">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of <reftopic>gfw:progress-bar</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) an <refclhs>integer</refclhs> value representing the
+      position of the progress bar.
+    </description>
+  </generic-function>
+
+  <generic-function name="thumb-position">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of <reftopic>gfw:scrollbar</reftopic>, <reftopic>gfw:slider</reftopic>,
+            or <reftopic>gfw:standard-scrollbar</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) an <refclhs>integer</refclhs> value representing the
+      position of the scroll thumb for <arg0/>. A
+      <reftopic>gfw:scrolling-helper</reftopic> instance will manage the
+      thumb position for the <reftopic>gfw:window</reftopic> to which it is
+      assigned.
+    </description>
+  </generic-function>
+
+  <generic-function name="text-modified-p">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object with a text component that can be modified by
+            the user.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if the text component of <arg0/> has been modified by the user;
+      NIL otherwise. The corresponding SETF function updates the dirty state flag.
+      This function is not implemented for all <reftopic>gfw:widget</reftopic>s,
+      since in some cases there are multiple text components and in other cases
+      there is no text component at all.
+    </description>
+    <seealso>
+      <reftopic>gfw:text</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="text-for-pasting-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object to be queried for readiness to accept text from
+            the system clipboard.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        This function is a shortcut means of checking the clipboard for
+        existence of data of a specific type (text). This status information
+        is typically used to enable or disable a "Paste" menu item.
+      </para>
+      <para role="normal">
+        Note: an upcoming release will include more general infrastructure
+        for clipboard operations.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:copy-text</reftopic>
+      <reftopic>gfw:cut-text</reftopic>
+      <reftopic>gfw:paste-text</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="text-baseline">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:widget</reftopic> subclass
+            having text content.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns the Y coordinate value (in <arg0/>'s coordinate system)
+        that correlates to the baseline of the text of the control, if any.
+        For controls in which a text baseline is not meaningful, such as a
+        <reftopic>gfw:label</reftopic> with a <reftopic>gfg:image</reftopic>,
+        this function returns half of the control's height.
+      </para>
+      <para role="normal">
+        By default, Graphic-Forms does not implement this function for
+        <reftopic>gfw:window</reftopic> subclasses. However, custom controls
+        should implement this if the custom control will be used as a child
+        within a container using a <reftopic>gfw:layout-manager</reftopic>.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:preferred-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="text">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having a text attribute, such as a window title.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>string</refclhs>
+      </return>
+    </syntax>
+    <description>
+      For a <reftopic>gfw:window</reftopic> or <reftopic>gfw:dialog</reftopic>,
+      this function returns (sets) <arg0/>'s titlebar text (which may be blank). For
+      other widgets that have a text component, this function returns (sets) that
+      text component. For anything else, this function returns nil.
+    </description>
+  </generic-function>
+
+  <generic-function name="show">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object whose visibility is to be configured.
+          </description>
+        </argument>
+        <argument name="boolean">
+          <description>
+            A <refclhs>boolean</refclhs> flag.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Causes <arg0/> to be visible if <arg1/> is non-NIL (but not necessarily
+      top-most in the display Z-order), or hidden if <arg1/> is NIL.
+    </description>
+    <seealso>
+      <reftopic>gfw:visible-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="visible-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object whose visibility is to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is visible (not necessarily top-most);
+      NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:show</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="selected-span">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having selectable content.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>object</emphasis>
+        <reftopic>gfs:span</reftopic>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns a <reftopic>gfs:span</reftopic> describing a range of data
+        within <arg0/> that is in the selected state, as well as an object
+        to return the selected data. If there is no selection, this function
+        returns NIL for both values. This function is defined only for widgets
+        whose notion of selection is a contiguous range of simple data
+        (e.g., <refclhs>character</refclhs>s in a <refclhs>string</refclhs>).
+      </para>
+      <para role="normal">
+        The corresponding SETF function sets the content of <arg0/> whose
+        indices lie within <emphasis>span</emphasis> to the selected state.
+        An existing selection's extent is modified to match the new span.
+        Passing NIL for <emphasis>span</emphasis> will unselect all content. 
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:selected-count</reftopic>
+      <reftopic>gfw:select-all</reftopic>
+      <reftopic>gfw:edit</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="selected-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having selectable state as an attribute.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is in the selected state; nil otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:select</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="selected-count">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns the number of items contained by <arg0/> that are in the
+      selected state.
+    </description>
+    <seealso>
+      <reftopic>gfw:select-all</reftopic>
+      <reftopic>gfw:selected-items</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="selected-items">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the <reftopic>gfw:item</reftopic> subclass instances
+      that are in the selected state. Passing NIL will unselect all items,
+      equivalent to calling <reftopic>gfw:select-all</reftopic>.
+    </description>
+    <seealso>
+      <reftopic>gfw:selected-count</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="select">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having selectable state as an attribute.
+          </description>
+        </argument>
+        <argument name="boolean">
+          <description>
+            A <refclhs>boolean</refclhs> specifying whether <arg0/>'s
+            selection state is to be set or unset.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Sets <arg0/> to the selected state if <arg1/> is not NIL or to the
+      unselected state if NIL.
+    </description>
+    <seealso>
+      <reftopic>gfw:selected-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="select-all">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having content that may be selected.
+          </description>
+        </argument>
+        <argument name="boolean">
+          <description>
+            A <refclhs>boolean</refclhs> specifying whether <arg0/>'s
+            content is to be selected or unselected.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Sets the content of <arg0/> to the selected state if <arg1/> is
+      not NIL or to the unselected state if NIL. For <reftopic>gfw:item-manager</reftopic>
+      subclasses, this means all items within <arg0/> are affected. For
+      controls with editable content, like <reftopic>gfw:edit</reftopic>, this
+      function affects all of the content.
+    </description>
+    <seealso>
+      <reftopic>gfw:selected-span</reftopic>
+      <reftopic>gfw:selected-items</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="scroll">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:window</reftopic>.
+          </description>
+        </argument>
+        <argument name="delta-x">
+          <description>
+            An <refclhs>integer</refclhs> specifying how many pixels to
+            scroll on the horizontal axis.
+          </description>
+        </argument>
+        <argument name="delta-y">
+          <description>
+            An <refclhs>integer</refclhs> specifying how many pixels to
+            scroll on the vertical axis.
+          </description>
+        </argument>
+        <argument name="children-p">
+          <description>
+            Not yet implemented, must be NIL.
+          </description>
+        </argument>
+        <argument name="milliseconds">
+          <description>
+            Not yet implemented, must be 0.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Scrolls <arg0/> by a number of pixels right or down equal to the
+      <refclhs>integer</refclhs> values <arg1/> and <arg2/>; either delta
+      value may be negative in order to scroll left or up. Paint events
+      are delivered for the areas exposed due to scrolling.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-paint</reftopic>
+      <reftopic>gfw:scrolling-helper</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="resizable-p">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> can be resized by the user; NIL otherwise.
+      The corresponding SETF function is implemented for <reftopic>gfw:top-level</reftopic>
+      (but only has meaning when the :frame or :workspace styles are set),
+      allowing the application to modify the resizability of <arg0/>, whereupon the
+      frame decorations are modified appropriately.
+    </description>
+    <seealso>
+      <reftopic>gfw:style-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="redraw">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Causes the entire bounds of <arg0/> to be marked as needing to be redrawn.
+      For <reftopic>gfw:window</reftopic> subclasses, an <reftopic>gfw:event-paint</reftopic>
+      will be generated so that <arg0/> can update itself visually.
+    </description>
+    <seealso>
+      <reftopic>gfw:update</reftopic>
+      <reftopic>gfw:enable-redraw</reftopic>
+      <reftopic>gfw:with-drawing-disabled</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="redo-available-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that supports undo/redo.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> has undo/redo capability and has an operation that
+      can be redone; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:undo-available-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="undo-available-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that supports undo/redo.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> has undo/redo capability and has an operation that
+      can be undone; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:redo-available-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="preferred-size">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+        <argument name="width-hint">
+          <description>
+            An <refclhs>integer</refclhs>.
+          </description>
+        </argument>
+        <argument name="height-hint">
+          <description>
+            An <refclhs>integer</refclhs>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Implement this function to return <arg0/>'s preferred dimensions -- that is,
+      the dimensions that <arg0/> computes as being the best fit for itself and/or
+      its children. If one or both of <arg1/> and <arg2/> are positive, then each
+      such argument is used as a constraint on the size calculation.
+    </description>
+    <seealso>
+      <reftopic>gfw:layout</reftopic>
+      <reftopic>gfw:minimum-size</reftopic>
+      <reftopic>gfw:maximum-size</reftopic>
+      <reftopic>gfw:size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="page-increment">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:scrollbar</reftopic>, <reftopic>gfw:slider</reftopic>,
+            or <reftopic>gfw:standard-scrollbar</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      This function returns the amount by which the viewport origin is incremented
+      forward (or backward) when a user gesture causes a scroll event of type
+      :page-forward (or :page-back). The returned value determines the size of the
+      proportional thumb. The <reftopic>gfw:scrolling-helper</reftopic> manages
+      this value on behalf of windows with standard scrollbars.
+    </description>
+    <seealso>
+      <reftopic>gfw:thumb-position</reftopic>
+      <reftopic>gfw:event-scroll</reftopic>
+      <reftopic>gfw:scroll</reftopic>
+      <reftopic>gfw:step-increment</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="step-increment">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:progress-bar</reftopic>, <reftopic>gfw:scrollbar</reftopic>,
+            <reftopic>gfw:slider</reftopic>, or <reftopic>gfw:standard-scrollbar</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        For scrollbar-like widgets, this function returns (sets) the amount by which
+        the viewport origin is incremented forward (or backward) when a user gesture
+        causes a scroll event of type :step-forward (or :step-back). The
+        <reftopic>gfw:scrolling-helper</reftopic> manages this value on behalf of
+        windows with standard scrollbars.
+      </para>
+      <para role="normal">
+        For <reftopic>gfw:progress-bar</reftopic> widgets, this function returns (sets)
+        the amount by which the progress display is incremented upon each step.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:thumb-position</reftopic>
+      <reftopic>gfw:event-scroll</reftopic>
+      <reftopic>gfw:scroll</reftopic>
+      <reftopic>gfw:page-increment</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="step">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:progress-bar</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Causes <arg0/> to animate the next step increment in its display.
+    </description>
+    <seealso>
+      <reftopic>gfw:step-increment</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="pack">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:layout-managed</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Causes <arg0/> to be resized to the smallest possible dimensions given
+      the locations and sizes of its children, as determined by <arg0/>'s
+      <reftopic>gfw:layout-manager</reftopic>.
+    </description>
+    <seealso>
+      <reftopic>gfw:layout</reftopic>
+      <reftopic>gfw:layout-p</reftopic>
+      <reftopic>gfw:enable-layout</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="owner">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An "owned" object such as a <reftopic>gfw:top-level</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:window</reftopic>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns the owner of <arg0/>, which may be different from <arg0/>'s
+        parent because the window ownership hierarchy includes the relationships
+        between physically separate top-level windows and dialogs. It is possible
+        for a window to be unowned but still have a parent. Consequently, calling
+        <reftopic>gfw:parent</reftopic> on a <reftopic>gfw:top-level</reftopic>
+        will return an instance of <reftopic>gfw:root-window</reftopic>, but
+        calling this function may return NIL.
+      </para>
+      <para role="normal">
+        <ulink url="http://blogs.msdn.com/oldnewthing/archive/2004/02/24/79212.aspx">
+        This blog entry</ulink> provides more information.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:parent</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="parent">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object capable of being the child of another container.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:window</reftopic>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns the parent of <arg0/>. In the case of <reftopic>gfw:panel</reftopic>
+        and <reftopic>gfw:control</reftopic>, this will be the ancestor
+        <reftopic>gfw:dialog</reftopic>, <reftopic>gfw:panel</reftopic>, or
+        <reftopic>gfw:top-level</reftopic>. In the case of a <reftopic>gfw:dialog</reftopic>
+        or <reftopic>gfw:top-level</reftopic>, then a <reftopic>gfw:root-window</reftopic>
+        is returned. In the case of a submenu, this will be the
+        <reftopic>gfw:menu</reftopic>'s ancestor in the hierarchy; but for a menubar or
+        context menu, this function returns NIL.
+      </para>
+      <para role="normal">
+        <ulink url="http://blogs.msdn.com/oldnewthing/archive/2004/02/24/79212.aspx">
+        This blog entry</ulink> provides more information.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:owner</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="obtain-horizontal-scrollbar">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object configured with a horizontal scrollbar.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:standard-scrollbar</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns the horizontal <reftopic>gfw:standard-scrollbar</reftopic>
+      attached to the bottom of <arg0/>, if <arg0/> is configured to
+      have one and whether or not said scrollbar is currently visible;
+      returns NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:obtain-vertical-scrollbar</reftopic>
+      <reftopic>gfw:horizontal-scrollbar-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="obtain-vertical-scrollbar">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object configured with a vertical scrollbar.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:standard-scrollbar</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns the vertical <reftopic>gfw:standard-scrollbar</reftopic>
+      attached to the bottom of <arg0/>, if <arg0/> is configured to
+      have one and whether or not said scrollbar is currently visible;
+      returns NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:obtain-horizontal-scrollbar</reftopic>
+      <reftopic>gfw:vertical-scrollbar-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="menu-bar">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:window</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:menu</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the <reftopic>gfw:menu</reftopic> serving as the
+      menu bar for <arg0/>. The SETF function automatically refreshes
+      the menu bar.
+    </description>
+    <seealso>
+      <reftopic>gfw:defmenu</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="maximum-size">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that has a size attribute which may be altered by
+            the user.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns (sets) the largest dimensions to which the user may resize
+        <arg0/>. By default, <reftopic>gfw:window</reftopic>s and
+        <reftopic>gfw:control</reftopic>s return NIL indicating that there
+        is effectively no constraint.
+      </para>
+      <para role="normal">
+        If the new maximum size provided via the SETF function is smaller
+        than the current size, the widget is resized to the new maximum.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:size</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:minimum-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="minimum-size">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that has a size attribute which may be altered by
+            the user.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Returns (sets) the smallest dimensions to which the user may resize
+        <arg0/>. By default, <reftopic>gfw:window</reftopic>s return NIL
+        indicating that the minimum constraint is determined by the windowing
+        system's configuration; whereas, <reftopic>gfw:control</reftopic>s
+        return the same value by default as would <reftopic>gfw:preferred-size</reftopic>.
+      </para>
+      <para role="normal">
+        If the new minimum size provided via the SETF function is larger than the
+        current size, the widget is resized to the new minimum.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:size</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:maximum-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="mapchildren">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            A container for children.
+          </description>
+        </argument>
+        <argument name="func">
+          <description>
+            A function of two arguments.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Calls <arg1/> for each child of <arg0/> and places <arg1/>'s
+      return value in the result <refclhs>list</refclhs>. <arg1/>'s
+      two arguments are <arg0/> and the current child. Note that
+      mapchildren accesses <arg0/>'s actual children as determined
+      by the underlying windowing system, regardless of any
+      <reftopic>gfw:layout-manager</reftopic> assigned to <arg0/>.
+    </description>
+  </generic-function>
+
+  <generic-function name="location">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that can be positioned.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:point</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the location of the top-left corner of <arg0/> within
+      its parent's coordinate system.
+    </description>
+    <seealso>
+      <reftopic>gfw:size</reftopic>
+      <reftopic>gfw:parent</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="line-count">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object whose content is logically organized into lines.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns the total number of lines (e.g., of text) contained by <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:edit</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="layout">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:layout-managed</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Causes <arg0/>'s layout manager to update the sizes and locations of
+      <arg0/>'s children.
+    </description>
+    <seealso>
+      <reftopic>gfw:layout-manager</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="item-count">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns the number of items maintained by <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="item-index">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+        <argument name="item">
+          <description>
+            The <reftopic>gfw:item</reftopic> subclass instance to be
+            located within <arg0/>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns the zero-based index of <arg1/> within <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="items-of">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns a <refclhs>list</refclhs> of <reftopic>gfw:item</reftopic>
+      subclass instances. The SETF function provides a <refclhs>list</refclhs>
+      of data objects to be wrapped by instances of the appropriate
+      <reftopic>gfw:item</reftopic> subclass, which replaces the existing items
+      within <arg0/>. Call <reftopic>gfw:update-from-items</reftopic> to repaint
+      <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="inner-limits">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose inner range of values is to be returned or set.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:span</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Certain controls having the concept of a range of values within which a
+      selector may be positioned also allow the indicator to be further
+      constrained to a narrower range, e.g., <reftopic>gfw:slider</reftopic>.
+      If the SETF function is used to set a sub-range, <arg0/>'s visual style
+      will be updated and the indicator restricted appropriately.
+    </description>
+    <seealso>
+      <reftopic>gfw:outer-limit</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="outer-limit">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose maximum value is to be returned or set.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) an <refclhs>integer</refclhs> representing the maximum
+      value or position to which the indicator in <arg0/> may be set by the
+      user. Application code is responsible for synchronizing this maximum
+      with its content model.
+    </description>
+    <seealso>
+      <reftopic>gfw:inner-limits</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="image">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that owns (or will own) a <reftopic>gfg:image</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfg:image</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns the <reftopic>gfg:image</reftopic> currently associated with
+      <arg0/>. If <arg0/> is a <reftopic>gfw:window</reftopic>, then this
+      function returns a <reftopic>gfg:icon-bundle</reftopic>; in that case,
+      the SETF function accepts either type.
+    </description>
+  </generic-function>
+
+  <generic-function name="horizontal-scrollbar-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose scrollbar configuration is to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> has been configured with a horizontal scrollbar,
+      even if said scrollbar is not currently visible; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:enable-scrollbars</reftopic>
+      <reftopic>gfw:vertical-scrollbar-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="vertical-scrollbar-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose scrollbar configuration is to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> has been configured with a vertical scrollbar,
+      even if said scrollbar is not currently visible; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:enable-scrollbars</reftopic>
+      <reftopic>gfw:horizontal-scrollbar-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enabled-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose enabled state is to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is enabled; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:enable</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="focus-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object whose focus ownership is to be queried.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> has the keyboard focus; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:give-focus</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="give-focus">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The destination for keyboard focus.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Places keyboard focus on <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:focus-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enable-redraw">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+        <argument name="flag">
+          <description>
+            A <refclhs>boolean</refclhs> flag specifying whether redrawing
+            within <arg0/> is enabled.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Any non-NIL value for <arg1/> enables <arg0/> to be updated and invalidates
+      its client area; NIL disables redrawing.
+    </description>
+    <seealso>
+      <reftopic>gfw:update</reftopic>
+      <reftopic>gfw:redraw</reftopic>
+      <reftopic>gfw:with-drawing-disabled</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enable-layout">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:window</reftopic>.
+          </description>
+        </argument>
+        <argument name="flag">
+          <description>
+            A <refclhs>boolean</refclhs> flag specifying whether layout within
+            <arg0/> is enabled.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Any non-NIL value for <arg1/> enables layout within <arg0/>; NIL
+      disables layout.
+    </description>
+    <seealso>
+      <reftopic>gfw:layout</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enable-auto-scrolling">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that supports scrolling functionality.
+          </description>
+        </argument>
+        <argument name="horizontal">
+          <description>
+            A <refclhs>boolean</refclhs> flag controlling the horizontal axis.
+          </description>
+        </argument>
+        <argument name="vertical">
+          <description>
+            A <refclhs>boolean</refclhs> flag controlling the vertical axis.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Configures the object to allow (or disallow) automatic scrolling in
+      the horizontal or vertical directions. 
+    </description>
+    <seealso>
+      <reftopic>gfw:auto-hscroll-p</reftopic>
+      <reftopic>gfw:auto-vscroll-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enable-scrollbars">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that supports scrolling functionality.
+          </description>
+        </argument>
+        <argument name="horizontal">
+          <description>
+            A <refclhs>boolean</refclhs> flag controlling the scrollbar
+            on the horizontal axis.
+          </description>
+        </argument>
+        <argument name="vertical">
+          <description>
+            A <refclhs>boolean</refclhs> flag controlling the scrollbar
+            on the vertical axis.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Specifying T for <arg1/> (<arg2/>) configures <arg0/> to have a
+      <reftopic>gfw:standard-scrollbar</reftopic> to attached to the
+      right-hand (bottom) edge. The visibility of each scrollbar then
+      depends on the scrollbar visibility policy configured for <arg0/>
+      and the state of the scrolling viewport. Specifying NIL disables
+      the scrollbar. 
+    </description>
+    <seealso>
+      <reftopic>gfw:horizontal-scrollbar-p</reftopic>
+      <reftopic>gfw:vertical-scrollbar-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="enable">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            The object to be enabled or disabled.
+          </description>
+        </argument>
+        <argument name="flag">
+          <description>
+            A <refclhs>boolean</refclhs> indicating whether to enable
+            or disable <arg0/>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      For widgets, this function causes <arg0/> to stop (or re-enable)
+      input event processing and changes its look from the default to
+      grayed or vice versa. For a <reftopic>gfw:timer</reftopic>, this
+      function starts or stops event generation.
+    </description>
+    <seealso>
+      <reftopic>gfw:enabled-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="echo-character">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that allows the user to edit text content.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>character</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the character used to mask text content, such as
+      inside a <reftopic>gfw:edit</reftopic> created with the :password
+      style symbol.
+    </description>
+  </generic-function>
+
+  <generic-function name="delete-all">
+    <syntax>
+      <arguments>
+        <argument name="self"/>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Removes all content from <arg0/>.
+    </description>
+  </generic-function>
+
+  <generic-function name="delete-item">
+    <syntax>
+      <arguments>
+        <argument name="item-manager">
+          <description>
+            A <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+        <argument name="index">
+          <description>
+            A zero-based <refclhs>integer</refclhs> index into the items
+            contained within <arg0/>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Removes the item at <arg1/> from <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+      <reftopic>gfw:item-index</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="delete-selection">
+    <syntax>
+      <arguments>
+        <argument name="self"/>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Removes the subset of items from <arg0/> that are in the selected
+      state. For a control with a text field component, such as an edit control,
+      this function deletes selected text.
+    </description>
+  </generic-function>
+
+  <generic-function name="delete-span">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object with a contiguous range of content to be removed.
+          </description>
+        </argument>
+        <argument name="span">
+          <description>
+            A <reftopic>gfs:span</reftopic> identifying a range of content.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Removes the content from <arg0/> whose zero-based indices lie within
+      <arg1/>.
+    </description>
+  </generic-function>
+
+  <generic-function name="copy-text">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that can interact with the system clipboard.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        This function is a shortcut for a common clipboard transfer operation,
+        namely the transfer of text from <arg0/> to the system clipboard. The
+        existing content of <arg0/> remains undisturbed. Some controls like
+        the edit control have built-in clipboard functionality, and in such
+        cases, the implementation of this function delegates to such functionality
+        directly. 
+      </para>
+      <para role="normal">
+        Note: an upcoming release will include more general infrastructure for
+        clipboard operations.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:cut-text</reftopic>
+      <reftopic>gfw:paste-text</reftopic>
+      <reftopic>gfw:text-for-pasting-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="cut-text">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that can interact with the system clipboard.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        This function is a shortcut for a common clipboard transfer operation,
+        namely the transfer of text from <arg0/> to the system clipboard and
+        removal of that content of <arg0/>. Some controls like
+        the edit control have built-in clipboard functionality, and in such
+        cases, the implementation of this function delegates to such functionality
+        directly. For other widgets, this operation is a wrapper around a
+        copy/delete sequence.
+      </para>
+      <para role="normal">
+        Note: an upcoming release will include more general infrastructure for
+        clipboard operations.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:copy-text</reftopic>
+      <reftopic>gfw:paste-text</reftopic>
+      <reftopic>gfw:text-for-pasting-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="paste-text">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object that can interact with the system clipboard.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        This function is a shortcut for a common clipboard transfer operation,
+        namely the transfer of text from the system clipboard to <arg0/>.
+        Some controls like the edit control have built-in clipboard functionality,
+        and in such cases, the implementation of this function delegates to such
+        functionality directly.
+      </para>
+      <para role="normal">
+        Note: an upcoming release will include more general infrastructure for
+        clipboard operations.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:copy-text</reftopic>
+      <reftopic>gfw:cut-text</reftopic>
+      <reftopic>gfw:text-for-pasting-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="compute-outer-size">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object with border decorations.
+          </description>
+        </argument>
+        <argument name="size">
+          <description>
+            A <reftopic>gfs:size</reftopic> describing the desired
+            client size.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns the dimensions of the area required to enclose <arg0/>
+      assuming <arg1/> is the desired client area, taking into account
+      the trim and other decorations which <arg0/> is configured to have.
+    </description>
+    <seealso>
+      <reftopic>gfw:client-size</reftopic>
+      <reftopic>gfw:size</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:maximum-size</reftopic>
+      <reftopic>gfw:minimum-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="compute-style-flags">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object having style flags that must be translated prior to
+            <arg0/>'s native handle being created.
+          </description>
+        </argument>
+        <notarg name="&amp;rest"/>
+        <argument name="extra-data">
+          <description>
+            Additional translation data.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>integer</refclhs>
+        <refclhs>integer</refclhs>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Converts <arg0/>'s style keyword symbols to a pair of native bitmasks;
+        the first conveys normal/standard flags, whereas the second any extended
+        flags that the system supports.
+      </para>
+      <para role="normal">
+        This function is not usually called by application code. A method is
+        defined on it for each control, standard dialog, or similar widgets
+        having a native system resource. Library extensions that add new widget
+        types, on the other hand, are required to provide appropriate
+        implementations.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:style-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="client-size">
+    <syntax>
+      <arguments>
+        <argument name="self"/>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns the dimensions of the client area within <arg0/>, which
+      is the area typically drawn within or serving as a container for
+      children.
+    </description>
+    <seealso>
+      <reftopic>gfw:size</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:maximum-size</reftopic>
+      <reftopic>gfw:minimum-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="size">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self"/>
+      </arguments>
+      <return>
+        <reftopic>gfs:size</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the dimensions of <arg0/> within the parent coordinate
+      system, including any border trim or other decoration.
+    </description>
+    <seealso>
+      <reftopic>gfw:client-size</reftopic>
+      <reftopic>gfw:parent</reftopic>
+      <reftopic>gfw:location</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:maximum-size</reftopic>
+      <reftopic>gfw:minimum-size</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="check">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object supporting check/uncheck behavior.
+          </description>
+        </argument>
+        <argument name="flag">
+          <description>
+            A <refclhs>boolean</refclhs>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Sets <arg0/> into the checked state.
+    </description>
+    <seealso>
+      <reftopic>gfw:checked-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="checked-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object supporting check/uncheck behavior.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is in the checked state; NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:check</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="center-on-owner">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:widget</reftopic> subclass.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Positions <arg0/> such that it is centrally-located relative to
+      the bounds of <arg0/>'s owner, based on <arg0/>'s current outermost
+      size.
+    </description>
+    <seealso>
+      <reftopic>gfw:center-on-parent</reftopic>
+      <reftopic>gfw:owner</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="center-on-parent">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:widget</reftopic> subclass.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Positions <arg0/> such that it is centrally-located relative to
+      the bounds of <arg0/>'s parent, based on <arg0/>'s current outermost
+      size.
+    </description>
+    <seealso>
+      <reftopic>gfw:center-on-owner</reftopic>
+      <reftopic>gfw:parent</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="cancel-widget">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:window</reftopic> subclass.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:widget</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the <reftopic>gfw:widget</reftopic> that is invoked by
+      the &lt;Esc&gt; key or otherwise acts to dismiss <arg0/>. In a
+      <reftopic>gfw:dialog</reftopic>, the widget must be a
+      <reftopic>gfw:button</reftopic> and is typically labelled "Cancel".
+    </description>
+    <seealso>
+      <reftopic>gfw:default-widget</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="default-widget">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a <reftopic>gfw:window</reftopic> subclass.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:widget</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) the <reftopic>gfw:widget</reftopic> that represents
+      the default action for <arg0/>. Passing NIL to the SETF function
+      clears the default widget binding. The default action is invoked when
+      the user presses &lt;Enter&gt; within <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:cancel-widget</reftopic>
+      <reftopic>gfw:event-default-action</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="auto-hscroll-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object with scrolling functionality.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is configured for automatic horizontal scrolling;
+      NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:enable-auto-scrolling</reftopic>
+      <reftopic>gfw:auto-vscroll-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="auto-vscroll-p">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An object with scrolling functionality.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is configured for automatic vertical scrolling;
+      NIL otherwise.
+    </description>
+    <seealso>
+      <reftopic>gfw:enable-auto-scrolling</reftopic>
+      <reftopic>gfw:auto-hscroll-p</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="append-item">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+        <argument name="thing">
+          <description>
+            Any application-defined object.
+          </description>
+        </argument>
+        <argument name="dispatcher">
+          <description>
+            Either an instance of <reftopic>gfw:event-dispatcher</reftopic> (or
+            a subclass thereof), or a function whose argument list matches the
+            event method identified by the <emphasis>callback-event-name</emphasis>
+            class-allocated slot of <arg0/>.
+          </description>
+        </argument>
+        <notarg name="&amp;optional"/>
+        <argument name="disabled">
+          <description>
+            A <refclhs>boolean</refclhs> indicating whether the item should be
+            initially disabled.
+          </description>
+        </argument>
+        <argument name="checked">
+          <description>
+            A <refclhs>boolean</refclhs> indicating whether the item should be
+            initially checked.
+          </description>
+        </argument>
+        <argument name="classname">
+          <description>
+            A <refclhs>symbol</refclhs> specifying an item subclass other than the
+            default type to be created; such a subclass must still represent an
+            item type appropriate for <arg0/>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:item</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Adds a new item wrapping <arg1/> to <arg0/>. The newly-created
+      item is returned. Note that not all <reftopic>gfw:item-manager</reftopic>
+      subclasses support enabled or checked states for individual items.
+    </description>
+    <seealso>
+      <reftopic>gfw:menu</reftopic>
+      <reftopic>gfw:list-box</reftopic>
+      <reftopic>gfw:append-separator</reftopic>
+      <reftopic>gfw:append-submenu</reftopic>
+      <reftopic>gfw:defmenu</reftopic>
+      <reftopic>gfw:delete-item</reftopic>
+      <reftopic>gfw:item-count</reftopic>
+      <reftopic>gfw:items-of</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="append-separator">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:item-manager</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:item</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Adds a separator to <arg0/>, and returns a newly-created item to wrap
+      the separator. A separator is a thin etched divider that serves to visually
+      separate groups of items; it generates no events.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:append-submenu</reftopic>
+      <reftopic>gfw:menu</reftopic>
+      <reftopic>gfw:defmenu</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="append-submenu">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            A <reftopic>gfw:menu</reftopic> to which append a submenu.
+          </description>
+        </argument>
+        <argument name="text">
+          <description>
+            A <refclhs>string</refclhs> providing the text for the submenu's
+            anchor.
+          </description>
+        </argument>
+        <argument name="submenu">
+          <description>
+            A <reftopic>gfw:menu</reftopic> comprising a submenu to be
+            attached to <arg0/>.
+          </description>
+        </argument>
+        <argument name="dispatcher">
+          <description>
+            Either an instance of <reftopic>gfw:event-dispatcher</reftopic> (or
+            a subclass thereof), or a function whose argument list matches the
+            event method identified by the <emphasis>callback-event-name</emphasis>
+            class-allocated slot of <arg0/>.
+          </description>
+        </argument>
+        <notarg name="&amp;optional"/>
+        <argument name="disabled">
+          <description>
+            A <refclhs>boolean</refclhs> indicating whether the submenu's
+            anchor should be initially disabled.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:menu-item</reftopic>
+      </return>
+    </syntax>
+    <description>
+      Adds <arg2/> anchored to <arg0/> and returns the corresponding
+      <reftopic>gfw:menu-item</reftopic>.
+    </description>
+    <seealso>
+      <reftopic>gfw:append-item</reftopic>
+      <reftopic>gfw:append-submenu</reftopic>
+      <reftopic>gfw:menu</reftopic>
+      <reftopic>gfw:defmenu</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="ancestor-p">
+    <syntax>
+      <arguments>
+        <argument name="ancestor"/>
+        <argument name="descendant"/>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns T if <arg0/> is the parent of <arg1/>; NIL otherwise.
+    </description>
+  </generic-function>
+
+  <generic-function name="event-activate">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being activated.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to the activation
+      of <arg1/>. For top-level windows or dialogs, this means that <arg1/> was
+      brought to the foreground and its trim (title bar and border) have become
+      highlighted. For a menu, it means the user has clicked on the menu item
+      serving as the anchor for the menu which is therefore about to be shown.
+      In the menu case, event-activate is an opportunity to adjust the menu's
+      contents.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+      <reftopic>gfw:menu</reftopic>
+      <reftopic>gfw:event-deactivate</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-deactivate">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being deactivated.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to the deactivation
+      of <arg1/>. This event is only received by top-level windows or dialogs,
+      and means that some other window or dialog has been activated.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+      <reftopic>gfw:event-activate</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-arm">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> about to be selected.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to notification
+      that <arg1/> is about to be selected. Arming events are not always
+      followed by selection events, such as when the user is moving the mouse
+      across multiple items on a menu.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-select</reftopic>
+      <reftopic>gfw:menu</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-timer">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="timer">
+          <description>
+            The <reftopic>gfw:timer</reftopic> that generated this event.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to handle timer notifications.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-modify">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> modified by the user.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement this method to respond to changes due to user input within <arg1/>,
+      for example when the user types text inside an edit control.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-close">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being closed.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/>
+      being closed by the user. Only top-level windows and dialogs receive
+      close events.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-default-action">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> for which the default action
+            was invoked.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to a default action.
+      For example, a default action is invoked when the user double-clicks on a
+      <reftopic>gfw:list-box</reftopic>, or presses &lt;ENTER&gt; while the
+      keyboard focus is owned by a <reftopic>gfw:edit</reftopic> control.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-dispose">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being disposed.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Implement a method for this generic function to respond to <arg1/>
+        being discarded via <reftopic>gfs:dispose</reftopic>. This event
+        function is called while the data model for widget is still valid.
+      </para>
+      <para role="normal">
+        Note: this function is not an interface to the Common Lisp
+        garbage collector.
+      </para>
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfs:disposed-error</reftopic>
+      <reftopic>gfs:disposed-p</reftopic>
+      <reftopic>gfs:native-object</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-select">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> that was selected, or whose
+            sub-element was selected.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to handle notification that
+      <arg1/> or some sub-element of <arg1/> has been selected. Selection may
+      occur via the mouse or keyboard.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-focus-gain">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> gaining keyboard focus.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/>
+      gaining the keyboard focus.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-focus-loss</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-focus-loss">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> losing keyboard focus.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/>
+      losing the keyboard focus.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-focus-gain</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-key-down">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which a key was pressed.
+          </description>
+        </argument>
+        <argument name="keycode">
+          <description>
+            The virtual key code of the key that was pressed. Constants for
+            certain special keys are described
+            <reftopic label="here">virtual key codes</reftopic>.
+          </description>
+        </argument>
+        <argument name="char">
+          <description>
+            The <refclhs>character</refclhs> value resulting from translation
+            of the virtual key code, or NIL if the key code cannot be translated.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to a key being
+      pressed within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-key-up</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-key-up">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which a key was released.
+          </description>
+        </argument>
+        <argument name="keycode">
+          <description>
+            The virtual key code of the key that was released. Constants for
+            certain special keys are described
+            <reftopic label="here">virtual key codes</reftopic>.
+          </description>
+        </argument>
+        <argument name="char">
+          <description>
+            The <refclhs>character</refclhs> value resulting from translation
+            of the virtual key code, or NIL if the key code cannot be translated.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to a key being
+      released within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-key-down</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-mouse-double">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which the mouse was double-clicked.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            A <reftopic>gfs:point</reftopic> indicating the location of the mouse
+            cursor.
+          </description>
+        </argument>
+        <argument name="button">
+          <description>
+            A keyword symbol identifying which mouse button was used:
+            <enum>
+              <argument name=":left-button"/>
+              <argument name=":middle-button"/>
+              <argument name=":right-button"/>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to a mouse
+      double-click within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-mouse-up</reftopic>
+      <reftopic>gfw:event-mouse-down</reftopic>
+      <reftopic>gfw:event-mouse-move</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-mouse-down">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which the mouse was clicked.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            A <reftopic>gfs:point</reftopic> indicating the location of the mouse
+            cursor.
+          </description>
+        </argument>
+        <argument name="button">
+          <description>
+            A keyword symbol identifying which mouse button was used:
+            <enum>
+              <argument name=":left-button"/>
+              <argument name=":middle-button"/>
+              <argument name=":right-button"/>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to a mouse
+      button click within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-mouse-double</reftopic>
+      <reftopic>gfw:event-mouse-up</reftopic>
+      <reftopic>gfw:event-mouse-move</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-mouse-move">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which the mouse was moved.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            A <reftopic>gfs:point</reftopic> indicating the location of the mouse
+            cursor.
+          </description>
+        </argument>
+        <argument name="button">
+          <description>
+            A keyword symbol identifying which mouse button was pressed, if any:
+            <enum>
+              <argument name=":left-button"/>
+              <argument name=":middle-button"/>
+              <argument name=":right-button"/>
+            </enum>
+            Otherwise, this argument is NIL.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to the mouse moving
+      within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-mouse-double</reftopic>
+      <reftopic>gfw:event-mouse-down</reftopic>
+      <reftopic>gfw:event-mouse-up</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-mouse-up">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> in which the mouse was released.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            A <reftopic>gfs:point</reftopic> indicating the location of the mouse
+            cursor.
+          </description>
+        </argument>
+        <argument name="button">
+          <description>
+            A keyword symbol identifying which mouse button was released:
+            <enum>
+              <argument name=":left-button"/>
+              <argument name=":middle-button"/>
+              <argument name=":right-button"/>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to the mouse being
+      released within <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-mouse-double</reftopic>
+      <reftopic>gfw:event-mouse-down</reftopic>
+      <reftopic>gfw:event-mouse-move</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-move">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being moved.
+          </description>
+        </argument>
+        <argument name="point">
+          <description>
+            A <reftopic>gfs:point</reftopic> indicating <arg1/>'s new location.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/> being
+      moved.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-pre-move</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-pre-move">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being moved.
+          </description>
+        </argument>
+        <argument name="rectangle">
+          <description>
+            A <reftopic>gfs:rectangle</reftopic> describing the move drag rectangle,
+            which may be modified by the application.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/> being
+      moved. This event function gives the application an opportunity to modify
+      the move drag outline prior to the move event being delivered, thus
+      controlling the ultimate location of <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-move</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-resize">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being resized.
+          </description>
+        </argument>
+        <argument name="size">
+          <description>
+            A <reftopic>gfs:size</reftopic> indicating <arg1/>'s new dimensions.
+          </description>
+        </argument>
+        <argument name="type">
+          <description>
+            One of the following keyword symbols describing the resize action
+            in more detail:
+            <enum>
+              <argument name=":maximized">
+                <description>
+                  Indicates that <arg1/> was expanded to its maximum size, such
+                  as when the user clicks on the maximize button in a window frame. 
+                </description>
+              </argument>
+              <argument name=":minimized">
+                <description>
+                  Indicates that <arg1/> was minimized to the taskbar.
+                </description>
+              </argument>
+              <argument name=":restored">
+                <description>
+                  Indicates that <arg1/> was either restored from a minimized state,
+                  or that resizing occurred while widget was already in a visible,
+                  non-maximized state.
+                </description>
+              </argument>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/> being
+      resized.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-pre-move</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-pre-resize">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> being resized.
+          </description>
+        </argument>
+        <argument name="rectangle">
+          <description>
+            A <reftopic>gfs:rectangle</reftopic> describing the resize drag rectangle,
+            which may be modified by the application.
+          </description>
+        </argument>
+        <argument name="type">
+          <description>
+            One of the following keyword symbols describing which of eight possible
+            areas of <arg1/>'s frame is being dragged:
+            <enum>
+              <argument name=":bottom"/>
+              <argument name=":bottom-left"/>
+              <argument name=":bottom-right"/>
+              <argument name=":left"/>
+              <argument name=":right"/>
+              <argument name=":top"/>
+              <argument name=":top-left"/>
+              <argument name=":top-right"/>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to <arg1/> being
+      resized. This event function gives the application an opportunity to modify
+      the resize drag outline prior to the resize event being delivered, thus
+      controlling the resulting dimensions of <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:event-resize</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+      <reftopic>gfw:dialog</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-paint">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> whose contents need repainting.
+          </description>
+        </argument>
+        <argument name="graphics-context">
+          <description>
+            A <reftopic>gfg:graphics-context</reftopic> initialized for use during
+            this event.
+          </description>
+        </argument>
+        <argument name="rectangle">
+          <description>
+            A <reftopic>gfs:rectangle</reftopic> specifying the region within
+            <arg1/> that needs repainting.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to respond to system requests
+      to repaint <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-scroll">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> that was scrolled.
+          </description>
+        </argument>
+        <argument name="axis">
+          <description>
+            One of the following keyword symbols describing orientation:
+            <enum>
+              <argument name=":horizontal"/>
+              <argument name=":vertical"/>
+            </enum>
+          </description>
+        </argument>
+        <argument name="detail">
+          <description>
+            One of the following keyword symbols describing the requested scrolling
+            action:
+            <enum>
+              <argument name=":end">
+                <description>
+                  Move the viewport such that the bottom or right-most content is
+                  revealed.
+                </description>
+              </argument>
+              <argument name=":page-back">
+                <description>
+                  Move the viewport backwards by an amount equal to the viewport's
+                  height or width, or the amount remaining between the current
+                  viewport origin and the model origin, whichever is smaller.
+                </description>
+              </argument>
+              <argument name=":page-forward">
+                <description>
+                  Move the viewport forward by an amount equal to the viewport's
+                  height or width, or the amount remaining between the current
+                  viewport origin and the model extent, whichever is smaller.
+                </description>
+              </argument>
+              <argument name=":start">
+                <description>
+                  Move the viewport such that the top or left-most model content is
+                  revealed.
+                </description>
+              </argument>
+              <argument name=":step-back">
+                <description>
+                  Move the viewport backwards by an application-defined amount, or
+                  the amount remaining between the current viewport origin and the
+                  model origin, whichever is smaller.
+                </description>
+              </argument>
+              <argument name=":step-forward">
+                <description>
+                  Move the viewport forward by an application-defined amount, or the
+                  amount remaining between the current viewport origin and the model
+                  extent, whichever is smaller.
+                </description>
+              </argument>
+              <argument name=":thumb-position">
+                <description>
+                  Move the viewport to an absolute position.
+                </description>
+              </argument>
+              <argument name=":thumb-track">
+                <description>
+                  The user is adjusting the viewport origin continuously, as when
+                  dragging the scrollbar thumb.
+                </description>
+              </argument>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      Implement a method for this generic function to handle scrolling notifications
+      for <arg1/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:update-scrolling-state</reftopic>
+    </seealso>
+  </generic-function>
+
+  <generic-function name="event-session">
+    <syntax>
+      <arguments>
+        <argument name="event-dispatcher">
+          <description>
+            The <reftopic>gfw:event-dispatcher</reftopic> that will process
+            this event.
+          </description>
+        </argument>
+        <argument name="widget">
+          <description>
+            The <reftopic>gfw:widget</reftopic> receiving this event.
+          </description>
+        </argument>
+        <argument name="phase">
+          <description>
+            <enum>
+              <argument name=":query">
+                <description>
+                  This symbol means that the system is querying the application
+                  for permission to proceed. Return nil if there is a reason to
+                  veto the process, or non-nil otherwise.
+                </description>
+              </argument>
+              <argument name=":end">
+                <description>
+                  This symbol is specified in the subsequent call to event-session.
+                  It means that the system is going ahead with ending the session,
+                  therefore this is an opportunity for graceful cleanup.
+                </description>
+              </argument>
+            </enum>
+          </description>
+        </argument>
+        <argument name="reason">
+          <description>
+            <enum>
+              <argument name=":logoff">
+                <description>
+                  The user is logging off.
+                </description>
+              </argument>
+              <argument name=":replacing-file">
+                <description>
+                  The application must exit because a file it is using is being
+                  replaced.
+                </description>
+              </argument>
+              <argument name=":shutdown">
+                <description>
+                  The system is shutting down or restarting.
+                </description>
+              </argument>
+            </enum>
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <emphasis>undefined</emphasis>
+      </return>
+    </syntax>
+    <description>
+      <para role="normal">
+        Implement this method to participate in the system's session shutdown
+        protocol. When the user chooses to end the session (by logging out or
+        by shutting down), or if an application calls one of the Win32 shutdown
+        functions, every application is given a veto option. This event function
+        will be called at least once for each top-level window in the application.
+      </para>
+      <para role="normal">
+        The MSDN documentation makes the following recommendations for handling
+        this event:
+      </para>
+      <itemizedlist mark="bullet" spacing="compact">
+        <listitem>
+          Whenever possible, applications should respect the user's intentions by
+          allowing the session to end.
+        </listitem>
+        <listitem>
+          In the case of a critical operation, provide a dialog or other feedback
+          with information for the user as to consequences if the application is
+          interrupted at this time.
+        </listitem>
+        <listitem>
+          Respond to the :query phase as quickly as possible, leaving time-consuming
+          cleanup to be done in the session :end phase.
+        </listitem>
+      </itemizedlist>
+    </description>
+    <seealso>
+      <reftopic>gfw:event-source</reftopic>
+      <reftopic>gfw:top-level</reftopic>
+    </seealso>
+  </generic-function>
+
+  <!-- ACCESSORS -->
+
+  <slot-accessor name="status-bar-of">
+    <syntax>
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of <reftopic>gfw:top-level</reftopic> or
+            <reftopic>gfw:dialog</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:status-bar</reftopic>
+      </return>
+    </syntax>
+    <description>
+      If <arg0/> was created with the :status-bar style, then this function
+      returns an object representing the status bar widget; otherwise, this
+      function returns NIL.
+    </description>
+    <seealso>
+      <reftopic>gfw:status-item</reftopic>
+    </seealso>
+  </slot-accessor>
+
+  <slot-accessor name="style-of">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:widget</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>list</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns a <refclhs>list</refclhs> of widget-specific keyword symbols
+      that configure the look-and-feel of <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:update-native-style</reftopic>
+    </seealso>
+  </slot-accessor>
+
+  <slot-accessor name="layout-p">
+    <syntax with-setf="t">
+      <arguments>
+        <argument name="self">
+          <description>
+            An instance of a subclass of <reftopic>gfw:layout-managed</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <refclhs>boolean</refclhs>
+      </return>
+    </syntax>
+    <description>
+      Returns (sets) a <refclhs>boolean</refclhs> controlling whether layout
+      management is enabled within <arg0/>.
+    </description>
+    <seealso>
+      <reftopic>gfw:layout</reftopic>
+      <reftopic>gfw:preferred-size</reftopic>
+      <reftopic>gfw:enable-layout</reftopic>
+    </seealso>
+  </slot-accessor>
+
+  <function name="make-menu">
+    <syntax>
+      <arguments>
+        <argument name="menu-name">
+          <description>
+            The <refclhs>symbol</refclhs> identifying a menu factory
+            function previously defined via <reftopic>gfw:defmenu2</reftopic>.
+          </description>
+        </argument>
+      </arguments>
+      <return>
+        <reftopic>gfw:menu</reftopic>
+      </return>
+    </syntax>
+    <description>
+      This function invokes the menu factory function identified by <arg0/>
+      to create a new native menu hierarchy.
+    </description>
+    <seealso>
+      <reftopic>gfw:defmenu</reftopic>
+      <reftopic>gfw:menu-bar</reftopic>
+    </seealso>
+  </function>
+
+</symbols>

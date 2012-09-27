@@ -1,0 +1,1 @@
+../source/clim-desktop/clim-desktop-minimal.asd

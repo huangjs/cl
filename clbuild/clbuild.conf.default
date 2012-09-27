@@ -1,0 +1,111 @@
+# Optional clbuild configuration options.
+
+# ############################################################
+#  This file is for defaults only. To override them,
+#  create a configuration file clbuild.conf instead.
+# ############################################################
+
+# After startup, clbuild sources
+#   1. clbuild.conf.default (this file)
+#      containing only defaults (and various examples)
+#   2. clbuild.conf (if it exists)
+#      with user-specific configuration 
+
+
+#### personal initfile
+
+# By default, we suppress loading of ~/.sbclrc, since users very often
+# have code in it that is incompatible with our fresh installation.
+#
+# Uncomment the "unset" line in clbuild.conf to suppress passing a
+#  --userinit argument to the lisp.
+#
+# When doing so, you might also want to unset SETF_CENTRAL_REGISTRY below.
+
+USER_INIT=/dev/null
+#unset USER_INIT
+
+# By default, we install a new value for ASDF:*CENTRAL-REGISTRY* using SETF.
+# Uncomment the following "unset" line in clbuild.conf to use PUSH instead.
+# Beware that your personal registry directories as well as projects
+# installed asdf-install will then mix freely with clbuild's projects as
+# far as ASDF is concerned.
+
+SETF_CENTRAL_REGISTRY=yes
+#unset SETF_CENTRAL_REGISTRY
+
+
+#### binary configuration
+
+DEFAULT_LISP_IMPLEMENTATION=sbcl
+
+# SBCL is the default, any others override $SBCL if commented out and no
+# DEFAULT_LISP_IMPLEMENTATION is specified
+#
+#  - Note that only SBCL is tested regularly.
+#  - OpenMCL support mostly works, but is not quite as well-tested.
+#  - CLISP is supported by clbuild, but hardly any application works.
+
+#SBCL=sbcl
+#CCL=~/ccl/lx86cl64
+#CLISP=clisp
+
+
+#### slime configuration
+
+# if enabled,  slime calls "clbuild preloaded"
+# if disabled, slime calls "clbuild lisp"
+#
+# default is disabled
+
+unset START_SLIME_USING_CORE
+#START_SLIME_USING_CORE=y
+
+
+#### CVS configuration
+
+#CLNET_USER=:pserver:anonymous:anonymous
+SF_USER=:pserver:anonymous:
+
+
+#### download utility selection
+
+# by default, downloads are done using a simple script included with clbuild
+# as clbuild/update.sh is used.  (This pathname must be relative to the
+# source directory, but the script may be executed from another directory, so be
+# careful with relative pathnames.)
+
+UPDATE_SCRIPT="update_project"
+UPDATE_ARGS=""
+
+# alternatively, any downloading script can be used that knows about all
+# of clbuild's required packages.  One alternative is clget, a perl script.
+
+#UPDATE_SCRIPT=clget
+#UPDATE_ARGS=get
+
+
+### dependencies
+
+# fetch dependencies automatically?
+
+CLBUILD_DEPENDENCIES="ask"
+#CLBUILD_DEPENDENCIES="yes"
+#CLBUILD_DEPENDENCIES="no"
+
+
+#### CLIM configuration
+
+#CLIM_BACKEND=gtkairo
+#CLIM_BACKEND=graphic-forms
+#CLIM_BACKEND=clx
+#CLIM_BACKEND=beagle
+
+
+#### Personal repositories
+## Use the following scheme to create your own download commands.  Those come
+## in handy if you add your own projects into the my-projects file.
+#get_moltkeplatz_de() {
+#    project="$1"
+#    get_git $project http://git.moltkeplatz.de/$project
+#}

@@ -30,8 +30,6 @@
   (asdf:oos 'asdf:compile-op package)
   (asdf:oos 'asdf:load-op package))
 
-;; (asdf :swank)
-
 ;;; display control
 (setf *print-length* 100
       *print-lines* 80
@@ -39,6 +37,7 @@
       *print-pretty* t)
 
 ;;; essential libs
+(ql:quickload :swank)
 (ql:quickload :alexandria)
 (ql:quickload :iterate)
 (setf iterate::*always-declare-variables* t)

@@ -41,7 +41,7 @@
 (ql:quickload :alexandria)
 (ql:quickload :iterate)
 (setf iterate::*always-declare-variables* t)
-#-lispworks (ql:quickload :screamer)
+#-(or lispworks clisp) (ql:quickload :screamer)
 
 ;; (progn
 ;;   (asdf :cl-interpol)
